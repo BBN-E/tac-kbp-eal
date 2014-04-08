@@ -1,0 +1,4 @@
+INCLUDE ../../params/root.params
+
+systemOutput: %kbp.root%/kbp-events/output/lastRun/inferredOutput/ldc
+answerKey: %kbp.root%/../kbp-annotation/annotation

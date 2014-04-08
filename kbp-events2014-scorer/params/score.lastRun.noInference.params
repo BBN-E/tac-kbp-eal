@@ -1,0 +1,4 @@
+INCLUDE lastRun.noInference.params
+
+annotationComplete: false
+scoringOutput: %kbp.root%/kbp-events/output/lastRun/scoring/inferredOutput-no-inference

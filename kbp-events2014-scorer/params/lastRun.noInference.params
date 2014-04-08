@@ -1,0 +1,6 @@
+INCLUDE ../../params/root.params
+
+systemOutput: %kbp.root%/kbp-events/output/lastRun/inferredOutput-no-inference/ldc
+leftSerifXMLViewerURI: file://mercury-04/u10/event_training_data/serifXMLViewerOnePer-predicted
+answerKey: %kbp.root%/kbp-annotation/annotation
+docIDToFileMap: %kbp.root%/kbp-events/input/all_ACE_docid2xml_map.txt

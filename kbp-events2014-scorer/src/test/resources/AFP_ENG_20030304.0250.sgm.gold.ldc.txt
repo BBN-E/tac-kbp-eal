@@ -1,0 +1,14 @@
+0	AFP_ENG_20030304.0250	Life.Die	Victim	At least 19 people	292-391	292-309	0.0	0	0	0	0	0	0
+1	AFP_ENG_20030304.0250	Life.Die	Place	Davao City international airport	292-391	385-391	0.0	0	0	0	0	0	0
+2	AFP_ENG_20030304.0250	Life.Die	Time-Within	2003-W10-2	292-391	354-360	0.0	0	0	0	0	0	0
+3	AFP_ENG_20030304.0250	Life.Injure	Victim	114 people	327-397	327-336	0.0	0	0	0	0	0	0
+4	AFP_ENG_20030304.0250	Life.Injure	Place	Davao City international airport	327-397	385-391	0.0	0	0	0	0	0	0
+5	AFP_ENG_20030304.0250	Life.Injure	Time-Within	2003-W10-2	327-397	354-360	0.0	0	0	0	0	0	0
+6	AFP_ENG_20030304.0250	Conflict.Attack	Place	Davao City international airport	354-397	385-391	0.0	0	0	0	0	0	0
+7	AFP_ENG_20030304.0250	Conflict.Attack	Time-Within	2003-W10-2	354-397	354-360	0.0	0	0	0	0	0	0
+8	AFP_ENG_20030304.0250	Conflict.Attack	Instrument	A powerful bomb	805-970	805-819	0.0	0	0	0	0	0	0
+9	AFP_ENG_20030304.0250	Conflict.Attack	Place	DAVAO	923-970	963-970	0.0	0	0	0	0	0	0
+10	AFP_ENG_20030304.0250	Conflict.Attack	Target	a bus terminal at the city	923-970	945-970	0.0	0	0	0	0	0	0
+11	AFP_ENG_20030304.0250	Life.Injure	Victim	wounded victims	1222-1236	1222-1236	0.0	0	0	0	0	0	0
+12	AFP_ENG_20030304.0250	Movement.Transport	Artifact	wounded victims	1185-1269	1222-1236	0.0	0	0	0	0	0	0
+13	AFP_ENG_20030304.0250	Movement.Transport	Artifact	medical teams	1185-1269	1185-1197	0.0	0	0	0	0	0	0
