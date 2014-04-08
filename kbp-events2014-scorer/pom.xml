@@ -50,7 +50,7 @@
 
   <dependency>
       <groupId>com.bbn.bue</groupId>
-      <artifactId>core-open</artifactId>
+      <artifactId>common-core-open</artifactId>
   </dependency>
 
     <dependency>

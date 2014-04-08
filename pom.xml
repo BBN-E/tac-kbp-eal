@@ -173,7 +173,7 @@
     <dependencies>
   <dependency>
       <groupId>com.bbn.bue</groupId>
-      <artifactId>core-open</artifactId>
+      <artifactId>common-core-open</artifactId>
       <version>2.3.0-SNAPSHOT</version>
   </dependency>
 
@@ -197,7 +197,7 @@
 </dependency>
 <dependency>
       <groupId>com.bbn.bue</groupId>
-      <artifactId>core-jackson-serialization-open</artifactId>
+      <artifactId>common-core-jackson-serialization-open</artifactId>
       <version>2.3.0-SNAPSHOT</version>
   </dependency>
 
