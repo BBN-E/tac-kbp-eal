@@ -36,11 +36,11 @@
 </dependency>
   <dependency>
       <groupId>com.bbn.bue</groupId>
-      <artifactId>core-open</artifactId>
+      <artifactId>common-core-open</artifactId>
   </dependency>
 <dependency>
       <groupId>com.bbn.bue</groupId>
-      <artifactId>core-jackson-serialization-open</artifactId>
+      <artifactId>common-core-jackson-serialization-open</artifactId>
   </dependency>
 
     <dependency>

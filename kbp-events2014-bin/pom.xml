@@ -9,15 +9,35 @@
 
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>kbp-events2014-scorer</artifactId>
+  <artifactId>kbp-events2014-bin</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
-  <name>2014 KBP Event Arguments Task Scorer</name>
+  <name>2014 KBP Event Arguments Task Binaries</name>
   <url>http://www.bbn.com/</url>
 
   <build>
       <plugins>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>appassembler-maven-plugin</artifactId>
+        <version>${appassembler.maven.plugin.version}</version>
+        <configuration>
+            <programs>
+                <program>
+                  <mainClass>com.bbn.kbp.events2014.scorer.bin.KBPScorerBin</mainClass>
+                  <name>kbpScorer</name>
+                  <jvmSettings>
+                      <maxMemorySize>1G</maxMemorySize>
+                  </jvmSettings>
+              </program>
+
+
+            </programs>
+      </configuration>
+  </plugin>
+
   </plugins>
   </build>
   <dependencies>
@@ -27,6 +47,13 @@
       <artifactId>kbp-events2014</artifactId>
       <version>1.0.0-SNAPSHOT</version>
   </dependency>
+
+<dependency>
+      <groupId>com.bbn.kbp.events2014</groupId>
+      <artifactId>kbp-events2014-scorer</artifactId>
+      <version>1.0.0-SNAPSHOT</version>
+  </dependency>
+
 
   <dependency>
       <groupId>com.bbn.bue</groupId>
@@ -47,6 +74,11 @@
 	<groupId>org.slf4j</groupId>
 	<artifactId>slf4j-api</artifactId>
 </dependency>
+   <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.0.13</version>
+    </dependency>
 
   </dependencies>
 

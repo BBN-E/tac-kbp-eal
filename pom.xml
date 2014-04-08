@@ -13,6 +13,7 @@
   <modules>
       <module>kbp-events2014</module>
       <module>kbp-events2014-scorer</module>
+      <module>kbp-events2014-bin</module>
   </modules>
 
   <properties>
