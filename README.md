@@ -49,6 +49,7 @@ using `importSystemOutputToAnnotationStore`.
 store using `kbpScorer`.
 
 ### Running the demo
+We have included a demo showing the full annotation workflow.
 The demo requires you to have a copy of the ACE event training data. For brevity,
 the following instructions assume `kbp-events-2014-bin/target/appassembler/bin`
 has been added to your system path. All paths are relative to the root of your
@@ -96,13 +97,30 @@ This program takes the following parameters:
 * `validRoles`: is `data/2014.types.txt` (for KBP 2014)
 
 ### `poolSystemOutput`
-To be described.
+Combines the system output from multiple systems into a single system output store.
+
+Parameters:
+* `storesToPool`: a file listing paths to stores to pool, one per line
+* `pooledStore`: the location to write the pooled store to
+* `addMode`: either `CREATE` to create a new store for output (overwriting anything 
+currently there) or `ADD` to append to an existing store.
 
 ### `importSystemOutputToAnnotationStore`
-To be described.
+Turns a system output store into an annotation store ready for LDC's annotators.
+
+Parameters:
+* `systemOutput`: system output to import
+* `annotationStore`: location to create annotation store
 
 ### `kbpScorer`
-To be described.
+Scores system output against an annotation store.
+
+Parameters:
+* `annotationComplete`: specifies whether to check that there are no unannotated
+tuples in the annotation store.  For the evaluation, this will always be `true`.
+* `scoringOutput`: where to write various scoring log files.
+* `systemOutput`: the system output store to score
+* `answerKey`: the answer key to score against.
 
 ## Questions
 ### How can I use the `Response`, etc. in my system's code?
