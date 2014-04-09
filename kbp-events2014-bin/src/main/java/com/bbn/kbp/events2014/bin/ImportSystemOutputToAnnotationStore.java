@@ -1,4 +1,4 @@
-package com.bbn.kbp.events.bin;
+package com.bbn.kbp.events2014.bin;
 
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;

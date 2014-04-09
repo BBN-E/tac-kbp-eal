@@ -49,6 +49,15 @@
                   </jvmSettings>
               </program>
 
+            <program>
+                  <mainClass>com.bbn.kbp.events2014.bin.ValidateSystemOutput</mainClass>
+                  <name>validateSystemOutput</name>
+                  <jvmSettings>
+                      <maxMemorySize>1g</maxMemorySize>
+                  </jvmSettings>
+              </program>
+
+
 
             </programs>
       </configuration>
