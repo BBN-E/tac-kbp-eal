@@ -30,7 +30,7 @@ file per input document, named by the docID. The internal format of these files
 is described in the task specification linked to above.
 
 An _annotation store_ contains assessments of the answers from a system output
-store.  It's format is the same as a system output store except within the files
+store.  Its format is the same as a system output store except within the files
 there are additional assessment columns, as described in the task specification.
 
 ### Evaluation Workflow
