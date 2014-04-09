@@ -29,9 +29,18 @@
                   <mainClass>com.bbn.kbp.events2014.scorer.bin.KBPScorerBin</mainClass>
                   <name>kbpScorer</name>
                   <jvmSettings>
-                      <maxMemorySize>1G</maxMemorySize>
+                      <maxMemorySize>1g</maxMemorySize>
                   </jvmSettings>
               </program>
+
+                <program>
+                  <mainClass>com.bbn.kbp.events2014.bin.ImportSystemOutputToAnnotationStore</mainClass>
+                  <name>importSystemOutputToAnnotationStore</name>
+                  <jvmSettings>
+                      <maxMemorySize>1g</maxMemorySize>
+                  </jvmSettings>
+              </program>
+
 
 
             </programs>
