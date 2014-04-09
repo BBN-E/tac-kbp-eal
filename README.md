@@ -71,7 +71,7 @@ so that you can check for mistakes.
 
 This program takes the following parameters:
 * `systemOutputStore`: the path of the system output store to be validated 
- * `docIDMap`: a list of tab-separated pairs of doc ID and path to the 
+* `docIDMap`: a list of tab-separated pairs of doc ID and path to the 
  corresponding original text for all files in the output store.
 * `validRoles`: is `data/2014.types.txt` (for KBP 2014)
 
