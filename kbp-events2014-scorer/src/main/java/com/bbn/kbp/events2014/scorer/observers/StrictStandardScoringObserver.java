@@ -9,12 +9,17 @@ import com.bbn.kbp.events2014.scorer.AnswerKeyAnswerSource;
 import com.bbn.kbp.events2014.scorer.SystemOutputAnswerSource;
 import com.bbn.kbp.events2014.scorer.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.HTMLErrorRecorder;
+import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.*;
+import com.google.common.io.CharSink;
+import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
@@ -49,37 +54,29 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 	}
 
     @Override
-	public void endCorpus() {
-        // gather the matrices to output (each splitting up the results different ways)
-        // using an ImmutableMap to maintain iteration order
-        final ImmutableMap.Builder<String, SummaryConfusionMatrix> outputMatrices = ImmutableMap.builder();
-        outputMatrices.put("Aggregate over all event types", corpusConfusionMatrixBuilder.build());
-
+    public void writeCorpusOutput(File directory) throws IOException {
         Iterable<Map.Entry<String, Map<Symbol, SummaryConfusionMatrix.Builder>>> printModes = ImmutableMap.of(
+                "Aggregate", ImmutableMap.of(Symbol.from("Aggregate"), corpusConfusionMatrixBuilder),
                 "Type", byTypeConfusionMatrices, "Role", byRoleConfusionMatrices).entrySet();
 
         for (final Map.Entry<String, Map<Symbol, SummaryConfusionMatrix.Builder>> printMode : printModes) {
-            final String printModeName = printMode.getKey();
-            for (final Map.Entry<Symbol, SummaryConfusionMatrix.Builder> matrixEntry : printMode.getValue().entrySet()) {
-                outputMatrices.put(String.format("For %s %s", printModeName,
-                        matrixEntry.getKey().toString()), matrixEntry.getValue().build());
-            }
+            writeConfusionMatrices(printMode.getValue(),
+                    Files.asCharSink(new File(directory, printMode.getKey()), Charsets.UTF_8));
         }
+    }
 
+    private void writeConfusionMatrices(Map<Symbol, SummaryConfusionMatrix.Builder> confusionMatrices, CharSink out) throws IOException {
         final StringBuilder sb = new StringBuilder();
 
-        // actually output them
-        for (final Map.Entry<String, SummaryConfusionMatrix> outputMatrixEntry : outputMatrices.build().entrySet()) {
-            final String title = outputMatrixEntry.getKey();
-            final SummaryConfusionMatrix outputMatrix = outputMatrixEntry.getValue();
-            sb.append("\n" + "==============" + title + "====================\n" + outputMatrix.prettyPrint() + "\n\n"
+        for (final Map.Entry<Symbol, SummaryConfusionMatrix.Builder> outputMatrixEntry : confusionMatrices.entrySet()) {
+            final String chartTitle = outputMatrixEntry.getKey().toString();
+            final SummaryConfusionMatrix outputMatrix = outputMatrixEntry.getValue().build();
+            sb.append("\n" + "==============" + chartTitle + "====================\n" + outputMatrix.prettyPrint() + "\n\n"
                     + outputMatrix.FMeasureVsAllOthers(PRESENT).compactPrettyString()+"\n\n");
         }
+        out.write(sb.toString());
+    }
 
-		log.info("\n"+sb.toString());
-	}
-
-	@Override
 	public void appendSummaryHTML(final StringBuilder sb) {
 		final SummaryConfusionMatrix corpusMatrix = corpusConfusionMatrixBuilder.build();
 
@@ -105,9 +102,9 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
                     matrix.filteredCopy(compose(equalTo(eventType), TypeRoleFillerRealis.Type)));
         }
 
-        for (final Symbol eventRole : FluentIterable.from(matrix.entries()).transform(TypeSlashRole).toSet()) {
-            accumulateConfusionMatrix(byTypeConfusionMatrices, eventRole,
-                    matrix.filteredCopy(compose(equalTo(eventRole), TypeSlashRole)));
+        for (final Symbol eventRole : FluentIterable.from(matrix.entries()).transform(TypeDotRole).toSet()) {
+            accumulateConfusionMatrix(byRoleConfusionMatrices, eventRole,
+                    matrix.filteredCopy(compose(equalTo(eventRole), TypeDotRole)));
         }
 	}
 
@@ -120,10 +117,12 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 		return new KBPAnswerSourceObserver(systemOutputSource, answerKeyAnswerSource) {
 			private final ProvenancedConfusionMatrix.Builder<TypeRoleFillerRealis> confusionMatrixBuilder =
 				ProvenancedConfusionMatrix.builder();
+            private final StringBuilder htmlOut = new StringBuilder();
+            private final StringBuilder textOut = new StringBuilder();
 
 			@Override
 			public void start() {
-				documentOut().append(renderer.preamble());
+				htmlOut.append(renderer.preamble());
 			}
 
 			@Override
@@ -131,23 +130,23 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 					final AsssessedResponse annotated)
 			{
 				if (ResponseCorrect.apply(annotated)) {
-					log.info("True Positive");
+					textOut.append("True Positive\n");
 					confusionMatrixBuilder.record(PRESENT, PRESENT, answerable);
 				} else {
-					log.info("False positive. Response annotated in pool as {}",
-						annotated.assessment());
+					textOut.append("False positive. Response annotated in pool as ")
+                            .append(annotated.assessment()).append("\n");
 					confusionMatrixBuilder.record(PRESENT, ABSENT, answerable);
-					documentOut().append(renderer.vsAnnotated("kbp-false-positive-annotated", "False positive (annotated)", response,
-						systemOutputSource.systemOutput().score(response), annotated));
+					htmlOut.append(renderer.vsAnnotated("kbp-false-positive-annotated", "False positive (annotated)", response,
+                            systemOutputSource.systemOutput().score(response), annotated));
 				}
 			}
 
 			@Override
 			public void unannotatedSelectedResponse(final TypeRoleFillerRealis answerable, final Response unannotated) {
-				log.info("No assessment for {}, counting as wrong", unannotated);
+				textOut.append("No assessment for ").append(unannotated).append(", counting as wrong\n");
 				confusionMatrixBuilder.record(PRESENT, ABSENT, answerable);
-				documentOut().append(renderer.vsAnnotated("kbp-false-positive-unannotated", "False positive (unannotated)", unannotated,
-					ImmutableList.of(systemOutputSource.systemOutput().score(unannotated)), answerKey().answers(answerable)));
+				htmlOut.append(renderer.vsAnnotated("kbp-false-positive-unannotated", "False positive (unannotated)", unannotated,
+                        ImmutableList.of(systemOutputSource.systemOutput().score(unannotated)), answerKey().answers(answerable)));
 			}
 
 			@Override
@@ -158,27 +157,38 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 				// answers all agree,
 				// so we can take the first
 				if (any(annotatedResponses, ResponseCorrect)) {
-					log.info("FN: No system response, but the following correct response is in the pool: {}",
-						Iterables.find(annotatedResponses, ResponseCorrect));
+					textOut.append("FN: No system response, but the following correct response is in the pool: ")
+                            .append(Iterables.find(annotatedResponses, ResponseCorrect)).append("\n");
 					confusionMatrixBuilder.record(ABSENT, PRESENT, answerable);
-					documentOut().append(renderer.vsAnnotated("kbp-false-negative", "False negative", getFirst(annotatedResponses, null).response(),
-						annotatedResponses));
+					htmlOut.append(renderer.vsAnnotated("kbp-false-negative", "False negative", getFirst(annotatedResponses, null).response(),
+                            annotatedResponses));
 				} else {
-					log.info("TN: No system response, but all matching answers in the pool are wrong.");
+					textOut.append("TN: No system response, but all matching answers in the pool are wrong.\n");
 					// true negative, no action
 				}
 			}
 
 			@Override
 			public void end() {
-				log.info("===== Confusion matrix for {} =====", name());
+                final ProvenancedConfusionMatrix<TypeRoleFillerRealis> confusionMatrix = confusionMatrixBuilder.build();
+                observeDocumentConfusionMatrix(confusionMatrix);
+                
 
-				final ProvenancedConfusionMatrix<TypeRoleFillerRealis> confusionMatrix = confusionMatrixBuilder.build();
-				final SummaryConfusionMatrix summaryConfusionMatrix = confusionMatrix.buildSummaryMatrix();
-				log.info("\n"+summaryConfusionMatrix.prettyPrint());
-				log.info("\n"+confusionMatrix.prettyPrint());
-				observeDocumentConfusionMatrix(confusionMatrix);
+
 			}
+
+            @Override
+            public void writeDocumentOutput(File directory) throws IOException {
+                final StringBuilder sb = new StringBuilder();
+                sb.append("===== Confusion matrix for ").append(name()).append(" =====\n");
+
+                final ProvenancedConfusionMatrix<TypeRoleFillerRealis> confusionMatrix = confusionMatrixBuilder.build();
+                final SummaryConfusionMatrix summaryConfusionMatrix = confusionMatrix.buildSummaryMatrix();
+                sb.append(summaryConfusionMatrix.prettyPrint()).append("\n");
+                sb.append(confusionMatrix.prettyPrint()).append("\n");
+
+                Files.asCharSink(new File(directory, "confusionMatrix.txt"), Charsets.UTF_8).write(sb.toString());
+            }
 		};
 	}
 
@@ -191,11 +201,11 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
         matrixMap.get(key).accumulate(toAdd.buildSummaryMatrix());
     }
 
-    private static final Function<TypeRoleFillerRealis,Symbol> TypeSlashRole = new Function<TypeRoleFillerRealis, Symbol> () {
+    private static final Function<TypeRoleFillerRealis,Symbol> TypeDotRole = new Function<TypeRoleFillerRealis, Symbol> () {
 
         @Override
         public Symbol apply(TypeRoleFillerRealis input) {
-            return Symbol.from(input.type().toString() + "/" + input.role().toString());
+            return Symbol.from(input.type().toString() + "." + input.role().toString());
         }
     };
 }

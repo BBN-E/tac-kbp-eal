@@ -27,7 +27,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @param <Answerable>
  */
 public abstract class KBPScoringObserver<Answerable> {
-	private final StringBuilder globalOut = new StringBuilder();
 	private final String name;
 
 	protected KBPScoringObserver() {
@@ -69,21 +68,12 @@ public abstract class KBPScoringObserver<Answerable> {
 	}
 
     /**
-     * Writes an aggregation of the HTML output for all documents to the specified directory,
-     * in a file called "aggregate.html".
+     * Writes corpus-level output to the specified directory
      * @param directory
      * @throws IOException
      */
-	public final void writeCorpusHTML(final File directory) throws IOException {
-		final String corpusHTML = globalOut.toString();
-		if (!corpusHTML.isEmpty()) {
-			final File output = new File(directory, "aggregate.html");
-			Files.asCharSink(output, Charsets.UTF_8).write(writeHTML("aggregate", corpusHTML));
-		}
-	}
+	public void writeCorpusOutput(final File directory) throws IOException {
 
-	public void appendSummaryHTML(final StringBuilder sb) {
-		// pass
 	}
 
     /**
@@ -92,7 +82,6 @@ public abstract class KBPScoringObserver<Answerable> {
 	public abstract  class KBPAnswerSourceObserver {
 		private final SystemOutputAnswerSource<Answerable> systemOutputSource;
 		private final AnswerKeyAnswerSource<Answerable> answerKeyAnswerSource;
-		private final StringBuilder documentOut = new StringBuilder();
 
 		public final AnswerKeyAnswerSource<Answerable> answerKeyAnswerSource() {
 			return answerKeyAnswerSource;
@@ -202,24 +191,15 @@ public abstract class KBPScoringObserver<Answerable> {
             return answerKeyAnswerSource;
 		}
 
-        /**
-         * Get the document-level output stream. Append to this stringbuilder to write to
-         * the per-document HTML output.
-         * @return
-         */
-		protected final StringBuilder documentOut() {
-			return documentOut;
-		}
-
-		public final void writeDocumentHTML(final File directory) throws IOException {
-            checkNotNull(directory);
+		public void writeDocumentOutput(final File directory) throws IOException {
+            /*checkNotNull(directory);
 			final String docHTML = documentOut.toString();
 			globalOut.append(docHTML);
 			if (!docHTML.isEmpty()) {
 				final String docid = systemOutputSource.systemOutput().docId().toString();
 				final File output = new File(directory, docid+".html");
 				Files.asCharSink(output, Charsets.UTF_8).write(writeHTML(docid, docHTML));
-			}
+			}*/
 		}
 
 		public KBPAnswerSourceObserver(final SystemOutputAnswerSource<Answerable> systemOutputSource,

@@ -2,8 +2,13 @@ package com.bbn.kbp.events2014.scorer.observers;
 
 import com.bbn.kbp.events2014.scorer.AnswerKeyAnswerSource;
 import com.bbn.kbp.events2014.scorer.SystemOutputAnswerSource;
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -30,20 +35,29 @@ public class SkipIncompleteAnnotations<Answerable> extends KBPScoringObserver<An
 		return new SkipIncompleteAnnotations<Answerable>(innerObserver);
 	}
 
+    @Override
     public void startCorpus() {
         innerObserver.startCorpus();
     }
 
+    @Override
+    public void endCorpus() {
+        innerObserver.endCorpus();
+    }
+
 	@Override
-	public void endCorpus() {
+	public void writeCorpusOutput(File directory) throws IOException {
+        final String msg;
 		if (docs > 0) {
-			log.info(String.format("Skipped %d of %d documents (%.2f%%)\n", skipped, docs,
-				(100.0*skipped)/docs));
+			msg = String.format("Skipped %d of %d documents (%.2f%%)\n", skipped, docs,
+				(100.0*skipped)/docs);
 		} else {
-			log.info("No documents observed.");
+			msg = "No documents observed.";
 		}
-		innerObserver.endCorpus();
-	}
+        Files.asCharSink(new File(directory, "__skipped.txt"), Charsets.UTF_8).write(msg);
+        innerObserver.writeCorpusOutput(directory);
+    }
+
 
 	@Override
 	public KBPAnswerSourceObserver answerSourceObserver(

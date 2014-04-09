@@ -67,7 +67,9 @@ This will show you what sort of input the LDC assessors will get.
 * We've provided an answer key for demo purposes. To score the sample output
 against it, run `kbpScorer sample/params/score.params`.  Note this answer key 
 is automatically derived from ACE annotation and is not guaranteed to be either
-correct or complete.
+correct or complete. The scorer will write various scores and logs to the 
+`sample/scoringObserverLogs` directory. `Standard/Aggregate` contains what is
+probably most important, the overall score according to the standard metric.
 
 ### Parameter Files
 Most of the executables take parameter files as input.  These have the format

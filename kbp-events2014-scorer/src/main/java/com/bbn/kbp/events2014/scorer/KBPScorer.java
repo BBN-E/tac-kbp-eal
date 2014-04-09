@@ -201,8 +201,11 @@ public final class KBPScorer {
 			}*/
 
 			for (final KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver observer : docObservers) {
-				observer.writeDocumentHTML(scorerToOutputDir.get(docObserversToCorpusObservers.get(observer)));
-			}
+                File outputDir = new File(scorerToOutputDir.get(docObserversToCorpusObservers.get(observer)),
+                        docid.toString());
+                outputDir.mkdirs();
+                observer.writeDocumentOutput(outputDir);
+            }
 		}
 
 		log.info("Reports for corpus:");
@@ -211,7 +214,7 @@ public final class KBPScorer {
 		}
 
 		for (final Map.Entry<KBPScoringObserver<TypeRoleFillerRealis>, File> corpusOutput : scorerToOutputDir.entrySet()) {
-			corpusOutput.getKey().writeCorpusHTML(corpusOutput.getValue());
+			corpusOutput.getKey().writeCorpusOutput(corpusOutput.getValue());
 		}
 	}
 

@@ -1,9 +1,13 @@
 package com.bbn.kbp.events2014.scorer.observers;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Set;
 
 import com.bbn.kbp.events2014.AsssessedResponse;
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,10 +36,16 @@ public final class BuildConfusionMatrix<Answerable> extends KBPScoringObserver<A
 
 	@Override
 	public void endCorpus() {
-		final SummaryConfusionMatrix corpusMatrix = corpusConfusionMatrixBuilder.build();
-		log.info("\n" + corpusMatrix.prettyPrint() + "\n\n" +
-				corpusMatrix.FMeasureVsAllOthers(Symbol.from("PRESENT")).compactPrettyString());
+
 	}
+
+    @Override
+    public void writeCorpusOutput(File directory) throws IOException {
+        final SummaryConfusionMatrix corpusMatrix = corpusConfusionMatrixBuilder.build();
+        Files.asCharSink(new File(directory, "confusionMatrix.txt"), Charsets.UTF_8).write(
+                corpusMatrix.prettyPrint() + "\n\n" +
+                        corpusMatrix.FMeasureVsAllOthers(Symbol.from("PRESENT")).compactPrettyString());
+    }
 
 	public void observeDocumentConfusionMatrix(final SummaryConfusionMatrix matrix) {
 		corpusConfusionMatrixBuilder.accumulate(matrix);
@@ -47,6 +57,8 @@ public final class BuildConfusionMatrix<Answerable> extends KBPScoringObserver<A
 			final AnswerKeyAnswerSource<Answerable> answerKeyAnswerSource)
 	{
 		return new KBPAnswerSourceObserver(systemOutputSource, answerKeyAnswerSource)  {
+            final StringBuilder textOut = new StringBuilder();
+
 			private final ProvenancedConfusionMatrix.Builder<Answerable> confusionMatrixBuilder =
 				ProvenancedConfusionMatrix.builder();
 
@@ -57,19 +69,28 @@ public final class BuildConfusionMatrix<Answerable> extends KBPScoringObserver<A
 				final Symbol leftAnswer = leftAnswerFunction.apply(responses);
 				final Symbol rightAnswer = rightAnswerFunction.apply(annotations);
 
-				log.info("Adding confusion matrix entry {}/{}", leftAnswer, rightAnswer);
+				textOut.append(String.format("Adding confusion matrix entry %s/%s\n", leftAnswer, rightAnswer));
 				confusionMatrixBuilder.record(leftAnswer, rightAnswer, answerable);
 			}
 
 			@Override
 			public void end() {
-				log.info("Confusion matrix for {}", log.getName());
 				final ProvenancedConfusionMatrix<?> confusionMatrix = confusionMatrixBuilder.build();
 				final SummaryConfusionMatrix summaryMatrix = confusionMatrix.buildSummaryMatrix();
-				log.info(summaryMatrix.prettyPrint());
-				log.info(confusionMatrix.prettyPrint());
 				observeDocumentConfusionMatrix(summaryMatrix);
 			}
+
+            @Override
+            public void writeDocumentOutput(File directory) throws IOException {
+
+                textOut.append("Confusion matrix for ").append(name());
+                final ProvenancedConfusionMatrix<?> confusionMatrix = confusionMatrixBuilder.build();
+                final SummaryConfusionMatrix summaryMatrix = confusionMatrix.buildSummaryMatrix();
+                textOut.append(summaryMatrix.prettyPrint()).append("\n");
+                textOut.append(confusionMatrix.prettyPrint()).append("\n");
+                Files.asCharSink(new File(directory, "confusionMatrix.txt"), Charsets.UTF_8).write(
+                        textOut.toString());
+            }
 		};
 	}
 
