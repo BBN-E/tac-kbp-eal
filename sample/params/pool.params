@@ -1,0 +1,5 @@
+INCLUDE root.params
+
+storesToPool: %sampleRoot%/sample/storesToPool.txt
+pooledStore: %sampleRoot%/sample/pooledStore
+addMode: CREATE

@@ -56,6 +56,7 @@ working copy.
 
 * Edit `sample/params/root.params` to point to your working copy of this repository.
 * Edit `sample/docIdToOriginalText.txt` to point to the files in your copy
+* Edit the path in `sample/storesToPool.txt` to point to your working copy.
 of the ACE event training data.
 * Run `validateSystemOutput sample/params/validate.params`
 * Run `poolSystemOutput sample/params/pool.params`. In this case we only have,
