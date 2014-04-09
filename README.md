@@ -48,6 +48,25 @@ using `importSystemOutputToAnnotationStore`.
 * All competitor submissions will be evaluated against the complete annotation
 store using `kbpScorer`.
 
+### Running the demo
+The demo requires you to have a copy of the ACE event training data. For brevity,
+the following instructions assume `kbp-events-2014-bin/target/appassembler/bin`
+has been added to your system path. All paths are relative to the root of your
+working copy.
+
+* Edit `sample/params/root.params` to point to your working copy of this repository.
+* Edit `sample/docIdToOriginalText.txt` to point to the files in your copy
+of the ACE event training data.
+* Run `validateSystemOutput sample/params/validate.params`
+* Run `poolSystemOutput sample/params/pool.params`. In this case we only have,
+one system output store, so this is a trivial pooling.
+* Run `importSystemOutputToAnnotationStore sample/params/importToAnnotationStore.params`.
+This will show you what sort of input the LDC assessors will get.
+* We've provided an answer key for demo purposes. To score the sample output
+against it, run `kbpScorer sample/params/score.params`.  Note this answer key 
+is automatically derived from ACE annotation and is not guaranteed to be either
+correct or complete.
+
 ### Parameter Files
 Most of the executables take parameter files as input.  These have the format
 ```

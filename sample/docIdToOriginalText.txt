@@ -1,0 +1,2 @@
+AFP_ENG_20030304.0250	/nfs/mercury-04/u40/ldc_releases/ace_2005_td_v7/data/English/nw/adj/AFP_ENG_20030304.0250.sgm
+AFP_ENG_20030418.0556	/nfs/mercury-04/u40/ldc_releases/ace_2005_td_v7/data/English/nw/adj/AFP_ENG_20030418.0556.sgm
