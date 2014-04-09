@@ -1,13 +1,18 @@
 package com.bbn.kbp.events2014.bin;
 
+import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.files.FileUtils;
+import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.Collection;
 import java.util.Map;
 
 public final class ValidateSystemOutput {
@@ -27,21 +33,29 @@ public final class ValidateSystemOutput {
     private static void usage() {
         log.error("Checks a system output store can be loaded and then dumps it in a human-readable way, resolving \n" +
             " offset spans against the original text.\n"+
-            "usage: validateSystemOutput systemOutputStore docIDMap \n" +
-            "where systemOutputStore is the system output to be validated \n" +
-            "and docIDMap is a list of tab-separated pairs of doc ID and path to original text.");
+            "usage: validateSystemOutput parameterFile\n" +
+                "Parameter files are lines of key : value pairs\n" +
+             "Parameters:\n\tsystemOutputStore: the system output to be validated \n" +
+            "\tdocIDMap: a list of tab-separated pairs of doc ID and path to original text.\n" +
+            "\tvalidRoles: is data/2014.types.txt (for KBP 2014)");
         System.exit(1);
     }
 
     private static void trueMain(String[] argv) throws IOException {
-        if (argv.length != 2) {
+        if (argv.length != 1) {
             usage();
         }
-        final File systemOutputStoreFile = new File(argv[0]);
-        final File docIDMappingFile = new File(argv[1]);
+        final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
+        log.info(params.dump());
+        final File systemOutputStoreFile = params.getExistingFileOrDirectory("systemOutputStore");
+        final File docIDMappingFile = params.getExistingFile("docIDMap");
+        final File validRolesFile = params.getExistingFile("validRoles");
 
         log.info("Using map from document IDs to original text: {}", docIDMappingFile);
         final Map<Symbol, File> docIDMap = FileUtils.loadSymbolToFileMap(docIDMappingFile);
+
+        log.info("Validating types and roles against {}", validRolesFile);
+        final Multimap<Symbol, Symbol> validRoles = FileUtils.loadSymbolMultimap(validRolesFile);
 
         log.info("Validating system output store {}", systemOutputStoreFile);
         final SystemOutputStore outputStore =
@@ -55,12 +69,31 @@ public final class ValidateSystemOutput {
                 final StringBuilder msg = new StringBuilder();
                 msg.append("\n"); // more readable if we skip a line after the log stamp
                 for (final Response response : docOutput.responses()) {
+                    assertValidTypes(response, validRoles);
                     msg.append(renderResponse(response, originalText));
                 }
                 log.info(msg.toString());
             }
         }
 
+    }
+
+    private static final ImmutableSet<Symbol> alwaysValidRoles = SymbolUtils.setFrom("Time", "Place");
+    private static void assertValidTypes(Response response, Multimap<Symbol, Symbol> validRoles) {
+        if (validRoles.containsKey(response.type())) {
+            if (!alwaysValidRoles.contains(response.role())) {
+                if (!validRoles.get(response.type()).contains(response.role())) {
+                    log.error("Invalid role {} for event type {} used in document {}. Valid roles for this event are {}",
+                        response.role(), response.type(), response.docID(),
+                        StringUtils.CommaSpaceJoiner.join(validRoles.get(response.type())));
+                    System.exit(1);
+                }
+            }
+        } else {
+            log.error("Invalid event type {} used in document {}. Valid event types are: {}", response.type(),
+                    response.docID(), StringUtils.CommaSpaceJoiner.join(validRoles.keySet()));
+            System.exit(1);
+        }
     }
 
     private static String renderResponse(Response response, String originalText) {

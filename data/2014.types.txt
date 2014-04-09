@@ -11,20 +11,20 @@ Life.Die	Agent	Victim	Instrument
 Movement.Transport	Agent	Artifact	Vehicle	Price	Origin	Destination
 Personnel.Start-Position	Person	Entity	Position
 Personnel.End-Position	Person	Entity	Position
-Personnel.Nominate  Agent	Person	Position
+Personnel.Nominate	Agent	Person	Position
 Personnel.Elect	Entity	Person	Position
-Transaction.Transfer-Ownership	Seller Buyer Beneficiary Price Artifact
-Transaction.Transfer-Money Giver Recipient Beneficiary Money
-Justice.Arrest-Jail Agent Person Crime
-Justice.Release-Parole Entity Person Crime
-Justice.Trial-Hearing Prosecutor Adjudicator Defendant Crime
-Justice.Sentence Adjudicator Defendant Sentence Crime
-Justice.Fine Adjudicator Entity Money Crime
-Justice.Charge-Indict Prosecutor Adjudicator Defendant Crime
-Justice.Sue Plaintiff Adjudicator Defendant Crime
-Justice.Extradite Agent Person Origin Destination Crime
-Justice.Acquit Adjudicator Defendant Crime
-Justice.Convict Adjudicator Defendant Crime
-Justice.Appeal Prosecutor Adjudicator Defendant Crime
-Justice.Execute Agent Person Crime
-Justice.Pardon Adjudicator Defendant Crime
+Transaction.Transfer-Ownership	Seller	Buyer	Beneficiary	Price	Artifact
+Transaction.Transfer-Money	Giver	Recipient	Beneficiary	Money
+Justice.Arrest-Jail	Agent	Person	Crime
+Justice.Release-Parole	Entity	Person	Crime
+Justice.Trial-Hearing	Prosecutor	Adjudicator	Defendant	Crime
+Justice.Sentence	Adjudicator	Defendant	Sentence	Crime
+Justice.Fine	Adjudicator	Entity	Money	Crime
+Justice.Charge-Indict	Prosecutor	Adjudicator	Defendant	Crime
+Justice.Sue	Plaintiff	Adjudicator	Defendant	Crime
+Justice.Extradite	Agent	Person	Origin	Destination	Crime
+Justice.Acquit	Adjudicator	Defendant	Crime
+Justice.Convict	Adjudicator	Defendant	Crime
+Justice.Appeal	Prosecutor	Adjudicator	Defendant	Crime	Plaintiff
+Justice.Execute	Agent	Person	Crime
+Justice.Pardon	Adjudicator	Defendant	Crime
