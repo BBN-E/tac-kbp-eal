@@ -17,7 +17,25 @@ public final class ImportSystemOutputToAnnotationStore {
     private static final Logger log =
             LoggerFactory.getLogger(ImportSystemOutputToAnnotationStore.class);
 
-    public static void main(final String[] argv) throws IOException {
+    public static void main(final String[] argv) {
+        try {
+            trueMain(argv);
+        } catch (Exception e) {
+            // ensure non-zero return on failure
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    private static final void usage() {
+        log.error("\nusage: importSystemOutputToAnnotationStore paramFile\n" +
+        "Parameters are:\n"+
+                "\tsystemOutput: system output store to import\n" +
+                "\tannotationStore: destination annotation store (existing or new)"
+        );
+    }
+
+    private static void trueMain(final String[] argv) throws IOException {
         final File systemOutputDir;
         final File annStoreDir;
 
@@ -25,15 +43,11 @@ public final class ImportSystemOutputToAnnotationStore {
             final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
             log.info(params.dump());
 
-
-            systemOutputDir = params.getCreatableDirectory("systemOutput");
-            annStoreDir = params.getCreatableDirectory("annotationStore");
+            importSystemOutputToAnnotationStore(params.getExistingDirectory("systemOutput"),
+                    params.getCreatableDirectory("annotationStore"));
         } else {
-            systemOutputDir = new File(argv[0]);
-            annStoreDir = new File(argv[1]);
+            usage();
         }
-
-        importSystemOutputToAnnotationStore(systemOutputDir, annStoreDir);
     }
 
     private static void importSystemOutputToAnnotationStore(File systemOutputDir, File annStoreDir) throws IOException {
