@@ -1,6 +1,6 @@
 This is code developed by BBN to support the 
 [2014 KBP Event Argument Shared Task](http://www.nist.gov/tac/2014/KBP/Event/index.html). 
-A draft of the description of this task may be found [here](https://docs.google.com/document/d/1NRrRhttps://docs.google.com/document/d/1NRrRciiPMEZfqdjXEljyzWn-Zlw-jEm0PBqT-t1owJ0/edit?usp=sharing).
+A draft of the description of this task may be found [here](https://docs.google.com/document/d/1NRrRciiPMEZfqdjXEljyzWn-Zlw-jEm0PBqT-t1owJ0/edit?usp=sharing).
 
 This repository contains three artifacts: 
 * `kbp-events2014` contains classes to represent system responses and assessments for
@@ -20,7 +20,7 @@ Build steps:
 * Check out the [`bue-common-open`](https://github.com/rgabbard-bbn/bue-common-open) repository
 and do `mvn install` from its root.  
 * Do `mvn install` from the root of this repository.
-* do `chmod +x kbp-events-2014-bin/target/appassembler/bin/*` (you only need to do this the first time)
+* do `chmod +x kbp-events2014-bin/target/appassembler/bin/*` (you only need to do this the first time)
 
 ## Using
 ### System Output Stores and Annotation Stores
@@ -30,7 +30,7 @@ file per input document, named by the docID. The internal format of these files
 is described in the task specification linked to above.
 
 An _annotation store_ contains assessments of the answers from a system output
-store.  It's format is the same as a system output store except within the files
+store.  Its format is the same as a system output store except within the files
 there are additional assessment columns, as described in the task specification.
 
 ### Evaluation Workflow
@@ -92,7 +92,7 @@ so that you can check for mistakes.
 
 This program takes the following parameters:
 * `systemOutputStore`: the path of the system output store to be validated 
- * `docIDMap`: a list of tab-separated pairs of doc ID and path to the 
+* `docIDMap`: a list of tab-separated pairs of doc ID and path to the 
  corresponding original text for all files in the output store.
 * `validRoles`: is `data/2014.types.txt` (for KBP 2014)
 
@@ -132,7 +132,7 @@ Add the following to the `dependencies` section of your project's `pom.xml` (or 
       <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
-This artifact is not deploy to Maven Central or anywhere, so you will need to
+This artifact is not deployed to Maven Central or anywhere, so you will need to
 install it in your local repository as described above.
 
 ## Contact
