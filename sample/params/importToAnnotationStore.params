@@ -1,0 +1,4 @@
+INCLUDE root.params
+
+systemOutput: %sampleRoot%/sample/pooledStore
+annotationStore: %sampleRoot%/sample/sampleAnnotationStore
