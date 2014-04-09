@@ -21,6 +21,16 @@ public final class KBPScorerBin {
         throw new UnsupportedOperationException();
     }
 
+    private static void usage() {
+        log.warn("usage: kbpScorer param_file\n" +
+            "parameters are:\n" +
+            "\tannotationComplete: whether to require answer key to have no unannotated items. 'true' for evaluation.\n"+
+            "\tscoringOutput: directory to write scoring observer logs to\n"+
+            "\tsystemOutput: system output store to score\n"+
+            "\tanswerKey: annotation store to score against");
+        System.exit(1);
+    }
+
     private static List<KBPScoringObserver<TypeRoleFillerRealis>> getCorpusObservers(Parameters params) {
         final List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers = Lists.newArrayList();
 
@@ -41,6 +51,9 @@ public final class KBPScorerBin {
     }
 
     public static void main(final String[] argv) throws IOException {
+        if (argv.length != 1) {
+            usage();
+        }
         final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
         log.info(params.dump());
         final KBPScorer scorer = KBPScorer.createFrom(params, getCorpusObservers(params));
