@@ -52,11 +52,11 @@ public class SkipIncompleteAnnotations<Answerable> extends KBPScoringObserver<An
 	{
 		++docs;
 		if (answerKeyAnswerSource.answerKey().completelyAnnotated()) {
-			++skipped;
 			return innerObserver.answerSourceObserver(systemOutputSource,
 				answerKeyAnswerSource);
 		} else {
-			return new KBPAnswerSourceObserver(systemOutputSource,
+            ++skipped;
+            return new KBPAnswerSourceObserver(systemOutputSource,
 				answerKeyAnswerSource) {};
 		}
 	}
