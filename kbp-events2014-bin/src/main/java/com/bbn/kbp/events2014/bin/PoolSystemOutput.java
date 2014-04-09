@@ -1,6 +1,7 @@
 package com.bbn.kbp.events2014.bin;
 
 import com.bbn.bue.common.files.FileUtils;
+import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
@@ -22,18 +23,14 @@ public final class PoolSystemOutput {
     private enum AddMode { CREATE, APPEND };
 
     private static void trueMain(String[] argv) throws IOException {
-        if (argv.length != 3) {
+        if (argv.length != 1) {
             usage();
         }
 
-        final List<File> storesToPool = FileUtils.loadFileList(new File(argv[0]));
-        final File outputStorePath = new File(argv[1]);
-        AddMode addMode = null; // =null to avoid IntelliJ complaining...
-        try {
-            addMode = AddMode.valueOf(argv[2]);
-        } catch (IllegalArgumentException e) {
-            usage();
-        }
+        final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
+        final List<File> storesToPool = FileUtils.loadFileList(params.getExistingFile("storesToPool"));
+        final File outputStorePath = params.getCreatableDirectory("pooledStore");
+        final AddMode addMode = params.getEnum("addMode", AddMode.class);
 
         final SystemOutputStore outputStore = getOutputStore(outputStorePath, addMode);
 
@@ -91,9 +88,13 @@ public final class PoolSystemOutput {
     }
 
     private static void usage() {
-        log.error("usage: poolSystemOutput listOfStoresToPool targetRepositoryPath CREATE|APPEND\n" +
-                "CREATE: create a new repository\n" +
-                "APPEND: append to an existing repository, or create one if none exists");
+        log.error("usage: poolSystemOutput param_file\n" +
+                "where the parameters are:\n" +
+                "\tstoresToPool: file listing paths to stores to pool\n" +
+                "\tpooledStore: directory of system output store for pooling results\n" +
+                "\taddMode: one of \n" +
+                "\t\tCREATE: create a new repository\n" +
+                "\t\tAPPEND: append to an existing repository, or create one if none exists");
         System.exit(1);
     }
 
