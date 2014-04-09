@@ -94,7 +94,7 @@ Add the following to the `dependencies` section of your project's `pom.xml` (or 
       <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
-This artifact is not deploy to Maven Central or anywhere, so you will need to
+This artifact is not deployed to Maven Central or anywhere, so you will need to
 install it in your local repository as described above.
 
 ## Contact
