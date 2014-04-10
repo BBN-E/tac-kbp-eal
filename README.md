@@ -112,7 +112,8 @@ Turns a system output store into an annotation store ready for LDC's annotators.
 
 Parameters:
 * `systemOutput`: system output to import
-* `annotationStore`: location to create annotation store
+* `annotationStore`: location to create annotation store. The program will 
+refused to create a new annotation store over an existing, non-empty one.
 
 ### `kbpScorer`
 Scores system output against an annotation store.

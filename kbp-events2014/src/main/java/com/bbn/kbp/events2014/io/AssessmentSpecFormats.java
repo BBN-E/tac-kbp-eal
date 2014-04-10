@@ -91,14 +91,14 @@ public final class AssessmentSpecFormats {
 
     /**
      * Creates a new system output store in the specified directory. If the directory is
-     * non-empty, its contents are deleted.
+     * non-empty, an exception is thrown.
      * @param directory
      * @return
      */
-	public static SystemOutputStore createSystemOutputStore(final File directory) {
-		if (directory.exists()) {
-            log.warn("Deleting existing contents of system output store {}", directory);
-			directory.delete();
+	public static SystemOutputStore createSystemOutputStore(final File directory) throws IOException {
+		if (directory.exists() && !FileUtils.isEmptyDirectory(directory)) {
+            throw new IOException(String.format(
+                    "Cannot create system output store: directory is non-empty: %s", directory));
 		}
 		directory.mkdirs();
 		return new DirectorySystemOutputStore(directory);

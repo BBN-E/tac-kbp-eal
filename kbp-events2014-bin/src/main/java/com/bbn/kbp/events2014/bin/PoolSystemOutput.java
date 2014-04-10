@@ -75,7 +75,7 @@ public final class PoolSystemOutput {
         }
     }
 
-    private static SystemOutputStore getOutputStore(File outputStorePath, AddMode addMode) {
+    private static SystemOutputStore getOutputStore(File outputStorePath, AddMode addMode) throws IOException {
         final SystemOutputStore outputStore;
         if (addMode == AddMode.CREATE) {
             outputStore = AssessmentSpecFormats.createSystemOutputStore(outputStorePath);
