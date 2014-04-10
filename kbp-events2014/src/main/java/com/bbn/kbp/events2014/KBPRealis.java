@@ -37,4 +37,8 @@ public enum KBPRealis {
 			return NIL;
 		}
 	}
+
+    public int stableHashCode() {
+        return name().hashCode();
+    }
 }

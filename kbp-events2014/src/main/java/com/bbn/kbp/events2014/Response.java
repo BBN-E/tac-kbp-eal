@@ -159,8 +159,8 @@ public final class Response  {
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(docid, type, role, canonicalArgumentString, baseFiller,
-			additionalArgumentJustifications, predicateJustifications, realis);
+		return Objects.hashCode(docid.toString(), type.toString(), role.toString(), canonicalArgumentString, baseFiller,
+			additionalArgumentJustifications, predicateJustifications, realis.stableHashCode());
 	}
 
 	@Override
