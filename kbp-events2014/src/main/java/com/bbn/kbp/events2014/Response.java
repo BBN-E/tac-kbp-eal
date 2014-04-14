@@ -34,7 +34,7 @@ public final class Response  {
 		this.baseFiller = checkNotNull(baseFiller);
 		this.additionalArgumentJustifications = ImmutableSet.copyOf(argumentJustifications);
 		this.predicateJustifications = ImmutableSet.copyOf(predicateJustifications);
-		checkArgument(!predicateJustifications.isEmpty());
+		checkArgument(!predicateJustifications.isEmpty(), "Predicate justifications may not be empty");
 	 }
 
 	public static Response createFrom(final Symbol docid, final Symbol type, final Symbol role,

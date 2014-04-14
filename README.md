@@ -96,7 +96,10 @@ This program takes the following parameters:
 * `systemOutputStore`: the path of the system output store to be validated 
 * `validRoles`: is `data/2014.types.txt` (for KBP 2014)
 * `dump`: whether to dump response to `stdout` in a human readable format.
-* `docIDMap` (required if `dump` is `true`): a list of tab-separated pairs of doc ID and path to the 
+* `docIDMap`: (required if `dump` is `true`) a list of tab-separated pairs of doc ID and path to the 
+* `errorLog`: (optional) logs all errors to the specified file. Otherwise logs
+them to standard output.
+
  corresponding original text for all files in the output store.
 
 ### `poolSystemOutput`

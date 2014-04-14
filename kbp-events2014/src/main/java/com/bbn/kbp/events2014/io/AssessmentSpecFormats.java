@@ -110,7 +110,7 @@ public final class AssessmentSpecFormats {
      * @return
      */
 	public static SystemOutputStore openSystemOutputStore(final File directory) {
-		checkArgument(directory.exists() && directory.isDirectory() );
+		checkArgument(directory.exists() && directory.isDirectory(), "Directory to open as annotation store %s either does not exist or is not a directory", directory );
 		return new DirectorySystemOutputStore(directory);
 	}
 
@@ -120,7 +120,7 @@ public final class AssessmentSpecFormats {
 		private final File directory;
 
 		private DirectorySystemOutputStore(final File directory) {
-			checkArgument(directory.isDirectory());
+			checkArgument(directory.isDirectory(), "Specified directory %s for system output store is not a directory", directory);
 			this.directory = checkNotNull(directory);
 		}
 
@@ -128,12 +128,14 @@ public final class AssessmentSpecFormats {
 		public SystemOutput read(final Symbol docid) throws IOException {
 			final File f = new File(directory, docid.toString());
 			if (!f.exists()) {
-				throw new FileNotFoundException(String.format("%s not found", f.getAbsolutePath()));
+				throw new FileNotFoundException(String.format("File %s for doc ID %s not found", f.getAbsolutePath(), docid));
 			}
 
 			final ImmutableList.Builder<Scored<Response>> ret = ImmutableList.builder();
 
+            int lineNo = 0;
 			for (final String line : Files.asCharSource(f, UTF_8).readLines()) {
+                ++lineNo;
 				if (line.isEmpty() || line.startsWith("#")) {
 					continue;
 				}
@@ -143,7 +145,7 @@ public final class AssessmentSpecFormats {
 					final double confidence = Double.parseDouble(parts.get(10));
 					ret.add(Scored.from(parseArgumentFields(parts.subList(1, parts.size())), confidence));
 				} catch (final Exception e) {
-					throw new RuntimeException(String.format("Invalid line: %s", line), e);
+					throw new RuntimeException(String.format("For doc ID %s, Invalid line %d: %s", docid, lineNo, line), e);
 				}
 			}
 
@@ -225,7 +227,7 @@ public final class AssessmentSpecFormats {
         private final Set<Symbol> docIDs;
 
 		private DirectoryAnnotationStore(final File directory) throws IOException {
-			checkArgument(directory.exists());
+			checkArgument(directory.exists(), "Directory %s for annotation store does not exist", directory);
             // this is a half-hearted attempt at preventing multiple assessment stores
             //  being opened on the same directory at once.  There is a race condition,
             // but we don't anticipate this class being used concurrently enough to justify

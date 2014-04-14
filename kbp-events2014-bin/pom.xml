@@ -57,6 +57,14 @@
                   </jvmSettings>
               </program>
 
+<program>
+                  <mainClass>com.bbn.kbp.events2014.bin.NISTValidator</mainClass>
+                  <name>NISTValidator</name>
+                  <jvmSettings>
+                      <maxMemorySize>1g</maxMemorySize>
+                  </jvmSettings>
+              </program>
+
 
 
             </programs>
@@ -104,6 +112,12 @@
             <artifactId>logback-classic</artifactId>
             <version>1.0.13</version>
     </dependency>
+
+<dependency>
+  <groupId>org.codehaus.plexus</groupId>
+  <artifactId>plexus-archiver</artifactId>
+  <version>2.4.4</version>
+</dependency>
 
   </dependencies>
 

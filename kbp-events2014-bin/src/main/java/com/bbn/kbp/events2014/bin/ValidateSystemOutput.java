@@ -11,7 +11,10 @@ import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.google.common.base.Charsets;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
@@ -19,15 +22,23 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+
+import static com.bbn.bue.common.files.FileUtils.loadSymbolToFileMap;
 
 public final class ValidateSystemOutput {
     private static final Logger log = LoggerFactory.getLogger(ValidateSystemOutput.class);
 
-    private ValidateSystemOutput() {
-        throw new UnsupportedOperationException();
+    private final ImmutableMultimap<Symbol, Symbol> validRoles;
+
+
+    private ValidateSystemOutput(Multimap<Symbol, Symbol> validRoles) {
+        this.validRoles = ImmutableMultimap.copyOf(validRoles);
+    }
+
+    public static ValidateSystemOutput create(Multimap<Symbol, Symbol> validRoles) {
+        return new ValidateSystemOutput(validRoles);
     }
 
     private static void usage() {
@@ -37,47 +48,83 @@ public final class ValidateSystemOutput {
                 "Parameter files are lines of key : value pairs\n" +
              "Parameters:\n\tsystemOutputStore: the system output to be validated \n" +
             "\tdump: whether to dump a human-readable form of the input to standard output\n" +
-            "\tdocIDMap: (optional) a list of tab-separated pairs of doc ID and path to original text. Required only if dump is true.\n" +
-            "\tvalidRoles: is data/2014.types.txt (for KBP 2014)");
+            "\tdocIDMap: (only if dump is true) a list of tab-separated pairs of doc ID and path to original text.\n" +
+            "\tvalidRoles: is data/2014.types.txt (for KBP 2014)\n" );
         System.exit(1);
     }
 
-    private static void trueMain(String[] argv) throws IOException {
-        if (argv.length != 1) {
-            usage();
-        }
-        final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
-        log.info(params.dump());
-        final File systemOutputStoreFile = params.getExistingFileOrDirectory("systemOutputStore");
-        final File validRolesFile = params.getExistingFile("validRoles");
-        final boolean dump = params.getBoolean("dump");
-        final File docIDMappingFile = dump ? params.getExistingFile("docIDMap") : null;
 
-        log.info("Using map from document IDs to original text: {}", docIDMappingFile);
-        final Map<Symbol, File> docIDMap = dump ? FileUtils.loadSymbolToFileMap(docIDMappingFile) : null;
+    /**
+     * Returns the first exception encountered in each document when validating the supplied
+     * system output store.  If the returned list is empty, the supplied output store is valid.
+     * Processing will stop early if {@code maxErrors} errors are encountered.
+     * @param systemOutputStoreFile
+     * @return
+     */
+    public List<Throwable> validate(File systemOutputStoreFile, int maxErrors) throws IOException {
+        return validate(systemOutputStoreFile, maxErrors, Optional.<Map<Symbol,File>>absent());
+    }
 
-        log.info("Validating types and roles against {}", validRolesFile);
-        final Multimap<Symbol, Symbol> validRoles = FileUtils.loadSymbolMultimap(validRolesFile);
+    /** Like {@link #validate(java.io.File, int)} except it also logs the response in human
+     * readable format, using the supplied {@code docIDMap} to resolve offsets to strings.
+     *
+      * @param systemOutputStoreFile
+     * @param maxErrors
+     * @param docIDMap
+     * @return
+     * @throws IOException
+     */
+    public List<Throwable> validateAndDump(File systemOutputStoreFile, int maxErrors,
+                                           Map<Symbol,File> docIDMap) throws IOException
+    {
+        return validate(systemOutputStoreFile, maxErrors, Optional.of(docIDMap));
+    }
+
+
+    private List<Throwable> validate(File systemOutputStoreFile, int maxErrors,
+                                     Optional<Map<Symbol, File>> docIDMap) throws IOException {
+        final List<Throwable> errors = Lists.newArrayList();
 
         log.info("Validating system output store {}", systemOutputStoreFile);
-        final SystemOutputStore outputStore =
-           AssessmentSpecFormats.openSystemOutputStore(systemOutputStoreFile);
 
-        for (final Symbol docID : outputStore.docIDs()) {
-            final SystemOutput docOutput = outputStore.read(docID);
-            log.info("For document {} got {} responses", docID, docOutput.size());
-            if (docOutput.size() > 0 && dump) {
-                final String originalText = getOriginalText(docID, docIDMap);
-                final StringBuilder msg = new StringBuilder();
-                msg.append("\n"); // more readable if we skip a line after the log stamp
+        // these are only non-final because the compiler isn't clever enough
+        // to figure out they cannot fail to be initialized
+        SystemOutputStore outputStore = null;
+        ImmutableSet<Symbol> docIDs = null;
+        try {
+            outputStore = AssessmentSpecFormats.openSystemOutputStore(systemOutputStoreFile);
+            docIDs = outputStore.docIDs();
+        } catch (Exception e) {
+            errors.add(e);
+            return errors;
+        }
+
+        int numErrors = 0;
+        for (final Symbol docID : docIDs) {
+            try {
+                final SystemOutput docOutput = outputStore.read(docID);
+                log.info("For document {} got {} responses", docID, docOutput.size());
+
                 for (final Response response : docOutput.responses()) {
                     assertValidTypes(response, validRoles);
-                    msg.append(renderResponse(response, originalText));
                 }
-                log.info(msg.toString());
+
+                if (docOutput.size() > 0 && docIDMap.isPresent()) {
+                    dumpResponses(docIDMap.get(), docOutput);
+                }
+            } catch (Exception e) {
+                errors.add(e);
+                ++numErrors;
+                if (numErrors > maxErrors) {
+                    return errors;
+                }
             }
         }
 
+        // this might not get called, but for read-only use with the default
+        // implementation this is not a problem
+        outputStore.close();
+        return errors;
     }
 
     private static final ImmutableSet<Symbol> alwaysValidRoles = SymbolUtils.setFrom("Time", "Place");
@@ -97,6 +144,17 @@ public final class ValidateSystemOutput {
             System.exit(1);
         }
     }
+
+    private static void dumpResponses(Map<Symbol, File> docIDMap, SystemOutput docOutput) throws IOException {
+        final String originalText = getOriginalText(docOutput.docId(), docIDMap);
+        final StringBuilder msg = new StringBuilder();
+        msg.append("\n"); // more readable if we skip a line after the log stamp
+        for (final Response response : docOutput.responses()) {
+            msg.append(renderResponse(response, originalText));
+        }
+        log.info(msg.toString());
+    }
+
 
     private static String renderResponse(Response response, String originalText) {
         final StringBuilder sb = new StringBuilder();
@@ -154,14 +212,34 @@ public final class ValidateSystemOutput {
         return originalText;
     }
 
-    public static void main(String[] argv) {
+    public static void main(String[] argv) throws IOException {
+        if (argv.length != 1) {
+            usage();
+        }
+        final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
+        log.info(params.dump());
+
+        final File validRolesFile = params.getExistingFile("validRoles");
+        log.info("Validating types and roles against {}", validRolesFile);
+        final Multimap<Symbol, Symbol> validRoles = FileUtils.loadSymbolMultimap(validRolesFile);
+        final ValidateSystemOutput validator = create(validRoles);
+
+        final File systemOutputStoreFile = params.getExistingFileOrDirectory("systemOutputStore");
+
+
         try {
-            trueMain(argv);
+            if (params.getBoolean("dump")) {
+                final File docIDMappingFile = params.getExistingFile("docIDMap");
+                log.info("Using map from document IDs to original text: {}", docIDMappingFile);
+                final Map<Symbol, File> docIDMap = loadSymbolToFileMap(docIDMappingFile);
+                validator.validateAndDump(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap);
+            } else {
+                validator.validate(systemOutputStoreFile, Integer.MAX_VALUE);
+            }
         } catch (Exception e) {
-            // this is necessary because Java returns 0
-            // even if it dies with an exception
             e.printStackTrace();
             System.exit(1);
         }
     }
+
 }
