@@ -142,8 +142,12 @@ public final class AssessmentSpecFormats {
 				final List<String> parts = ImmutableList.copyOf(StringUtils.OnTabs.split(line));
 				try {
                     // we ignore the first field because input system IDs are currently not preserved
-					final double confidence = Double.parseDouble(parts.get(10));
-					ret.add(Scored.from(parseArgumentFields(parts.subList(1, parts.size())), confidence));
+                    try {
+					    final double confidence = Double.parseDouble(parts.get(10));
+					    ret.add(Scored.from(parseArgumentFields(parts.subList(1, parts.size())), confidence));
+                    } catch (IndexOutOfBoundsException iobe) {
+                        throw new RuntimeException(String.format("Expected 11 tab-separated columns, but got %d", parts.size()), iobe);
+                    }
 				} catch (final Exception e) {
 					throw new RuntimeException(String.format("For doc ID %s, Invalid line %d: %s", docid, lineNo, line), e);
 				}
