@@ -36,7 +36,8 @@ public final class ValidateSystemOutput {
             "usage: validateSystemOutput parameterFile\n" +
                 "Parameter files are lines of key : value pairs\n" +
              "Parameters:\n\tsystemOutputStore: the system output to be validated \n" +
-            "\tdocIDMap: a list of tab-separated pairs of doc ID and path to original text.\n" +
+            "\tdump: whether to dump a human-readable form of the input to standard output\n" +
+            "\tdocIDMap: (optional) a list of tab-separated pairs of doc ID and path to original text. Required only if dump is true.\n" +
             "\tvalidRoles: is data/2014.types.txt (for KBP 2014)");
         System.exit(1);
     }
@@ -48,11 +49,12 @@ public final class ValidateSystemOutput {
         final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
         log.info(params.dump());
         final File systemOutputStoreFile = params.getExistingFileOrDirectory("systemOutputStore");
-        final File docIDMappingFile = params.getExistingFile("docIDMap");
         final File validRolesFile = params.getExistingFile("validRoles");
+        final boolean dump = params.getBoolean("dump");
+        final File docIDMappingFile = dump ? params.getExistingFile("docIDMap") : null;
 
         log.info("Using map from document IDs to original text: {}", docIDMappingFile);
-        final Map<Symbol, File> docIDMap = FileUtils.loadSymbolToFileMap(docIDMappingFile);
+        final Map<Symbol, File> docIDMap = dump ? FileUtils.loadSymbolToFileMap(docIDMappingFile) : null;
 
         log.info("Validating types and roles against {}", validRolesFile);
         final Multimap<Symbol, Symbol> validRoles = FileUtils.loadSymbolMultimap(validRolesFile);
@@ -64,7 +66,7 @@ public final class ValidateSystemOutput {
         for (final Symbol docID : outputStore.docIDs()) {
             final SystemOutput docOutput = outputStore.read(docID);
             log.info("For document {} got {} responses", docID, docOutput.size());
-            if (docOutput.size() > 0) {
+            if (docOutput.size() > 0 && dump) {
                 final String originalText = getOriginalText(docID, docIDMap);
                 final StringBuilder msg = new StringBuilder();
                 msg.append("\n"); // more readable if we skip a line after the log stamp

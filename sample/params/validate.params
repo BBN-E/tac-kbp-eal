@@ -3,3 +3,4 @@ INCLUDE root.params
 systemOutputStore: %sampleRoot%/sample/sampleOutputStore
 docIDMap: %sampleRoot%/sample/docIdToOriginalText.txt
 validRoles: %sampleRoot%/data/2014.types.txt
+dump: true

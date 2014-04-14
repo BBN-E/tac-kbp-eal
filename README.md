@@ -94,9 +94,10 @@ so that you can check for mistakes.
 
 This program takes the following parameters:
 * `systemOutputStore`: the path of the system output store to be validated 
-* `docIDMap`: a list of tab-separated pairs of doc ID and path to the 
- corresponding original text for all files in the output store.
 * `validRoles`: is `data/2014.types.txt` (for KBP 2014)
+* `dump`: whether to dump response to `stdout` in a human readable format.
+* `docIDMap` (required if `dump` is `true`): a list of tab-separated pairs of doc ID and path to the 
+ corresponding original text for all files in the output store.
 
 ### `poolSystemOutput`
 Combines the system output from multiple systems into a single system output store.
