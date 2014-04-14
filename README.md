@@ -99,7 +99,6 @@ This program takes the following parameters:
 * `docIDMap`: (required if `dump` is `true`) a list of tab-separated pairs of doc ID and path to the 
 them to standard output.
 
- corresponding original text for all files in the output store.
 
 ### `poolSystemOutput`
 Combines the system output from multiple systems into a single system output store.
