@@ -444,7 +444,7 @@ public final class AssessmentSpecFormats {
 			parseCharOffsetSpan(parts.get(6)),
 			parseCharOffsetSpans(parts.get(7)),
 			parseCharOffsetSpans(parts.get(5)),
-			KBPRealis.valueOf(parts.get(8)));
+			KBPRealis.parse(parts.get(8)));
 	}
 
 	private static CharOffsetSpan parseCharOffsetSpan(final String s) {

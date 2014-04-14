@@ -1,5 +1,6 @@
 package com.bbn.kbp.events2014;
 
+import com.bbn.bue.common.StringUtils;
 import com.google.common.base.Optional;
 
 /**
@@ -9,6 +10,15 @@ public enum KBPRealis {
 	Actual, Generic, Other;
 
 	public static final String NIL = "NIL";
+
+    public static KBPRealis parse(String s) {
+        try {
+            return KBPRealis.valueOf(s);
+        } catch (IllegalArgumentException iae) {
+            throw new RuntimeException(String.format("%s is not a valid realis. Options are %s",
+                    s, StringUtils.CommaSpaceJoiner.join(KBPRealis.values())));
+        }
+    }
 
     /**
      * Parses a string from {@code asString} as a realis. {@code NIL} becomes
@@ -20,7 +30,7 @@ public enum KBPRealis {
 		if (s.equals(NIL)) {
 			return Optional.absent();
 		} else {
-			return Optional.of(KBPRealis.valueOf(s));
+			return Optional.of(parse(s));
 		}
 	}
 
