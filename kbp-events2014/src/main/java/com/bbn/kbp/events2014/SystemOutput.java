@@ -7,6 +7,7 @@ import com.bbn.bue.common.scoring.Scoreds;
 import com.bbn.bue.common.symbols.Symbol;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 
 import static com.bbn.bue.common.collections.IterableUtils.allEqual;
@@ -163,5 +164,9 @@ public final class SystemOutput {
         }
         // getFirst safe because of checkArgument above
         return SystemOutput.from(getFirst(systemOutputs, null).docId(), responsesWithBestScores);
+    }
+
+    public SystemOutput copyWithFilteredResponses(Predicate<Scored<Response>> predicate) {
+        return SystemOutput.from(docId(), Iterables.filter(scoredResponses(), predicate));
     }
 }
