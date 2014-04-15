@@ -1,0 +1,4 @@
+INCLUDE root.params
+
+docIDToFileMap: %sampleRoot%/sample/docIdToOriginalText.txt
+quoteFilter: %sampleRoot%/sample/quoteFilter.filter

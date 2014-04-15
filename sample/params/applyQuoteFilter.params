@@ -1,0 +1,5 @@
+INCLUDE root.params
+
+inputStore: %sampleRoot%/sample/sampleOutputStore
+outputStore: %sampleRoot%/sample/sampleOutputStoreFiltered
+quoteFilter: %sampleRoot%/sample/quoteFilter.filter
