@@ -1,8 +1,10 @@
 package com.bbn.kbp.events2014.filters;
 
 
+import com.bbn.bue.common.io.ByteArraySink;
 import com.bbn.bue.common.symbols.Symbol;
 import com.google.common.collect.*;
+import com.google.common.io.ByteSource;
 import com.google.common.io.CharSource;
 import org.junit.Test;
 
@@ -29,5 +31,20 @@ public class TestQuoteFilter {
 
             assertEquals(reference, computed);
         }
+    }
+
+    @Test
+    public void testSerialization() throws IOException {
+        final QuoteFilter reference = QuoteFilter.createFromBannedRegions(
+           ImmutableMap.of(
+              Symbol.from("dummy"), ImmutableRangeSet.<Integer>builder().add(Range.closed(4, 60)).add(Range.closed(67, 88)).build(),
+              Symbol.from("dummy2"), ImmutableRangeSet.of(Range.closed(0, 20))));
+
+
+        final ByteArraySink sink = new ByteArraySink();
+        reference.saveTo(sink);
+        final ByteSource source = ByteSource.wrap(sink.toByteArray());
+        final Object restored = QuoteFilter.loadFrom(source);
+        assertEquals(reference, restored);
     }
 }

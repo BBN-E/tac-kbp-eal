@@ -1,21 +1,22 @@
 package com.bbn.kbp.events2014.filters;
 
+import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.SystemOutput;
-import com.google.common.base.Function;
-import com.google.common.base.Objects;
-import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableRangeSet;
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeSet;
+import com.google.common.base.*;
+import com.google.common.collect.*;
+import com.google.common.io.ByteSink;
+import com.google.common.io.ByteSource;
 import com.google.common.io.CharSource;
-import java.io.IOException;
+
+import java.io.*;
+import java.util.List;
 import java.util.Map;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
@@ -124,12 +125,30 @@ public final class QuoteFilter implements Function<SystemOutput, SystemOutput>  
         return ret.build();
     }
 
-    public static QuoteFilter createFromBannedRegions(Map<Symbol, ImmutableRangeSet<Integer>> docIdToBannedRegions) {
+    protected Map<Symbol, ImmutableRangeSet<Integer>> docIdToBannedRegions() {
+        return docIdToBannedRegions;
+    }
+
+    protected static QuoteFilter createFromBannedRegions(Map<Symbol, ImmutableRangeSet<Integer>> docIdToBannedRegions)
+    {
         return new QuoteFilter(docIdToBannedRegions);
     }
 
-    public QuoteFilter(Map<Symbol,ImmutableRangeSet<Integer>> docIdToBannedRegions) {
+    private QuoteFilter(Map<Symbol,ImmutableRangeSet<Integer>> docIdToBannedRegions) {
         this.docIdToBannedRegions = ImmutableMap.copyOf(docIdToBannedRegions);
+        for (RangeSet<Integer> rs : docIdToBannedRegions.values()) {
+            for (final Range<Integer> r : rs.asRanges()) {
+                checkArgument(r.hasLowerBound());
+                checkArgument(r.hasUpperBound());
+                checkArgument(r.lowerEndpoint() >= 0);
+            }
+        }
+        // these ensure we can serialize safely
+        for (Symbol sym : docIdToBannedRegions.keySet()) {
+            final String s= sym.toString();
+            checkArgument(!s.isEmpty(), "Document IDs may not be empty");
+            checkArgument(!CharMatcher.WHITESPACE.matchesAnyOf(s), "Document IDs may not contain whitespace: %s", s);
+        }
     }
 
 
@@ -153,5 +172,56 @@ public final class QuoteFilter implements Function<SystemOutput, SystemOutput>  
     @Override
     public String toString() {
         return Objects.toStringHelper(this).add("docIdToBannedRegions", docIdToBannedRegions).toString();
+    }
+
+    public void saveTo(ByteSink sink) throws IOException {
+        final PrintWriter out = new PrintWriter(sink.asCharSink(Charsets.UTF_8).openBufferedStream());
+
+        out.println(docIdToBannedRegions.size());
+
+        for (final Map.Entry<Symbol, ImmutableRangeSet<Integer>> entry : docIdToBannedRegions.entrySet()) {
+            out.println(entry.getKey());
+            final List<String> parts = Lists.newArrayList();
+            for (final Range<Integer> r : entry.getValue().asRanges()) {
+                // we know by construction these ranges are bounded above and below
+                parts.add(String.format("%d-%d", r.lowerEndpoint(), r.upperEndpoint()));
+            }
+            out.println(StringUtils.SpaceJoiner.join(parts));
+        }
+
+        out.close();
+    }
+
+    private static final Splitter DASH_SPLITTER = Splitter.on("-");
+    public static QuoteFilter loadFrom(ByteSource source) throws IOException {
+        final ImmutableList<String> input = source.asCharSource(Charsets.UTF_8).readLines();
+        if (input.isEmpty()) {
+            throw new IOException("Attempted to load QuoteFilter from empty file");
+        }
+
+        final int numEntries = Integer.parseInt(input.get(0));
+        final int expectedLines = 2*numEntries+1;
+        if (input.size() != expectedLines) {
+            throw new IOException(String.format(
+                    "Invalid number of lines when loading QuoteFiler. Expected %d, got %d",
+                    expectedLines, input.size()));
+        }
+
+        final ImmutableMap.Builder<Symbol, ImmutableRangeSet<Integer>> ret = ImmutableMap.builder();
+        int curLine = 1;
+        for (int i=0; i<numEntries; ++i) {
+            final Symbol docid = Symbol.from(input.get(curLine++));
+            final ImmutableRangeSet.Builder<Integer> ranges = ImmutableRangeSet.builder();
+            for (final String part : StringUtils.OnSpaces.split(input.get(curLine++))) {
+                final List<String> endPointStrings = DASH_SPLITTER.splitToList(part);
+                if (endPointStrings.size() != 2) {
+                    throw new IOException(String.format("Invalid range serialization %s", part));
+                }
+                ranges.add(Range.closed(Integer.parseInt(endPointStrings.get(0)),
+                        Integer.parseInt(endPointStrings.get(1))));
+            }
+            ret.put(docid, ranges.build());
+        }
+        return QuoteFilter.createFromBannedRegions(ret.build());
     }
 }

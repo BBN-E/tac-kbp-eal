@@ -98,7 +98,7 @@ public final class SystemOutput {
      * Implements the selection strategy to use when the system provides the same response
      * with multiple justifications.  From the provided responses, it prefers the
      * response with the highest score.  If there is a tie, it prefers the response with
-     * the higher hash code. If not responses ar eprovided, {@code Optional.absent()} is returned.
+     * the higher hash code. If no responses are provided, {@code Optional.absent()} is returned.
      * @param args
      * @return
      */
