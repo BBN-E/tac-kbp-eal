@@ -64,6 +64,22 @@
                       <maxMemorySize>1g</maxMemorySize>
                   </jvmSettings>
               </program>
+<program>
+                  <mainClass>com.bbn.kbp.events2014.bin.BuildQuoteFilter</mainClass>
+                  <name>buildQuoteFilter</name>
+                  <jvmSettings>
+                      <maxMemorySize>1g</maxMemorySize>
+                  </jvmSettings>
+              </program>
+<program>
+                  <mainClass>com.bbn.kbp.events2014.bin.ApplyQuoteFilter</mainClass>
+                  <name>applyQuoteFilter</name>
+                  <jvmSettings>
+                      <maxMemorySize>1g</maxMemorySize>
+                  </jvmSettings>
+              </program>
+
+
 
 
 

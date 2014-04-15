@@ -2,5 +2,5 @@ INCLUDE root.params
 
 annotationComplete: true
 scoringOutput: %sampleRoot%/sample/scoringObserverLogs
-systemOutput: %sampleRoot%/sample/sampleOutputStore
+systemOutput: %sampleRoot%/sample/sampleOutputStoreFiltered
 answerKey: %sampleRoot%/sample/sampleFinishedAnnotationStore

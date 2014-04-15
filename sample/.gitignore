@@ -1,3 +1,5 @@
 pooledStore
 sampleAnnotationStore
 scoringObserverLogs
+sampleOutputStoreFiltered
+quoteFilter.filter

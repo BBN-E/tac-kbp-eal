@@ -39,8 +39,8 @@ public final class BuildQuoteFilter {
 
         final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
 
-        final File docIdToFileMapFile = params.getExistingDirectory("docIdToFileMap");
-        final File filterFile = params.getExistingFile("quoteFilter");
+        final File docIdToFileMapFile = params.getExistingFile("docIdToFileMap");
+        final File filterFile = params.getCreatableFile("quoteFilter");
 
         final Map<Symbol, CharSource> docIdToFileMap = FileUtils.loadSymbolToFileCharSourceMap(
                 Files.asCharSource(docIdToFileMapFile, Charsets.UTF_8));

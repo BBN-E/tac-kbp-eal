@@ -39,7 +39,10 @@ The following workflow will be used during the pilot and (unless changes are mad
 real evaluations.  All executables referenced below may be found in 
 `kbp-events-2014-bin/target/appassembler/bin`.
 
+* a 'quote filter' to remove material with CAS and BF offsets in quoted regions
+will be built from the original text of the data set.
 * competitor submissions will be validated using `validateSystemOutput`.
+* all material from quoted regions will be removed from competitor submissions.
 * all submissions will be combined into a single system output store using 
 `poolSystemOutput`.
 * this combined system output store will be transformed into an annotation store
@@ -58,8 +61,11 @@ working copy.
 * Edit `sample/params/root.params` to point to your working copy of this repository.
 * Edit `sample/docIdToOriginalText.txt` to point to the files in your copy
 * Edit the path in `sample/storesToPool.txt` to point to your working copy.
-of the ACE event training data.
+of the ACE event training data. Note the specified directory will not yet exist.
+* Run `buildQuoteFilter sample/params/buildQuoteFilter.params`
 * Run `validateSystemOutput sample/params/validate.params`
+* Run `applyQuoteFilter sample/params/applyQuoteFilter.params`. These documents
+don't actually have any quotes, so don't expect to see anything filtered.
 * Run `poolSystemOutput sample/params/pool.params`. In this case we only have,
 one system output store, so this is a trivial pooling.
 * Run `importSystemOutputToAnnotationStore sample/params/importToAnnotationStore.params`.
