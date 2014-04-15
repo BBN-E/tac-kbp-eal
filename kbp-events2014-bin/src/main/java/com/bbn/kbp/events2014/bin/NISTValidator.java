@@ -30,10 +30,16 @@ public final class NISTValidator {
     private final static int ERROR_CODE = 255;
     private final static int MAX_ERRORS = 10;
 
+    public enum Verbosity { VERBOSE, COMPACT};
+
+    private static void usage() {
+        log.error("usage: NISTValidator rolesFile [VERBOSE|COMPACT] submissionFile");
+        System.exit(ERROR_CODE);
+    }
+
     public static void main(String[] argv) throws IOException {
-        if (argv.length != 2) {
-            log.error("usage: NISTValidator rolesFile submissionFile");
-            System.exit(ERROR_CODE);
+        if (argv.length != 3) {
+            usage();
         }
 
         final File rolesFile = new File(argv[0]);
@@ -44,7 +50,16 @@ public final class NISTValidator {
         final ValidateSystemOutput validator = ValidateSystemOutput.create(
                 FileUtils.loadSymbolMultimap(rolesFile));
 
-        final File submitFile = new File(argv[1]);
+        Verbosity verbosity = null;
+
+        try {
+            verbosity = Verbosity.valueOf(argv[1]);
+        } catch (Exception e) {
+            log.error("Invalid verbosity {}", argv[1]);
+            usage();
+        }
+
+        final File submitFile = new File(argv[2]);
         final File workingDirectory = new File(System.getProperty("user.dir"));
         log.info("Got submission file {} and working directory {}", submitFile, workingDirectory);
         if (!workingDirectory.exists()) {
@@ -65,9 +80,10 @@ public final class NISTValidator {
             checkForCommonProblems(uncompressedDirectory);
             log.info("Uncompressed submission to {}", uncompressedDirectory);
 
-            logErrorsAndExit(errorFile, validator.validate(uncompressedDirectory, MAX_ERRORS));
+            logErrorsAndExit(errorFile, validator.validate(uncompressedDirectory, MAX_ERRORS),
+                    verbosity);
         } catch (Exception e) {
-            logErrorsAndExit(errorFile, ImmutableList.of(e));
+            logErrorsAndExit(errorFile, ImmutableList.of(e), verbosity);
         }
     }
 
@@ -80,11 +96,24 @@ public final class NISTValidator {
         }
     }
 
-    private static void logErrorsAndExit(File errorFile, List<? extends Throwable> errors) throws IOException {
+    private static void logErrorsAndExit(File errorFile, List<? extends Throwable> errors,
+                                         Verbosity verbosity) throws IOException {
         final StringBuilder sb = new StringBuilder();
         sb.append("If you get any errors which are difficult to understand, please send the full stack trace to rgabbard@bbn.com for help.\n");
         for (final Throwable error : errors) {
-            sb.append(Throwables.getStackTraceAsString(error)).append("\n");
+            if (verbosity == Verbosity.VERBOSE) {
+                sb.append(Throwables.getStackTraceAsString(error)).append("\n");
+            } else if (verbosity == Verbosity.COMPACT) {
+                sb.append(error.getMessage());
+                Throwable cause = error.getCause();
+                while (cause != null) {
+                    sb.append("\n\tCaused by: ").append(cause.getMessage());
+                    cause = cause.getCause();
+                }
+                sb.append("\n");
+            } else {
+                throw new RuntimeException(String.format("Invalid verbosity %s", verbosity));
+            }
         }
         final String errorString = sb.toString();
 
