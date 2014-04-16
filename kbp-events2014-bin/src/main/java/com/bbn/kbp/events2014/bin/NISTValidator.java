@@ -1,6 +1,8 @@
 package com.bbn.kbp.events2014.bin;
 
 import com.bbn.bue.common.files.FileUtils;
+import com.bbn.bue.common.symbols.SymbolUtils;
+import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -47,8 +49,10 @@ public final class NISTValidator {
         if (!rolesFile.exists()) {
             throw new FileNotFoundException(String.format("Roles file not found: %s", rolesFile));
         }
+
         final ValidateSystemOutput validator = ValidateSystemOutput.create(
-                FileUtils.loadSymbolMultimap(rolesFile));
+                TypeAndRoleValidator.create(SymbolUtils.setFrom("Time", "Place"),
+                        FileUtils.loadSymbolMultimap(rolesFile)));
 
         Verbosity verbosity = null;
 

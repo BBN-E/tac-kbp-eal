@@ -10,6 +10,7 @@ import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMultimap;
@@ -26,19 +27,20 @@ import java.util.List;
 import java.util.Map;
 
 import static com.bbn.bue.common.files.FileUtils.loadSymbolToFileMap;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class ValidateSystemOutput {
     private static final Logger log = LoggerFactory.getLogger(ValidateSystemOutput.class);
 
-    private final ImmutableMultimap<Symbol, Symbol> validRoles;
+    private final TypeAndRoleValidator typeAndRoleValidator;
 
 
-    private ValidateSystemOutput(Multimap<Symbol, Symbol> validRoles) {
-        this.validRoles = ImmutableMultimap.copyOf(validRoles);
+    private ValidateSystemOutput(TypeAndRoleValidator typeAndRoleValidator) {
+        this.typeAndRoleValidator = checkNotNull(typeAndRoleValidator);
     }
 
-    public static ValidateSystemOutput create(Multimap<Symbol, Symbol> validRoles) {
-        return new ValidateSystemOutput(validRoles);
+    public static ValidateSystemOutput create(TypeAndRoleValidator typeAndRoleValidator) {
+        return new ValidateSystemOutput(typeAndRoleValidator);
     }
 
     private static void usage() {
@@ -49,7 +51,8 @@ public final class ValidateSystemOutput {
              "Parameters:\n\tsystemOutputStore: the system output to be validated \n" +
             "\tdump: whether to dump a human-readable form of the input to standard output\n" +
             "\tdocIDMap: (only if dump is true) a list of tab-separated pairs of doc ID and path to original text.\n" +
-            "\tvalidRoles: is data/2014.types.txt (for KBP 2014)\n" );
+            "\tvalidRoles: is data/2014.types.txt (for KBP 2014)\n" +
+            "\talwaysValidRoles: is 'Time, Place' (for KBP 2014)\n");
         System.exit(1);
     }
 
@@ -106,7 +109,7 @@ public final class ValidateSystemOutput {
                 log.info("For document {} got {} responses", docID, docOutput.size());
 
                 for (final Response response : docOutput.responses()) {
-                    assertValidTypes(response, validRoles);
+                    assertValidTypes(response);
                 }
 
                 if (docOutput.size() > 0 && docIDMap.isPresent()) {
@@ -127,20 +130,18 @@ public final class ValidateSystemOutput {
         return errors;
     }
 
-    private static final ImmutableSet<Symbol> alwaysValidRoles = SymbolUtils.setFrom("Time", "Place");
-    private static void assertValidTypes(Response response, Multimap<Symbol, Symbol> validRoles) {
-        if (validRoles.containsKey(response.type())) {
-            if (!alwaysValidRoles.contains(response.role())) {
-                if (!validRoles.get(response.type()).contains(response.role())) {
-                    log.error("Invalid role {} for event type {} used in document {}. Valid roles for this event are {}",
+    private void assertValidTypes(Response response) {
+        if (typeAndRoleValidator.isValidEventType(response)) {
+            if (!typeAndRoleValidator.isValidArgumentRole(response)) {
+                log.error("Invalid role {} for event type {} used in document {}. Valid roles for this event are {}",
                         response.role(), response.type(), response.docID(),
-                        StringUtils.CommaSpaceJoiner.join(validRoles.get(response.type())));
-                    System.exit(1);
-                }
+                        StringUtils.CommaSpaceJoiner.join(typeAndRoleValidator.validRolesFor(response.type())));
+                System.exit(1);
             }
+
         } else {
             log.error("Invalid event type {} used in document {}. Valid event types are: {}", response.type(),
-                    response.docID(), StringUtils.CommaSpaceJoiner.join(validRoles.keySet()));
+                    response.docID(), StringUtils.CommaSpaceJoiner.join(typeAndRoleValidator.validEventTypes()));
             System.exit(1);
         }
     }
@@ -219,13 +220,11 @@ public final class ValidateSystemOutput {
         final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
         log.info(params.dump());
 
-        final File validRolesFile = params.getExistingFile("validRoles");
-        log.info("Validating types and roles against {}", validRolesFile);
-        final Multimap<Symbol, Symbol> validRoles = FileUtils.loadSymbolMultimap(validRolesFile);
-        final ValidateSystemOutput validator = create(validRoles);
+        final TypeAndRoleValidator typeAndRoleValidator =
+                TypeAndRoleValidator.createFromParameters(params);
+        final ValidateSystemOutput validator = create(typeAndRoleValidator);
 
         final File systemOutputStoreFile = params.getExistingFileOrDirectory("systemOutputStore");
-
 
         try {
             if (params.getBoolean("dump")) {
