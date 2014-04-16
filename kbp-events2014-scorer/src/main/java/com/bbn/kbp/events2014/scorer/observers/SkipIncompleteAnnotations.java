@@ -25,7 +25,7 @@ public class SkipIncompleteAnnotations<Answerable> extends KBPScoringObserver<An
 	private int skipped = 0;
 
 	private SkipIncompleteAnnotations(final KBPScoringObserver<Answerable> innerObserver) {
-        super(innerObserver.name());
+        super(innerObserver.name()+".skipIncomplete");
 		this.innerObserver = checkNotNull(innerObserver);
 	}
 
