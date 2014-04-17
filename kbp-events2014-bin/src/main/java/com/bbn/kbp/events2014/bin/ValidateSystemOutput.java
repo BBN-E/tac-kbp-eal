@@ -13,10 +13,7 @@ import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.*;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,8 +22,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.bbn.bue.common.files.FileUtils.loadSymbolToFileMap;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class ValidateSystemOutput {
@@ -64,11 +63,13 @@ public final class ValidateSystemOutput {
      * @param systemOutputStoreFile
      * @return
      */
-    public List<Throwable> validate(File systemOutputStoreFile, int maxErrors) throws IOException {
-        return validate(systemOutputStoreFile, maxErrors, Optional.<Map<Symbol,File>>absent());
+    public List<Throwable> validateOnly(File systemOutputStoreFile, int maxErrors,
+                                        Map<Symbol, File> docIDMap) throws IOException
+    {
+        return validate(systemOutputStoreFile, maxErrors, docIDMap, false);
     }
 
-    /** Like {@link #validate(java.io.File, int)} except it also logs the response in human
+    /** Like {@link #validateOnly(java.io.File, int, java.util.Map)} except it also logs the response in human
      * readable format, using the supplied {@code docIDMap} to resolve offsets to strings.
      *
       * @param systemOutputStoreFile
@@ -80,15 +81,17 @@ public final class ValidateSystemOutput {
     public List<Throwable> validateAndDump(File systemOutputStoreFile, int maxErrors,
                                            Map<Symbol,File> docIDMap) throws IOException
     {
-        return validate(systemOutputStoreFile, maxErrors, Optional.of(docIDMap));
+        return validate(systemOutputStoreFile, maxErrors, docIDMap, true);
     }
 
 
     private List<Throwable> validate(File systemOutputStoreFile, int maxErrors,
-                                     Optional<Map<Symbol, File>> docIDMap) throws IOException {
+                                     Map<Symbol, File> docIDMap, boolean dump) throws IOException
+    {
         final List<Throwable> errors = Lists.newArrayList();
 
-        log.info("Validating system output store {}", systemOutputStoreFile);
+        log.info("Validating system output store {} with max errors {}", systemOutputStoreFile,
+                maxErrors);
 
         // these are only non-final because the compiler isn't clever enough
         // to figure out they cannot fail to be initialized
@@ -102,6 +105,14 @@ public final class ValidateSystemOutput {
             return errors;
         }
 
+        try {
+            assertAllOffsetsValid(outputStore, docIDMap);
+        } catch (Exception e) {
+            // we can recover from invalid offsets and find more errors
+            // this can cause some errors to be repeated more than once
+            errors.add(e);
+        }
+
         int numErrors = 0;
         for (final Symbol docID : docIDs) {
             try {
@@ -112,8 +123,8 @@ public final class ValidateSystemOutput {
                     assertValidTypes(response);
                 }
 
-                if (docOutput.size() > 0 && docIDMap.isPresent()) {
-                    dumpResponses(docIDMap.get(), docOutput);
+                if (docOutput.size() > 0 && dump) {
+                    dumpResponses(docIDMap, docOutput);
                 }
             } catch (Exception e) {
                 errors.add(e);
@@ -129,6 +140,46 @@ public final class ValidateSystemOutput {
         outputStore.close();
         return errors;
     }
+
+    private void assertNoDocumentsOutsideCorpus(SystemOutputStore outputStore, Set<Symbol> docsInCorpus) throws IOException {
+        final Set<Symbol> extraDocs = Sets.difference(outputStore.docIDs(), docsInCorpus);
+        if (!extraDocs.isEmpty()) {
+            throw new RuntimeException(
+                    String.format("The output store contains the following documents which are not in the target corpus: %s",
+                            extraDocs));
+        }
+    }
+
+    private void assertAllOffsetsValid(SystemOutputStore outputStore, Map<Symbol, File> docIdMap) throws IOException {
+        assertNoDocumentsOutsideCorpus(outputStore, docIdMap.keySet());
+
+        for (final Symbol docId : outputStore.docIDs()) {
+            final String originalText = Files.asCharSource(docIdMap.get(docId), Charsets.UTF_8).read();
+            final int maxOffset = originalText.length()-1;
+            for (final Response response : outputStore.read(docId).responses()) {
+                assertValidCharOffsetSpan(response.canonicalArgument().charOffsetSpan(),
+                        "canonical argument string", docId, maxOffset);
+                assertValidCharOffsetSpan(response.baseFiller(), "base filler", docId, maxOffset);
+                for (final CharOffsetSpan span : response.additionalArgumentJustifications()) {
+                    assertValidCharOffsetSpan(span, "additional argument justification", docId, maxOffset);
+                }
+                for (final CharOffsetSpan span : response.predicateJustifications()) {
+                    assertValidCharOffsetSpan(span, "predicate justification", docId, maxOffset);
+                }
+            }
+        }
+    }
+
+    private void assertValidCharOffsetSpan(CharOffsetSpan span, String type, Symbol docId, int maxOffset) {
+        // CharOffsetSpan constructor validates start >=0, start>=end, so we don't need to do it here
+        if (span.endInclusive() > maxOffset) {
+            throw new RuntimeException(String.format(
+                    "For document %s, the %s span %s exceeds the last offset in the document (%d)",
+                    docId, type, span, maxOffset));
+        }
+    }
+
+
 
     private void assertValidTypes(Response response) {
         if (typeAndRoleValidator.isValidEventType(response)) {
@@ -217,23 +268,25 @@ public final class ValidateSystemOutput {
         if (argv.length != 1) {
             usage();
         }
-        final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
-        log.info(params.dump());
-
-        final TypeAndRoleValidator typeAndRoleValidator =
-                TypeAndRoleValidator.createFromParameters(params);
-        final ValidateSystemOutput validator = create(typeAndRoleValidator);
-
-        final File systemOutputStoreFile = params.getExistingFileOrDirectory("systemOutputStore");
 
         try {
+            final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
+            log.info(params.dump());
+
+            final TypeAndRoleValidator typeAndRoleValidator =
+                TypeAndRoleValidator.createFromParameters(params);
+            final ValidateSystemOutput validator = create(typeAndRoleValidator);
+
+            final File systemOutputStoreFile = params.getExistingFileOrDirectory("systemOutputStore");
+
+            final File docIDMappingFile = params.getExistingFile("docIDMap");
+            log.info("Using map from document IDs to original text: {}", docIDMappingFile);
+            final Map<Symbol, File> docIDMap = loadSymbolToFileMap(docIDMappingFile);
+
             if (params.getBoolean("dump")) {
-                final File docIDMappingFile = params.getExistingFile("docIDMap");
-                log.info("Using map from document IDs to original text: {}", docIDMappingFile);
-                final Map<Symbol, File> docIDMap = loadSymbolToFileMap(docIDMappingFile);
                 validator.validateAndDump(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap);
             } else {
-                validator.validate(systemOutputStoreFile, Integer.MAX_VALUE);
+                validator.validateOnly(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap);
             }
         } catch (Exception e) {
             e.printStackTrace();

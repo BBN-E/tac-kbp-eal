@@ -1,6 +1,7 @@
 package com.bbn.kbp.events2014.bin;
 
 import com.bbn.bue.common.files.FileUtils;
+import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 import com.google.common.base.Charsets;
@@ -20,6 +21,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -35,12 +37,12 @@ public final class NISTValidator {
     public enum Verbosity { VERBOSE, COMPACT};
 
     private static void usage() {
-        log.error("usage: NISTValidator rolesFile [VERBOSE|COMPACT] submissionFile");
+        log.error("usage: NISTValidator rolesFile docIdToOriginalTextMap [VERBOSE|COMPACT] submissionFile");
         System.exit(ERROR_CODE);
     }
 
     public static void main(String[] argv) throws IOException {
-        if (argv.length != 3) {
+        if (argv.length != 4) {
             usage();
         }
 
@@ -50,20 +52,28 @@ public final class NISTValidator {
             throw new FileNotFoundException(String.format("Roles file not found: %s", rolesFile));
         }
 
+        final File docIdMapFile = new File(argv[1]);
+        if (!docIdMapFile.exists() && docIdMapFile.isFile()) {
+            throw new FileNotFoundException(String.format(
+                    "DocID-->original text mapping not found: %s", docIdMapFile));
+        }
+        final Map<Symbol, File> docIdMap = FileUtils.loadSymbolToFileMap(docIdMapFile);
+
         final ValidateSystemOutput validator = ValidateSystemOutput.create(
                 TypeAndRoleValidator.create(SymbolUtils.setFrom("Time", "Place"),
                         FileUtils.loadSymbolMultimap(rolesFile)));
 
         Verbosity verbosity = null;
 
+        final String verbosityParam = argv[2];
         try {
-            verbosity = Verbosity.valueOf(argv[1]);
+            verbosity = Verbosity.valueOf(verbosityParam);
         } catch (Exception e) {
-            log.error("Invalid verbosity {}", argv[1]);
+            log.error("Invalid verbosity {}", verbosityParam);
             usage();
         }
 
-        final File submitFile = new File(argv[2]);
+        final File submitFile = new File(argv[3]);
         final File workingDirectory = new File(System.getProperty("user.dir"));
         log.info("Got submission file {} and working directory {}", submitFile, workingDirectory);
         if (!workingDirectory.exists()) {
@@ -84,8 +94,8 @@ public final class NISTValidator {
             checkForCommonProblems(uncompressedDirectory);
             log.info("Uncompressed submission to {}", uncompressedDirectory);
 
-            logErrorsAndExit(errorFile, validator.validate(uncompressedDirectory, MAX_ERRORS),
-                    verbosity);
+            logErrorsAndExit(errorFile, validator.validateOnly(uncompressedDirectory, MAX_ERRORS,
+                    docIdMap),  verbosity);
         } catch (Exception e) {
             logErrorsAndExit(errorFile, ImmutableList.of(e), verbosity);
         }
