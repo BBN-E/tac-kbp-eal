@@ -114,6 +114,14 @@ public final class AssessmentSpecFormats {
 		return new DirectorySystemOutputStore(directory);
 	}
 
+    public static SystemOutputStore openOrCreateSystemOutputStore(final File directory) throws IOException {
+        if (directory.exists()) {
+            return openSystemOutputStore(directory);
+        } else {
+            return createSystemOutputStore(directory);
+        }
+    }
+
 	private static final class DirectorySystemOutputStore implements SystemOutputStore {
 		private static Logger log = LoggerFactory.getLogger(DirectorySystemOutputStore.class);
 
