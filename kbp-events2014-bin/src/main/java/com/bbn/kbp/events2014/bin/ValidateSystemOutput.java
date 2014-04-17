@@ -184,16 +184,16 @@ public final class ValidateSystemOutput {
     private void assertValidTypes(Response response) {
         if (typeAndRoleValidator.isValidEventType(response)) {
             if (!typeAndRoleValidator.isValidArgumentRole(response)) {
-                log.error("Invalid role {} for event type {} used in document {}. Valid roles for this event are {}",
+                throw new RuntimeException(String.format(
+                        "Invalid role %s for event type %s used in document %s. Valid roles for this event are %s",
                         response.role(), response.type(), response.docID(),
-                        StringUtils.CommaSpaceJoiner.join(typeAndRoleValidator.validRolesFor(response.type())));
-                System.exit(1);
+                        StringUtils.CommaSpaceJoiner.join(typeAndRoleValidator.validRolesFor(response.type()))));
             }
 
         } else {
-            log.error("Invalid event type {} used in document {}. Valid event types are: {}", response.type(),
-                    response.docID(), StringUtils.CommaSpaceJoiner.join(typeAndRoleValidator.validEventTypes()));
-            System.exit(1);
+            throw new RuntimeException(String.format(
+                    "Invalid event type %s used in document %s. Valid event types are: %s", response.type(),
+                    response.docID(), StringUtils.CommaSpaceJoiner.join(typeAndRoleValidator.validEventTypes())));
         }
     }
 
