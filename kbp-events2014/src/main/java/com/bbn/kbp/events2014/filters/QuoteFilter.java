@@ -35,7 +35,7 @@ public final class QuoteFilter implements Function<SystemOutput, SystemOutput>  
     private final Map<Symbol, ImmutableRangeSet<Integer>> docIdToBannedRegions;
 
     @Override
-    public SystemOutput apply(SystemOutput input) {
+    public SystemOutput apply(final SystemOutput input) {
         final ImmutableRangeSet<Integer> bannedRegions = docIdToBannedRegions.get(input.docId());
         if (bannedRegions == null) {
             throw new RuntimeException(String.format(
@@ -45,11 +45,21 @@ public final class QuoteFilter implements Function<SystemOutput, SystemOutput>  
         return input.copyWithFilteredResponses(
            new Predicate<Scored<Response>>() {
                public boolean apply(Scored<Response> x) {
-                   return !inBannedSet(x.item().baseFiller(), bannedRegions)
-                    && !inBannedSet(x.item().canonicalArgument().charOffsetSpan(), bannedRegions);
+                   return !isInQuote(input.docId(), x.item().baseFiller())
+                       && !isInQuote(input.docId(), x.item().canonicalArgument().charOffsetSpan());
                }
            }
         );
+    }
+
+    public boolean isInQuote(Symbol docId, CharOffsetSpan span) {
+        final ImmutableRangeSet<Integer> bannedRegions = docIdToBannedRegions.get(docId);
+        if (bannedRegions == null) {
+            throw new RuntimeException(String.format(
+                    "QuoteFilter does not know about document ID %s", docId));
+        }
+
+        return inBannedSet(span, bannedRegions);
     }
 
     private static boolean inBannedSet(CharOffsetSpan span, RangeSet<Integer> bannedRegions) {
