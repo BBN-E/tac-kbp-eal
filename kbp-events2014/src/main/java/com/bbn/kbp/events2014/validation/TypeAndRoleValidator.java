@@ -6,10 +6,7 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.Response;
 import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +16,7 @@ import java.util.Collection;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.Iterables.concat;
 
 /**
  * Represents a the valid event types and event arugment roles for a KBP
@@ -45,9 +43,9 @@ public final class TypeAndRoleValidator implements Predicate<Response> {
         return validRoles.keySet();
     }
 
-    public ImmutableCollection<Symbol> validRolesFor(Symbol type) {
+    public ImmutableSet<Symbol> validRolesFor(Symbol type) {
         checkNotNull(type);
-        return validRoles.get(type);
+        return ImmutableSet.copyOf(concat(validRoles.get(type), alwaysValidRoles));
     }
 
     public boolean apply(Response response) {
