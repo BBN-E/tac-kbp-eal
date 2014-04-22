@@ -2,9 +2,7 @@ package com.bbn.kbp.events2014.scorer;
 
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.AsssessedResponse;
-import com.bbn.kbp.events2014.AnswerKey;
-import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.*;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.io.SystemOutputStore;

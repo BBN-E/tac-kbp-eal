@@ -1,10 +1,6 @@
-package com.bbn.kbp.events2014.scorer;
+package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.AsssessedResponse;
-import com.bbn.kbp.events2014.AnswerKey;
-import com.bbn.kbp.events2014.FieldAssessment;
-import com.bbn.kbp.events2014.KBPString;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Table;

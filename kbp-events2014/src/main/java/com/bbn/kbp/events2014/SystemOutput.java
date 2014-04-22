@@ -6,6 +6,7 @@ import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.scoring.Scoreds;
 import com.bbn.bue.common.symbols.Symbol;
 import com.google.common.base.Function;
+import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.*;
@@ -111,7 +112,7 @@ public final class SystemOutput {
 			return Optional.of(getFirst(args, null));
 		}
 
-		return Optional.of(Collections.max(args, ByConfidenceThenHash));
+		return Optional.of(Collections.max(args, ByConfidenceThenHashID));
 	}
 
 	public static SystemOutput from(final Symbol docId, final Iterable<Scored<Response>> scoredResponses) {
@@ -122,12 +123,12 @@ public final class SystemOutput {
 	/**
 	 * Orders output arguments in ascending order of confidence, then {@link #hashCode}.
 	 */
-	private final Ordering<Response> ByConfidenceThenHash = new Ordering<Response> () {
+	private final Ordering<Response> ByConfidenceThenHashID = new Ordering<Response> () {
 			@Override
 			public int compare(final Response left, final Response right) {
 				return ComparisonChain.start()
 						.compare(confidence(left), confidence(right))
-						.compare(left.hashCode(), right.hashCode())
+						.compare(left.responseID(), right.responseID())
 						.result();
 			}
 		};
@@ -168,5 +169,28 @@ public final class SystemOutput {
 
     public SystemOutput copyWithFilteredResponses(Predicate<Scored<Response>> predicate) {
         return SystemOutput.from(docId(), Iterables.filter(scoredResponses(), predicate));
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(docId, responses, confidences);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        final SystemOutput other = (SystemOutput) obj;
+        return Objects.equal(this.docId, other.docId) && Objects.equal(this.responses, other.responses) && Objects.equal(this.confidences, other.confidences);
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this).add("docID", docId).add("scoredResponses", scoredResponses()).toString();
     }
 }

@@ -36,6 +36,7 @@ public final class ApplyQuoteFilter {
         }
 
         final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
+        log.info(params.dump());
 
         final File inputStoreLocation = params.getExistingDirectory("inputStore");
         final File outputStoreLocation = params.getCreatableDirectory("outputStore");

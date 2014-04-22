@@ -2,7 +2,7 @@ package com.bbn.kbp.events2014.scorer.bin;
 
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.kbp.events2014.scorer.KBPScorer;
-import com.bbn.kbp.events2014.scorer.TypeRoleFillerRealis;
+import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.scorer.observers.*;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.HTMLErrorRecorder;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.NullHTMLErrorRecorder;

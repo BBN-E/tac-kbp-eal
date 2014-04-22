@@ -7,7 +7,7 @@ import com.bbn.kbp.events2014.AsssessedResponse;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.scorer.AnswerKeyAnswerSource;
 import com.bbn.kbp.events2014.scorer.SystemOutputAnswerSource;
-import com.bbn.kbp.events2014.scorer.TypeRoleFillerRealis;
+import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.HTMLErrorRecorder;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
