@@ -15,6 +15,7 @@ import com.google.common.io.CharSource;
 import java.io.*;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -29,7 +30,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * input it is applied to.
  */
 public final class QuoteFilter implements Function<SystemOutput, SystemOutput>  {
-    private static final String BANNED_REGION_START = "<quote>";
+    private static final Set<String> BANNED_REGION_STARTS =
+            ImmutableSet.of("<quote>",
+                    // handle case of <quote orig_author="foo">
+                    "<quote ");
     private static final String BANNED_REGION_END = "</quote>";
 
     private final Map<Symbol, ImmutableRangeSet<Integer>> docIdToBannedRegions;
@@ -94,7 +98,7 @@ public final class QuoteFilter implements Function<SystemOutput, SystemOutput>  
         // current search position
         int curPos = 0;
         // search for first opening <quote> tag
-        int regionStart = s.indexOf(BANNED_REGION_START, curPos);
+        int regionStart = StringUtils.earliestIndexOfAny(s, BANNED_REGION_STARTS, curPos);
 
         // if we found a <quote> tag
         while (regionStart != -1) {
@@ -103,7 +107,7 @@ public final class QuoteFilter implements Function<SystemOutput, SystemOutput>  
 
             // until we find the matching </quote> tag..
             while (nestingCount > 0) {
-                final int nextStart = s.indexOf(BANNED_REGION_START, curPos+1);
+                final int nextStart = StringUtils.earliestIndexOfAny(s, BANNED_REGION_STARTS, curPos + 1);
                 final int nextEnd = s.indexOf(BANNED_REGION_END, curPos+1);
 
                 if (nextEnd == -1) {
@@ -129,7 +133,7 @@ public final class QuoteFilter implements Function<SystemOutput, SystemOutput>  
             // where curPos is the beginning of the </quote> tag
             ret.add(Range.closed(regionStart, curPos + BANNED_REGION_END.length()-1));
 
-            regionStart = s.indexOf(BANNED_REGION_START, curPos+1);
+            regionStart = StringUtils.earliestIndexOfAny(s, BANNED_REGION_STARTS, curPos + 1);
         }
 
         return ret.build();
