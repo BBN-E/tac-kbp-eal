@@ -1,5 +1,6 @@
 package com.bbn.kbp.events2014.scorer;
 
+import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.*;
@@ -15,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -33,68 +35,55 @@ import static com.google.common.collect.Sets.union;
 public final class KBPScorer {
 	private static final Logger log = LoggerFactory.getLogger(KBPScorer.class);
 
-    private KBPScorer(final File baseOutputDir,
-                     final SystemOutputStore systemAnswerStore,
-                     final AnnotationStore goldAnswerStore,
-                     final List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers)
-    {
-        this.baseOutputDir = checkNotNull(baseOutputDir);
-        this.systemAnswerStore = checkNotNull(systemAnswerStore);
-        this.goldAnswerStore = checkNotNull(goldAnswerStore);
-        this.corpusObservers = ImmutableList.copyOf(corpusObservers);
+    private KBPScorer() {}
+
+    public static KBPScorer create() {
+        return new KBPScorer();
     }
 
-    private final File baseOutputDir;
-    private final SystemOutputStore systemAnswerStore;
-    private final AnnotationStore goldAnswerStore;
-    private final List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers;
-
-    public static KBPScorer createFrom(Parameters params,
-         final List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers) throws IOException {
-        return new KBPScorer(params.getCreatableDirectory("scoringOutput"),
-                AssessmentSpecFormats.openSystemOutputStore(params
-                .getExistingDirectory("systemOutput")),
-                AssessmentSpecFormats.openAnnotationStore(params
-                        .getExistingDirectory("answerKey")),
-                corpusObservers);
+    /**
+     * Runs the scorer over all documents found in either the system output store
+     * or gold annotation store.
+     * @throws IOException
+     */
+    public void run(SystemOutputStore systemOutputStore, AnnotationStore goldAnswerStore,
+                    List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers,
+                    File baseOutputDir) throws IOException
+    {
+        run(systemOutputStore, goldAnswerStore,
+                union(systemOutputStore.docIDs(), goldAnswerStore.docIDs()),
+                corpusObservers, baseOutputDir);
     }
 
-    public void run() throws IOException
+    /**
+     * Runs the scorer over the specified documents.
+     * @throws IOException
+     */
+    public void run(SystemOutputStore systemOutputStore, AnnotationStore goldAnswerStore,
+                    Set<Symbol> documentsToScore,
+                    List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers,
+                    File baseOutputDir) throws IOException
     {
-        final Set<Symbol> docidsToScore;
-        docidsToScore = union(systemAnswerStore.docIDs(), goldAnswerStore.docIDs());
-
         for (final KBPScoringObserver<TypeRoleFillerRealis> observer : corpusObservers) {
             observer.startCorpus();
         }
-        compareOutputToGold(systemAnswerStore, goldAnswerStore, docidsToScore, corpusObservers,
-            baseOutputDir);
+        compareOutputToGold(systemOutputStore, goldAnswerStore, documentsToScore,
+                corpusObservers, baseOutputDir);
         for (final KBPScoringObserver<TypeRoleFillerRealis> observer : corpusObservers) {
             observer.endCorpus();
         }
     }
 
-    public static void compareOutputToGold(final SystemOutputStore systemAnswerStore,
+	public void compareOutputToGold(final SystemOutputStore systemAnswerStore,
 			final AnnotationStore goldAnswerStore,
-			final List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers,
-			final boolean annotationIsComplete,
-			final File baseOutputDir)
-			throws IOException
-	{
-		compareOutputToGold(systemAnswerStore, goldAnswerStore, union(systemAnswerStore.docIDs(), goldAnswerStore.docIDs()),
-			corpusObservers, baseOutputDir);
-	}
-
-	public static void compareOutputToGold(final SystemOutputStore systemAnswerStore,
-			final AnnotationStore goldAnswerStore,
-			final Set<Symbol> docidsToScore,
+            final Set<Symbol> documentsToScore,
 			final List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers,
 			final File baseOutputDir)
 			throws IOException
 	{
 		final Map<KBPScoringObserver<TypeRoleFillerRealis>, File> scorerToOutputDir = makeScorerToOutputDir(baseOutputDir, corpusObservers);
 
-		for (final Symbol docid : docidsToScore) {
+		for (final Symbol docid : documentsToScore) {
 			log.info("Scoring document: {}", docid);
 
 			final AnswerKey key = goldAnswerStore.readOrEmpty(docid);
