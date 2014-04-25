@@ -188,6 +188,14 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
                 sb.append(confusionMatrix.prettyPrint()).append("\n");
 
                 Files.asCharSink(new File(directory, "confusionMatrix.txt"), Charsets.UTF_8).write(sb.toString());
+
+                final String html = htmlOut.toString();
+                if (!html.isEmpty()) {
+                    log.warn("yay");
+                    Files.asCharSink(new File(directory, "errors.html"), Charsets.UTF_8).write(html);
+                } else {
+                    log.warn("foo");
+                }
             }
 		};
 	}
