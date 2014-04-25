@@ -1,8 +1,13 @@
 package com.bbn.kbp.events2014.scorer.observers;
 
+import com.bbn.bue.common.StringUtils;
+import com.bbn.bue.common.collections.MapUtils;
+import com.bbn.bue.common.diff.FMeasureTableRenderer;
 import com.bbn.bue.common.diff.ProvenancedConfusionMatrix;
 import com.bbn.bue.common.diff.SummaryConfusionMatrix;
+import com.bbn.bue.common.evaluation.FMeasureCounts;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events2014.AsssessedResponse;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.scorer.AnswerKeyAnswerSource;
@@ -11,6 +16,7 @@ import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.HTMLErrorRecorder;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.google.common.io.CharSink;
@@ -59,22 +65,28 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
                 "Aggregate", ImmutableMap.of(Symbol.from("Aggregate"), corpusConfusionMatrixBuilder),
                 "Type", byTypeConfusionMatrices, "Role", byRoleConfusionMatrices).entrySet();
 
+
         for (final Map.Entry<String, Map<Symbol, SummaryConfusionMatrix.Builder>> printMode : printModes) {
-            writeConfusionMatrices(printMode.getValue(),
-                    Files.asCharSink(new File(directory, printMode.getKey()), Charsets.UTF_8));
-        }
-    }
+            final FMeasureTableRenderer tableRenderer = FMeasureTableRenderer.create();
 
-    private void writeConfusionMatrices(Map<Symbol, SummaryConfusionMatrix.Builder> confusionMatrices, CharSink out) throws IOException {
-        final StringBuilder sb = new StringBuilder();
+            final Map<String, FMeasureCounts> fMeasuresToPrint =  MapUtils.copyWithTransformedEntries(
+                    printMode.getValue(),
+                    Functions.toStringFunction(),
+                    new Function<SummaryConfusionMatrix.Builder,FMeasureCounts>() {
+                        @Override
+                        public FMeasureCounts apply(SummaryConfusionMatrix.Builder input) {
+                            return input.build().FMeasureVsAllOthers(PRESENT);
+                        }
+                    });
 
-        for (final Map.Entry<Symbol, SummaryConfusionMatrix.Builder> outputMatrixEntry : confusionMatrices.entrySet()) {
-            final String chartTitle = outputMatrixEntry.getKey().toString();
-            final SummaryConfusionMatrix outputMatrix = outputMatrixEntry.getValue().build();
-            sb.append("\n" + "==============" + chartTitle + "====================\n" + outputMatrix.prettyPrint() + "\n\n"
-                    + outputMatrix.FMeasureVsAllOthers(PRESENT).compactPrettyString()+"\n\n");
+            tableRenderer.setNameFieldLength(
+                    4+Ordering.natural().max(
+                            FluentIterable.from(fMeasuresToPrint.keySet())
+                                .transform(StringUtils.ToLength)));
+            final String modeName = printMode.getKey();
+            Files.asCharSink(new File(directory, modeName), Charsets.UTF_8)
+                .write(modeName + "\n" + tableRenderer.render(fMeasuresToPrint));
         }
-        out.write(sb.toString());
     }
 
 	public void appendSummaryHTML(final StringBuilder sb) {
@@ -191,10 +203,7 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 
                 final String html = htmlOut.toString();
                 if (!html.isEmpty()) {
-                    log.warn("yay");
                     Files.asCharSink(new File(directory, "errors.html"), Charsets.UTF_8).write(html);
-                } else {
-                    log.warn("foo");
                 }
             }
 		};
