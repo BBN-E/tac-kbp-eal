@@ -155,7 +155,7 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
         sb.append(String.format(headerFormat, modeName));
         sb.append(Strings.repeat("-", nameFieldSize+18)).append("\n");
         for (Scored<String> improvement : improvements) {
-            sb.append(String.format(entryFormat, improvement.item(), improvement.score()));
+            sb.append(String.format(entryFormat, improvement.item(), 100.0*improvement.score()));
         }
 
         Files.asCharSink(outputFile, Charsets.UTF_8).write(sb.toString());
