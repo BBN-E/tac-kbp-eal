@@ -6,6 +6,9 @@ import com.bbn.bue.common.diff.FMeasureTableRenderer;
 import com.bbn.bue.common.diff.ProvenancedConfusionMatrix;
 import com.bbn.bue.common.diff.SummaryConfusionMatrix;
 import com.bbn.bue.common.evaluation.FMeasureCounts;
+import com.bbn.bue.common.evaluation.FMeasureInfo;
+import com.bbn.bue.common.scoring.Scored;
+import com.bbn.bue.common.scoring.Scoreds;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events2014.AsssessedResponse;
@@ -14,10 +17,7 @@ import com.bbn.kbp.events2014.scorer.AnswerKeyAnswerSource;
 import com.bbn.kbp.events2014.scorer.SystemOutputAnswerSource;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.HTMLErrorRecorder;
-import com.google.common.base.Charsets;
-import com.google.common.base.Function;
-import com.google.common.base.Functions;
-import com.google.common.base.Predicate;
+import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
@@ -26,6 +26,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -61,35 +63,106 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 
     @Override
     public void writeCorpusOutput(File directory) throws IOException {
+        final FMeasureCounts corpusFMeasure = corpusConfusionMatrixBuilder.build().FMeasureVsAllOthers(PRESENT);
         Iterable<Map.Entry<String, Map<Symbol, SummaryConfusionMatrix.Builder>>> printModes = ImmutableMap.of(
                 "Aggregate", ImmutableMap.of(Symbol.from("Aggregate"), corpusConfusionMatrixBuilder),
                 "Type", byTypeConfusionMatrices, "Role", byRoleConfusionMatrices).entrySet();
 
 
         for (final Map.Entry<String, Map<Symbol, SummaryConfusionMatrix.Builder>> printMode : printModes) {
-            final FMeasureTableRenderer tableRenderer = FMeasureTableRenderer.create();
-
-            final Map<String, FMeasureCounts> fMeasuresToPrint =  MapUtils.copyWithTransformedEntries(
-                    printMode.getValue(),
-                    Functions.toStringFunction(),
-                    new Function<SummaryConfusionMatrix.Builder,FMeasureCounts>() {
-                        @Override
-                        public FMeasureCounts apply(SummaryConfusionMatrix.Builder input) {
-                            return input.build().FMeasureVsAllOthers(PRESENT);
-                        }
-                    });
-
-            tableRenderer.setNameFieldLength(
-                    4+Ordering.natural().max(
-                            FluentIterable.from(fMeasuresToPrint.keySet())
-                                .transform(StringUtils.ToLength)));
             final String modeName = printMode.getKey();
-            Files.asCharSink(new File(directory, modeName), Charsets.UTF_8)
-                .write(modeName + "\n" + tableRenderer.render(fMeasuresToPrint));
+            final Map<String, SummaryConfusionMatrix> data =
+                    MapUtils.copyWithTransformedEntries(printMode.getValue(),
+                            Functions.toStringFunction(), SummaryConfusionMatrix.Builder.Build);
+
+            final File scoringBreakdownFilename = new File(directory, modeName);
+
+            writeScoringBreakdown(modeName, data, scoringBreakdownFilename);
+            writeImprovements(modeName, corpusFMeasure, data, ImprovementMode.PERFECT_PRECISION,
+                    new File(directory, modeName + ".improvementsWithPerfectPrecision"));
+            writeImprovements(modeName, corpusFMeasure, data, ImprovementMode.PERFECT_RECALL,
+                    new File(directory, modeName + ".improvementsWithPerfectRecall"));
+            writeImprovements(modeName, corpusFMeasure, data, ImprovementMode.PERFECT_EVERYTHING,
+                    new File(directory, modeName + ".improvementsWithPerfectEverything"));
         }
     }
 
-	public void appendSummaryHTML(final StringBuilder sb) {
+    private static final Function<SummaryConfusionMatrix, FMeasureCounts> FmeasureVsPresent = new Function<SummaryConfusionMatrix, FMeasureCounts>() {
+        @Override
+        public FMeasureCounts apply(SummaryConfusionMatrix input) {
+            return input.FMeasureVsAllOthers(PRESENT);
+        }
+    };
+
+    private void writeScoringBreakdown(String modeName, Map<String, SummaryConfusionMatrix> data, File scoringBreakdownFilename) throws IOException {
+
+        final Map<String, FMeasureCounts> fMeasuresToPrint = Maps.transformValues(data,
+                FmeasureVsPresent);
+
+        final FMeasureTableRenderer tableRenderer = FMeasureTableRenderer.create()
+                .setNameFieldLength(4 + MapUtils.longestKeyLength(fMeasuresToPrint));
+
+        Files.asCharSink(scoringBreakdownFilename, Charsets.UTF_8)
+            .write(modeName + "\n" + tableRenderer.render(fMeasuresToPrint));
+    }
+
+    private enum ImprovementMode  {
+        PERFECT_PRECISION {
+            public FMeasureCounts improve(FMeasureCounts baseCounts, FMeasureCounts improvingCounts) {
+                return FMeasureCounts.from(baseCounts.truePositives(),
+                        baseCounts.falsePositives()-improvingCounts.falsePositives(),
+                        baseCounts.falseNegatives());
+            }},
+        PERFECT_RECALL {
+            public FMeasureCounts improve(FMeasureCounts baseCounts, FMeasureCounts improvingCounts) {
+                return FMeasureCounts.from(baseCounts.truePositives()+improvingCounts.truePositives(),
+                        baseCounts.falsePositives(),
+                        baseCounts.falseNegatives()-improvingCounts.falseNegatives());
+            }},
+        PERFECT_EVERYTHING {
+            public FMeasureCounts improve(FMeasureCounts baseCounts, FMeasureCounts improvingCounts) {
+                return FMeasureCounts.from(baseCounts.truePositives()+improvingCounts.falseNegatives(),
+                        baseCounts.falsePositives()-improvingCounts.falsePositives(),
+                        baseCounts.falseNegatives()-improvingCounts.falseNegatives());
+        }};
+
+        public abstract FMeasureCounts improve(FMeasureCounts baseCounts, FMeasureCounts improvingCounts);
+    };
+
+    private void writeImprovements(final String modeName, final FMeasureCounts corpusFMeasure,
+                                   final Map<String, SummaryConfusionMatrix> data,
+                                   final ImprovementMode improvementMode,
+                                   final File outputFile) throws IOException
+    {
+        final List<Scored<String>> improvements = Lists.newArrayList();
+        for (Map.Entry<String, SummaryConfusionMatrix> entry : data.entrySet()) {
+            final FMeasureCounts improvedCounts = improvementMode.improve(corpusFMeasure,
+                    entry.getValue().FMeasureVsAllOthers(PRESENT));
+            final double F1Improvement = improvedCounts.F1() - corpusFMeasure.F1();
+            improvements.add(Scored.from(entry.getKey(), F1Improvement));
+        }
+
+        Collections.sort(improvements, Scoreds.<String>ByScoreThenByItem().reverse());
+
+        final StringBuilder sb = new StringBuilder();
+
+        sb.append("Score changes for " + modeName + " when improvement " + improvementMode.toString() + " is applied\n");
+
+        final int nameFieldSize = 4+ MapUtils.longestKeyLength(data);
+        final String headerFormat = "%"+nameFieldSize + "s    Change in F1\n";
+        final String entryFormat = "%"+nameFieldSize + "s    %6.3f\n";
+
+        sb.append(String.format(headerFormat, modeName));
+        sb.append(Strings.repeat("-", nameFieldSize+18)).append("\n");
+        for (Scored<String> improvement : improvements) {
+            sb.append(String.format(entryFormat, improvement.item(), improvement.score()));
+        }
+
+        Files.asCharSink(outputFile, Charsets.UTF_8).write(sb.toString());
+    }
+
+
+    public void appendSummaryHTML(final StringBuilder sb) {
 		final SummaryConfusionMatrix corpusMatrix = corpusConfusionMatrixBuilder.build();
 
 //		sb.append(KBPHTMLRenderer.confusionMatrix(name, corpusMatrix));

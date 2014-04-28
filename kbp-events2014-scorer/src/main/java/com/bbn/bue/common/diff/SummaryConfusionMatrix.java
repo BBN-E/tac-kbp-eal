@@ -5,6 +5,7 @@ import java.util.Set;
 import com.bbn.bue.common.evaluation.FMeasureCounts;
 import com.bbn.bue.common.primitives.DoubleUtils;
 import com.bbn.bue.common.symbols.Symbol;
+import com.google.common.base.Function;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Table;
@@ -102,6 +103,13 @@ public final class SummaryConfusionMatrix {
 		public SummaryConfusionMatrix build() {
 			return new SummaryConfusionMatrix(table);
 		}
+
+        public static final Function<Builder, SummaryConfusionMatrix> Build = new Function<SummaryConfusionMatrix.Builder, SummaryConfusionMatrix>() {
+            @Override
+            public SummaryConfusionMatrix apply(SummaryConfusionMatrix.Builder input) {
+                return input.build();
+            }
+        };
 
 		private Builder() { }
 	}
