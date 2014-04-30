@@ -63,9 +63,17 @@ public final class ImportSystemOutputToAnnotationStore {
         for (final Symbol docid : systemOutput.docIDs()) {
             log.info("Pushing responses for {} into assessment store", docid);
             final SystemOutput docOutput = systemOutput.read(docid);
+            final int numResponseInSystemOutput = docOutput.size();
             final AnswerKey currentAnnotation = annStore.readOrEmpty(docid);
+            final int numAnnotatedResponsesInCurrentAnnotation = currentAnnotation.annotatedResponses().size();
+            final int numUnannotatedResponsesInCurrentAnnotation = currentAnnotation.unannotatedResponses().size();
+
             final AnswerKey newAnswerKey = currentAnnotation.copyAddingPossiblyUnannotated(
                     docOutput.responses());
+            final int numAdded = newAnswerKey.unannotatedResponses().size() - numUnannotatedResponsesInCurrentAnnotation;
+            log.info("For doc {}, annotation store has {} annotated and {} unannotated; system output store has {} " +
+                    "responses; added {} for assessment", docid, numAnnotatedResponsesInCurrentAnnotation,
+                    numUnannotatedResponsesInCurrentAnnotation, numResponseInSystemOutput, numAdded);
             annStore.write(newAnswerKey);
         }
     }
