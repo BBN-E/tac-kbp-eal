@@ -17,6 +17,7 @@ import com.bbn.kbp.events2014.scorer.AnswerKeyAnswerSource;
 import com.bbn.kbp.events2014.scorer.SystemOutputAnswerSource;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.HTMLErrorRecorder;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.*;
 import com.google.common.collect.*;
 import com.google.common.io.CharSink;
@@ -50,6 +51,7 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
     private final Map<Symbol, SummaryConfusionMatrix.Builder> byRoleConfusionMatrices =
             Maps.newHashMap();
     private final HTMLErrorRecorder renderer;
+    private final ObjectMapper mapper = new ObjectMapper();
 
 	public static KBPScoringObserver<TypeRoleFillerRealis> strictScorer(final HTMLErrorRecorder renderer) {
 		return new StrictStandardScoringObserver("Strict", AsssessedResponse.IsCompletelyCorrect,
@@ -104,6 +106,11 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 
         Files.asCharSink(scoringBreakdownFilename, Charsets.UTF_8)
             .write(modeName + "\n" + tableRenderer.render(fMeasuresToPrint));
+
+        // also write this as JSON
+        final File JSONFilename = new File(scoringBreakdownFilename.getAbsolutePath() + ".json");
+
+        mapper.writeValue(JSONFilename, fMeasuresToPrint);
     }
 
     private enum ImprovementMode  {
@@ -176,6 +183,10 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 		this.ResponseCorrect = checkNotNull(ResponseCorrect);
 		this.log = LoggerFactory.getLogger(name());
 		this.renderer = checkNotNull(renderer);
+
+        // all non-final classes will carry annotations
+        mapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL);
+        mapper.findAndRegisterModules();
 	}
 
 	private void observeDocumentConfusionMatrix(final ProvenancedConfusionMatrix<TypeRoleFillerRealis> matrix) {

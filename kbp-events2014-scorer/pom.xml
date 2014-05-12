@@ -33,6 +33,11 @@
       <artifactId>common-core-open</artifactId>
   </dependency>
 
+<dependency>
+      <groupId>com.bbn.bue</groupId>
+      <artifactId>common-core-jackson-serialization-open</artifactId>
+  </dependency>
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
