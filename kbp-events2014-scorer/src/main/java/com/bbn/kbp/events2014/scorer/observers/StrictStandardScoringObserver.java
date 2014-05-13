@@ -110,7 +110,8 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
         // also write this as JSON
         final File JSONFilename = new File(scoringBreakdownFilename.getAbsolutePath() + ".json");
 
-        mapper.writeValue(JSONFilename, fMeasuresToPrint);
+        // we make a copy to ensure what is written is Jackson-serializable
+        mapper.writeValue(JSONFilename, ImmutableMap.copyOf(fMeasuresToPrint));
     }
 
     private enum ImprovementMode  {
