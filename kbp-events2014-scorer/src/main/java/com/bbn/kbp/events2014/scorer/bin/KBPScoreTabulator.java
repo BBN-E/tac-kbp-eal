@@ -110,19 +110,13 @@ public class KBPScoreTabulator {
                     //File scoreDir = new File(configuration, "score");
                     File standardDir = new File(scoreDir, "Standard");
                     File scoreJsonFile = new File(standardDir, "Aggregate.json");
-                    //FMeasureCounts fMeasureCounts = mapper.readValue(scoreJsonFile, FMeasureCounts.class);
-//                    rowValues.add(Float.toString(fMeasureCounts.truePositives()));
-//                    rowValues.add(Float.toString(fMeasureCounts.falsePositives()));
-//                    rowValues.add(Float.toString(fMeasureCounts.falseNegatives()));
-//                    rowValues.add(Float.toString(fMeasureCounts.precision()));
-//                    rowValues.add(Float.toString(fMeasureCounts.recall()));
-//                    rowValues.add(Float.toString(fMeasureCounts.F1()));
-                    rowValues.add("265.0");
-                    rowValues.add("127.0");
-                    rowValues.add("670.0");
-                    rowValues.add("67.69");
-                    rowValues.add("28.34");
-                    rowValues.add("39.94");
+                    FMeasureCounts fMeasureCounts = mapper.readValue(scoreJsonFile, FMeasureCounts.class);
+                    rowValues.add(Float.toString(fMeasureCounts.truePositives()));
+                    rowValues.add(Float.toString(fMeasureCounts.falsePositives()));
+                    rowValues.add(Float.toString(fMeasureCounts.falseNegatives()));
+                    rowValues.add(Float.toString(fMeasureCounts.precision()));
+                    rowValues.add(Float.toString(fMeasureCounts.recall()));
+                    rowValues.add(Float.toString(fMeasureCounts.F1()));
                     datasetTable.add(rowValues);
                 }
                 datasetTables.add(datasetTable);
