@@ -10,15 +10,18 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.*;
 
 import com.bbn.bue.common.evaluation.FMeasureCounts;
-import com.bbn.bue.common.files.FileUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.bbn.bue.common.serialization.jackson.JacksonSerializer;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class KBPScoreTabulator {
-    
+    private static final Logger log = LoggerFactory.getLogger(KBPScoreTabulator.class);
+
     private static String buildTable(List<String> header, List<List<String>> table) {
         
         final StringBuilder sb = new StringBuilder();
@@ -72,11 +75,9 @@ public class KBPScoreTabulator {
         File scoreTrackerDirectory = new File(args[1]);
         
         File outputHTMLFile = new File(args[2]);
-        
-        final ObjectMapper mapper = new ObjectMapper();
-        
-        
-        
+
+        final JacksonSerializer jacksonSerializer = JacksonSerializer.forNormalJSON();
+
         // one table per dataset
         // figure out what the datasets are
         File datasetsDir = new File(masterAnnotationRepo, "datasets");
@@ -110,7 +111,10 @@ public class KBPScoreTabulator {
                     //File scoreDir = new File(configuration, "score");
                     File standardDir = new File(scoreDir, "Standard");
                     File scoreJsonFile = new File(standardDir, "Aggregate.json");
-                    FMeasureCounts fMeasureCounts = mapper.readValue(scoreJsonFile, FMeasureCounts.class);
+                    log.info("Loading scores from {}", scoreJsonFile);
+                    final Map<String, FMeasureCounts> fMeasureCountsMap =
+                            (Map<String, FMeasureCounts>)jacksonSerializer.deserializeFrom(Files.asByteSource(scoreJsonFile));
+                    final FMeasureCounts fMeasureCounts = fMeasureCountsMap.get("Aggregate");
                     rowValues.add(Float.toString(fMeasureCounts.truePositives()));
                     rowValues.add(Float.toString(fMeasureCounts.falsePositives()));
                     rowValues.add(Float.toString(fMeasureCounts.falseNegatives()));

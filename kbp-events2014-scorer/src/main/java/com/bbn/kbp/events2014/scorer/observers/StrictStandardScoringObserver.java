@@ -9,6 +9,7 @@ import com.bbn.bue.common.evaluation.FMeasureCounts;
 import com.bbn.bue.common.evaluation.FMeasureInfo;
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.scoring.Scoreds;
+import com.bbn.bue.common.serialization.jackson.JacksonSerializer;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events2014.AsssessedResponse;
@@ -51,7 +52,7 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
     private final Map<Symbol, SummaryConfusionMatrix.Builder> byRoleConfusionMatrices =
             Maps.newHashMap();
     private final HTMLErrorRecorder renderer;
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final JacksonSerializer jackson = JacksonSerializer.forNormalJSON();
 
 	public static KBPScoringObserver<TypeRoleFillerRealis> strictScorer(final HTMLErrorRecorder renderer) {
 		return new StrictStandardScoringObserver("Strict", AsssessedResponse.IsCompletelyCorrect,
@@ -111,7 +112,8 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
         final File JSONFilename = new File(scoringBreakdownFilename.getAbsolutePath() + ".json");
 
         // we make a copy to ensure what is written is Jackson-serializable
-        mapper.writeValue(JSONFilename, ImmutableMap.copyOf(fMeasuresToPrint));
+        jackson.serializeTo(ImmutableMap.copyOf(fMeasuresToPrint),
+                Files.asByteSink(JSONFilename));
     }
 
     private enum ImprovementMode  {
@@ -184,10 +186,6 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 		this.ResponseCorrect = checkNotNull(ResponseCorrect);
 		this.log = LoggerFactory.getLogger(name());
 		this.renderer = checkNotNull(renderer);
-
-        // all non-final classes will carry annotations
-        mapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL);
-        mapper.findAndRegisterModules();
 	}
 
 	private void observeDocumentConfusionMatrix(final ProvenancedConfusionMatrix<TypeRoleFillerRealis> matrix) {
