@@ -4,6 +4,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.base.Optional;
+import com.google.common.base.Predicates;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -169,5 +171,15 @@ public final class AnswerKey {
                 }
             }
         }
+    }
+
+    public Optional<ResponseAssessment> assessment(Response response) {
+        checkNotNull(response);
+        for (final AsssessedResponse assessedResponse : annotatedResponses()) {
+            if (assessedResponse.response().equals(response)) {
+                return Optional.of(assessedResponse.assessment());
+            }
+        }
+        return Optional.absent();
     }
 }

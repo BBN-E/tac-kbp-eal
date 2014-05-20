@@ -129,7 +129,7 @@ public final class ProvenancedConfusionMatrix<CellFiller> {
 		this.table = ImmutableTable.copyOf(table);
 	}
 
-	public static class Builder<CellFiller> {
+    public static class Builder<CellFiller> {
 		private Builder() {}
 
 		/**

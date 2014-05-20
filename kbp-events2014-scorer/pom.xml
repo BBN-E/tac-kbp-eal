@@ -34,6 +34,16 @@
                       </extraArguments> -->
                   </jvmSettings>
               </program>
+                <program>
+                    <mainClass>com.bbn.kbp.events2014.assessmentDiff.KBPAssessmentDiff</mainClass>
+                    <name>assessmentDiff</name>
+                    <jvmSettings>
+                        <maxMemorySize>2G</maxMemorySize>
+                        <!-- <extraArguments>
+                            <extraArgument>-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=1044</extraArgument>
+                        </extraArguments> -->
+                    </jvmSettings>
+                </program>
               </programs>
               </configuration>
               </plugin>
