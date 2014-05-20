@@ -267,8 +267,6 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 			public void end() {
                 final ProvenancedConfusionMatrix<TypeRoleFillerRealis> confusionMatrix = confusionMatrixBuilder.build();
                 observeDocumentConfusionMatrix(confusionMatrix);
-                
-
 
 			}
 

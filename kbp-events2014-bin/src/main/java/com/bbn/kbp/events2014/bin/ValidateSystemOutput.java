@@ -283,13 +283,17 @@ public final class ValidateSystemOutput {
             log.info("Using map from document IDs to original text: {}", docIDMappingFile);
             final Map<Symbol, File> docIDMap = loadSymbolToFileMap(docIDMappingFile);
 
+            final List<Throwable> errors;
             if (params.getBoolean("dump")) {
-                validator.validateAndDump(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap);
+                errors = validator.validateAndDump(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap);
             } else {
-                validator.validateOnly(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap);
+                errors = validator.validateOnly(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+            if (!errors.isEmpty()) {
+                throw errors.get(0);
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
             System.exit(1);
         }
     }
