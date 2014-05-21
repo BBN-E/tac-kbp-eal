@@ -8,6 +8,7 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.google.common.base.Function;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableTable;
+import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
 
 import static com.bbn.bue.common.primitives.DoubleUtils.IsNonNegative;
@@ -79,7 +80,30 @@ public final class SummaryConfusionMatrix {
 		checkArgument(all(table.values(), IsNonNegative));
 	}
 
-	public static class Builder {
+    /**
+     * Returns accuracy, which is defined as the sum of the cells
+     * of the form (X,X) over the sum of all cells.  If the sum is 0,
+     * 0 is returned.  To pretty-print this you probably want to
+     * multiply by 100.
+     *
+     * @return
+     */
+    public double accuracy() {
+        final double total = DoubleUtils.sum(table.values());
+        double matching = 0.0;
+        for (final Symbol key : Sets.intersection(leftLabels(), rightLabels())) {
+            if (table.contains(key, key)) {
+                matching += table.get(key, key);
+            }
+        }
+        if (total != 0.0) {
+            return matching/total;
+        } else {
+            return 0.0;
+        }
+    }
+
+    public static class Builder {
 		private final Table<Symbol, Symbol, Double> table = HashBasedTable.create();
 
 		public void accumulate(final SummaryConfusionMatrix matrix) {

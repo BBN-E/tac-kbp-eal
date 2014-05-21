@@ -1,17 +1,22 @@
 package com.bbn.com.bbn.kbp.events2014.assessmentDiff.observers;
 
+import com.bbn.bue.common.collections.MapUtils;
+import com.bbn.bue.common.diff.FMeasureTableRenderer;
 import com.bbn.bue.common.diff.ProvenancedConfusionMatrix;
 import com.bbn.bue.common.diff.SummaryConfusionMatrix;
+import com.bbn.bue.common.evaluation.FMeasureCounts;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.com.bbn.kbp.events2014.assessmentDiff.KBPAssessmentDiff;
 import com.bbn.com.bbn.kbp.events2014.assessmentDiff.diffLoggers.DiffLogger;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
 import com.google.common.base.Charsets;
+import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 public abstract class ConfusionMatrixAssessmentPairObserver implements AssessmentPairObserver {
     private final ProvenancedConfusionMatrix.Builder<Response> confusionMatrixBuilder =
@@ -51,6 +56,16 @@ public abstract class ConfusionMatrixAssessmentPairObserver implements Assessmen
         Files.asCharSink(new File(outputDir, "examples.html"), Charsets.UTF_8).write(sb.toString());
 
         final SummaryConfusionMatrix summaryConfusionMatrix = confusionMatrix.buildSummaryMatrix();
-        Files.asCharSink(new File(outputDir, "summary.html"), Charsets.UTF_8).write(summaryConfusionMatrix.prettyPrint());
+        final StringBuilder msg = new StringBuilder();
+        msg.append(summaryConfusionMatrix.prettyPrint()).append("\n\n");
+        final Map<String, FMeasureCounts> fMeasureCountsMap = Maps.newHashMap();
+        for (final Symbol key : summaryConfusionMatrix.leftLabels()) {
+            fMeasureCountsMap.put(key.toString(), summaryConfusionMatrix.FMeasureVsAllOthers(key));
+        }
+        final FMeasureTableRenderer tableRenderer = FMeasureTableRenderer.create()
+                .setNameFieldLength(4+ MapUtils.longestKeyLength(fMeasureCountsMap));
+        msg.append(tableRenderer.render(fMeasureCountsMap));
+        msg.append(String.format("Accuracy: %5.2f\n", 100.0*summaryConfusionMatrix.accuracy()));
+        Files.asCharSink(new File(outputDir, "summary.html"), Charsets.UTF_8).write(msg.toString());
     }
 }

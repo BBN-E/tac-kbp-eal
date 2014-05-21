@@ -17,6 +17,6 @@ public class MentionTypeObserver extends ConfusionMatrixAssessmentPairObserver {
     @Override
     protected Symbol toKey(ResponseAssessment assessment) {
         // get is safe by filter
-        return Symbol.from(assessment.realis().get().toString());
+        return Symbol.from(assessment.mentionTypeOfCAS().get().toString());
     }
 }
