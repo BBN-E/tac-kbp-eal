@@ -62,6 +62,8 @@ public final class KBPAssessmentDiff {
 
         final DiffLogger diffLogger = new BasicDiffLogger();
 
+        int totalCommonResponses = 0;
+        int totalCommonResponsesNotInBaseline = 0;
         for (final Symbol docId : commonDocIds) {
             final AnswerKey leftAnswers = leftAnnotationStore.readOrEmpty(docId);
             final AnswerKey rightAnswers = rightAnnotationStore.read(docId);
@@ -71,19 +73,20 @@ public final class KBPAssessmentDiff {
 
             // we want to compare assessments for responses which are
             final Set<Response> commonResponses =
-                Sets.difference(
-                    // in both repos being compared
                     Sets.intersection(
-                        FluentIterable.from(leftAnswers.annotatedResponses())
-                            .transform(AsssessedResponse.Response)
-                            .toSet(),
-                        FluentIterable.from(rightAnswers.annotatedResponses())
-                            .transform(AsssessedResponse.Response)
-                            .toSet()),
-                    // but not in the baseline repo, if any
-                    baselineResponses);
+                            FluentIterable.from(leftAnswers.annotatedResponses())
+                                    .transform(AsssessedResponse.Response)
+                                    .toSet(),
+                            FluentIterable.from(rightAnswers.annotatedResponses())
+                                    .transform(AsssessedResponse.Response)
+                                    .toSet());
+            totalCommonResponses += commonResponses.size();
 
-            for (final Response response : commonResponses) {
+            final Set<Response> commonResponsesMinusBaseline =
+                    Sets.difference(commonResponses, baselineResponses);
+            totalCommonResponsesNotInBaseline += commonResponsesMinusBaseline.size();
+
+            for (final Response response : commonResponsesMinusBaseline) {
                 final ResponseAssessment leftAssessment = leftAnswers.assessment(response).get();
                 final ResponseAssessment rightAssessment = rightAnswers.assessment(response).get();
 
@@ -93,6 +96,9 @@ public final class KBPAssessmentDiff {
             }
         }
 
+        log.info("Total common responses: {}; total not in baseline: {}.",
+                totalCommonResponses, totalCommonResponsesNotInBaseline);
+        
         overlapObserver.report();
         for (final Map.Entry<String, AssessmentPairObserver> entry : observers.entrySet()) {
             final File observerOutputDir = new File(outputDirectory, entry.getKey());
