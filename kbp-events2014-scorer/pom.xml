@@ -24,16 +24,6 @@
         <version>${appassembler.maven.plugin.version}</version>
         <configuration>
             <programs>
-              <program>
-                  <mainClass>com.bbn.kbp.events2014.scorer.bin.KBPScoreTabulator</mainClass>
-                  <name>KBPScoreTabulator</name>
-                  <jvmSettings>
-                      <maxMemorySize>2G</maxMemorySize>
-                      <!-- <extraArguments>
-                          <extraArgument>-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=1044</extraArgument>
-                      </extraArguments> -->
-                  </jvmSettings>
-              </program>
                 <program>
                     <mainClass>com.bbn.kbp.events2014.assessmentDiff.KBPAssessmentDiff</mainClass>
                     <name>assessmentDiff</name>
