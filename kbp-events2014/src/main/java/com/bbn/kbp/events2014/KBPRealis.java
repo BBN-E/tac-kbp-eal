@@ -12,12 +12,16 @@ public enum KBPRealis {
 	public static final String NIL = "NIL";
 
     public static KBPRealis parse(String s) {
-        try {
-            return KBPRealis.valueOf(s);
-        } catch (IllegalArgumentException iae) {
-            throw new RuntimeException(String.format("%s is not a valid realis. Options are %s",
-                    s, StringUtils.CommaSpaceJoiner.join(KBPRealis.values())));
+        if (s.toLowerCase().equals("actual")) {
+            return Actual;
+        } else if (s.toLowerCase().equals("generic")) {
+            return Generic;
+        } else if (s.toLowerCase().equals("other")) {
+            return Other;
         }
+
+        throw new RuntimeException(String.format("%s is not a valid realis. Options are %s",
+                    s, StringUtils.CommaSpaceJoiner.join(KBPRealis.values())));
     }
 
     /**
