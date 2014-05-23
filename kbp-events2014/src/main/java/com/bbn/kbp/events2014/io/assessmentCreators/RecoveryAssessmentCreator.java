@@ -57,14 +57,14 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
      * unnecessary fields and places items lacking coreference in singleton clusters with random indices. If
      * there are any missing fields, {@link com.google.common.base.Optional#absent()} is returned.
      */
-    public Optional<ResponseAssessment> createAssessmentFromFields(final FieldAssessment aet,
+    public Optional<ResponseAssessment> createAssessmentFromFields(final Optional<FieldAssessment> aet,
         final Optional<FieldAssessment> aer, final Optional<FieldAssessment> casAssessment,
         final Optional<KBPRealis> realis, final Optional<FieldAssessment> baseFillerAssessment,
         final Optional<Integer> coreference, final Optional<ResponseAssessment.MentionType> mentionTypeOfCAS)
     {
         ++responsesAttempted;
 
-        FieldAssessment fixedAET = aet;
+        Optional<FieldAssessment> fixedAET = aet;
         Optional<FieldAssessment> fixedAER = aer;
         Optional<FieldAssessment> fixedCAS = casAssessment;
         Optional<KBPRealis> fixedRealis = realis;
@@ -82,17 +82,15 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
         // if we have extra if anything, we just clear it.
         // if we are missing anything besides coref, the whole response is treated
         // as unannotated (return Optional.absent())
-        if (fixedAER.isPresent() && !fixedAET.isAcceptable()) {
+        if (fixedAER.isPresent() && !FieldAssessment.isAcceptable(fixedAET)) {
             extras.add("AER");
             fixedAER = Optional.absent();
-        } else if (!fixedAER.isPresent() && fixedAET.isAcceptable()) {
+        } else if (!fixedAER.isPresent() && FieldAssessment.isAcceptable(fixedAET)) {
             missing.add("AER");
             return Optional.absent();
         }
 
-        if (fixedAET.isAcceptable() && fixedAER.isPresent()
-                && fixedAER.get().isAcceptable())
-        {
+        if (FieldAssessment.isAcceptable(fixedAET) && FieldAssessment.isAcceptable(fixedAER)) {
             // if AET and AER are both correct, the following
             // are required
             if (!fixedBF.isPresent()) {

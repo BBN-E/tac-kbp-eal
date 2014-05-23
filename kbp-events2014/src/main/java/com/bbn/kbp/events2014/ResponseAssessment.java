@@ -46,8 +46,8 @@ public final class ResponseAssessment {
 	private final Integer coreferenceId;
 	private final MentionType mentionTypeOfCAS;
 
-	public FieldAssessment justificationSupportsEventType() {
-		return justificationSupportsEventType;
+	public Optional<FieldAssessment> justificationSupportsEventType() {
+		return Optional.fromNullable(justificationSupportsEventType);
 	}
 
 	public Optional<FieldAssessment> justificationSupportsRole() {
@@ -92,11 +92,12 @@ public final class ResponseAssessment {
                                final FieldAssessment baseFillerCorrectFiller,
                                final Integer coreferenceId, final MentionType casMentionType)
 	{
-		this.justificationSupportsEventType = checkNotNull(justificationSupportsEventType);
-		checkArgument(CWL.contains(justificationSupportsEventType));
+		this.justificationSupportsEventType = justificationSupportsEventType;
+		checkArgument(justificationSupportsEventType == null
+                || CWL.contains(justificationSupportsEventType));
 
 		this.justificationSupportsRole = justificationSupportsRole;
-		if (justificationSupportsEventType.isAcceptable()) {
+		if (justificationSupportsEventType != null && justificationSupportsEventType.isAcceptable()) {
 			checkNotNull(justificationSupportsRole);
 			checkArgument(CWL.contains(justificationSupportsRole));
 		}
@@ -112,7 +113,8 @@ public final class ResponseAssessment {
 
 		// the filler and realis judgements should be present iff the event type and
 		// role judgements are not incorrect
-		final boolean wrong = justificationSupportsEventType == FieldAssessment.INCORRECT
+		final boolean wrong = justificationSupportsEventType == null
+                || justificationSupportsEventType == FieldAssessment.INCORRECT
 				|| justificationSupportsRole == FieldAssessment.INCORRECT;
 		if (wrong) {
 			checkArgument(entityCorrectFiller == null);
@@ -131,14 +133,14 @@ public final class ResponseAssessment {
         } // otherwise, either present or absent coref is valid
 	}
 
-	public static ResponseAssessment create(final FieldAssessment justificationSupportsEventType,
+	public static ResponseAssessment create(final Optional<FieldAssessment> justificationSupportsEventType,
 			final Optional<FieldAssessment> justificationSupportsFiller,
 			final Optional<FieldAssessment> entityCorrectFiller,
 			final Optional<KBPRealis> realis,
 			final Optional<FieldAssessment> mentionCorrectFiller, final Optional<Integer> coreferenceId,
 			final Optional<MentionType> mentionTypeOfCAS)
 	{
-		return new ResponseAssessment(justificationSupportsEventType, justificationSupportsFiller.orNull(),
+		return new ResponseAssessment(justificationSupportsEventType.orNull(), justificationSupportsFiller.orNull(),
 			entityCorrectFiller.orNull(), realis.orNull(),
 			mentionCorrectFiller.orNull(), coreferenceId.orNull(), mentionTypeOfCAS.orNull());
 	}
@@ -147,7 +149,12 @@ public final class ResponseAssessment {
 	public String toString() {
 		final StringBuilder sb = new StringBuilder();
 
-		sb.append("[t=").append(justificationSupportsEventType);
+        sb.append("[");
+        if (justificationSupportsEventType != null) {
+            sb.append("t=").append(justificationSupportsEventType);
+        } else {
+            sb.append("IGNORE");
+        }
 		if (justificationSupportsRole != null) {
 			sb.append("; r=").append(justificationSupportsRole);
 		}

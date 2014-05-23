@@ -49,7 +49,7 @@ public class AsssessedResponse {
      */
 	public boolean isCompletelyCorrect() {
 		return label.realis().isPresent() && label.realis().get() == item.realis()
-				&& label.justificationSupportsEventType() == FieldAssessment.CORRECT
+				&& label.justificationSupportsEventType().orNull() == FieldAssessment.CORRECT
 				&& label.justificationSupportsRole().orNull() == FieldAssessment.CORRECT
 				&& label.entityCorrectFiller().orNull() == FieldAssessment.CORRECT
 				&& label.baseFillerCorrect().orNull() == FieldAssessment.CORRECT;
@@ -62,7 +62,7 @@ public class AsssessedResponse {
      */
 	public boolean isCorrectUpToInexactJustifications() {
 		return label.realis().isPresent() && label.realis().get() == item.realis()
-				&& label.justificationSupportsEventType().isAcceptable()
+				&& FieldAssessment.isAcceptable(label.justificationSupportsEventType())
 				&& FieldAssessment.isAcceptable(label.justificationSupportsRole())
 				&& FieldAssessment.isAcceptable(label.entityCorrectFiller())
 				&& FieldAssessment.isAcceptable(label.baseFillerCorrect());

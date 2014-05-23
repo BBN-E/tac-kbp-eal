@@ -35,9 +35,9 @@ public final class TestPooledAnswerKey {
 
 	final FieldAssessment C = FieldAssessment.CORRECT;
 
-	final ResponseAssessment correct = ResponseAssessment.create(C, Optional.of(C), Optional.of(C),
+	final ResponseAssessment correct = ResponseAssessment.create(Optional.of(C), Optional.of(C), Optional.of(C),
             Optional.of(KBPRealis.Actual), Optional.of(C), Optional.of(0), Optional.of(MentionType.NAME));
-	final ResponseAssessment unreal = ResponseAssessment.create(C, Optional.of(C), Optional.of(C),
+	final ResponseAssessment unreal = ResponseAssessment.create(Optional.of(C), Optional.of(C), Optional.of(C),
             Optional.of(KBPRealis.Other), Optional.of(C), Optional.of(0), Optional.of(MentionType.NAME));
 
 	@SuppressWarnings("unused")

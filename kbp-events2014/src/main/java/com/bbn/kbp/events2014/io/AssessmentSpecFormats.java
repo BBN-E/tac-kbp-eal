@@ -398,12 +398,7 @@ public final class AssessmentSpecFormats {
                 return Optional.absent();
             }
 
-            if (parts.get(0).equals("NIL")) {
-                log.warn("Encountered NIL AET; treating response as unannotated.");
-                return Optional.absent();
-            }
-
-            final FieldAssessment AET = FieldAssessment.parse(parts.get(0));
+            final Optional<FieldAssessment> AET = FieldAssessment.parseOptional(parts.get(0));
             final Optional<FieldAssessment> AER = FieldAssessment.parseOptional(parts.get(1));
             final Optional<FieldAssessment> casAssessment = FieldAssessment.parseOptional(parts.get(2));
             final Optional<FieldAssessment> baseFillerAssessment = FieldAssessment.parseOptional(parts.get(3));
@@ -416,7 +411,7 @@ public final class AssessmentSpecFormats {
         }
 
         private static void addAnnotationParts(final ResponseAssessment ann, final List<String> parts) {
-			parts.add(ann.justificationSupportsEventType().asCharacter());
+			parts.add(FieldAssessment.asCharacterOrNil(ann.justificationSupportsEventType()));
 			parts.add(FieldAssessment.asCharacterOrNil(ann.justificationSupportsRole()));
 			parts.add(FieldAssessment.asCharacterOrNil(ann.entityCorrectFiller()));
 			parts.add(FieldAssessment.asCharacterOrNil(ann.baseFillerCorrect()));

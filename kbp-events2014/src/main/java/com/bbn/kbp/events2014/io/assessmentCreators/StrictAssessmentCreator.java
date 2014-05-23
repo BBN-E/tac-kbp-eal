@@ -13,7 +13,7 @@ public final class StrictAssessmentCreator implements AssessmentCreator {
     private StrictAssessmentCreator() {}
 
     @Override
-    public Optional<ResponseAssessment> createAssessmentFromFields(FieldAssessment aet,
+    public Optional<ResponseAssessment> createAssessmentFromFields(Optional<FieldAssessment> aet,
         Optional<FieldAssessment> aer, Optional<FieldAssessment> casAssessment, Optional<KBPRealis> realis,
         Optional<FieldAssessment> baseFillerAssessment, Optional<Integer> coreference,
         Optional<ResponseAssessment.MentionType> mentionTypeOfCAS)

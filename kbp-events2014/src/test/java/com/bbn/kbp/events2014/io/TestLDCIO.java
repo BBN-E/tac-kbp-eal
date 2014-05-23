@@ -36,7 +36,7 @@ public class TestLDCIO extends TestCase {
 			ImmutableSet.of(CharOffsetSpan.fromOffsetsOnly(327, 397)),
 			ImmutableSet.of(CharOffsetSpan.fromOffsetsOnly(373, 383)),
 			KBPRealis.Actual), 0.5465980768203735);
-		ann = ResponseAssessment.create(FieldAssessment.CORRECT, Optional.of(FieldAssessment.CORRECT),
+		ann = ResponseAssessment.create(Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.CORRECT),
                 Optional.of(FieldAssessment.CORRECT),
                 Optional.of(KBPRealis.Actual),
                 Optional.of(FieldAssessment.CORRECT), Optional.of(1),
