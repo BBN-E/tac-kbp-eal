@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Set;
 
-import com.bbn.kbp.events2014.AsssessedResponse;
+import com.bbn.kbp.events2014.AssessedResponse;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
@@ -30,7 +30,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public final class BuildConfusionMatrix<Answerable> extends KBPScoringObserver<Answerable> {
 	private final Logger log;
-	private final Function<Collection<AsssessedResponse>, Symbol> rightAnswerFunction;
+	private final Function<Collection<AssessedResponse>, Symbol> rightAnswerFunction;
 	private final Function<Collection<Response>, Symbol> leftAnswerFunction;
 	private final SummaryConfusionMatrix.Builder corpusConfusionMatrixBuilder = SummaryConfusionMatrix.builder();
 
@@ -64,7 +64,7 @@ public final class BuildConfusionMatrix<Answerable> extends KBPScoringObserver<A
 
 			@Override
 			public void observe(final Answerable answerable, final Set<Response> responses,
-				final Set<AsssessedResponse> annotations)
+				final Set<AssessedResponse> annotations)
 			{
 				final Symbol leftAnswer = leftAnswerFunction.apply(responses);
 				final Symbol rightAnswer = rightAnswerFunction.apply(annotations);
@@ -96,7 +96,7 @@ public final class BuildConfusionMatrix<Answerable> extends KBPScoringObserver<A
 
 	private BuildConfusionMatrix(final String name,
 			final Function<Collection<Response>, Symbol> leftAnswerFunction,
-			final Function<Collection<AsssessedResponse>, Symbol> rightAnswerFunction)
+			final Function<Collection<AssessedResponse>, Symbol> rightAnswerFunction)
 	{
 		super(name);
 		this.log = LoggerFactory.getLogger(name);
@@ -106,7 +106,7 @@ public final class BuildConfusionMatrix<Answerable> extends KBPScoringObserver<A
 
 	public static <Answerable> BuildConfusionMatrix<Answerable> forAnswerFunctions(
 			final String observerName, final Function<Collection<Response>, Symbol> leftAnswerFunction,
-			final Function<Collection<AsssessedResponse>, Symbol> rightAnswerFunction)
+			final Function<Collection<AssessedResponse>, Symbol> rightAnswerFunction)
 	{
 		return new BuildConfusionMatrix<Answerable>(observerName, leftAnswerFunction, rightAnswerFunction);
 	}

@@ -142,7 +142,7 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
     }
 
     @Override
-    public AnswerKey createAnswerKey(Symbol docID, List<AsssessedResponse> assessedResponses, List<Response> unassessedResponses) {
+    public AnswerKey createAnswerKey(Symbol docID, List<AssessedResponse> assessedResponses, List<Response> unassessedResponses) {
         return AnswerKey.from(docID, fixCoref(assessedResponses), unassessedResponses);
     }
 
@@ -150,10 +150,10 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
      * If an annotation store erroneously has the same CAS in multiple coref clusters, map them all to the
      * first cluster encountered.
      */
-    private List<AsssessedResponse> fixCoref(Iterable<AsssessedResponse> assessedResponses) {
+    private List<AssessedResponse> fixCoref(Iterable<AssessedResponse> assessedResponses) {
         final Map<KBPString, Integer> CASToIndex = Maps.newHashMap();
 
-        for (AsssessedResponse response : assessedResponses) {
+        for (AssessedResponse response : assessedResponses) {
             if (!CASToIndex.containsKey(response.response().canonicalArgument())
                     && response.assessment().coreferenceId().isPresent())
             {
@@ -161,16 +161,16 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
             }
         }
 
-        final ImmutableList.Builder<AsssessedResponse> ret = ImmutableList.builder();
+        final ImmutableList.Builder<AssessedResponse> ret = ImmutableList.builder();
 
-        for (final AsssessedResponse response : assessedResponses) {
+        for (final AssessedResponse response : assessedResponses) {
             final Integer mappedCoref = CASToIndex.get(response.response().canonicalArgument());
 
             if (mappedCoref != null
                     && (!response.assessment().coreferenceId().isPresent()
                         || !response.assessment().coreferenceId().get().equals(mappedCoref)))
             {
-                ret.add(AsssessedResponse.from(response.response(),
+                ret.add(AssessedResponse.from(response.response(),
                         response.assessment().copyWithModifiedCoref(Optional.of(mappedCoref))));
                 ++numRemappedCoref;
             } else {

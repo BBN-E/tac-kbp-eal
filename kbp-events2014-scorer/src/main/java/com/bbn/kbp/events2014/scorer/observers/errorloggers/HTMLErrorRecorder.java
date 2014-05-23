@@ -1,7 +1,7 @@
 package com.bbn.kbp.events2014.scorer.observers.errorloggers;
 
 import com.bbn.bue.common.scoring.Scored;
-import com.bbn.kbp.events2014.AsssessedResponse;
+import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.Response;
 
 import java.util.Set;
@@ -15,10 +15,10 @@ import java.util.Set;
 public interface HTMLErrorRecorder {
     public String preamble();
     public String vsAnnotated(final String clazz, final String title, final Response headerResponse,
-                              final Scored<Response> response, final AsssessedResponse annotatedResponse);
+                              final Scored<Response> response, final AssessedResponse annotatedResponse);
 
-    public String vsAnnotated(String clazz, String title, Response response, Set<AsssessedResponse> annotatedResponses);
+    public String vsAnnotated(String clazz, String title, Response response, Set<AssessedResponse> annotatedResponses);
 
     public String vsAnnotated(String clazz, String title, Response headerResponse, Iterable<Scored<Response>> scoredResponses,
-                              Iterable<AsssessedResponse> annotatedResponses);
+                              Iterable<AssessedResponse> annotatedResponses);
 }

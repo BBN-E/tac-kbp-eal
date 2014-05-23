@@ -1,7 +1,7 @@
 package com.bbn.kbp.events2014.scorer.observers.errorloggers;
 
 import com.bbn.bue.common.scoring.Scored;
-import com.bbn.kbp.events2014.AsssessedResponse;
+import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.Response;
 
 import java.util.Set;
@@ -22,18 +22,18 @@ public final class NullHTMLErrorRecorder implements HTMLErrorRecorder {
     }
 
     @Override
-    public String vsAnnotated(String clazz, String title, Response headerResponse, Scored<Response> response, AsssessedResponse annotatedResponse) {
+    public String vsAnnotated(String clazz, String title, Response headerResponse, Scored<Response> response, AssessedResponse annotatedResponse) {
         return "";
     }
 
     @Override
-    public String vsAnnotated(String clazz, String title, Response response, Set<AsssessedResponse> annotatedResponses) {
+    public String vsAnnotated(String clazz, String title, Response response, Set<AssessedResponse> annotatedResponses) {
         return "";
     }
 
     @Override
     public String vsAnnotated(String clazz, String title, Response headerResponse,
-                              Iterable<Scored<Response>> scoredResponses, Iterable<AsssessedResponse> annotatedResponses)
+                              Iterable<Scored<Response>> scoredResponses, Iterable<AssessedResponse> annotatedResponses)
     {
         return "";
     }

@@ -16,7 +16,7 @@ public final class EntityNormalizer {
 		final Table<Symbol, Integer, KBPString> equivalenceClassToCanonical = HashBasedTable.create();
 		final Table<Symbol, KBPString, KBPString> docIdAndStringToCanonical = HashBasedTable.create();
 
-		for (final AsssessedResponse arg : answerKey.annotatedResponses()) {
+		for (final AssessedResponse arg : answerKey.annotatedResponses()) {
 			if (arg.assessment().coreferenceId().isPresent()
                     // we ignore coreference assessment when the CAS is not acceptable,
                     // since it is optional in this case

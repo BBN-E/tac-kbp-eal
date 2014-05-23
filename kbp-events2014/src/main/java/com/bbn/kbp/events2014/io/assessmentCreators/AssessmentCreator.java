@@ -12,6 +12,6 @@ public interface AssessmentCreator {
         final Optional<KBPRealis> realis, final Optional<FieldAssessment> baseFillerAssessment,
         final Optional<Integer> coreference, final Optional<ResponseAssessment.MentionType> mentionTypeOfCAS);
 
-    public AnswerKey createAnswerKey(Symbol docID, List<AsssessedResponse> assessedResponses,
+    public AnswerKey createAnswerKey(Symbol docID, List<AssessedResponse> assessedResponses,
                                      List<Response> unassessedResponses);
 }

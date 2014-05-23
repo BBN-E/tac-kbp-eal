@@ -14,24 +14,24 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @author rgabbard
  *
  */
-public class AsssessedResponse {
+public class AssessedResponse {
     private final Response item;
     private final ResponseAssessment label;
 
-    private AsssessedResponse(final Response item, final ResponseAssessment label) {
+    private AssessedResponse(final Response item, final ResponseAssessment label) {
 		this.item = checkNotNull(item);
 		this.label = checkNotNull(label);
 	}
 
     /**
-     * Create an {@code AsssessedResponse} which applies the given {@code ResponseAssessment} to
+     * Create an {@code AssessedResponse} which applies the given {@code ResponseAssessment} to
      * the given {@code Response}.
      * @param argument May not be null.
      * @param annotation May not be null.
      * @return
      */
-	public static AsssessedResponse from(final Response argument, final ResponseAssessment annotation) {
-		return new AsssessedResponse(argument, annotation);
+	public static AssessedResponse from(final Response argument, final ResponseAssessment annotation) {
+		return new AssessedResponse(argument, annotation);
 	}
 
 	public Response response() {
@@ -70,7 +70,7 @@ public class AsssessedResponse {
 
     /**
      * Searches a list of annotated responses for the one which corresponds to the provided response.
-     * If there are multiple {@code AsssessedResponse}s which match the provided response, only the
+     * If there are multiple {@code AssessedResponse}s which match the provided response, only the
      * first will be returned.  However, the definition of the task guarantees there is a single
      * assessment for each response, so this should never occur. If the list contains no matching annotated
      * response, {@code Optional.absent()} is returned.
@@ -79,10 +79,10 @@ public class AsssessedResponse {
      * @param annotatedArgs May not be null.
      * @return
      */
-	public static Optional<AsssessedResponse> findAnnotationForArgument(final Response argument,
-		final Iterable<AsssessedResponse> annotatedArgs)
+	public static Optional<AssessedResponse> findAnnotationForArgument(final Response argument,
+		final Iterable<AssessedResponse> annotatedArgs)
 	{
-		for (final AsssessedResponse annotatedArg : annotatedArgs) {
+		for (final AssessedResponse annotatedArg : annotatedArgs) {
 			if (annotatedArg.response().equals(argument)) {
 				return Optional.of(annotatedArg);
 			}
@@ -112,44 +112,44 @@ public class AsssessedResponse {
 		if (getClass() != obj.getClass()) {
 			return false;
 		}
-		final AsssessedResponse other = (AsssessedResponse) obj;
+		final AssessedResponse other = (AssessedResponse) obj;
 		return Objects.equal(item, other.item)
 			&& Objects.equal(label, other.label);
 	}
 
 
 
-	public static final Predicate<AsssessedResponse> IsCompletelyCorrect = new Predicate<AsssessedResponse> () {
+	public static final Predicate<AssessedResponse> IsCompletelyCorrect = new Predicate<AssessedResponse> () {
 		@Override
-		public boolean apply(final AsssessedResponse input) {
+		public boolean apply(final AssessedResponse input) {
 			return input.isCompletelyCorrect();
 		}
 	};
 
-	public static final Predicate<AsssessedResponse> IsCorrectUpToInexactJustifications = new Predicate<AsssessedResponse> () {
+	public static final Predicate<AssessedResponse> IsCorrectUpToInexactJustifications = new Predicate<AssessedResponse> () {
 		@Override
-		public boolean apply(final AsssessedResponse input) {
+		public boolean apply(final AssessedResponse input) {
 			return input.isCorrectUpToInexactJustifications();
 		}
 	};
 
-	public static final Function<AsssessedResponse, ResponseAssessment> Annotation = new Function<AsssessedResponse, ResponseAssessment> () {
+	public static final Function<AssessedResponse, ResponseAssessment> Annotation = new Function<AssessedResponse, ResponseAssessment> () {
 		@Override
-		public ResponseAssessment apply(final AsssessedResponse x) {
+		public ResponseAssessment apply(final AssessedResponse x) {
 			return x.assessment();
 		}
 	};
 
-	public static final Function<AsssessedResponse, Response> Response = new Function<AsssessedResponse, Response> () {
+	public static final Function<AssessedResponse, Response> Response = new Function<AssessedResponse, Response> () {
 		@Override
-		public Response apply(final AsssessedResponse x) {
+		public Response apply(final AssessedResponse x) {
 			return x.response();
 		}
 	};
 
     /**
-     * Orders {@code AsssessedResponse}s by the ID of their response.
+     * Orders {@code AssessedResponse}s by the ID of their response.
      */
-    public static final Ordering<AsssessedResponse> ById = com.bbn.kbp.events2014.Response.ById.onResultOf(
-            AsssessedResponse.Response);
+    public static final Ordering<AssessedResponse> ById = com.bbn.kbp.events2014.Response.ById.onResultOf(
+            AssessedResponse.Response);
 }

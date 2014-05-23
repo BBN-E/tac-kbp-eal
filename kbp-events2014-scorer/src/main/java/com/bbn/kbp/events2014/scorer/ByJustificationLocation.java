@@ -2,7 +2,7 @@ package com.bbn.kbp.events2014.scorer;
 
 import java.util.List;
 
-import com.bbn.kbp.events2014.AsssessedResponse;
+import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.Response;
 import com.google.common.base.Optional;
 import com.google.common.collect.ComparisonChain;
@@ -50,7 +50,7 @@ public final class ByJustificationLocation<Answerable extends Comparable<Answera
 
 	private Optional<Response> earliestResponse(final Answerable answerable) {
 		final List<Response> candidates = ImmutableList.copyOf(concat(
-			transform(answerKeySource.answers(answerable), AsssessedResponse.Response),
+			transform(answerKeySource.answers(answerable), AssessedResponse.Response),
 			systemSource.answers(answerable)));
 		if (candidates.isEmpty()) {
 			return Optional.absent();

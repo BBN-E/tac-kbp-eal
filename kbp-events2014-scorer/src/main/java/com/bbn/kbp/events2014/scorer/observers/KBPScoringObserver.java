@@ -1,11 +1,9 @@
 package com.bbn.kbp.events2014.scorer.observers;
 
-import com.bbn.kbp.events2014.AsssessedResponse;
+import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.scorer.AnswerKeyAnswerSource;
 import com.bbn.kbp.events2014.scorer.SystemOutputAnswerSource;
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
 
 import java.io.File;
 import java.io.IOException;
@@ -140,7 +138,7 @@ public abstract class KBPScoringObserver<Answerable> {
          * @param annotations
          */
 		public void observe(final Answerable answerable, final Set<Response> responses,
-				final Set<AsssessedResponse> annotations)
+				final Set<AssessedResponse> annotations)
 		{
 			// pass
 		}
@@ -159,7 +157,7 @@ public abstract class KBPScoringObserver<Answerable> {
          * @param answerable
          * @param annotatedResponses
          */
-		public void annotationsOnlyNonEmpty(final Answerable answerable, final Set<AsssessedResponse> annotatedResponses) {
+		public void annotationsOnlyNonEmpty(final Answerable answerable, final Set<AssessedResponse> annotatedResponses) {
 			// pass
 		}
 
@@ -170,7 +168,7 @@ public abstract class KBPScoringObserver<Answerable> {
          * @param annotatedResponse
          */
 		public void annotatedSelectedResponse(final Answerable answerable, final Response response,
-				final AsssessedResponse annotatedResponse)
+				final AssessedResponse annotatedResponse)
 		{
 			// pass
 		}

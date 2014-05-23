@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Predicates;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,10 +32,10 @@ public final class AnswerKey {
 	private static final Logger log = LoggerFactory.getLogger(AnswerKey.class);
 
     private final Symbol docid;
-    private final ImmutableSet<AsssessedResponse> annotatedArgs;
+    private final ImmutableSet<AssessedResponse> annotatedArgs;
     private final ImmutableSet<Response> unannotatedResponses;
 
-	private AnswerKey(final Symbol docId, final Iterable<AsssessedResponse> annotatedArgs,
+	private AnswerKey(final Symbol docId, final Iterable<AssessedResponse> annotatedArgs,
 		final Iterable<Response> unannotatedResponses)
 	{
 		this.docid = checkNotNull(docId);
@@ -46,7 +45,7 @@ public final class AnswerKey {
 	}
 
     /** Get all assessed responses in this answer key **/
-	public ImmutableSet<AsssessedResponse> annotatedResponses() {
+	public ImmutableSet<AssessedResponse> annotatedResponses() {
 		return annotatedArgs;
 	}
 
@@ -60,7 +59,7 @@ public final class AnswerKey {
      * @return
      */
     public ImmutableSet<Response> allResponses() {
-        return ImmutableSet.copyOf(Iterables.concat(FluentIterable.from(annotatedResponses()).transform(AsssessedResponse.Response),
+        return ImmutableSet.copyOf(Iterables.concat(FluentIterable.from(annotatedResponses()).transform(AssessedResponse.Response),
                 unannotatedResponses()));
     }
 
@@ -82,7 +81,7 @@ public final class AnswerKey {
 
 	public AnswerKey copyAddingPossiblyUnannotated(final Iterable<Response> newUnannotated) {
         final Set<Response> currentlyAnnotated = FluentIterable.from(annotatedArgs)
-                .transform(AsssessedResponse.Response).toSet();
+                .transform(AssessedResponse.Response).toSet();
         final Iterable<Response> newTrulyUnannotated =
             Iterables.filter(newUnannotated, not(in(currentlyAnnotated)));
 
@@ -100,17 +99,17 @@ public final class AnswerKey {
      * @param newAnnotatedResponses
      * @return
      */
-	public AnswerKey copyAnnotating(final Iterable<AsssessedResponse> newAnnotatedResponses) {
+	public AnswerKey copyAnnotating(final Iterable<AssessedResponse> newAnnotatedResponses) {
         // we use immutable maps for these things to guarantee deterministic order ~ rgabbard
-        final Map<Response, AsssessedResponse> currentResponseToAnnotation =
-                Maps.uniqueIndex(annotatedResponses(), AsssessedResponse.Response);
-        final Map<Response, AsssessedResponse> newResponseToAnnotation =
-                Maps.uniqueIndex(newAnnotatedResponses, AsssessedResponse.Response);
+        final Map<Response, AssessedResponse> currentResponseToAnnotation =
+                Maps.uniqueIndex(annotatedResponses(), AssessedResponse.Response);
+        final Map<Response, AssessedResponse> newResponseToAnnotation =
+                Maps.uniqueIndex(newAnnotatedResponses, AssessedResponse.Response);
 
         final Set<Response> responsesAnnotatedInResult = Sets.union(
                 currentResponseToAnnotation.keySet(), newResponseToAnnotation.keySet());
 
-        final ImmutableList.Builder<AsssessedResponse> resultAnnotatedResponseB = ImmutableList.builder();
+        final ImmutableList.Builder<AssessedResponse> resultAnnotatedResponseB = ImmutableList.builder();
 
         for (final Response response : responsesAnnotatedInResult) {
             if (newResponseToAnnotation.containsKey(response)) {
@@ -126,7 +125,7 @@ public final class AnswerKey {
 			difference(unannotatedResponses, responsesAnnotatedInResult));
 	}
 
-	public static AnswerKey from(final Symbol docId, final Iterable<AsssessedResponse> annotatedArgs,
+	public static AnswerKey from(final Symbol docId, final Iterable<AssessedResponse> annotatedArgs,
 		final Iterable<Response> unannotatedResponses)
 	{
 		return new AnswerKey(docId, annotatedArgs, unannotatedResponses);
@@ -134,12 +133,12 @@ public final class AnswerKey {
 
 	private void assertConsistency() {
 		// maps responses (ignoring confidence) to their annotations
-		final Multimap<Response, AsssessedResponse> responseToAnn =
-			Multimaps.index(annotatedArgs, AsssessedResponse.Response);
+		final Multimap<Response, AssessedResponse> responseToAnn =
+			Multimaps.index(annotatedArgs, AssessedResponse.Response);
 
 		// check if there are any responses with multiple incompatible annotations.
-		for (final Map.Entry<Response, Collection<AsssessedResponse>> entry : responseToAnn.asMap().entrySet()) {
-			if (!allEqual(transform(entry.getValue(), AsssessedResponse.Annotation))) {
+		for (final Map.Entry<Response, Collection<AssessedResponse>> entry : responseToAnn.asMap().entrySet()) {
+			if (!allEqual(transform(entry.getValue(), AssessedResponse.Annotation))) {
 				throw new RuntimeException(String.format(
 					"Inconsistent pooled answer key. The one or more of the following is inconsistent: %s", entry.getValue()));
 			}
@@ -147,7 +146,7 @@ public final class AnswerKey {
 
         // check there are no response listed as both annotated and unannotated
         checkArgument(Sets.intersection(FluentIterable.from(annotatedArgs)
-                .transform(AsssessedResponse.Response).toSet(), unannotatedResponses).isEmpty(),
+                .transform(AssessedResponse.Response).toSet(), unannotatedResponses).isEmpty(),
                 "There are responses which are both unannotated and unannotated");
 
         assertNoIncompatibleCorefAnnotations();
@@ -155,7 +154,7 @@ public final class AnswerKey {
 
     private void assertNoIncompatibleCorefAnnotations() {
         final Map<KBPString, Integer> corefMappings = Maps.newHashMap();
-        for (final AsssessedResponse assessedResponse : annotatedResponses()) {
+        for (final AssessedResponse assessedResponse : annotatedResponses()) {
             if (assessedResponse.assessment().coreferenceId().isPresent()) {
                 final KBPString CAS = assessedResponse.response().canonicalArgument();
                 final int corefId = assessedResponse.assessment().coreferenceId().get();
@@ -175,7 +174,7 @@ public final class AnswerKey {
 
     public Optional<ResponseAssessment> assessment(Response response) {
         checkNotNull(response);
-        for (final AsssessedResponse assessedResponse : annotatedResponses()) {
+        for (final AssessedResponse assessedResponse : annotatedResponses()) {
             if (assessedResponse.response().equals(response)) {
                 return Optional.of(assessedResponse.assessment());
             }

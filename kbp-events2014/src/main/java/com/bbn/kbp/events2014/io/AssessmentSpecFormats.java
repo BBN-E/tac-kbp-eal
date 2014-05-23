@@ -317,7 +317,7 @@ public final class AssessmentSpecFormats {
 
 			try {
                 // first annotated responses, sorted by response ID
-				for (final AsssessedResponse arg : AsssessedResponse.ById.sortedCopy(answerKey.annotatedResponses())) {
+				for (final AssessedResponse arg : AssessedResponse.ById.sortedCopy(answerKey.annotatedResponses())) {
 					final List<String> parts = Lists.newArrayList();
 					parts.add(Integer.toString(arg.response().responseID()));
 					addArgumentParts(arg.response(), parts, 1.0);
@@ -349,13 +349,13 @@ public final class AssessmentSpecFormats {
 			if (docIDs().contains(docid)) {
 				return read(docid);
 			} else {
-				return AnswerKey.from(docid, ImmutableList.<AsssessedResponse>of(),
+				return AnswerKey.from(docid, ImmutableList.<AssessedResponse>of(),
 					ImmutableList.<Response>of());
 			}
 		}
 
         private synchronized AnswerKey uncachedRead(final Symbol docid) throws IOException {
-            final ImmutableList.Builder<AsssessedResponse> annotated = ImmutableList.builder();
+            final ImmutableList.Builder<AssessedResponse> annotated = ImmutableList.builder();
             final ImmutableList.Builder<Response> unannotated = ImmutableList.builder();
 
             final CharSource source = Files.asCharSource(new File(directory, docid.toString()), UTF_8);
@@ -378,7 +378,7 @@ public final class AssessmentSpecFormats {
                     final Optional<ResponseAssessment> annotation = parseAnnotation(annotationParts);
 
                     if (annotation.isPresent()) {
-                        annotated.add(AsssessedResponse.from(response, annotation.get()));
+                        annotated.add(AssessedResponse.from(response, annotation.get()));
                     } else {
                         unannotated.add(response);
                     }

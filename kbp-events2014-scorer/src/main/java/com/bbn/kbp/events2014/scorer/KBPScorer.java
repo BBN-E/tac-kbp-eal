@@ -1,11 +1,8 @@
 package com.bbn.kbp.events2014.scorer;
 
-import com.bbn.bue.common.files.FileUtils;
-import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.*;
 import com.bbn.kbp.events2014.io.AnnotationStore;
-import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.scorer.observers.*;
 import com.google.common.base.Function;
@@ -16,7 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -127,7 +123,7 @@ public final class KBPScorer {
 				}
 
 				final Set<Response> responses = systemOutput.answers(answerable);
-				final Set<AsssessedResponse> annotatedResponses = answerKey.answers(answerable);
+				final Set<AssessedResponse> annotatedResponses = answerKey.answers(answerable);
 
 				// let observers see the responses jointly
 				for (final KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver observer : docObservers) {
@@ -138,8 +134,8 @@ public final class KBPScorer {
 					// get safe because responses non-empty
 					final Response selectedSystemResponse = systemOutput.systemOutput()
 							.selectFromMultipleSystemResponses(responses).get();
-					final Optional<AsssessedResponse> annotationForArgument =
-						AsssessedResponse.findAnnotationForArgument(
+					final Optional<AssessedResponse> annotationForArgument =
+						AssessedResponse.findAnnotationForArgument(
                                 selectedSystemResponse, annotatedResponses);
 
 					if (annotationForArgument.isPresent()) {
@@ -245,17 +241,17 @@ public final class KBPScorer {
 		}
 	};
 
-	public static final Function<Collection<AsssessedResponse>, Symbol> AnyAnswerCorrect = new Function<Collection<AsssessedResponse>, Symbol> () {
+	public static final Function<Collection<AssessedResponse>, Symbol> AnyAnswerCorrect = new Function<Collection<AssessedResponse>, Symbol> () {
 		@Override
-		public Symbol apply(final Collection<AsssessedResponse> args) {
-			return Iterables.any(args, AsssessedResponse.IsCompletelyCorrect)?PRESENT:ABSENT;
+		public Symbol apply(final Collection<AssessedResponse> args) {
+			return Iterables.any(args, AssessedResponse.IsCompletelyCorrect)?PRESENT:ABSENT;
 		}
 	};
 
-	public static final Function<Collection<AsssessedResponse>, Symbol> AnyAnswerSemanticallyCorrect = new Function<Collection<AsssessedResponse>, Symbol> () {
+	public static final Function<Collection<AssessedResponse>, Symbol> AnyAnswerSemanticallyCorrect = new Function<Collection<AssessedResponse>, Symbol> () {
 		@Override
-		public Symbol apply(final Collection<AsssessedResponse> args) {
-			return Iterables.any(args, AsssessedResponse.IsCorrectUpToInexactJustifications)?PRESENT:ABSENT;
+		public Symbol apply(final Collection<AssessedResponse> args) {
+			return Iterables.any(args, AssessedResponse.IsCorrectUpToInexactJustifications)?PRESENT:ABSENT;
 		}
 	};
 }

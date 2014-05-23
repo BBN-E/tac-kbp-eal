@@ -24,7 +24,7 @@ public final class StrictAssessmentCreator implements AssessmentCreator {
     }
 
     @Override
-    public AnswerKey createAnswerKey(Symbol docID, List<AsssessedResponse> assessedResponses, List<Response> unassessedResponses) {
+    public AnswerKey createAnswerKey(Symbol docID, List<AssessedResponse> assessedResponses, List<Response> unassessedResponses) {
         return AnswerKey.from(docID, assessedResponses, unassessedResponses);
     }
 

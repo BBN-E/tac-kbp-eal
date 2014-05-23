@@ -45,12 +45,12 @@ public final class TestPooledAnswerKey {
 	public void testPooledAnswerKey() {
 		// test okay for two identical except for confidence with identical answers
 		final AnswerKey identical = AnswerKey.from(Symbol.from("foo"), ImmutableList.of(
-			AsssessedResponse.from(foo.item(), correct), AsssessedResponse.from(foo_diff_confidence.item(), correct)),
+			AssessedResponse.from(foo.item(), correct), AssessedResponse.from(foo_diff_confidence.item(), correct)),
 			ImmutableList.<Response>of());
 
 		// test okay for two different with different answer
 		final AnswerKey different = AnswerKey.from(Symbol.from("foo"), ImmutableList.of(
-			AsssessedResponse.from(foo.item(), correct), AsssessedResponse.from(bar.item(), unreal)),
+			AssessedResponse.from(foo.item(), correct), AssessedResponse.from(bar.item(), unreal)),
 			ImmutableList.<Response>of());
 	}
 
@@ -58,7 +58,7 @@ public final class TestPooledAnswerKey {
 	public void testPooledAnswerKeyConsistencyException() {
 		@SuppressWarnings("unused")
 		final AnswerKey bad = AnswerKey.from(Symbol.from("foo"), ImmutableList.of(
-			AsssessedResponse.from(foo.item(), correct), AsssessedResponse.from(foo_diff_confidence.item(), unreal)),
+			AssessedResponse.from(foo.item(), correct), AssessedResponse.from(foo_diff_confidence.item(), unreal)),
 			ImmutableList.<Response>of());
 	}
 }

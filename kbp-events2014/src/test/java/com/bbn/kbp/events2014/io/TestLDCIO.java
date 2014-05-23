@@ -22,7 +22,7 @@ public class TestLDCIO extends TestCase {
 	private final Symbol docid = Symbol.from("AFP_ENG_20030304.0250");
 	private Scored<Response> arg;
 	private ResponseAssessment ann;
-	private AsssessedResponse annArg;
+	private AssessedResponse annArg;
 
 	@Override
 	public void setUp() {
@@ -41,7 +41,7 @@ public class TestLDCIO extends TestCase {
                 Optional.of(KBPRealis.Actual),
                 Optional.of(FieldAssessment.CORRECT), Optional.of(1),
                 Optional.of(MentionType.NAME));
-		annArg = AsssessedResponse.from(arg.item(), ann);
+		annArg = AssessedResponse.from(arg.item(), ann);
 	}
 
 	@Test

@@ -1,27 +1,22 @@
 package com.bbn.kbp.events2014.scorer.observers;
 
-import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.collections.MapUtils;
 import com.bbn.bue.common.diff.FMeasureTableRenderer;
 import com.bbn.bue.common.diff.ProvenancedConfusionMatrix;
 import com.bbn.bue.common.diff.SummaryConfusionMatrix;
 import com.bbn.bue.common.evaluation.FMeasureCounts;
-import com.bbn.bue.common.evaluation.FMeasureInfo;
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.scoring.Scoreds;
 import com.bbn.bue.common.serialization.jackson.JacksonSerializer;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.bue.common.symbols.SymbolUtils;
-import com.bbn.kbp.events2014.AsssessedResponse;
+import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.scorer.AnswerKeyAnswerSource;
 import com.bbn.kbp.events2014.scorer.SystemOutputAnswerSource;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.HTMLErrorRecorder;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.*;
 import com.google.common.collect.*;
-import com.google.common.io.CharSink;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +38,7 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 	public static final Symbol PRESENT = Symbol.from("PRESENT");
 	public static final Symbol ABSENT = Symbol.from("ABSENT");
 
-	private final Predicate<AsssessedResponse> ResponseCorrect;
+	private final Predicate<AssessedResponse> ResponseCorrect;
 	private final Logger log;
 	private final SummaryConfusionMatrix.Builder corpusConfusionMatrixBuilder =
 			SummaryConfusionMatrix.builder();
@@ -55,12 +50,12 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
     private final JacksonSerializer jackson = JacksonSerializer.forNormalJSON();
 
 	public static KBPScoringObserver<TypeRoleFillerRealis> strictScorer(final HTMLErrorRecorder renderer) {
-		return new StrictStandardScoringObserver("Strict", AsssessedResponse.IsCompletelyCorrect,
+		return new StrictStandardScoringObserver("Strict", AssessedResponse.IsCompletelyCorrect,
 			renderer);
 	}
 
 	public static KBPScoringObserver<TypeRoleFillerRealis> standardScorer(final HTMLErrorRecorder renderer) {
-		return new StrictStandardScoringObserver("Standard", AsssessedResponse.IsCorrectUpToInexactJustifications,
+		return new StrictStandardScoringObserver("Standard", AssessedResponse.IsCorrectUpToInexactJustifications,
 			renderer);
 	}
 
@@ -180,7 +175,7 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 	}
 
 	private StrictStandardScoringObserver(final String name,
-		final Predicate<AsssessedResponse> ResponseCorrect, final HTMLErrorRecorder renderer)
+		final Predicate<AssessedResponse> ResponseCorrect, final HTMLErrorRecorder renderer)
 	{
 		super(name);
 		this.ResponseCorrect = checkNotNull(ResponseCorrect);
@@ -222,7 +217,7 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 
 			@Override
 			public void annotatedSelectedResponse(final TypeRoleFillerRealis answerable, final Response response,
-					final AsssessedResponse annotated)
+					final AssessedResponse annotated)
 			{
 				if (ResponseCorrect.apply(annotated)) {
 					textOut.append("True Positive\n");
@@ -246,7 +241,7 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 
 			@Override
 			public void annotationsOnlyNonEmpty(final TypeRoleFillerRealis answerable,
-				final Set<AsssessedResponse> annotatedResponses)
+				final Set<AssessedResponse> annotatedResponses)
 			{
 				// we check at the beginning of the method that these
 				// answers all agree,
