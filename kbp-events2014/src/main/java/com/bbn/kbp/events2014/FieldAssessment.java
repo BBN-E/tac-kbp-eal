@@ -21,7 +21,7 @@ public enum FieldAssessment {
 	public static FieldAssessment parse(final String s) {
 		final FieldAssessment ret = characterMap.get(s);
 		if (ret == null) {
-			throw new RuntimeException(String.format("Cannot parse %s as a filler assessment", s));
+			throw new RuntimeException(String.format("Cannot parse %s as a field assessment", s));
 		}
 		return ret;
 	}
