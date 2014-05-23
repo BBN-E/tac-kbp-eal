@@ -388,9 +388,10 @@ public final class AssessmentSpecFormats {
                 }
             }
 
-            return AnswerKey.from(docid, annotated.build(), unannotated.build());
+            return assessmentCreator.createAnswerKey(docid, annotated.build(), unannotated.build());
         }
 
+        private static final Set<String> emptyCorefEncodings = ImmutableSet.of("NIL", "");
         private Optional<ResponseAssessment> parseAnnotation(final List<String> parts) {
             checkArgument(parts.size() == 7, "Expected parts of size 7, but got %s", parts);
 
@@ -402,7 +403,9 @@ public final class AssessmentSpecFormats {
             final Optional<FieldAssessment> AER = FieldAssessment.parseOptional(parts.get(1));
             final Optional<FieldAssessment> casAssessment = FieldAssessment.parseOptional(parts.get(2));
             final Optional<FieldAssessment> baseFillerAssessment = FieldAssessment.parseOptional(parts.get(3));
-            final Optional<Integer> coreference = parts.get(4).equals("NIL")?Optional.<Integer>absent():Optional.of(Integer.parseInt(parts.get(4)));
+
+            final Optional<Integer> coreference = emptyCorefEncodings.contains(parts.get(4))
+                    ?Optional.<Integer>absent():Optional.of(Integer.parseInt(parts.get(4)));
             final Optional<KBPRealis> realis = KBPRealis.parseOptional(parts.get(5));
             final Optional<MentionType> mentionTypeOfCAS = MentionType.parseOptional(parts.get(6));
 

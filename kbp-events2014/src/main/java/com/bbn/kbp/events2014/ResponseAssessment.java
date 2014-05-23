@@ -145,6 +145,13 @@ public final class ResponseAssessment {
 			mentionCorrectFiller.orNull(), coreferenceId.orNull(), mentionTypeOfCAS.orNull());
 	}
 
+    public ResponseAssessment copyWithModifiedCoref(Optional<Integer> newCoref) {
+        return create(justificationSupportsEventType(), justificationSupportsRole(),
+                entityCorrectFiller(), realis(), baseFillerCorrect(), newCoref,
+                mentionTypeOfCAS());
+    }
+
+
     @Override
 	public String toString() {
 		final StringBuilder sb = new StringBuilder();

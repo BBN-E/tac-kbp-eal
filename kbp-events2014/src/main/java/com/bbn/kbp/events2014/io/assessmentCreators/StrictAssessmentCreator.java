@@ -1,9 +1,10 @@
 package com.bbn.kbp.events2014.io.assessmentCreators;
 
-import com.bbn.kbp.events2014.FieldAssessment;
-import com.bbn.kbp.events2014.KBPRealis;
-import com.bbn.kbp.events2014.ResponseAssessment;
+import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events2014.*;
 import com.google.common.base.Optional;
+
+import java.util.List;
 
 /**
  * Creates {@link com.bbn.kbp.events2014.ResponseAssessment}s which enforcing
@@ -20,6 +21,11 @@ public final class StrictAssessmentCreator implements AssessmentCreator {
     {
         return Optional.of(ResponseAssessment.create(aet, aer, casAssessment, realis, baseFillerAssessment,
                 coreference, mentionTypeOfCAS));
+    }
+
+    @Override
+    public AnswerKey createAnswerKey(Symbol docID, List<AsssessedResponse> assessedResponses, List<Response> unassessedResponses) {
+        return AnswerKey.from(docID, assessedResponses, unassessedResponses);
     }
 
     public static AssessmentCreator create() {

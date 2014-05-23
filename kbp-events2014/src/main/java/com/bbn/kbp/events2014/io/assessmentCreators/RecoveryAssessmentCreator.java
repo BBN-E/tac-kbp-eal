@@ -1,12 +1,12 @@
 package com.bbn.kbp.events2014.io.assessmentCreators;
 
-import com.bbn.kbp.events2014.FieldAssessment;
-import com.bbn.kbp.events2014.KBPRealis;
-import com.bbn.kbp.events2014.ResponseAssessment;
+import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events2014.*;
 import com.google.common.base.Optional;
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
+import com.google.common.collect.*;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public final class RecoveryAssessmentCreator implements AssessmentCreator {
     private int responsesAttempted = 0;
     private int makeMissingCorefSingleton = 0;
+    private int numRemappedCoref = 0;
     private Multiset<String> extras = HashMultiset.create();
     private Multiset<String> missing = HashMultiset.create();
     private final Random rng;
@@ -45,6 +46,8 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
         sb.append("Coreference was missing in ").append(makeMissingCorefSingleton)
                 .append(" responses. These were placed in singletons with random indices.")
                 .append(" There is some tiny chance of a collision here, but it is too small to worry about.\n");
+        sb.append("For ").append(numRemappedCoref).append(" responses, the same CAS was mapped to multiple clusters. ")
+                .append("These have all been moved to the first cluster encountered.\n");
         sb.append("Required fields were missing in ").append(missing.size()).append(" responses. ")
                 .append("These were treated as unannotated. The breakdown of missing fields is ")
                 .append(missing).append("\n");
@@ -136,5 +139,44 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
 
         return Optional.of(ResponseAssessment.create(fixedAET, fixedAER, fixedCAS,
                 fixedRealis, fixedBF, fixedCoref, fixedMentionType));
+    }
+
+    @Override
+    public AnswerKey createAnswerKey(Symbol docID, List<AsssessedResponse> assessedResponses, List<Response> unassessedResponses) {
+        return AnswerKey.from(docID, fixCoref(assessedResponses), unassessedResponses);
+    }
+
+    /**
+     * If an annotation store erroneously has the same CAS in multiple coref clusters, map them all to the
+     * first cluster encountered.
+     */
+    private List<AsssessedResponse> fixCoref(Iterable<AsssessedResponse> assessedResponses) {
+        final Map<KBPString, Integer> CASToIndex = Maps.newHashMap();
+
+        for (AsssessedResponse response : assessedResponses) {
+            if (!CASToIndex.containsKey(response.response().canonicalArgument())
+                    && response.assessment().coreferenceId().isPresent())
+            {
+                CASToIndex.put(response.response().canonicalArgument(), response.assessment().coreferenceId().get());
+            }
+        }
+
+        final ImmutableList.Builder<AsssessedResponse> ret = ImmutableList.builder();
+
+        for (final AsssessedResponse response : assessedResponses) {
+            final Integer mappedCoref = CASToIndex.get(response.response().canonicalArgument());
+
+            if (mappedCoref != null
+                    && (!response.assessment().coreferenceId().isPresent()
+                        || !response.assessment().coreferenceId().get().equals(mappedCoref)))
+            {
+                ret.add(AsssessedResponse.from(response.response(),
+                        response.assessment().copyWithModifiedCoref(Optional.of(mappedCoref))));
+                ++numRemappedCoref;
+            } else {
+                ret.add(response);
+            }
+        }
+        return ret.build();
     }
 }
