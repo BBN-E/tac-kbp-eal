@@ -6,7 +6,7 @@ import com.bbn.com.bbn.kbp.events2014.assessmentDiff.diffLoggers.BasicDiffLogger
 import com.bbn.com.bbn.kbp.events2014.assessmentDiff.diffLoggers.DiffLogger;
 import com.bbn.com.bbn.kbp.events2014.assessmentDiff.observers.*;
 import com.bbn.kbp.events2014.AnswerKey;
-import com.bbn.kbp.events2014.AsssessedResponse;
+import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
 import com.bbn.kbp.events2014.io.AnnotationStore;
@@ -75,10 +75,10 @@ public final class KBPAssessmentDiff {
             final Set<Response> commonResponses =
                     Sets.intersection(
                             FluentIterable.from(leftAnswers.annotatedResponses())
-                                    .transform(AsssessedResponse.Response)
+                                    .transform(AssessedResponse.Response)
                                     .toSet(),
                             FluentIterable.from(rightAnswers.annotatedResponses())
-                                    .transform(AsssessedResponse.Response)
+                                    .transform(AssessedResponse.Response)
                                     .toSet());
             totalCommonResponses += commonResponses.size();
 
@@ -124,7 +124,7 @@ public final class KBPAssessmentDiff {
         if (baselineAnnotationStore.isPresent()) {
             final AnswerKey baselineAnswers = baselineAnnotationStore.get().readOrEmpty(docId);
             baselineResponses = FluentIterable.from(baselineAnswers.annotatedResponses())
-                    .transform(AsssessedResponse.Response).toSet();
+                    .transform(AssessedResponse.Response).toSet();
         } else {
             baselineResponses = ImmutableSet.of();
         }
