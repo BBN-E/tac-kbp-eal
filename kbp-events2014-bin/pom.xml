@@ -79,9 +79,17 @@
                   </jvmSettings>
               </program>
 
-<program>
+            <program>
                   <mainClass>com.bbn.kbp.events2014.bin.KeepOnlyBestResponses</mainClass>
                   <name>keepOnlyBestResponses</name>
+                  <jvmSettings>
+                      <maxMemorySize>1g</maxMemorySize>
+                  </jvmSettings>
+              </program>
+
+            <program>
+                  <mainClass>com.bbn.kbp.events2014.bin.RepairAnnotationStore</mainClass>
+                  <name>repairAnnotationStore</name>
                   <jvmSettings>
                       <maxMemorySize>1g</maxMemorySize>
                   </jvmSettings>

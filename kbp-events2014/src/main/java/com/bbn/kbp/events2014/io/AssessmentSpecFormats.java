@@ -7,13 +7,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import com.bbn.kbp.events2014.*;
+import com.bbn.kbp.events2014.io.assessmentCreators.AssessmentCreator;
+import com.bbn.kbp.events2014.io.assessmentCreators.RecoveryAssessmentCreator;
+import com.bbn.kbp.events2014.io.assessmentCreators.StrictAssessmentCreator;
 import com.google.common.base.*;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -65,7 +65,7 @@ public final class AssessmentSpecFormats {
 				"Non-empty output directory %s when attempting to create assessment store", directory));
 		}
 		directory.mkdirs();
-		return new DirectoryAnnotationStore(directory);
+		return new DirectoryAnnotationStore(directory, StrictAssessmentCreator.create());
 	}
 
     /**
@@ -81,12 +81,22 @@ public final class AssessmentSpecFormats {
 		if (!directory.exists() || !directory.isDirectory()) {
             throw new IOException(String.format("Annotation store directory %s either does not exist or is not a directory", directory));
         }
-		return new DirectoryAnnotationStore(directory);
+		return new DirectoryAnnotationStore(directory, StrictAssessmentCreator.create());
 	}
+
+    public static AnnotationStore recoverPossiblyBrokenAnnotationStore(File directory,
+                        RecoveryAssessmentCreator assessmentCreator) throws IOException
+    {
+        if (!directory.exists() || !directory.isDirectory()) {
+            throw new IOException(String.format("Annotation store directory %s either does not exist or is not a directory", directory));
+        }
+        return new DirectoryAnnotationStore(directory, assessmentCreator);
+    }
+
 
     public static AnnotationStore openOrCreateAnnotationStore(final File directory) throws IOException {
         directory.mkdirs();
-        return new DirectoryAnnotationStore(directory);
+        return new DirectoryAnnotationStore(directory, StrictAssessmentCreator.create());
     }
 
     /**
@@ -122,7 +132,7 @@ public final class AssessmentSpecFormats {
         }
     }
 
-	private static final class DirectorySystemOutputStore implements SystemOutputStore {
+    private static final class DirectorySystemOutputStore implements SystemOutputStore {
 		private static Logger log = LoggerFactory.getLogger(DirectorySystemOutputStore.class);
 
 		private final File directory;
@@ -237,8 +247,12 @@ public final class AssessmentSpecFormats {
         private final LoadingCache<Symbol, AnswerKey> cache;
         private boolean closed = false;
         private final Set<Symbol> docIDs;
+        // object which actually creates ResponseAssessments
+        // can be used to control how strict we are about
+        // the input
+        private AssessmentCreator assessmentCreator;
 
-		private DirectoryAnnotationStore(final File directory) throws IOException {
+		private DirectoryAnnotationStore(final File directory, AssessmentCreator assessmentCreator) throws IOException {
 			checkArgument(directory.exists(), "Directory %s for annotation store does not exist", directory);
             // this is a half-hearted attempt at preventing multiple assessment stores
             //  being opened on the same directory at once.  There is a race condition,
@@ -259,6 +273,7 @@ public final class AssessmentSpecFormats {
                         }
                     });
             this.docIDs = loadInitialDocIds();
+            this.assessmentCreator = checkNotNull(assessmentCreator);
 		}
 
         @Override
@@ -360,8 +375,7 @@ public final class AssessmentSpecFormats {
                     }
 
                     final Response response = parseArgumentFields(argumentParts);
-                    final Optional<ResponseAssessment> annotation =
-                            parseAnnotation(annotationParts);
+                    final Optional<ResponseAssessment> annotation = parseAnnotation(annotationParts);
 
                     if (annotation.isPresent()) {
                         annotated.add(AsssessedResponse.from(response, annotation.get()));
@@ -377,10 +391,15 @@ public final class AssessmentSpecFormats {
             return AnswerKey.from(docid, annotated.build(), unannotated.build());
         }
 
-        private static Optional<ResponseAssessment> parseAnnotation(final List<String> parts) {
+        private Optional<ResponseAssessment> parseAnnotation(final List<String> parts) {
             checkArgument(parts.size() == 7, "Expected parts of size 7, but got %s", parts);
 
             if (parts.contains("UNANNOTATED")) {
+                return Optional.absent();
+            }
+
+            if (parts.get(0).equals("NIL")) {
+                log.warn("Encountered NIL AET; treating response as unannotated.");
                 return Optional.absent();
             }
 
@@ -392,8 +411,8 @@ public final class AssessmentSpecFormats {
             final Optional<KBPRealis> realis = KBPRealis.parseOptional(parts.get(5));
             final Optional<MentionType> mentionTypeOfCAS = MentionType.parseOptional(parts.get(6));
 
-            return Optional.of(ResponseAssessment.create(AET, AER, casAssessment,
-                    realis, baseFillerAssessment, coreference, mentionTypeOfCAS));
+            return assessmentCreator.createAssessmentFromFields(AET, AER, casAssessment,
+                    realis, baseFillerAssessment, coreference, mentionTypeOfCAS);
         }
 
         private static void addAnnotationParts(final ResponseAssessment ann, final List<String> parts) {

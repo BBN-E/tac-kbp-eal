@@ -36,9 +36,6 @@ public final class ImportSystemOutputToAnnotationStore {
     }
 
     private static void trueMain(final String[] argv) throws IOException {
-        final File systemOutputDir;
-        final File annStoreDir;
-
         if (argv.length == 1) {
             final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
             log.info(params.dump());

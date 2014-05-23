@@ -2,7 +2,11 @@ package com.bbn.kbp.events2014;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multiset;
+
+import java.util.Random;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -14,7 +18,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *
  */
 public final class ResponseAssessment {
-	public enum MentionType {
+    public enum MentionType {
 		NOMINAL, NAME;
 
 		public static String stringOrNil(final Optional<MentionType> mt) {
@@ -139,7 +143,7 @@ public final class ResponseAssessment {
 			mentionCorrectFiller.orNull(), coreferenceId.orNull(), mentionTypeOfCAS.orNull());
 	}
 
-	@Override
+    @Override
 	public String toString() {
 		final StringBuilder sb = new StringBuilder();
 

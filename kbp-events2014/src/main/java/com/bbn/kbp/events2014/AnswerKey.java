@@ -150,7 +150,7 @@ public final class AnswerKey {
                 .transform(AsssessedResponse.Response).toSet(), unannotatedResponses).isEmpty(),
                 "There are responses which are both unannotated and unannotated");
 
-        assertNoIncompatibleCorefAnnotations();
+        //assertNoIncompatibleCorefAnnotations();
 	}
 
     private void assertNoIncompatibleCorefAnnotations() {
