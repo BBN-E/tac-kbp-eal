@@ -9,11 +9,11 @@ public class AETObserver extends ConfusionMatrixAssessmentPairObserver {
 
     @Override
     protected boolean filter(Response response, ResponseAssessment left, ResponseAssessment right) {
-        return true;
+        return left.justificationSupportsEventType().isPresent() && right.justificationSupportsEventType().isPresent();
     }
 
     @Override
     protected Symbol toKey(ResponseAssessment assessment) {
-        return Symbol.from(assessment.justificationSupportsEventType().toString());
+        return Symbol.from(assessment.justificationSupportsEventType().get().toString());
     }
 }
