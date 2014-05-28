@@ -146,6 +146,30 @@ Add the following to the `dependencies` section of your project's `pom.xml` (or 
 This artifact is not deployed to Maven Central or anywhere, so you will need to
 install it in your local repository as described above.
 
+### How can I used the LDC's assessment of the pilot with this code?
+The LDC's pilot assessment's format differs from the format and constraints expected by this code in a few ways. 
+Follow these steps to transform it into a usable annotation store:
+
+1. Remove the `.out` extensions from the assessment files
+```
+cd LDC2014E40_TAC_2014_KBP_Event_Argument_Extraction_Pilot_Assessment_Results/data/LDC_assessments
+rename .out "" *.out
+```
+2. Run the repair program 
+```
+./kbp-events2014-bin/target/appassembler/bin/repairAnnotationStore repair.params
+```
+
+where repair.params looks like
+
+```
+randomSeed: 0
+pathToWriteFixedStore: the path you want the repaired annotation store written to
+brokenStore:  /nfs/mercury-04/u10/kbp/pilot/assessment/LDC2014E40_TAC_2014_KBP_Event_Argument_Extraction_Pilot_Assessment_Results/data/LDC_assessments          
+```
+
+Of course, alter the path in `brokenStore` to wherever you are storing the pilot assessment.
+
 ## Contact
 For questions concerning the software, please contact `rgabbard@bbn.com`.  If you 
 have bugs or feature requests, you can use the GitHub Issue Tracker.
