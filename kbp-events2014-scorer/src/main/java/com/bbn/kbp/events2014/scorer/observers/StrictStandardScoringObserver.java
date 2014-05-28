@@ -1,6 +1,7 @@
 package com.bbn.kbp.events2014.scorer.observers;
 
 import com.bbn.bue.common.collections.MapUtils;
+import com.bbn.bue.common.collections.MultimapUtils;
 import com.bbn.bue.common.diff.FMeasureTableRenderer;
 import com.bbn.bue.common.diff.ProvenancedConfusionMatrix;
 import com.bbn.bue.common.diff.SummaryConfusionMatrix;
@@ -46,6 +47,10 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
             Maps.newHashMap();
     private final Map<Symbol, SummaryConfusionMatrix.Builder> byRoleConfusionMatrices =
             Maps.newHashMap();
+    private final Map<Symbol, SummaryConfusionMatrix.Builder> byGenreConfusionMatrices =
+            Maps.newHashMap();
+    
+
     private final HTMLErrorRecorder renderer;
     private final JacksonSerializer jackson = JacksonSerializer.forNormalJSON();
 
@@ -64,7 +69,8 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
         final FMeasureCounts corpusFMeasure = corpusConfusionMatrixBuilder.build().FMeasureVsAllOthers(PRESENT);
         Iterable<Map.Entry<String, Map<Symbol, SummaryConfusionMatrix.Builder>>> printModes = ImmutableMap.of(
                 "Aggregate", ImmutableMap.of(Symbol.from("Aggregate"), corpusConfusionMatrixBuilder),
-                "Type", byTypeConfusionMatrices, "Role", byRoleConfusionMatrices).entrySet();
+                "Type", byTypeConfusionMatrices, "Role", byRoleConfusionMatrices,
+                "Genre", byGenreConfusionMatrices).entrySet();
 
 
         for (final Map.Entry<String, Map<Symbol, SummaryConfusionMatrix.Builder>> printMode : printModes) {
@@ -196,6 +202,11 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
             accumulateConfusionMatrix(byRoleConfusionMatrices, eventRole,
                     matrix.filteredCopy(compose(equalTo(eventRole), TypeDotRole)));
         }
+
+        for (final Symbol genre : FluentIterable.from(matrix.entries()).transform(Genre).toSet()) {
+            accumulateConfusionMatrix(byGenreConfusionMatrices, genre,
+                    matrix.filteredCopy(compose(equalTo(genre), Genre)));
+        }
 	}
 
 
@@ -300,5 +311,42 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
         public Symbol apply(TypeRoleFillerRealis input) {
             return Symbol.from(input.type().toString() + "." + input.role().toString());
         }
+    };
+
+    /**
+     * Will identify genres for ACE and pilot documents.
+     */
+    private static final Function<TypeRoleFillerRealis,Symbol> Genre = new Function<TypeRoleFillerRealis, Symbol>() {
+        @Override
+        public Symbol apply(TypeRoleFillerRealis input) {
+            final String docid = input.docID().toString();
+            for (final Map.Entry<String, Symbol> classifier : prefixToGenre.entrySet()) {
+                if (docid.startsWith(classifier.getKey())) {
+                    return classifier.getValue();
+                }
+            }
+            return UNKNOWN;
+        }
+
+        private final Symbol UNKNOWN = Symbol.from("Unknown");
+        private final Symbol NW = Symbol.from("Newswire");
+        private final Symbol DF = Symbol.from("Forum");
+        private final Symbol BLOG = Symbol.from("Blog");
+        private final Symbol SPEECH = Symbol.from("Speech");
+        private final Symbol BC = Symbol.from("Broadcast conversation");
+        private final Symbol BN = Symbol.from("Broadast News");
+
+        private final Map<String, Symbol> prefixToGenre = MultimapUtils.copyAsMap(
+            ImmutableMultimap.<Symbol, String>builder()
+                .putAll(BC, "CNN_CF", "CNN_IP")
+                .putAll(BN, "CNN_", "CNNHL")
+                .putAll(DF, "bolt", "marce", "alt.", "aus.cars", "Austin-Grad", "misc.",
+                "rec.", "seattle.", "soc.", "talk.", "uk.")
+                .putAll(NW, "APW", "AFP", "CNA", "NYT", "WPB", "XIN")
+                .putAll(BLOG, "AGGRESSIVEVOICEDAILY", "BACONSREBELLION",
+                        "FLOPPING_ACES", "GETTINGPOLITICAL", "HEALINGIRAQ", "MARKBACKER", "OIADVANTAGE", "TTRACY")
+                .putAll(SPEECH, "fsh_")
+                .build()
+            .inverse());
     };
 }
