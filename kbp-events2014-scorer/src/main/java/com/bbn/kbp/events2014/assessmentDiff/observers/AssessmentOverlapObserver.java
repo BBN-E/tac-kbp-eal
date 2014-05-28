@@ -1,4 +1,4 @@
-package com.bbn.com.bbn.kbp.events2014.assessmentDiff.observers;
+package com.bbn.kbp.events2014.assessmentDiff.observers;
 
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.AssessedResponse;

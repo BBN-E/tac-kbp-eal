@@ -1,10 +1,10 @@
-package com.bbn.com.bbn.kbp.events2014.assessmentDiff;
+package com.bbn.kbp.events2014.assessmentDiff;
 
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.com.bbn.kbp.events2014.assessmentDiff.diffLoggers.BasicDiffLogger;
-import com.bbn.com.bbn.kbp.events2014.assessmentDiff.diffLoggers.DiffLogger;
-import com.bbn.com.bbn.kbp.events2014.assessmentDiff.observers.*;
+import com.bbn.kbp.events2014.assessmentDiff.diffLoggers.BasicDiffLogger;
+import com.bbn.kbp.events2014.assessmentDiff.diffLoggers.DiffLogger;
+import com.bbn.kbp.events2014.assessmentDiff.observers.*;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.Response;

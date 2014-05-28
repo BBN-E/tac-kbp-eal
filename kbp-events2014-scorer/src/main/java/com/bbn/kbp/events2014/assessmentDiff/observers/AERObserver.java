@@ -1,8 +1,9 @@
-package com.bbn.com.bbn.kbp.events2014.assessmentDiff.observers;
+package com.bbn.kbp.events2014.assessmentDiff.observers;
 
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
+import com.bbn.kbp.events2014.assessmentDiff.observers.ConfusionMatrixAssessmentPairObserver;
 import com.google.common.base.Objects;
 
 public final class AERObserver extends ConfusionMatrixAssessmentPairObserver {

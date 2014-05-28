@@ -1,7 +1,8 @@
-package com.bbn.com.bbn.kbp.events2014.assessmentDiff.diffLoggers;
+package com.bbn.kbp.events2014.assessmentDiff.diffLoggers;
 
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.assessmentDiff.diffLoggers.DiffLogger;
 
 /**
 * Created by rgabbard on 5/20/14.

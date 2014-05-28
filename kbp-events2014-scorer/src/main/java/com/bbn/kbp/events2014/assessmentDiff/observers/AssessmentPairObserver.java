@@ -1,9 +1,8 @@
-package com.bbn.com.bbn.kbp.events2014.assessmentDiff.observers;
+package com.bbn.kbp.events2014.assessmentDiff.observers;
 
-import com.bbn.com.bbn.kbp.events2014.assessmentDiff.KBPAssessmentDiff;
-import com.bbn.com.bbn.kbp.events2014.assessmentDiff.diffLoggers.DiffLogger;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
+import com.bbn.kbp.events2014.assessmentDiff.diffLoggers.DiffLogger;
 
 import java.io.File;
 import java.io.IOException;
