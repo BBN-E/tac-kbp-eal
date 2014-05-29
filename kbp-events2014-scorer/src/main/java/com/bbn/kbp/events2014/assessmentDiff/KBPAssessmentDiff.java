@@ -1,9 +1,12 @@
 package com.bbn.kbp.events2014.assessmentDiff;
 
+import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.assessmentDiff.diffLoggers.BasicDiffLogger;
 import com.bbn.kbp.events2014.assessmentDiff.diffLoggers.DiffLogger;
+import com.bbn.kbp.events2014.assessmentDiff.diffLoggers.FancierDiffLogger;
+import com.bbn.kbp.events2014.assessmentDiff.diffLoggers.PlainDocCache;
 import com.bbn.kbp.events2014.assessmentDiff.observers.*;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.AssessedResponse;
@@ -19,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +51,8 @@ public final class KBPAssessmentDiff {
         final AnnotationStore rightAnnotationStore = AssessmentSpecFormats.openAnnotationStore(
                 params.getExistingDirectory("rightAnnotationStore"));
         final File outputDirectory = params.getCreatableDirectory("outputDirectory");
+        final File plainDocMapFile = params.getExistingFile("plainDocidMap");
+        
         // the user may optionally specify a "baseline store". Any responses which are assessed
         // in the baseline store will have their assessments ignored when diffing. This is
         // useful for diffing two "marginal" sets of annotations on top of an existing
@@ -60,7 +66,9 @@ public final class KBPAssessmentDiff {
         final AssessmentOverlapObserver overlapObserver = new AssessmentOverlapObserver();
         final Map<String, AssessmentPairObserver> observers = createObservers(outputDirectory);
 
-        final DiffLogger diffLogger = new BasicDiffLogger();
+        //final DiffLogger diffLogger = new BasicDiffLogger();
+        final ImmutableMap<Symbol, File> plainDocidMap = FileUtils.loadSymbolToFileMap( plainDocMapFile );
+        final DiffLogger diffLogger = new FancierDiffLogger(new PlainDocCache(plainDocidMap));
 
         int totalCommonResponses = 0;
         int totalCommonResponsesNotInBaseline = 0;

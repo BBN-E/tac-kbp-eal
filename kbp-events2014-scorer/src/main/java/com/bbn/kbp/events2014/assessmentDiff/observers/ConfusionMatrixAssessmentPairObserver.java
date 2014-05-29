@@ -42,6 +42,8 @@ public abstract class ConfusionMatrixAssessmentPairObserver implements Assessmen
         final ProvenancedConfusionMatrix<Response> confusionMatrix = confusionMatrixBuilder.build();
 
         final StringBuilder sb = new StringBuilder();
+        sb.append("<html><body>");
+        sb.append("<br><br>");
 
         for (final Symbol leftKey : confusionMatrix.leftLabels()) {
             for (final Symbol rightKey : confusionMatrix.rightLabels()) {
@@ -52,6 +54,8 @@ public abstract class ConfusionMatrixAssessmentPairObserver implements Assessmen
                 }
             }
         }
+        
+        sb.append("</body></html>");
         Files.asCharSink(new File(outputDir, "examples.html"), Charsets.UTF_8).write(sb.toString());
 
         final SummaryConfusionMatrix summaryConfusionMatrix = confusionMatrix.buildSummaryMatrix();
