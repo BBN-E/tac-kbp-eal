@@ -95,7 +95,13 @@
                   </jvmSettings>
               </program>
 
-
+                <program>
+                    <mainClass>com.bbn.kbp.events2014.expanders.ExpandFromRealis</mainClass>
+                    <name>expandByRealis</name>
+                    <jvmSettings>
+                        <maxMemorySize>1g</maxMemorySize>
+                    </jvmSettings>
+                </program>
 
 
             </programs>
