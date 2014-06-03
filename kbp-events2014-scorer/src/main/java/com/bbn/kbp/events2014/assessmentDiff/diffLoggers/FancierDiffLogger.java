@@ -3,14 +3,14 @@ package com.bbn.kbp.events2014.assessmentDiff.diffLoggers;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Set;
 
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.ResponseAssessment;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+
+import org.apache.commons.lang.StringEscapeUtils;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -22,8 +22,7 @@ public final class FancierDiffLogger implements DiffLogger {
     }
 
     @Override
-    public void logDifference(Response response, Symbol leftKey,
-            Symbol rightKey, StringBuilder out) {
+    public void logDifference(Response response, Symbol leftKey, Symbol rightKey, StringBuilder out) {
         //this.logBegin(out);
         this.logLeftRightDecisions(out, leftKey, rightKey);
         this.logIdTypeRoleCAS(response, out);
@@ -41,9 +40,11 @@ public final class FancierDiffLogger implements DiffLogger {
         try {
             originalDocText = this.cache.getPlainDoc(response.docID());
             this.logBaseFiller(originalDocText, response, out);
+            this.logRealis(response, out);
             this.logPredicateJustifications(originalDocText, response, out);
             this.logArgumentJustications(originalDocText, response, out);
             this.logDocumentContext(originalDocText, response, out);
+            
         } catch (final IOException ioe) {
             out.append("Error: failed to load document");
             out.append("<hr>");
@@ -51,10 +52,7 @@ public final class FancierDiffLogger implements DiffLogger {
             //return String.format("Cannot load text file for doc ID %s",  response.docID());
         }
         out.append("<hr>");
-        
-
     }
-
     
     private void logLeftRightDecisions(StringBuilder out, Symbol leftKey, Symbol rightKey) {
         out.append(String.format("<h2>%s vs %s</h2>", leftKey, rightKey));
@@ -64,10 +62,12 @@ public final class FancierDiffLogger implements DiffLogger {
         out.append(String.format("<h2>Response Id: %s</h2>", response.responseID()));
         out.append(String.format("<h2>(Docid: %s, Type: %s, Role: %s, CAS: %s)</h2>", response.docID(),
                 response.type(), response.role(), response.canonicalArgument()));
-
-//        out.append(String.format("<h3>Type: %s</h3>", response.type()));
-//        out.append(String.format("<h3>Role: %s</h3>", response.role()));
-//        out.append(String.format("<h3>CAS: %s</h3>", response.canonicalArgument()));
+    }
+    
+    private void logRealis(Response response, StringBuilder out) {
+        out.append("<h3>Realis:</h3>");
+        out.append(response.realis());
+        out.append("<br>");
     }
     
     private void logBaseFiller(String originalDocText, Response response, StringBuilder out) {
@@ -95,8 +95,9 @@ public final class FancierDiffLogger implements DiffLogger {
         offsetSpans.addAll(response.predicateJustifications());
         out.append("<div>");
         for (CharOffsetSpan predSpan : offsetSpans) {
-             out.append(originalDocText.substring(predSpan.startInclusive(),
-                     predSpan.endInclusive()+1));
+            
+             out.append(StringEscapeUtils.escapeHtml(originalDocText.substring(predSpan.startInclusive(),
+                     predSpan.endInclusive()+1)));
              out.append("<br>");
         }
         out.append("</div>");
@@ -111,8 +112,8 @@ public final class FancierDiffLogger implements DiffLogger {
            out.append("(N/A)"); 
         } else {
             for (CharOffsetSpan argSpan : offsetSpans) {
-                out.append(originalDocText.substring(argSpan.startInclusive(),
-                        argSpan.endInclusive()+1));
+                out.append(StringEscapeUtils.escapeHtml(originalDocText.substring(argSpan.startInclusive(),
+                        argSpan.endInclusive()+1)));
                 out.append("<br>");
             }
         }
@@ -120,7 +121,7 @@ public final class FancierDiffLogger implements DiffLogger {
     }
     
     private void logDocumentContext(final String originalDocText, final Response response, StringBuilder out) {
-        String context = this.unifiedJustifications(originalDocText, response);
+        String context = StringEscapeUtils.escapeHtml(this.unifiedJustifications(originalDocText, response));
         out.append("<h3>Context:</h3>");
         out.append("<div>");
         out.append(context);
@@ -134,12 +135,11 @@ public final class FancierDiffLogger implements DiffLogger {
         int startInclusive = offsetSpans.get(0).startInclusive();
         int endInclusive = offsetSpans.get(offsetSpans.size()-1).endInclusive();
         startInclusive = (startInclusive - 100) >= 0 ? startInclusive - 100 : 0;
-        endInclusive = (endInclusive + 100) < originalDocText.length()? endInclusive+100 : originalDocText.length()-1;
-        String context = originalDocText.substring(startInclusive, endInclusive+1);
+        endInclusive = (endInclusive + 100) < originalDocText.length()? endInclusive+100 : endInclusive;
+        String context = originalDocText.substring(startInclusive, endInclusive);
         if (context.length() > 1000) {
-            context = context.substring(1000);
-        }
-                
+            context = context.substring(1000);   
+        }                
         return "...." + context + " ....";
     }
     
