@@ -2,6 +2,7 @@ package com.bbn.kbp.events2014.scorer;
 
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.*;
+import com.bbn.kbp.events2014.filters.OnlyMostSpecificTemporal;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.scorer.observers.*;
@@ -83,6 +84,10 @@ public final class KBPScorer {
 			log.info("Scoring document: {}", docid);
 
 			final AnswerKey key = goldAnswerStore.readOrEmpty(docid);
+            // if a correct temporal role is present in the answer key, then
+            // all less specific versions of that temporal role are removed
+            // from all system output before scoring
+            final OnlyMostSpecificTemporal temporalFilter = OnlyMostSpecificTemporal.forAnswerKey(key);
 
 			// Annotators will mark coreference between the entity fillers for arguments.  We load
 			// these annotations in order to group e.g. (BasketballGame, Winner, Louisville, Actual)
@@ -94,7 +99,8 @@ public final class KBPScorer {
 			final AnswerKeyAnswerSource<TypeRoleFillerRealis> answerKey = AnswerKeyAnswerSource.forAnswerable(
 				key, TypeRoleFillerRealis.extractFromSystemResponse(entityNormalizer));
 			final SystemOutputAnswerSource<TypeRoleFillerRealis> systemOutput =
-				SystemOutputAnswerSource.forAnswerable(systemAnswerStore.readOrEmpty(docid),
+				SystemOutputAnswerSource.forAnswerable(
+                        temporalFilter.apply(systemAnswerStore.readOrEmpty(docid)),
 					TypeRoleFillerRealis.extractFromSystemResponse(entityNormalizer));
 
             final ImmutableMap<KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver,

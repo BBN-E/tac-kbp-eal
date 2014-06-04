@@ -45,6 +45,10 @@ public final class TypeRoleFillerRealis implements Comparable<TypeRoleFillerReal
 		return new TypeRoleFillerRealis(docid, type, role, alternateRealis, argumentCanonicalString);
 	}
 
+    public TypeRoleFillerRealis copyWithCAS(KBPString newCAS) {
+        return new TypeRoleFillerRealis(docid, type, role, realis, newCAS);
+    }
+
 	@Override
 	public int hashCode() {
 		return Objects.hashCode(argumentCanonicalString, docid.toString(), role.toString(), type.toString(),
@@ -102,6 +106,10 @@ public final class TypeRoleFillerRealis implements Comparable<TypeRoleFillerReal
 		};
 	}
 
+    public static TypeRoleFillerRealis fromSystemResponseUnnormalized(final Response r) {
+        return TypeRoleFillerRealis.create(r.docID(), r.type(), r.role(), r.realis(), r.canonicalArgument());
+    }
+
 	@Override
 	public int compareTo(final TypeRoleFillerRealis o) {
 		return ComparisonChain.start()
@@ -119,4 +127,6 @@ public final class TypeRoleFillerRealis implements Comparable<TypeRoleFillerReal
             return input.type();
         }
     };
+
+
 }

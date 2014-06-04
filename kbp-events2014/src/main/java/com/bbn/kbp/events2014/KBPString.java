@@ -42,6 +42,10 @@ public final class KBPString {
 		return offsetSpan;
 	}
 
+    public KBPString copyWithString(String s) {
+        return from(s, offsetSpan);
+    }
+
 	@Override
 	public String toString() {
 		return String.format("[%d:%d]=%s", offsetSpan.startInclusive(), offsetSpan.endInclusive(), string);
@@ -82,5 +86,6 @@ public final class KBPString {
     private static String replaceIllegalCharacters(String string) {
         return string.replace("\r\n", " ").replace("\n", " ").replace("\t", " ");
     }
+
 
 }

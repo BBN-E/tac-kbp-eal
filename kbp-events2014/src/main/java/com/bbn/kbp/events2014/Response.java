@@ -4,6 +4,7 @@ import java.util.Set;
 
 import com.bbn.bue.common.symbols.Symbol;
 
+import com.bbn.bue.common.symbols.SymbolUtils;
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.collect.ComparisonChain;
@@ -119,6 +120,16 @@ public final class Response  {
 		return baseFiller;
 	}
 
+    private static final ImmutableSet<Symbol> temporalRoles = SymbolUtils.setFrom("TIME", "Time");
+
+    /**
+     * Is the role {@code Time} or {@code TIME}?
+     * @return
+     */
+    public boolean isTemporal() {
+        return temporalRoles.contains(role());
+    }
+
     /**
      * Creates a new response which is the same as this one, except it changes the
      * canonical argument.
@@ -232,6 +243,4 @@ public final class Response  {
      * Orders responses by their IDs.
      */
     public static final Ordering<Response> ById = Ordering.natural().onResultOf(Response.ResponseID);
-
-
 }
