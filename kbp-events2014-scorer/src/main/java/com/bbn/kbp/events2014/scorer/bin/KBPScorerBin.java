@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.Sets.union;
 
 public final class KBPScorerBin {
@@ -66,10 +67,21 @@ public final class KBPScorerBin {
         final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
         log.info(params.dump());
 
-        final SystemOutputStore systemOutputStore = AssessmentSpecFormats.openSystemOutputStore(params
-                .getExistingDirectory("systemOutput"));
         final AnnotationStore goldAnswerStore = AssessmentSpecFormats.openAnnotationStore(params
                 .getExistingDirectory("answerKey"));
+
+        checkArgument(params.isPresent("systemOutput") != params.isPresent("systemOutputList"),
+                "Exactly one of systemOutput and systemOutputList must be specified");
+        if (params.isPresent("systemOutput")) {
+
+        } else if (params.isPresent("systemOutputsList")) {
+
+        } else {
+            throw new RuntimeException("Can't happen");
+        }
+
+        final SystemOutputStore systemOutputStore = AssessmentSpecFormats.openSystemOutputStore(params
+                .getExistingDirectory("systemOutput"));
 
         final Set<Symbol> documentsToScore;
         if (params.isPresent("documentsToScore")) {

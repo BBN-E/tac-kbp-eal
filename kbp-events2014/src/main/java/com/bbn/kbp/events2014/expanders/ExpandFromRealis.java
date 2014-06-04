@@ -5,6 +5,7 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.AssessedResponse;
+import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.google.common.base.Function;
@@ -29,14 +30,18 @@ public final class ExpandFromRealis implements Function<AnswerKey, AnswerKey> {
 
     @Override
     public AnswerKey apply(AnswerKey input) {
+        final ImmutableSet<Response> allExistingResponses = input.allResponses();
         final ImmutableSet.Builder<AssessedResponse> newAssessedResponses = ImmutableSet.builder();
         newAssessedResponses.addAll(input.annotatedResponses());
 
         for (final AssessedResponse assessedResponse : input.annotatedResponses()) {
             if (assessedResponse.assessment().realis().isPresent()) {
-                newAssessedResponses.add(AssessedResponse.from(
-                    assessedResponse.response().copyWithSwappedRealis(assessedResponse.assessment().realis().get()),
-                    assessedResponse.assessment()));
+                final Response responseWithAssessedRealis = assessedResponse.response()
+                        .copyWithSwappedRealis(assessedResponse.assessment().realis().get());
+                if (!allExistingResponses.contains(responseWithAssessedRealis)) {
+                    newAssessedResponses.add(AssessedResponse.from(
+                        responseWithAssessedRealis, assessedResponse.assessment()));
+                }
             }
         }
 
