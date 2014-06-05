@@ -170,6 +170,21 @@ brokenStore:  /nfs/mercury-04/u10/kbp/pilot/assessment/LDC2014E40_TAC_2014_KBP_E
 
 Of course, alter the path in `brokenStore` to wherever you are storing the pilot assessment.
 
+### Given participant submissions and the LDC's assessment, how do I score?
+
+1. create a file in the `params` subdirectory called `kbpRepoPath.params`. In it put the following:
+```
+kbpRepoPath: path to your working copy of this repository
+```
+2. Set the following environmental variables:
+```
+KBPOPENREPO=path to working copy of kbp-2014-event-arguments
+PARTICIPANTS=path of a copy of KBP2014_event-argument-pilot_runs_20140421.tgz
+ASSESSMENTS=path of a copy of LDC2014E40_TAC_2014_KBP_Event_Argument_Extraction_Pilot_Assessment_Results_V1.1.tgz 
+```
+3. Run `bin/evaluatePilot.sh`
+4. Output will be under `output/pilot`. A summary score file will be written to a path printed at the end of the script.
+
 ## Contact
 For questions concerning the software, please contact `rgabbard@bbn.com`.  If you 
 have bugs or feature requests, you can use the GitHub Issue Tracker.
