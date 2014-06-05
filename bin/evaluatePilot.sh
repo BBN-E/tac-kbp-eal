@@ -77,7 +77,8 @@ echo "Expanded assessment store using realis assessments..."
 $KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/expandByRealis $KBPOPENREPO/params/pilotEvaluation/expand.params >> $LOG
 
 # quote filter participant submissions
-#$KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/applyQuoteFilter $KBPOPENREPO/params/pilotEvaluation/quoteFilter.params
+echo "Applying quote filter to pilot submissions..."
+$KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/applyQuoteFilter $KBPOPENREPO/params/pilotEvaluation/quoteFilter.params >> $LOG
 
 # score
 #$KBPOPENREPO/kbp-events2014-scorer/target/appassembler/bin/KBPScorer $KBPOPENREPO/params/pilotEvaluation/score.params
