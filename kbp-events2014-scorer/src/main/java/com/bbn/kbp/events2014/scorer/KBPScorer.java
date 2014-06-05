@@ -85,8 +85,6 @@ public final class KBPScorer {
 	{
 		final Map<KBPScoringObserver<TypeRoleFillerRealis>, File> scorerToOutputDir = makeScorerToOutputDir(baseOutputDir, corpusObservers);
 
-        final StringBuilder answerablesList = new StringBuilder();
-
 		for (final Symbol docid : documentsToScore) {
 			log.info("Scoring document: {}", docid);
 
@@ -127,8 +125,6 @@ public final class KBPScorer {
 
 			final Ordering<TypeRoleFillerRealis> order = ByJustificationLocation.create(answerKey, systemOutput);
 
-            final Set<TypeRoleFillerRealis> happyAnswerables = Sets.newHashSet();
-
 			for (final TypeRoleFillerRealis answerable : order.sortedCopy(allAnswerables)) {
 				log.info("Scoring equivalence class {}", answerable);
 
@@ -139,10 +135,6 @@ public final class KBPScorer {
 
 				final Set<Response> responses = systemOutput.answers(answerable);
 				final Set<AssessedResponse> annotatedResponses = answerKey.answers(answerable);
-
-                if (any(annotatedResponses, IsCorrectUpToInexactJustifications)) {
-                    happyAnswerables.add(answerable);
-                }
 
 				// let observers see the responses jointly
 				for (final KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver observer : docObservers) {
@@ -193,9 +185,6 @@ public final class KBPScorer {
 				}
 			}
 
-            answerablesList.append(StringUtils.NewlineJoiner.join(order.sortedCopy(happyAnswerables)));
-            answerablesList.append("\n");
-
 			// notify observers we are finished with this document
 			for (final KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver observer : docObservers) {
 				observer.end();
@@ -222,8 +211,6 @@ public final class KBPScorer {
 			corpusOutput.getKey().writeCorpusOutput(corpusOutput.getValue());
 		}
 
-        Files.asCharSink(new File(baseOutputDir, "happyAnswerables.txt"), Charsets.UTF_8)
-                .write(answerablesList.toString());
     }
 
     private static ImmutableMap<KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver, KBPScoringObserver<TypeRoleFillerRealis>> documentObserversForCorpusObservers(List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers, AnswerKeyAnswerSource<TypeRoleFillerRealis> answerKey, SystemOutputAnswerSource<TypeRoleFillerRealis> systemOutput) {
