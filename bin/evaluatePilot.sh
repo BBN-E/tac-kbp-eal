@@ -27,7 +27,7 @@ mkdir -p $PARTICIPANTCOPY
 echo "Uncompressing participant submissions from $PARTICIPANTS to $PARTICIPANTCOPY"
 tar xzf $PARTICIPANTS -C $PARTICIPANTCOPY  --strip-components=1
 
-cd $PARTICIPANTCOPY
+pushd $PARTICIPANTCOPY
 echo "Uncompressing .zip submissions"
 for f in *.zip; do
     strippedName=${f%.zip}
@@ -51,18 +51,21 @@ for f in *.tgz; do
     echo "Unzipping $strippedName"
     tar xzf $f -C $strippedName
 done
-
+popd
 
 # copy LDC assessments
-#LDCCOPY=$EVALDIR/output/pilotEval/ldcAssessment
-#echo "copying LDC assessments from $LDCASSESSMENTS to $LDCCOPY"
-#cp -r $LDCASSESSMENTS/data/LDC_assessments/  $LDCCOPY
+LDCCOPY=$EVALDIR/output/pilotEval/ldcAssessment
+mkdir -p $LDCCOPY
+echo "extracting LDC assessments from $ASSESSMENTS to $LDCCOPY"
+tar xzf $ASSESSMENTS -C $LDCCOPY --strip-components=2
+
+ASSESSDIR=$LDCCOPY/data/LDC_assessments
 
 # remove .out from LDC assessments
-#echo "Removing .out suffix from LDC assessment files"
-#pushd $LDCCOPY
-#rename .out "" *.out
-#popd
+echo "Removing .out suffix from LDC assessment files"
+pushd $ASSESSDIR
+rename .out "" *.out
+popd
 
 # repair LDC assessments
 
