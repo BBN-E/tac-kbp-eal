@@ -1,6 +1,7 @@
 #1/bin/bash
 
-set -x
+# uncomment the following line for debug mode
+#set -x
 set -e
 
 : ${KBPOPENREPO:?"Need to set KBPOPENREPO to path to working copy of kbp-2014-event-arguments"}
@@ -81,4 +82,9 @@ echo "Applying quote filter to pilot submissions..."
 $KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/applyQuoteFilter $KBPOPENREPO/params/pilotEvaluation/quoteFilter.params >> $LOG
 
 # score
-#$KBPOPENREPO/kbp-events2014-scorer/target/appassembler/bin/KBPScorer $KBPOPENREPO/params/pilotEvaluation/score.params
+echo "scroing..."
+$KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/kbpScorer $KBPOPENREPO/params/pilotEvaluation/score.params >> $LOG
+
+SUMMARYFILE=$EVALDIR/summary.txt
+echo "Summarizing scores to $SUMMARYFILE"
+tail  $EVALDIR/scoreOutput/*/Standard/Aggregate  >> $SUMMARYFILE
