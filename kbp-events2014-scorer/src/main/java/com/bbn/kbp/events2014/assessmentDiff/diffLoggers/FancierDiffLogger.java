@@ -9,6 +9,9 @@ import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
 
 import org.apache.commons.lang.StringEscapeUtils;
 
@@ -121,12 +124,40 @@ public final class FancierDiffLogger implements DiffLogger {
     }
     
     private void logDocumentContext(final String originalDocText, final Response response, StringBuilder out) {
-        String context = StringEscapeUtils.escapeHtml(this.unifiedJustifications(originalDocText, response));
         out.append("<h3>Context:</h3>");
         out.append("<div>");
-        out.append(context);
+        out.append(StringEscapeUtils.escapeHtml(this.context(originalDocText, response)));
         out.append("</div>");
         out.append("<br>");        
+    }
+    
+    private String context(final String originalDocText, final Response response) {
+        // [1,3], [2,5], [8,10] => [1,5], [8,10]
+        final List<CharOffsetSpan> charSpans = justificationSpans(response);
+        final List<CharOffsetSpan> unitedSpans = Lists.newArrayList();
+        
+        // use RangeSet to do this
+        final RangeSet<Integer> disconnected = TreeRangeSet.create();
+        for (CharOffsetSpan charSpan : charSpans) { 
+            int startInclusive = charSpan.startInclusive();
+            int endInclusive = charSpan.endInclusive();
+            startInclusive = (startInclusive - 100) >= 0 ? startInclusive - 100 : 0;
+            endInclusive = (endInclusive + 100) < originalDocText.length()? endInclusive+100 : endInclusive;
+            disconnected.add(Range.closed(startInclusive, endInclusive));
+        }
+        for (Range<Integer> range : disconnected.asRanges()) {
+            unitedSpans.add(CharOffsetSpan.fromOffsetsOnly(range.lowerEndpoint(), range.upperEndpoint()));
+        }
+        Collections.sort(unitedSpans);
+        String justificationsString = "";
+        if (unitedSpans.get(0).startInclusive() != 0) {
+            justificationsString += "[.....]";
+        }
+        for (CharOffsetSpan span : unitedSpans) {
+            justificationsString += originalDocText.substring(span.startInclusive(), span.endInclusive()+1);
+            justificationsString += "[.....]";
+        }
+        return justificationsString;
     }
     
     private String unifiedJustifications(final String originalDocText, final Response response) {
@@ -137,9 +168,6 @@ public final class FancierDiffLogger implements DiffLogger {
         startInclusive = (startInclusive - 100) >= 0 ? startInclusive - 100 : 0;
         endInclusive = (endInclusive + 100) < originalDocText.length()? endInclusive+100 : endInclusive;
         String context = originalDocText.substring(startInclusive, endInclusive);
-        if (context.length() > 1000) {
-            context = context.substring(1000);   
-        }                
         return "...." + context + " ....";
     }
     
