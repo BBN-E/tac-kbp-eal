@@ -31,6 +31,15 @@ public final class ApplyQuoteFilter {
     }
 
     public static void main(String[] argv) throws IOException {
+        try {
+            trueMain(argv);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    public static void trueMain(String[] argv) throws IOException {
         if (argv.length != 1) {
             usage();
         }

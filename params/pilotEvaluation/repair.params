@@ -1,0 +1,5 @@
+INCLUDE root.params
+
+brokenStore: %assessmentDir%
+pathToWriteFixedStore: %repaired%
+randomSeed: 0

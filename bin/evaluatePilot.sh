@@ -20,9 +20,10 @@ rm -rf $EVALDIR
 
 echo "Creating output directory"
 mkdir -p $EVALDIR
+mkdir $EVALDIR/log
 
 # uncompress participant submissions
-PARTICIPANTCOPY=$EVALDIR/output/pilotEval/participantSubmissions
+PARTICIPANTCOPY=$EVALDIR/participantSubmissions
 mkdir -p $PARTICIPANTCOPY
 echo "Uncompressing participant submissions from $PARTICIPANTS to $PARTICIPANTCOPY"
 tar xzf $PARTICIPANTS -C $PARTICIPANTCOPY  --strip-components=1
@@ -54,7 +55,7 @@ done
 popd
 
 # copy LDC assessments
-LDCCOPY=$EVALDIR/output/pilotEval/ldcAssessment
+LDCCOPY=$EVALDIR/ldcAssessment
 mkdir -p $LDCCOPY
 echo "extracting LDC assessments from $ASSESSMENTS to $LDCCOPY"
 tar xzf $ASSESSMENTS -C $LDCCOPY --strip-components=2
@@ -68,10 +69,13 @@ rename .out "" *.out
 popd
 
 # repair LDC assessments
+$KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/repairAnnotationStore $KBPOPENREPO/params/pilotEvaluation/repair.params >> $LOG
 
 # apply realis expansion to LDC assessments
+#$KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/expandByRealis $KBPOPENREPO/params/pilotEvaluation/expandByRealis.params
 
 # quote filter participant submissions
+#$KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/applyQuoteFilter $KBPOPENREPO/params/pilotEvaluation/quoteFilter.params
 
 # score
-
+#$KBPOPENREPO/kbp-events2014-scorer/target/appassembler/bin/KBPScorer $KBPOPENREPO/params/pilotEvaluation/score.params
