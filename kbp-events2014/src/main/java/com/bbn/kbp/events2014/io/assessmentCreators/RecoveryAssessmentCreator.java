@@ -21,6 +21,7 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
     private int responsesAttempted = 0;
     private int makeMissingCorefSingleton = 0;
     private int numRemappedCoref = 0;
+    private final Multiset<String> illegalTIMEX = HashMultiset.create();
     private Multiset<String> extras = HashMultiset.create();
     private Multiset<String> missing = HashMultiset.create();
     private final Random rng;
@@ -51,6 +52,9 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
         sb.append("Required fields were missing in ").append(missing.size()).append(" responses. ")
                 .append("These were treated as unannotated. The breakdown of missing fields is ")
                 .append(missing).append("\n");
+        sb.append(illegalTIMEX.size()).append(" temporal roles had non-TIMEX expressions but were marked correct. "
+            + " The CAS assessment for these has been changed to incorrect.  Here are the strings: ")
+                .append(illegalTIMEX).append("\n");
         return sb.toString();
     }
 
@@ -143,7 +147,7 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
 
     @Override
     public AnswerKey createAnswerKey(Symbol docID, List<AssessedResponse> assessedResponses, List<Response> unassessedResponses) {
-        return AnswerKey.from(docID, fixCoref(assessedResponses), unassessedResponses);
+        return AnswerKey.from(docID, fixNonTimex(fixCoref(assessedResponses)), unassessedResponses);
     }
 
     /**
@@ -177,6 +181,36 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
                 ret.add(response);
             }
         }
+        return ret.build();
+    }
+
+    /**
+     * It is illegal to assess as correct a temporal argument which is not in KBP TIMEX format.
+     */
+    private List<AssessedResponse> fixNonTimex(Iterable<AssessedResponse> assessedResponses) {
+        final ImmutableList.Builder<AssessedResponse> ret = ImmutableList.builder();
+
+        for (final AssessedResponse response : assessedResponses) {
+            if (response.response().isTemporal()
+                    && response.assessment().entityCorrectFiller().isPresent()
+                    && response.assessment().entityCorrectFiller().get().isAcceptable())
+            {
+                // if we have a temporal role which is not in TIMEX format, it should
+                // be wrong, even if the assessor marked it right.
+                final String CASString = response.response().canonicalArgument().string();
+                try {
+                    final KBPTIMEXExpression kbptimexExpression = KBPTIMEXExpression.parseTIMEX(CASString);
+                    ret.add(response);
+                } catch (IllegalArgumentException iae) {
+                    ret.add(AssessedResponse.from(response.response(),
+                            response.assessment().copyWithModifiedCASAssessment(FieldAssessment.INCORRECT)));
+                    illegalTIMEX.add(CASString);
+                }
+            } else {
+                ret.add(response);
+            }
+        }
+
         return ret.build();
     }
 }

@@ -151,6 +151,12 @@ public final class ResponseAssessment {
                 mentionTypeOfCAS());
     }
 
+    public ResponseAssessment copyWithModifiedCASAssessment(FieldAssessment newCASAssessment) {
+        return create(justificationSupportsEventType(), justificationSupportsRole(),
+                Optional.of(newCASAssessment), realis(), baseFillerCorrect(), coreferenceId(),
+                mentionTypeOfCAS());
+    }
+
 
     @Override
 	public String toString() {
