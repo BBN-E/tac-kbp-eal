@@ -32,6 +32,7 @@ import java.util.Set;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.compose;
 import static com.google.common.base.Predicates.equalTo;
+import static com.google.common.collect.Iterables.all;
 import static com.google.common.collect.Iterables.any;
 import static com.google.common.collect.Iterables.getFirst;
 
@@ -228,17 +229,27 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 
 			@Override
 			public void annotatedSelectedResponse(final TypeRoleFillerRealis answerable, final Response response,
-					final AssessedResponse annotated)
+					final AssessedResponse annotationForSelected, final Set<AssessedResponse> allAssessments)
 			{
-				if (ResponseCorrect.apply(annotated)) {
+				if (ResponseCorrect.apply(annotationForSelected)) {
 					textOut.append("True Positive\n");
 					confusionMatrixBuilder.record(PRESENT, PRESENT, answerable);
 				} else {
 					textOut.append("False positive. Response annotated in pool as ")
-                            .append(annotated.assessment()).append("\n");
+                            .append(annotationForSelected.assessment()).append("\n");
 					confusionMatrixBuilder.record(PRESENT, ABSENT, answerable);
 					htmlOut.append(renderer.vsAnnotated("kbp-false-positive-annotated", "False positive (annotated)", response,
-                            systemOutputSource.systemOutput().score(response), annotated));
+                            systemOutputSource.systemOutput().score(response), annotationForSelected));
+
+                    if (any(allAssessments, ResponseCorrect)) {
+                        // if any correct answer was found for this equivalence class in the answer key,
+                        // then this is also a false negative
+                        textOut.append("FN: System response was assessed as incorrect, but the following correct response is in the pool: ")
+                                .append(Iterables.find(allAssessments, ResponseCorrect)).append("\n");
+                        confusionMatrixBuilder.record(ABSENT, PRESENT, answerable);
+                        htmlOut.append(renderer.vsAnnotated("kbp-false-negative", "False negative", getFirst(allAssessments, null).response(),
+                                allAssessments));
+                    }
 				}
 			}
 

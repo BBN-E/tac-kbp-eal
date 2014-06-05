@@ -168,7 +168,7 @@ public abstract class KBPScoringObserver<Answerable> {
          * @param annotatedResponse
          */
 		public void annotatedSelectedResponse(final Answerable answerable, final Response response,
-				final AssessedResponse annotatedResponse)
+				final AssessedResponse annotatedResponse, final Set<AssessedResponse> allAssessments)
 		{
 			// pass
 		}

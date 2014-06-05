@@ -1,14 +1,17 @@
 package com.bbn.kbp.events2014.scorer;
 
+import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.*;
 import com.bbn.kbp.events2014.filters.OnlyMostSpecificTemporal;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.scorer.observers.*;
+import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.*;
+import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.bbn.kbp.events2014.AssessedResponse.IsCorrectUpToInexactJustifications;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.Iterables.any;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Sets.union;
 
@@ -80,6 +85,8 @@ public final class KBPScorer {
 	{
 		final Map<KBPScoringObserver<TypeRoleFillerRealis>, File> scorerToOutputDir = makeScorerToOutputDir(baseOutputDir, corpusObservers);
 
+        final StringBuilder answerablesList = new StringBuilder();
+
 		for (final Symbol docid : documentsToScore) {
 			log.info("Scoring document: {}", docid);
 
@@ -97,7 +104,7 @@ public final class KBPScorer {
 
 			// we're going to group responses by type, role, filler, realis, where the filler is normalized
 			final AnswerKeyAnswerSource<TypeRoleFillerRealis> answerKey = AnswerKeyAnswerSource.forAnswerable(
-				key, TypeRoleFillerRealis.extractFromSystemResponse(entityNormalizer));
+                    key, TypeRoleFillerRealis.extractFromSystemResponse(entityNormalizer));
 			final SystemOutputAnswerSource<TypeRoleFillerRealis> systemOutput =
 				SystemOutputAnswerSource.forAnswerable(
                         temporalFilter.apply(systemAnswerStore.readOrEmpty(docid)),
@@ -120,6 +127,8 @@ public final class KBPScorer {
 
 			final Ordering<TypeRoleFillerRealis> order = ByJustificationLocation.create(answerKey, systemOutput);
 
+            final Set<TypeRoleFillerRealis> happyAnswerables = Sets.newHashSet();
+
 			for (final TypeRoleFillerRealis answerable : order.sortedCopy(allAnswerables)) {
 				log.info("Scoring equivalence class {}", answerable);
 
@@ -130,6 +139,10 @@ public final class KBPScorer {
 
 				final Set<Response> responses = systemOutput.answers(answerable);
 				final Set<AssessedResponse> annotatedResponses = answerKey.answers(answerable);
+
+                if (any(annotatedResponses, IsCorrectUpToInexactJustifications)) {
+                    happyAnswerables.add(answerable);
+                }
 
 				// let observers see the responses jointly
 				for (final KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver observer : docObservers) {
@@ -149,7 +162,7 @@ public final class KBPScorer {
 						// with aligned assessment
 						for (final KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver observer : docObservers) {
 							observer.annotatedSelectedResponse(answerable, selectedSystemResponse,
-								annotationForArgument.get());
+								annotationForArgument.get(), annotatedResponses);
 						}
 					} else {
 						// notify observers we have a selected system response
@@ -180,6 +193,9 @@ public final class KBPScorer {
 				}
 			}
 
+            answerablesList.append(StringUtils.NewlineJoiner.join(order.sortedCopy(happyAnswerables)));
+            answerablesList.append("\n");
+
 			// notify observers we are finished with this document
 			for (final KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver observer : docObservers) {
 				observer.end();
@@ -205,7 +221,10 @@ public final class KBPScorer {
 		for (final Map.Entry<KBPScoringObserver<TypeRoleFillerRealis>, File> corpusOutput : scorerToOutputDir.entrySet()) {
 			corpusOutput.getKey().writeCorpusOutput(corpusOutput.getValue());
 		}
-	}
+
+        Files.asCharSink(new File(baseOutputDir, "happyAnswerables.txt"), Charsets.UTF_8)
+                .write(answerablesList.toString());
+    }
 
     private static ImmutableMap<KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver, KBPScoringObserver<TypeRoleFillerRealis>> documentObserversForCorpusObservers(List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers, AnswerKeyAnswerSource<TypeRoleFillerRealis> answerKey, SystemOutputAnswerSource<TypeRoleFillerRealis> systemOutput) {
         // for each corpus observer, get a document observer, and maintain a mapping back to the corpus
@@ -250,14 +269,14 @@ public final class KBPScorer {
 	public static final Function<Collection<AssessedResponse>, Symbol> AnyAnswerCorrect = new Function<Collection<AssessedResponse>, Symbol> () {
 		@Override
 		public Symbol apply(final Collection<AssessedResponse> args) {
-			return Iterables.any(args, AssessedResponse.IsCompletelyCorrect)?PRESENT:ABSENT;
+			return any(args, AssessedResponse.IsCompletelyCorrect)?PRESENT:ABSENT;
 		}
 	};
 
 	public static final Function<Collection<AssessedResponse>, Symbol> AnyAnswerSemanticallyCorrect = new Function<Collection<AssessedResponse>, Symbol> () {
 		@Override
 		public Symbol apply(final Collection<AssessedResponse> args) {
-			return Iterables.any(args, AssessedResponse.IsCorrectUpToInexactJustifications)?PRESENT:ABSENT;
+			return any(args, IsCorrectUpToInexactJustifications)?PRESENT:ABSENT;
 		}
 	};
 }
