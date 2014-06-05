@@ -1,0 +1,4 @@
+INCLUDE root.params
+
+inputStore: %repaired%
+outputStore: %expanded%

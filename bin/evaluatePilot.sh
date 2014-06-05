@@ -69,10 +69,12 @@ rename .out "" *.out
 popd
 
 # repair LDC assessments
+echo "Repairing assessment store..."
 $KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/repairAnnotationStore $KBPOPENREPO/params/pilotEvaluation/repair.params >> $LOG
 
 # apply realis expansion to LDC assessments
-#$KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/expandByRealis $KBPOPENREPO/params/pilotEvaluation/expandByRealis.params
+echo "Expanded assessment store using realis assessments..."
+$KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/expandByRealis $KBPOPENREPO/params/pilotEvaluation/expand.params >> $LOG
 
 # quote filter participant submissions
 #$KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/applyQuoteFilter $KBPOPENREPO/params/pilotEvaluation/quoteFilter.params
