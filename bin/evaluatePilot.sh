@@ -4,6 +4,9 @@
 #set -x
 set -e
 
+EXPAND=true
+QUOTEFILTER=true
+
 : ${KBPOPENREPO:?"Need to set KBPOPENREPO to path to working copy of kbp-2014-event-arguments"}
 : ${PARTICIPANTS:?"Need to set PARTICIPANTS to path of a copy of KBP2014_event-argument-pilot_runs_20140421.tgz"}
 : ${ASSESSMENTS:?"Need to set $ASSESSMENTS to path of a copy of LDC2014E40_TAC_2014_KBP_Event_Argument_Extraction_Pilot_Assessment_Results.tgz"}
@@ -74,12 +77,22 @@ echo "Repairing assessment store..."
 $KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/repairAnnotationStore $KBPOPENREPO/params/pilotEvaluation/repair.params >> $LOG
 
 # apply realis expansion to LDC assessments
-echo "Expanded assessment store using realis assessments..."
-$KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/expandByRealis $KBPOPENREPO/params/pilotEvaluation/expand.params >> $LOG
+if [ "$EXPAND" = true ];
+then
+    echo "Expanded assessment store using realis assessments..."
+    $KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/expandByRealis $KBPOPENREPO/params/pilotEvaluation/expand.params >> $LOG
+else
+    cp -r $EVALDIR/repaired $EVALDIR/expanded
+fi
 
 # quote filter participant submissions
-echo "Applying quote filter to pilot submissions..."
-$KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/applyQuoteFilter $KBPOPENREPO/params/pilotEvaluation/quoteFilter.params >> $LOG
+if [ "$QUOTEFILTER" = true ];
+then
+    echo "Applying quote filter to pilot submissions..."
+    $KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/applyQuoteFilter $KBPOPENREPO/params/pilotEvaluation/quoteFilter.params >> $LOG
+else
+    cp -r $EVALDIR/participantSubmissions $EVALDIR/quoteFiltered
+fi
 
 # score
 echo "scroing..."
