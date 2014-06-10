@@ -5,3 +5,4 @@ systemOutputsDir: %quoteFiltered%
 scoringOutputRoot: %scoreOutput%
 annotationComplete: true
 documentsToScore: %kbpRepo%/data/pilot.list
+neutralizeRealis: false

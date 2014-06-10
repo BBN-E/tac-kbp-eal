@@ -4,3 +4,4 @@ annotationComplete: true
 scoringOutput: %sampleRoot%/sample/scoringObserverLogs
 systemOutput: %sampleRoot%/sample/sampleOutputStoreFiltered
 answerKey: %sampleRoot%/sample/sampleFinishedAnnotationStore
+neutralizeRealis: false

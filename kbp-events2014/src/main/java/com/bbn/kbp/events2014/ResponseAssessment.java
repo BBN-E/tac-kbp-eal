@@ -18,6 +18,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *
  */
 public final class ResponseAssessment {
+
     public enum MentionType {
 		NOMINAL, NAME;
 
@@ -154,6 +155,16 @@ public final class ResponseAssessment {
     public ResponseAssessment copyWithModifiedCASAssessment(FieldAssessment newCASAssessment) {
         return create(justificationSupportsEventType(), justificationSupportsRole(),
                 Optional.of(newCASAssessment), realis(), baseFillerCorrect(), coreferenceId(),
+                mentionTypeOfCAS());
+    }
+
+    public ResponseAssessment copyWithModifiedRealisAssessment(Optional<KBPRealis> newRealis) {
+        if (newRealis.orNull() == realis) {
+            return this;
+        }
+
+        return create(justificationSupportsEventType(), justificationSupportsRole(),
+                entityCorrectFiller(), newRealis, baseFillerCorrect(), coreferenceId(),
                 mentionTypeOfCAS());
     }
 

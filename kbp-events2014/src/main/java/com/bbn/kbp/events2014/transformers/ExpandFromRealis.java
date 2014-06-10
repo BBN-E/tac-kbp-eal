@@ -1,4 +1,4 @@
-package com.bbn.kbp.events2014.expanders;
+package com.bbn.kbp.events2014.transformers;
 
 
 import com.bbn.bue.common.parameters.Parameters;
@@ -9,7 +9,6 @@ import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

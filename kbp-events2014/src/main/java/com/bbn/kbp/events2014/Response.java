@@ -148,7 +148,8 @@ public final class Response  {
 
     /**
     * Creates a new response which is the same as this one, except it changes the
-    * realis.
+    * realis. If the requested realis is the same as the current one, this same
+     * object is returned.
     */
 	public Response copyWithSwappedRealis(final KBPRealis alternateRealis) {
 		if (realis.equals(alternateRealis)) {

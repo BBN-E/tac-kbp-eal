@@ -1,13 +1,11 @@
-package com.bbn.kbp.events2014.filters;
+package com.bbn.kbp.events2014.transformers;
 
 import com.bbn.bue.common.scoring.Scored;
-import com.bbn.bue.common.scoring.Scoreds;
 import com.bbn.kbp.events2014.EntityNormalizer;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.google.common.base.Function;
-import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;

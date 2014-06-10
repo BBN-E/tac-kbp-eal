@@ -1,13 +1,10 @@
-package com.bbn.kbp.events2014.filters;
+package com.bbn.kbp.events2014.transformers;
 
 import com.bbn.bue.common.scoring.Scored;
-import com.bbn.bue.common.scoring.Scoreds;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.SystemOutput;
 import com.google.common.base.Function;
-import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 
 public final class ProbableInferenceCases implements Function<SystemOutput, SystemOutput> {
 

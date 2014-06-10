@@ -1,14 +1,12 @@
 package com.bbn.kbp.events2014.bin;
 
-import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.SystemOutput;
-import com.bbn.kbp.events2014.filters.QuoteFilter;
+import com.bbn.kbp.events2014.transformers.QuoteFilter;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,12 +1,9 @@
 package com.bbn.kbp.events2014.bin;
 
-import ch.qos.logback.core.util.FileUtil;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.filters.QuoteFilter;
-import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
-import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.events2014.transformers.QuoteFilter;
 import com.google.common.base.Charsets;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;

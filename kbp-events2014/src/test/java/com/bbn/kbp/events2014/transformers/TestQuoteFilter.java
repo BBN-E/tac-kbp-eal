@@ -1,4 +1,4 @@
-package com.bbn.kbp.events2014.filters;
+package com.bbn.kbp.events2014.transformers;
 
 
 import com.bbn.bue.common.io.ByteArraySink;

@@ -3,6 +3,8 @@ package com.bbn.kbp.events2014.scorer.bin;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
@@ -11,6 +13,8 @@ import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.scorer.observers.*;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.HTMLErrorRecorder;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.NullHTMLErrorRecorder;
+import com.bbn.kbp.events2014.transformers.MakeAllRealisActual;
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -35,6 +39,7 @@ public final class KBPScorerBin {
         log.warn("usage: kbpScorer param_file\n" +
             "parameters are:\n" +
             "\tanswerKey: annotation store to score against\n" +
+            "\tneutralizeRealis: whther to change all realises in both system output and answer key to Actual\n" +
             "If running on a single output store:\n" +
                 "\tscoringOutput: directory to write scoring observer logs to\n"+
                 "\tsystemOutput: system output store to score\n"+
@@ -45,6 +50,21 @@ public final class KBPScorerBin {
                 "\tdocumentsToScore: file listing which documents to score."
         );
         System.exit(1);
+    }
+
+    private static KBPScorer.ScoringConfiguration getScoringConfiguration(Parameters params) {
+        final List<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers = getCorpusObservers(params);
+
+        final List<Function<AnswerKey, AnswerKey>> answerKeyTransformations = Lists.newArrayList();
+        final List<Function<SystemOutput, SystemOutput>> systemOutputTransformations = Lists.newArrayList();
+
+        if (params.getBoolean("neutralizeRealis")) {
+            answerKeyTransformations.add(MakeAllRealisActual.forAnswerKey());
+            systemOutputTransformations.add(MakeAllRealisActual.forSystemOutput());
+        }
+
+        return KBPScorer.ScoringConfiguration.create(answerKeyTransformations,
+                systemOutputTransformations, scoringObservers);
     }
 
     private static List<KBPScoringObserver<TypeRoleFillerRealis>> getCorpusObservers(Parameters params) {
@@ -108,7 +128,7 @@ public final class KBPScorerBin {
 
                 outputDir.mkdirs();
                 scorer.run(systemOutputStore, goldAnswerStore, documentsToScore,
-                        corpusObservers, outputDir);
+                        getScoringConfiguration(params), outputDir);
             }
         }
     }
@@ -127,7 +147,8 @@ public final class KBPScorerBin {
         final List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers = getCorpusObservers(params);
 
         scorer.run(systemOutputStore, goldAnswerStore, documentsToScore,
-                corpusObservers, params.getCreatableDirectory("scoringOutput"));
+                getScoringConfiguration(params),
+                params.getCreatableDirectory("scoringOutput"));
     }
 
     private static ImmutableSet<Symbol> loadDocumentsToScore(Parameters params) throws IOException {

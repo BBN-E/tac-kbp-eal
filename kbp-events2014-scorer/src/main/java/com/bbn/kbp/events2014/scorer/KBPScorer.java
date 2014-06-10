@@ -1,17 +1,14 @@
 package com.bbn.kbp.events2014.scorer;
 
-import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.*;
-import com.bbn.kbp.events2014.filters.OnlyMostSpecificTemporal;
+import com.bbn.kbp.events2014.transformers.OnlyMostSpecificTemporal;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.scorer.observers.*;
-import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.*;
-import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,46 +46,41 @@ public final class KBPScorer {
      * @throws IOException
      */
     public void run(SystemOutputStore systemOutputStore, AnnotationStore goldAnswerStore,
-                    List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers,
+                    ScoringConfiguration scoringConfiguration,
                     File baseOutputDir) throws IOException
     {
         run(systemOutputStore, goldAnswerStore,
                 union(systemOutputStore.docIDs(), goldAnswerStore.docIDs()),
-                corpusObservers, baseOutputDir);
+                scoringConfiguration, baseOutputDir);
     }
 
     /**
      * Runs the scorer over the specified documents.
      * @throws IOException
      */
-    public void run(SystemOutputStore systemOutputStore, AnnotationStore goldAnswerStore,
-                    Set<Symbol> documentsToScore,
-                    List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers,
-                    File baseOutputDir) throws IOException
-    {
-        for (final KBPScoringObserver<TypeRoleFillerRealis> observer : corpusObservers) {
-            observer.startCorpus();
-        }
-        compareOutputToGold(systemOutputStore, goldAnswerStore, documentsToScore,
-                corpusObservers, baseOutputDir);
-        for (final KBPScoringObserver<TypeRoleFillerRealis> observer : corpusObservers) {
-            observer.endCorpus();
-        }
-    }
-
-	public void compareOutputToGold(final SystemOutputStore systemAnswerStore,
+	public void run(final SystemOutputStore systemAnswerStore,
 			final AnnotationStore goldAnswerStore,
             final Set<Symbol> documentsToScore,
-			final List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers,
+			final ScoringConfiguration scoringConfiguration,
 			final File baseOutputDir)
 			throws IOException
 	{
-		final Map<KBPScoringObserver<TypeRoleFillerRealis>, File> scorerToOutputDir = makeScorerToOutputDir(baseOutputDir, corpusObservers);
+		final Map<KBPScoringObserver<TypeRoleFillerRealis>, File> scorerToOutputDir =
+                makeScorerToOutputDir(baseOutputDir, scoringConfiguration.scoringObservers());
+
+        for (final KBPScoringObserver<TypeRoleFillerRealis> observer : scoringConfiguration.scoringObservers()) {
+            observer.startCorpus();
+        }
 
 		for (final Symbol docid : documentsToScore) {
 			log.info("Scoring document: {}", docid);
 
-			final AnswerKey key = goldAnswerStore.readOrEmpty(docid);
+			AnswerKey key = goldAnswerStore.readOrEmpty(docid);
+
+            for (Function<AnswerKey, AnswerKey> answerKeyTransformation : scoringConfiguration.answerKeyTransformations()) {
+                key = answerKeyTransformation.apply(key);
+            }
+
             // if a correct temporal role is present in the answer key, then
             // all less specific versions of that temporal role are removed
             // from all system output before scoring
@@ -103,14 +95,19 @@ public final class KBPScorer {
 			// we're going to group responses by type, role, filler, realis, where the filler is normalized
 			final AnswerKeyAnswerSource<TypeRoleFillerRealis> answerKey = AnswerKeyAnswerSource.forAnswerable(
                     key, TypeRoleFillerRealis.extractFromSystemResponse(entityNormalizer));
+
+            SystemOutput rawSystemOutput = systemAnswerStore.readOrEmpty(docid);
+            for (final Function<SystemOutput, SystemOutput> systemOutputTransformation : scoringConfiguration.systemOutputTransformations()) {
+                rawSystemOutput = systemOutputTransformation.apply(rawSystemOutput);
+            }
+
 			final SystemOutputAnswerSource<TypeRoleFillerRealis> systemOutput =
-				SystemOutputAnswerSource.forAnswerable(
-                        temporalFilter.apply(systemAnswerStore.readOrEmpty(docid)),
+				SystemOutputAnswerSource.forAnswerable(temporalFilter.apply(rawSystemOutput),
 					TypeRoleFillerRealis.extractFromSystemResponse(entityNormalizer));
 
             final ImmutableMap<KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver,
                     KBPScoringObserver<TypeRoleFillerRealis>> docObserversToCorpusObservers =
-                    documentObserversForCorpusObservers(corpusObservers, answerKey, systemOutput);
+                    documentObserversForCorpusObservers(scoringConfiguration.scoringObservers(), answerKey, systemOutput);
 
             final Set<KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver> docObservers =
                     docObserversToCorpusObservers.keySet();
@@ -203,7 +200,7 @@ public final class KBPScorer {
 		}
 
 		log.info("Reports for corpus:");
-		for (final KBPScoringObserver<?> observer : corpusObservers) {
+		for (final KBPScoringObserver<?> observer : scoringConfiguration.scoringObservers) {
 			observer.endCorpus();
 		}
 
@@ -266,4 +263,52 @@ public final class KBPScorer {
 			return any(args, IsCorrectUpToInexactJustifications)?PRESENT:ABSENT;
 		}
 	};
+
+    /**
+     * This object is mutable for convenience, and since it won't be stored.
+     */
+    public static class ScoringConfiguration {
+        private final ImmutableList<Function<AnswerKey, AnswerKey>> answerKeyTransformations;
+        private final ImmutableList<Function<SystemOutput, SystemOutput>> systemOutputTransformations;
+        private final ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers;
+
+        private ScoringConfiguration(Iterable<Function<AnswerKey, AnswerKey>> answerKeyTransformations,
+                                    Iterable<Function<SystemOutput, SystemOutput>> systemOutputTransformations,
+                                    Iterable<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers)
+        {
+            this.answerKeyTransformations = ImmutableList.copyOf(answerKeyTransformations);
+            this.systemOutputTransformations = ImmutableList.copyOf(systemOutputTransformations);
+            this.scoringObservers = ImmutableList.copyOf(scoringObservers);
+        }
+
+        public static ScoringConfiguration create(Iterable<Function<AnswerKey, AnswerKey>> answerKeyTransformations,
+                              Iterable<Function<SystemOutput, SystemOutput>> systemOutputTransformations,
+                              Iterable<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers)
+        {
+            return new ScoringConfiguration(answerKeyTransformations, systemOutputTransformations,
+                    scoringObservers);
+        }
+
+        public static ScoringConfiguration create(Iterable<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers)
+        {
+            return new ScoringConfiguration(
+                    ImmutableList.<Function<AnswerKey, AnswerKey>>of(),
+                    ImmutableList.<Function<SystemOutput, SystemOutput>>of(),
+                    scoringObservers);
+        }
+
+        public ImmutableList<Function<AnswerKey, AnswerKey>> answerKeyTransformations() {
+            return answerKeyTransformations;
+        }
+
+        public ImmutableList<Function<SystemOutput, SystemOutput>> systemOutputTransformations() {
+            return systemOutputTransformations;
+        }
+
+        public ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers() {
+            return scoringObservers;
+        }
+
+
+    }
 }
