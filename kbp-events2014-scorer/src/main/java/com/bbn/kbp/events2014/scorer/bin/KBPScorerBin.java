@@ -81,8 +81,7 @@ public final class KBPScorerBin {
                 "Lax", KBPScorer.IsPresent, KBPScorer.AnyAnswerSemanticallyCorrect));
         corpusObservers.add(StrictStandardScoringObserver.strictScorer(dummyRecorder));
         corpusObservers.add(StrictStandardScoringObserver.standardScorer(dummyRecorder));
-        corpusObservers.add(SkipIncompleteAnnotations.wrap(StrictStandardScoringObserver.strictScorer(dummyRecorder)));
-        corpusObservers.add(SkipIncompleteAnnotations.wrap(StrictStandardScoringObserver.standardScorer(dummyRecorder)));
+
         return corpusObservers;
     }
 
