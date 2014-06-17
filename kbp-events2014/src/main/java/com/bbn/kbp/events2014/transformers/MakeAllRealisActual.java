@@ -15,6 +15,14 @@ public final class MakeAllRealisActual {
         throw new UnsupportedOperationException();
     }
 
+    private static ResponseAssessment neutralizeResponseAssessment(ResponseAssessment responseAssessment) {
+        if (responseAssessment.realis().isPresent()) {
+            return responseAssessment.copyWithModifiedRealisAssessment(Optional.of(KBPRealis.Actual));
+        } else {
+            return responseAssessment;
+        }
+    }
+
     public static Function<AnswerKey, AnswerKey> forAnswerKey() {
         return new Function<AnswerKey, AnswerKey>() {
             @Override
@@ -29,7 +37,7 @@ public final class MakeAllRealisActual {
                     final Response neutralizedResponse = response.response().copyWithSwappedRealis(KBPRealis.Actual);
                     if (!seenResponses.contains(neutralizedResponse)) {
                         newAssessed.add(AssessedResponse.from(neutralizedResponse,
-                            response.assessment().copyWithModifiedRealisAssessment(Optional.of(KBPRealis.Actual))));
+                            neutralizeResponseAssessment(response.assessment())));
                     }
                     seenResponses.add(neutralizedResponse);
                 }

@@ -6,10 +6,7 @@ import com.bbn.bue.common.evaluation.FMeasureCounts;
 import com.bbn.bue.common.primitives.DoubleUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.google.common.base.Function;
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.ImmutableTable;
-import com.google.common.collect.Sets;
-import com.google.common.collect.Table;
+import com.google.common.collect.*;
 
 import static com.bbn.bue.common.primitives.DoubleUtils.IsNonNegative;
 
@@ -66,11 +63,26 @@ public final class SummaryConfusionMatrix {
 		return new Builder();
 	}
 
-	public FMeasureCounts FMeasureVsAllOthers(final Symbol positiveSymbol) {
-		final double truePositives = cell(positiveSymbol, positiveSymbol);
-		final double falsePositives = DoubleUtils.sum(table.row(positiveSymbol).values())
-				- truePositives;
-		final double falseNegatives = DoubleUtils.sum(table.column(positiveSymbol).values()) - truePositives;
+    public FMeasureCounts FMeasureVsAllOthers(final Symbol positiveSymbol) {
+        return FMeasureVsAllOthers(ImmutableSet.of(positiveSymbol));
+    }
+
+	public FMeasureCounts FMeasureVsAllOthers(final Set<Symbol> positiveSymbols) {
+        double truePositives = 0;
+
+        for (final Symbol goodSymbol : positiveSymbols) {
+            for (final Symbol goodSymbol2 : positiveSymbols) {
+                truePositives += cell(goodSymbol, goodSymbol2);
+            }
+        }
+
+        double falsePositives = -truePositives;
+        double falseNegatives = -truePositives;
+
+        for (final Symbol goodSymbol : positiveSymbols) {
+            falsePositives += DoubleUtils.sum(table.row(goodSymbol).values());
+            falseNegatives += DoubleUtils.sum(table.column(goodSymbol).values());
+        }
 
 		return FMeasureCounts.from((float)truePositives, (float)falsePositives, (float)falseNegatives);
 	}
@@ -123,6 +135,15 @@ public final class SummaryConfusionMatrix {
 			table.put(row, col, setVal);
 
 		}
+
+        /**
+         * This is just an alias for accumulate. However, since the F-measure functions assume
+         * the predictions are on the rows and the gold-standard on the columns, using this
+         * method in such cases and make the code clearer and reduce errors.
+         */
+        public void accumulatePredictedGold(final Symbol row, final Symbol col, final double val) {
+            accumulate(row, col, val);
+        }
 
 		public SummaryConfusionMatrix build() {
 			return new SummaryConfusionMatrix(table);

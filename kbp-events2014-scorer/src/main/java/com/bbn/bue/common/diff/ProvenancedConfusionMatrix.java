@@ -2,13 +2,18 @@ package com.bbn.bue.common.diff;
 
 import com.bbn.bue.common.collections.CollectionUtils;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events2014.TypeRoleFillerRealis;
+import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.google.common.collect.Table.Cell;
 
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * A confusion matrix which tracks the actual identities of all its elements.
@@ -92,6 +97,47 @@ public final class ProvenancedConfusionMatrix<CellFiller> {
         return new ProvenancedConfusionMatrix<CellFiller>(newTable.build());
     }
 
+    /**
+     * Allows generating "breakdowns" of a provenanced confusion matrix according to some
+     * criteria. For example, a confusion matrix for an event detection task could be
+     * further broken down into separate confusion matrices for each event type.
+     *
+     * To do this, you specify a signature function mapping from each provenance to
+     * some signature (e.g. to event types, to genres, etc.).  The output will be an {@link com.google.common.collect.ImmutableMap}
+     * from all observed signatures to {@link com.bbn.bue.common.diff.ProvenancedConfusionMatrix}es consisting of
+     * only those provenances with the corresponding signature under the provided function.
+     *
+     * The signature function may never return a signature of {@code null}. No guarantee is made
+     * about the iteration order of the resulting map.
+     */
+    public <SignatureType> ImmutableMap<SignatureType, ProvenancedConfusionMatrix<CellFiller>>
+        breakdown(Function<? super CellFiller, SignatureType> signatureFunction)
+    {
+        final Map<SignatureType, Builder<CellFiller>> ret = Maps.newHashMap();
+
+        // a more efficient implementation should be used if the confusion matrix is
+        // large and sparse, but this is unlikely. ~ rgabbard
+        for (final Symbol leftLabel : leftLabels()) {
+            for (final Symbol rightLabel : rightLabels()) {
+                for (final CellFiller provenance : cell(leftLabel, rightLabel)) {
+                    final SignatureType signature = signatureFunction.apply(provenance);
+                    checkNotNull(signature, "Provenance function may never return null");
+                    if (!ret.containsKey(signature)) {
+                        ret.put(signature, ProvenancedConfusionMatrix.<CellFiller>builder());
+                    }
+                    ret.get(signature).record(leftLabel, rightLabel, provenance);
+                }
+            }
+        }
+
+        final ImmutableMap.Builder<SignatureType, ProvenancedConfusionMatrix<CellFiller>> trueRet =
+                ImmutableMap.builder();
+        for (final Map.Entry<SignatureType, Builder<CellFiller>> entry : ret.entrySet()) {
+            trueRet.put(entry.getKey(), entry.getValue().build());
+        }
+        return trueRet.build();
+    }
+
 	public SummaryConfusionMatrix buildSummaryMatrix() {
 		final SummaryConfusionMatrix.Builder builder = SummaryConfusionMatrix.builder();
 
@@ -126,8 +172,24 @@ public final class ProvenancedConfusionMatrix<CellFiller> {
 	}
 
 	private ProvenancedConfusionMatrix(final Table<Symbol, Symbol, List<CellFiller>> table) {
-		this.table = ImmutableTable.copyOf(table);
+        final ImmutableTable.Builder<Symbol, Symbol, List<CellFiller>> builder = ImmutableTable.builder();
+
+        for (final Cell<Symbol, Symbol, List<CellFiller>> cell : table.cellSet()) {
+            builder.put(cell.getRowKey(), cell.getColumnKey(), ImmutableList.copyOf(cell.getValue()));
+        }
+		this.table = builder.build();
 	}
+
+    public static <CellFiller> Function<ProvenancedConfusionMatrix<CellFiller>,
+            SummaryConfusionMatrix> ToSummaryMatrix()
+    {
+        return new Function<ProvenancedConfusionMatrix<CellFiller>, SummaryConfusionMatrix>() {
+            @Override
+            public SummaryConfusionMatrix apply(ProvenancedConfusionMatrix<CellFiller> input) {
+                return input.buildSummaryMatrix();
+            }
+        };
+    }
 
     public static class Builder<CellFiller> {
 		private Builder() {}
@@ -146,12 +208,30 @@ public final class ProvenancedConfusionMatrix<CellFiller> {
 			tableBuilder.get(left, right).add(filler);
 		}
 
+        /**
+         * This is an alias for {@link #record(com.bbn.bue.common.symbols.Symbol, com.bbn.bue.common.symbols.Symbol, Object)}
+         * you can use to make your code clearer, since the predicted value is assumed to be on the rows for
+         * F-Measure calculations, etc.
+         */
+        public void recordPredictedGold(final Symbol left, final Symbol right, final CellFiller filler) {
+            record(left, right, filler);
+        }
+
 		public ProvenancedConfusionMatrix<CellFiller> build() {
 			return new ProvenancedConfusionMatrix<CellFiller>(tableBuilder);
 		}
 
 		private final Table<Symbol,Symbol,List<CellFiller>> tableBuilder = HashBasedTable.create();
-	}
+
+        public void accumulate(ProvenancedConfusionMatrix<CellFiller> matrix) {
+            for (final Table.Cell<Symbol, Symbol, List<CellFiller>> cell : matrix.table.cellSet()) {
+                if (!tableBuilder.contains(cell.getRowKey(), cell.getColumnKey())) {
+                    tableBuilder.put(cell.getRowKey(), cell.getColumnKey(), Lists.<CellFiller>newArrayList());
+                }
+                tableBuilder.get(cell.getRowKey(), cell.getColumnKey()).addAll(cell.getValue());
+            }
+        }
+    }
 
 
 }
