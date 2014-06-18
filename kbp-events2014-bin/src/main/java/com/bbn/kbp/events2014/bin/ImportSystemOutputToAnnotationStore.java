@@ -7,6 +7,9 @@ import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.events2014.transformers.KeepBestJustificationOnly;
+import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +34,8 @@ public final class ImportSystemOutputToAnnotationStore {
         log.error("\nusage: importSystemOutputToAnnotationStore paramFile\n" +
         "Parameters are:\n"+
                 "\tsystemOutput: system output store to import\n" +
-                "\tannotationStore: destination annotation store (existing or new)"
+                "\tannotationStore: destination annotation store (existing or new)\n" +
+                "\timportOnlyBestAnswers: imports only the answer the score would select (recommended: true)"
         );
     }
 
@@ -40,14 +44,24 @@ public final class ImportSystemOutputToAnnotationStore {
             final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
             log.info(params.dump());
 
+            final Function<SystemOutput, SystemOutput> filter;
+            if (params.getBoolean("importOnlyBestAnswers")) {
+                filter = KeepBestJustificationOnly.create();
+                log.info("Importing only responses the scorer would select");
+            } else {
+                filter = Functions.identity();
+                log.info("Importing all responses");
+            }
             importSystemOutputToAnnotationStore(params.getExistingDirectory("systemOutput"),
-                    params.getCreatableDirectory("annotationStore"));
+                    params.getCreatableDirectory("annotationStore"), filter);
         } else {
             usage();
         }
     }
 
-    private static void importSystemOutputToAnnotationStore(File systemOutputDir, File annStoreDir) throws IOException {
+    private static void importSystemOutputToAnnotationStore(File systemOutputDir, File annStoreDir,
+        Function<SystemOutput, SystemOutput> filter) throws IOException
+    {
         log.info("Loading system output from {}", systemOutputDir);
         final SystemOutputStore systemOutput = AssessmentSpecFormats.openSystemOutputStore(
                 systemOutputDir);
@@ -59,7 +73,7 @@ public final class ImportSystemOutputToAnnotationStore {
 
         for (final Symbol docid : systemOutput.docIDs()) {
             log.info("Pushing responses for {} into assessment store", docid);
-            final SystemOutput docOutput = systemOutput.read(docid);
+            final SystemOutput docOutput = filter.apply(systemOutput.read(docid));
             final int numResponseInSystemOutput = docOutput.size();
             final AnswerKey currentAnnotation = annStore.readOrEmpty(docid);
             final int numAnnotatedResponsesInCurrentAnnotation = currentAnnotation.annotatedResponses().size();
