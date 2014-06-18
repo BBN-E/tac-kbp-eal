@@ -53,18 +53,12 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 			renderer);
 	}
 
-    private final static Map<String, Function<TypeRoleFillerRealis, Symbol>> breakdowns =
-            ImmutableMap.of(
-                    "Type", TypeRoleFillerRealis.Type,
-                    "Role", BreakdownFunctions.TypeDotRole,
-                    "Genre", BreakdownFunctions.Genre);
-
     @Override
     public void writeCorpusOutput(File directory) throws IOException {
         final ProvenancedConfusionMatrix<TypeRoleFillerRealis> corpusConfusionMatrix =
                 corpusConfusionMatrixBuilder.build();
 
-        final BreakdownWriter breakdownWriter = BreakdownWriter.create(breakdowns);
+        final BreakdownWriter breakdownWriter = BreakdownWriter.create(BreakdownFunctions.StandardBreakdowns);
         breakdownWriter.addFMeasureToPrint("Present", PRESENT);
         breakdownWriter.writeBreakdownsToFiles(corpusConfusionMatrix, directory);
 

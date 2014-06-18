@@ -14,6 +14,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *
  */
 public final class TypeRoleFillerRealis implements Comparable<TypeRoleFillerRealis> {
+
+
     public static TypeRoleFillerRealis create(final Symbol docid, final Symbol type, final Symbol role,
 			final KBPRealis realis, final KBPString argumentCanonicalString)
 	{
@@ -128,5 +130,10 @@ public final class TypeRoleFillerRealis implements Comparable<TypeRoleFillerReal
         }
     };
 
-
+    public static Function<TypeRoleFillerRealis, Symbol> DocID = new Function<TypeRoleFillerRealis, Symbol>() {
+        @Override
+        public Symbol apply(TypeRoleFillerRealis input) {
+            return input.docID();
+        }
+    };
 }

@@ -57,6 +57,12 @@ public final class BreakdownFunctions {
                         .inverse());
     };
 
+    public static final Map<String, Function<TypeRoleFillerRealis, Symbol>> StandardBreakdowns = ImmutableMap.of(
+            "Type", TypeRoleFillerRealis.Type,
+            "Role", BreakdownFunctions.TypeDotRole,
+            "Genre", BreakdownFunctions.Genre,
+            "DocId", TypeRoleFillerRealis.DocID);
+
 
     private BreakdownFunctions() {
         throw new UnsupportedOperationException();
