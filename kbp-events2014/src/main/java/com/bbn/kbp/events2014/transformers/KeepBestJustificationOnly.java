@@ -9,6 +9,8 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 
@@ -21,6 +23,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * hash code).
  */
 public final class KeepBestJustificationOnly implements Function<SystemOutput, SystemOutput> {
+    private static final Logger log = LoggerFactory.getLogger(KeepBestJustificationOnly.class);
     // this 'normalizer' is just a dummy which does no normalization
     private static final EntityNormalizer identityNormalizer = EntityNormalizer.createDummy();
 
@@ -40,7 +43,12 @@ public final class KeepBestJustificationOnly implements Function<SystemOutput, S
             filteredResults.add(input.score(input.selectFromMultipleSystemResponses(group).get()));
         }
 
-        return SystemOutput.from(input.docId(), filteredResults.build());
+        final ImmutableSet<Scored<Response>> filteredResponses = filteredResults.build();
+
+        log.info("For document {}, after keeping only selected justifications, went from {} to {} responses",
+                input.docId(), input.size(), filteredResponses.size());
+
+        return SystemOutput.from(input.docId(), filteredResponses);
     }
 
     private KeepBestJustificationOnly() {
