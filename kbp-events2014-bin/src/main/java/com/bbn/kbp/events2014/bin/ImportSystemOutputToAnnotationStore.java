@@ -71,6 +71,7 @@ public final class ImportSystemOutputToAnnotationStore {
         final AnnotationStore annStore = AssessmentSpecFormats.openOrCreateAnnotationStore(
                 annStoreDir);
 
+        int totalNumAdded = 0;
         for (final Symbol docid : systemOutput.docIDs()) {
             log.info("Pushing responses for {} into assessment store", docid);
             final SystemOutput docOutput = filter.apply(systemOutput.read(docid));
@@ -86,6 +87,8 @@ public final class ImportSystemOutputToAnnotationStore {
                     "responses; added {} for assessment", docid, numAnnotatedResponsesInCurrentAnnotation,
                     numUnannotatedResponsesInCurrentAnnotation, numResponseInSystemOutput, numAdded);
             annStore.write(newAnswerKey);
+            totalNumAdded += numAdded;
         }
+        log.info("Total number of responses added: {}", totalNumAdded);
     }
 }
