@@ -95,7 +95,7 @@ else
 fi
 
 # score
-echo "scroing..."
+echo "scoring..."
 $KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/kbpScorer $KBPOPENREPO/params/pilotEvaluation/score.params >> $LOG
 
 SUMMARYFILE=$EVALDIR/summary.txt
