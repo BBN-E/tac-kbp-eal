@@ -172,6 +172,8 @@ Of course, alter the path in `brokenStore` to wherever you are storing the pilot
 
 ### Given participant submissions and the LDC's assessment, how do I score?
 
+Note that only NIST can actually do this, since only they have access to all the pilot submissions.
+
 1. create a file in the `params` subdirectory called `kbpRepoPath.params`. In it put the following:
 ```
 kbpRepoPath: path to your working copy of this repository
