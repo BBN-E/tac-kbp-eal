@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -180,5 +181,50 @@ public final class AnswerKey {
             }
         }
         return Optional.absent();
+    }
+
+    public ImmutableMap<KBPString,Integer> makeCASToCorefMap() {
+        final ImmutableMap.Builder<KBPString, Integer> ret = ImmutableMap.builder();
+
+        // we use an ImmutableMap, even though it requires this auxilliary set
+        // to avoid double-adding the same mappings, because it aids in determinism
+        // by guaranteeing iteration order
+        final Set<KBPString> seen = Sets.newHashSet();
+
+        // we know this will result in a valid map due to the consistency checks
+        // at construction
+        for (final AssessedResponse assessedResponse : annotatedResponses()) {
+            if (assessedResponse.assessment().coreferenceId().isPresent()
+                    &&!seen.contains(assessedResponse.response().canonicalArgument()))
+            {
+                ret.put(assessedResponse.response().canonicalArgument(),
+                        assessedResponse.assessment().coreferenceId().get());
+                seen.add(assessedResponse.response().canonicalArgument());
+            }
+        }
+
+        return ret.build();
+    }
+
+    public Multimap<Integer, KBPString> makeCorefToCASMultimap() {
+        return makeCASToCorefMap().asMultimap().inverse();
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(docid, annotatedArgs, unannotatedResponses);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        final AnswerKey other = (AnswerKey) obj;
+        return Objects.equal(this.docid, other.docid) && Objects.equal(this.annotatedArgs, other.annotatedArgs) && Objects.equal(this.unannotatedResponses, other.unannotatedResponses);
     }
 }
