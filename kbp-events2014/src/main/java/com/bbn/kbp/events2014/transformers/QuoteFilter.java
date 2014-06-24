@@ -11,6 +11,8 @@ import com.google.common.collect.*;
 import com.google.common.io.ByteSink;
 import com.google.common.io.ByteSource;
 import com.google.common.io.CharSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.List;
@@ -30,6 +32,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * input it is applied to.
  */
 public final class QuoteFilter implements Function<SystemOutput, SystemOutput>  {
+    private final Logger log = LoggerFactory.getLogger(QuoteFilter.class);
     private static final Set<String> BANNED_REGION_STARTS =
             ImmutableSet.of("<quote>",
                     // handle case of <quote orig_author="foo">
@@ -46,7 +49,7 @@ public final class QuoteFilter implements Function<SystemOutput, SystemOutput>  
                "QuoteFilter does not know about document ID %s", input.docId()));
         }
 
-        return input.copyWithFilteredResponses(
+        final SystemOutput ret = input.copyWithFilteredResponses(
            new Predicate<Scored<Response>>() {
                public boolean apply(Scored<Response> x) {
                    return !isInQuote(input.docId(), x.item().baseFiller())
@@ -54,6 +57,9 @@ public final class QuoteFilter implements Function<SystemOutput, SystemOutput>  
                }
            }
         );
+        log.info("For document {}, filtered out {} responses which were in quoted regions",
+                input.docId(), input.size()-ret.size());
+        return ret;
     }
 
     public boolean isInQuote(Symbol docId, CharOffsetSpan span) {
