@@ -143,7 +143,7 @@ public final class QuoteFilter implements Function<SystemOutput, SystemOutput>  
         return docIdToBannedRegions;
     }
 
-    protected static QuoteFilter createFromBannedRegions(Map<Symbol, ImmutableRangeSet<Integer>> docIdToBannedRegions)
+    public static QuoteFilter createFromBannedRegions(Map<Symbol, ImmutableRangeSet<Integer>> docIdToBannedRegions)
     {
         return new QuoteFilter(docIdToBannedRegions);
     }
