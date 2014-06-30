@@ -1,6 +1,7 @@
 package com.bbn.kbp.events2014;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -132,7 +133,34 @@ public final class AnswerKey {
 		return new AnswerKey(docId, annotatedArgs, unannotatedResponses);
 	}
 
-	private void assertConsistency() {
+    /**
+     * Creates an {@code AnswerKey} where the same response may appear both as assessed and unassessed.  This removes
+     * any such tuples from the unassessed set before calling {@link #from(com.bbn.bue.common.symbols.Symbol, Iterable, Iterable)}.
+     * This is simply provided for convenience.
+     *
+     * @param docID
+     * @param assessed
+     * @param unassessedResponses
+     * @return
+     */
+    public static AnswerKey fromPossiblyOverlapping(Symbol docID, Iterable<AssessedResponse> assessed,
+                                                    Iterable<Response> unassessedResponses)
+    {
+        final ImmutableSet<AssessedResponse> assessedResponsesSet = ImmutableSet.copyOf(assessed);
+        final ImmutableSet<Response> unassessedResponseSet = ImmutableSet.copyOf(unassessedResponses);
+        final Set<Response> assessedResponses = FluentIterable.from(assessedResponsesSet)
+                .transform(AssessedResponse.Response).toSet();
+
+        if (Sets.intersection(assessedResponses, unassessedResponseSet).isEmpty()) {
+            return from(docID, assessedResponsesSet, unassessedResponseSet);
+        } else {
+            return from(docID, assessedResponsesSet, Sets.difference(unassessedResponseSet, assessedResponses));
+        }
+
+    }
+
+
+    private void assertConsistency() {
 		// maps responses (ignoring confidence) to their annotations
 		final Multimap<Response, AssessedResponse> responseToAnn =
 			Multimaps.index(annotatedArgs, AssessedResponse.Response);
@@ -227,4 +255,5 @@ public final class AnswerKey {
         final AnswerKey other = (AnswerKey) obj;
         return Objects.equal(this.docid, other.docid) && Objects.equal(this.annotatedArgs, other.annotatedArgs) && Objects.equal(this.unannotatedResponses, other.unannotatedResponses);
     }
+
 }

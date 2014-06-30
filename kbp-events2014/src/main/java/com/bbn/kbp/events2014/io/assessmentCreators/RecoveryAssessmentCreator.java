@@ -147,7 +147,7 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
 
     @Override
     public AnswerKey createAnswerKey(Symbol docID, List<AssessedResponse> assessedResponses, List<Response> unassessedResponses) {
-        return AnswerKey.from(docID, fixNonTimex(fixCoref(assessedResponses)), unassessedResponses);
+        return AnswerKey.fromPossiblyOverlapping(docID, fixNonTimex(fixCoref(assessedResponses)), unassessedResponses);
     }
 
     /**

@@ -25,7 +25,7 @@ public final class StrictAssessmentCreator implements AssessmentCreator {
 
     @Override
     public AnswerKey createAnswerKey(Symbol docID, List<AssessedResponse> assessedResponses, List<Response> unassessedResponses) {
-        return AnswerKey.from(docID, assessedResponses, unassessedResponses);
+        return AnswerKey.fromPossiblyOverlapping(docID, assessedResponses, unassessedResponses);
     }
 
     public static AssessmentCreator create() {
