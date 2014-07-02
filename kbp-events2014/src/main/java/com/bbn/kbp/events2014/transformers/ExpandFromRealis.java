@@ -10,11 +10,13 @@ import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 /**
  * From an answer key, we can derive additional assessed responses automatically
@@ -29,7 +31,7 @@ public final class ExpandFromRealis implements Function<AnswerKey, AnswerKey> {
 
     @Override
     public AnswerKey apply(AnswerKey input) {
-        final ImmutableSet<Response> allExistingResponses = input.allResponses();
+        final Set<Response> existingResponses = Sets.newHashSet(input.allResponses());
         final ImmutableSet.Builder<AssessedResponse> newAssessedResponses = ImmutableSet.builder();
         newAssessedResponses.addAll(input.annotatedResponses());
 
@@ -37,9 +39,10 @@ public final class ExpandFromRealis implements Function<AnswerKey, AnswerKey> {
             if (assessedResponse.assessment().realis().isPresent()) {
                 final Response responseWithAssessedRealis = assessedResponse.response()
                         .copyWithSwappedRealis(assessedResponse.assessment().realis().get());
-                if (!allExistingResponses.contains(responseWithAssessedRealis)) {
+                if (!existingResponses.contains(responseWithAssessedRealis)) {
                     newAssessedResponses.add(AssessedResponse.from(
                         responseWithAssessedRealis, assessedResponse.assessment()));
+                    existingResponses.add(responseWithAssessedRealis);
                 }
             }
         }
