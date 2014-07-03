@@ -4,5 +4,5 @@ answerKey: %expanded%
 systemOutputsDir: %quoteFiltered%
 scoringOutputRoot: %scoreOutput%
 annotationComplete: true
-documentsToScore: %kbpRepo%/data/pilot.list
+documentsToScore: %kbpRepoPath%/data/pilot.list
 neutralizeRealis: false

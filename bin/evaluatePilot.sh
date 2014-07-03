@@ -34,6 +34,7 @@ tar xzf $PARTICIPANTS -C $PARTICIPANTCOPY  --strip-components=1
 
 pushd $PARTICIPANTCOPY
 echo "Uncompressing .zip submissions"
+shopt -s nullglob
 for f in *.zip; do
     strippedName=${f%.zip}
     echo "Unzipping $strippedName"
@@ -57,6 +58,7 @@ for f in *.tgz; do
     tar xzf $f -C $strippedName
 done
 popd
+shopt -u nullglob
 
 # copy LDC assessments
 LDCCOPY=$EVALDIR/ldcAssessment
@@ -95,7 +97,7 @@ else
 fi
 
 # score
-echo "scroing..."
+echo "scoring..."
 $KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/kbpScorer $KBPOPENREPO/params/pilotEvaluation/score.params >> $LOG
 
 SUMMARYFILE=$EVALDIR/summary.txt

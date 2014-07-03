@@ -8,8 +8,8 @@ the task. While these are mainly to support the executables in this repository,
 if your system is based on Java or another JVM language, feel free to
 use them. 
 validating system answers, etc.
-* `kbp-events-2014-scorer` contains the scoring code (but not scoring binary).
-* `kbp-events-2014-bin` contains all the executable programs: the validator, the pooler, the scorer, etc.
+* `kbp-events2014-scorer` contains the scoring code (but not scoring binary).
+* `kbp-events2014-bin` contains all the executable programs: the validator, the pooler, the scorer, etc.
 
 ## Building 
 
@@ -37,7 +37,7 @@ there are additional assessment columns, as described in the task specification.
 
 The following workflow will be used during the pilot and (unless changes are made) 
 real evaluations.  All executables referenced below may be found in 
-`kbp-events-2014-bin/target/appassembler/bin`.
+`kbp-events2014-bin/target/appassembler/bin`.
 
 * a 'quote filter' to remove material with CAS and BF offsets in quoted regions
 will be built from the original text of the data set.
@@ -54,7 +54,7 @@ store using `kbpScorer`.
 ### Running the demo
 We have included a demo showing the full annotation workflow.
 The demo requires you to have a copy of the ACE event training data. For brevity,
-the following instructions assume `kbp-events-2014-bin/target/appassembler/bin`
+the following instructions assume `kbp-events2014-bin/target/appassembler/bin`
 has been added to your system path. All paths are relative to the root of your
 working copy.
 
@@ -171,6 +171,8 @@ brokenStore:  /nfs/mercury-04/u10/kbp/pilot/assessment/LDC2014E40_TAC_2014_KBP_E
 Of course, alter the path in `brokenStore` to wherever you are storing the pilot assessment.
 
 ### Given participant submissions and the LDC's assessment, how do I score?
+
+Note that only NIST can actually do this, since only they have access to all the pilot submissions.
 
 1. create a file in the `params` subdirectory called `kbpRepoPath.params`. In it put the following:
 ```

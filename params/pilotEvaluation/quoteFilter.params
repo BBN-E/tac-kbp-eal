@@ -2,4 +2,4 @@ INCLUDE root.params
 
 inputStoresDir: %participantDir%
 outputStoresDir: %quoteFiltered%
-quoteFilter: %kbpRepo%/data/pilot.quoteFilter
+quoteFilter: %kbpRepoPath%/data/pilot.quoteFilter

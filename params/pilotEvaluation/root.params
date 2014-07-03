@@ -1,6 +1,6 @@
 INCLUDE ../kbpRepoPath.params
 
-outputDir: %kbpRepo%/output/pilotEval
+outputDir: %kbpRepoPath%/output/pilotEval
 participantDir: %outputDir%/participantSubmissions
 assessmentDir: %outputDir%/ldcAssessment/data/LDC_assessments
 
