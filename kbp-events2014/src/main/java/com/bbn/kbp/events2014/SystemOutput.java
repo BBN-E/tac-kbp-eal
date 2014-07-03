@@ -30,10 +30,12 @@ public final class SystemOutput {
 		this.docId = checkNotNull(docId);
 		this.responses = ImmutableSet.copyOf(responses);
 		for (final Response response : responses) {
-			checkArgument(docId == response.docID(), "All responses in a SystemOutput must have the same doc ID");
+			checkArgument(docId == response.docID(), "System output %s contains response with non-matching docid %s",
+                    docId, response.docID());
 		}
 		this.confidences = ImmutableMap.copyOf(confidences);
-		checkArgument(all(confidences.values(), Range.closed(0.0, 1.0)));
+		checkArgument(all(confidences.values(), Range.closed(0.0, 1.0)),
+                "System output %s contains confidences outside [0.0,1.0]", docId);
 	}
 
     /**

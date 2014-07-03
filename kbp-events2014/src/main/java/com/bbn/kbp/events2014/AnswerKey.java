@@ -169,14 +169,15 @@ public final class AnswerKey {
 		for (final Map.Entry<Response, Collection<AssessedResponse>> entry : responseToAnn.asMap().entrySet()) {
 			if (!allEqual(transform(entry.getValue(), AssessedResponse.Annotation))) {
 				throw new RuntimeException(String.format(
-					"Inconsistent pooled answer key. The one or more of the following is inconsistent: %s", entry.getValue()));
+					"For %s: inconsistent pooled answer key. The one or more of the following is inconsistent: %s",
+                        docid, entry.getValue()));
 			}
 		}
 
         // check there are no response listed as both annotated and unannotated
         checkArgument(Sets.intersection(FluentIterable.from(annotatedArgs)
                 .transform(AssessedResponse.Response).toSet(), unannotatedResponses).isEmpty(),
-                "There are responses which are both unannotated and unannotated");
+                "For %s, there are responses which are both unannotated and unannotated", docid);
 
         assertNoIncompatibleCorefAnnotations();
 	}
