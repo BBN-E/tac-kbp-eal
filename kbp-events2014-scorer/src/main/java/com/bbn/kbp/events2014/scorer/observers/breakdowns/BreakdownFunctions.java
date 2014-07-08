@@ -3,11 +3,13 @@ package com.bbn.kbp.events2014.scorer.observers.breakdowns;
 import com.bbn.bue.common.collections.MultimapUtils;
 import com.bbn.bue.common.diff.ProvenancedConfusionMatrix;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
 
 import java.util.Map;
 
@@ -68,17 +70,18 @@ public final class BreakdownFunctions {
         throw new UnsupportedOperationException();
     }
 
-    public static <ProvenanceType> Map<String, Map<Symbol, ProvenancedConfusionMatrix<ProvenanceType>>> computeBreakdowns(
+    public static <ProvenanceType>
+        ImmutableMap<String, Map<Symbol, ProvenancedConfusionMatrix<ProvenanceType>>> computeBreakdowns(
             ProvenancedConfusionMatrix<ProvenanceType> corpusConfusionMatrix,
             Map<String, Function<? super ProvenanceType, Symbol>> breakdowns)
     {
-        final Map<String, Map<Symbol, ProvenancedConfusionMatrix<ProvenanceType>>> printModes = Maps.newHashMap();
-        printModes.put("Aggregate", ImmutableMap.of(Symbol.from("Aggregate"), corpusConfusionMatrix));
-
+        final ImmutableMap.Builder<String, Map<Symbol, ProvenancedConfusionMatrix<ProvenanceType>>> printModes =
+                ImmutableMap.builder();
 
         for (final Map.Entry<String, Function<? super ProvenanceType, Symbol>> breakdownEntry : breakdowns.entrySet()) {
-            printModes.put(breakdownEntry.getKey(), corpusConfusionMatrix.breakdown(breakdownEntry.getValue()));
+            printModes.put(breakdownEntry.getKey(), corpusConfusionMatrix.breakdown(breakdownEntry.getValue(),
+                    Ordering.from(new SymbolUtils.ByString())));
         }
-        return printModes;
+        return printModes.build();
     }
 }

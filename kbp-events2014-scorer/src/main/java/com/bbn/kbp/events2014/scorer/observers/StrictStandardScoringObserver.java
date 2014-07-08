@@ -119,50 +119,52 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 					htmlOut.append(renderer.vsAnnotated("kbp-false-positive-annotated", "False positive (annotated)", response,
                             systemOutputSource.systemOutput().score(response), annotationForSelected));
 
-                    if (any(allAssessments, ResponseCorrect)) {
-                        // if any correct answer was found for this equivalence class in the answer key,
-                        // then this is also a false negative
-                        textOut.append("FN: System response was assessed as incorrect, but the following correct response is in the pool: ")
-                                .append(Iterables.find(allAssessments, ResponseCorrect)).append("\n");
-                        confusionMatrixBuilder.record(ABSENT, PRESENT, answerable);
-                        htmlOut.append(renderer.vsAnnotated("kbp-false-negative", "False negative", getFirst(allAssessments, null).response(),
-                                allAssessments));
-                    }
+                    checkForFalseNegative(answerable, allAssessments);
 				}
 			}
 
+            private boolean checkForFalseNegative(final TypeRoleFillerRealis answerable, final Set<AssessedResponse> assessedResponses) {
+                if (any(assessedResponses, ResponseCorrect)) {
+                    // if any correct answer was found for this equivalence class in the answer key,
+                    // then this is  a false negative
+                    textOut.append("FN: No correct system response present, but the following correct response is in the pool: ")
+                            .append(Iterables.find(assessedResponses, ResponseCorrect)).append("\n");
+                    confusionMatrixBuilder.record(ABSENT, PRESENT, answerable);
+                    htmlOut.append(renderer.vsAnnotated("kbp-false-negative", "False negative", getFirst(assessedResponses, null).response(),
+                            assessedResponses));
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+
 			@Override
-			public void unannotatedSelectedResponse(final TypeRoleFillerRealis answerable, final Response unannotated) {
+			public void unannotatedSelectedResponse(final TypeRoleFillerRealis answerable, final Response unannotated,
+                                                    Set<AssessedResponse> annotatedResponses)
+            {
 				textOut.append("No assessment for ").append(unannotated).append(", counting as wrong\n");
 				confusionMatrixBuilder.record(PRESENT, ABSENT, answerable);
 				htmlOut.append(renderer.vsAnnotated("kbp-false-positive-unannotated", "False positive (unannotated)", unannotated,
                         ImmutableList.of(systemOutputSource.systemOutput().score(unannotated)), answerKey().answers(answerable)));
+                checkForFalseNegative(answerable, annotatedResponses);
 			}
 
 			@Override
 			public void annotationsOnlyNonEmpty(final TypeRoleFillerRealis answerable,
 				final Set<AssessedResponse> annotatedResponses)
 			{
-				// we check at the beginning of the method that these
-				// answers all agree,
-				// so we can take the first
-				if (any(annotatedResponses, ResponseCorrect)) {
-					textOut.append("FN: No system response, but the following correct response is in the pool: ")
-                            .append(Iterables.find(annotatedResponses, ResponseCorrect)).append("\n");
-					confusionMatrixBuilder.record(ABSENT, PRESENT, answerable);
-					htmlOut.append(renderer.vsAnnotated("kbp-false-negative", "False negative", getFirst(annotatedResponses, null).response(),
-                            annotatedResponses));
-				} else {
-					textOut.append("TN: No system response, but all matching answers in the pool are wrong.\n");
-					// true negative, no action
-				}
+                if (checkForFalseNegative(answerable, annotatedResponses)) {
+                    // pass - recording done within checkForFalseNegative
+                } else {
+                    textOut.append("TN: No system response, but all matching answers in the pool are wrong.\n");
+                    // true negative, no action
+                }
 			}
 
 			@Override
 			public void end() {
                 final ProvenancedConfusionMatrix<TypeRoleFillerRealis> confusionMatrix = confusionMatrixBuilder.build();
                 observeDocumentConfusionMatrix(confusionMatrix);
-
 			}
 
             @Override

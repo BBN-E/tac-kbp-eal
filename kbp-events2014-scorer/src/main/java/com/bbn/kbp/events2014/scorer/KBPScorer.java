@@ -157,7 +157,7 @@ public final class KBPScorer {
 						// notify observers we have a selected system response
 						// but not assessment to align to it
 						for (final KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver observer : docObservers) {
-							observer.unannotatedSelectedResponse(answerable, selectedSystemResponse);
+							observer.unannotatedSelectedResponse(answerable, selectedSystemResponse, annotatedResponses);
 						}
 					}
 
