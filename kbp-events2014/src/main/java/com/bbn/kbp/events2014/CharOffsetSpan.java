@@ -52,6 +52,11 @@ public class CharOffsetSpan implements Comparable<CharOffsetSpan> {
 		return Optional.fromNullable(string);
 	}
 
+    public boolean contains(CharOffsetSpan other) {
+        return startInclusive() <= other.startInclusive()
+                && endInclusive() >= other.endInclusive();
+    }
+
 	final int start;
 	final int end;
 	private final String string;
@@ -90,4 +95,5 @@ public class CharOffsetSpan implements Comparable<CharOffsetSpan> {
 			.compare(end, other.endInclusive())
 			.result();
 	}
+
 }
