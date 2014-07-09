@@ -1,15 +1,16 @@
 package com.bbn.kbp.events2014;
 
-import java.util.Set;
-
 import com.bbn.bue.common.symbols.Symbol;
-
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -19,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * See the assessment guidelines for more details.
  */
 public final class Response  {
+    private static Logger log = LoggerFactory.getLogger(Response.class);
 
     private Response(final Symbol docid, final Symbol type, final Symbol role,
 		final KBPString canonicalArgumentString,
@@ -35,10 +37,11 @@ public final class Response  {
 		this.baseFiller = checkNotNull(baseFiller);
 		this.additionalArgumentJustifications = ImmutableSet.copyOf(argumentJustifications);
 		this.predicateJustifications = ImmutableSet.copyOf(predicateJustifications);
+        checkPredicateJustificationsContainsBaseFiller();
 		checkArgument(!predicateJustifications.isEmpty(), "Predicate justifications may not be empty");
 	 }
 
-	public static Response createFrom(final Symbol docid, final Symbol type, final Symbol role,
+    public static Response createFrom(final Symbol docid, final Symbol type, final Symbol role,
 			final KBPString canonicalArgumentString, final CharOffsetSpan baseFiller,
 			final Set<CharOffsetSpan> argumentJustifications,
 			final Set<CharOffsetSpan> predicateJustifications, final KBPRealis realis)
@@ -227,7 +230,7 @@ public final class Response  {
 		}
 	};
 
-    public static final Function<Response,Symbol> DocID = new Function<Response, Symbol> () {
+    public static final Function<Response, Symbol> DocID = new Function<Response, Symbol> () {
         @Override
         public Symbol apply(final Response x) {
             return x.docID();
@@ -244,4 +247,18 @@ public final class Response  {
      * Orders responses by their IDs.
      */
     public static final Ordering<Response> ById = Ordering.natural().onResultOf(Response.ResponseID);
+
+    private void checkPredicateJustificationsContainsBaseFiller() {
+        boolean foundContainingPJ = false;
+        for (final CharOffsetSpan pj : predicateJustifications()) {
+            if (pj.contains(baseFiller)) {
+                foundContainingPJ = true;
+                break;
+            }
+        }
+        if (!foundContainingPJ) {
+            log.warn("For response {}, the predicate justification does not contain the base filler {}. " +
+                "This is a warning rather than an exception for backward-compatibility.", this, baseFiller);
+        }
+    }
 }
