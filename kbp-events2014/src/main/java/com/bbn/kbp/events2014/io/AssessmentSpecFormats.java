@@ -1,37 +1,35 @@
 package com.bbn.kbp.events2014.io;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-
-import com.bbn.kbp.events2014.*;
-import com.bbn.kbp.events2014.io.assessmentCreators.AssessmentCreator;
-import com.bbn.kbp.events2014.io.assessmentCreators.RecoveryAssessmentCreator;
-import com.bbn.kbp.events2014.io.assessmentCreators.StrictAssessmentCreator;
-import com.google.common.base.*;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.google.common.collect.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events2014.*;
 import com.bbn.kbp.events2014.ResponseAssessment.MentionType;
+import com.bbn.kbp.events2014.io.assessmentCreators.AssessmentCreator;
+import com.bbn.kbp.events2014.io.assessmentCreators.RecoveryAssessmentCreator;
+import com.bbn.kbp.events2014.io.assessmentCreators.StrictAssessmentCreator;
+import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
+import com.google.common.base.Splitter;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.*;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Charsets.UTF_8;
-
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -65,7 +63,7 @@ public final class AssessmentSpecFormats {
 				"Non-empty output directory %s when attempting to create assessment store", directory));
 		}
 		directory.mkdirs();
-		return new DirectoryAnnotationStore(directory, StrictAssessmentCreator.create());
+		return new DirectoryAnnotationStore(directory, StrictAssessmentCreator.create(), false);
 	}
 
     /**
@@ -81,7 +79,7 @@ public final class AssessmentSpecFormats {
 		if (!directory.exists() || !directory.isDirectory()) {
             throw new IOException(String.format("Annotation store directory %s either does not exist or is not a directory", directory));
         }
-		return new DirectoryAnnotationStore(directory, StrictAssessmentCreator.create());
+		return new DirectoryAnnotationStore(directory, StrictAssessmentCreator.create(), false);
 	}
 
     public static AnnotationStore recoverPossiblyBrokenAnnotationStore(File directory,
@@ -90,13 +88,13 @@ public final class AssessmentSpecFormats {
         if (!directory.exists() || !directory.isDirectory()) {
             throw new IOException(String.format("Annotation store directory %s either does not exist or is not a directory", directory));
         }
-        return new DirectoryAnnotationStore(directory, assessmentCreator);
+        return new DirectoryAnnotationStore(directory, assessmentCreator, false);
     }
 
 
     public static AnnotationStore openOrCreateAnnotationStore(final File directory) throws IOException {
         directory.mkdirs();
-        return new DirectoryAnnotationStore(directory, StrictAssessmentCreator.create());
+        return new DirectoryAnnotationStore(directory, StrictAssessmentCreator.create(), false);
     }
 
     /**
@@ -245,6 +243,7 @@ public final class AssessmentSpecFormats {
 		private final File directory;
         private final File lockFile;
         private final LoadingCache<Symbol, AnswerKey> cache;
+        private final boolean doCaching;
         private boolean closed = false;
         private final Set<Symbol> docIDs;
         // object which actually creates ResponseAssessments
@@ -252,7 +251,9 @@ public final class AssessmentSpecFormats {
         // the input
         private AssessmentCreator assessmentCreator;
 
-		private DirectoryAnnotationStore(final File directory, AssessmentCreator assessmentCreator) throws IOException {
+		private DirectoryAnnotationStore(final File directory, AssessmentCreator assessmentCreator,
+                                         final boolean doCaching) throws IOException
+        {
 			checkArgument(directory.exists(), "Directory %s for annotation store does not exist", directory);
             // this is a half-hearted attempt at preventing multiple assessment stores
             //  being opened on the same directory at once.  There is a race condition,
@@ -274,13 +275,18 @@ public final class AssessmentSpecFormats {
                     });
             this.docIDs = loadInitialDocIds();
             this.assessmentCreator = checkNotNull(assessmentCreator);
+            this.doCaching = doCaching;
 		}
 
         @Override
         public synchronized AnswerKey read(final Symbol docid) throws IOException {
             assertNotClosed();
             try {
-                return cache.get(docid);
+                if (doCaching) {
+                    return cache.get(docid);
+                } else {
+                    return uncachedRead(docid);
+                }
             } catch (ExecutionException e) {
                 log.info("Caught exception {}", e);
                 if (e.getCause() instanceof IOException) {
