@@ -1,19 +1,20 @@
 package com.bbn.kbp.events2014.validation;
 
-import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.Response;
+import com.google.common.base.Charsets;
 import com.google.common.base.Predicate;
-import com.google.common.collect.*;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
+import com.google.common.io.CharSource;
+import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.concat;
@@ -53,11 +54,14 @@ public final class TypeAndRoleValidator implements Predicate<Response> {
     }
 
     public static TypeAndRoleValidator createFromParameters(Parameters params) throws IOException {
-        final File validRolesFile = params.getExistingFile("validRoles");
-        log.info("Validating types and roles against {}", validRolesFile);
-        final Multimap<Symbol, Symbol> validRoles = FileUtils.loadSymbolMultimap(validRolesFile);
-        log.info("Got valid roles for {} event types", validRoles.keySet().size());
-        final Set<Symbol> alwaysValidRoles = params.getSymbolSet("alwaysValidRoles");
+        return createFromValidRolesSource(params.getSymbolSet("alwaysValidRoles"),
+                Files.asCharSource(params.getExistingFile("validRoles"), Charsets.UTF_8));
+    }
+
+    public static TypeAndRoleValidator createFromValidRolesSource(final Iterable<Symbol> alwaysValidRoles,
+                                                                CharSource validRolesSource) throws IOException {
+        log.info("Validating types and roles against {}", validRolesSource);
+        final Multimap<Symbol, Symbol> validRoles = FileUtils.loadSymbolMultimap(validRolesSource);
         log.info("The following roles are always valid: {}", alwaysValidRoles);
         return new TypeAndRoleValidator(alwaysValidRoles, validRoles);
     }
