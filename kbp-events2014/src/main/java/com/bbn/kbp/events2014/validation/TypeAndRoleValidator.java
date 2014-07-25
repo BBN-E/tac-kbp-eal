@@ -50,7 +50,11 @@ public final class TypeAndRoleValidator implements Predicate<Response> {
     }
 
     public boolean apply(Response response) {
-        return isValidArgumentRole(response);
+        final boolean ret = isValidArgumentRole(response);
+        if (!ret) {
+            log.warn("Rejected response {} due to invalid type and role");
+        }
+        return ret;
     }
 
     public static TypeAndRoleValidator createFromParameters(Parameters params) throws IOException {
