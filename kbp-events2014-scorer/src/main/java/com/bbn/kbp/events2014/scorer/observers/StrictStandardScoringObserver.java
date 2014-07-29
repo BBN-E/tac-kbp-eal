@@ -40,25 +40,46 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 	private final Logger log;
 	private final ProvenancedConfusionMatrix.Builder corpusConfusionMatrixBuilder =
 			ProvenancedConfusionMatrix.builder();
+    private final ImmutableMap<String, Function<TypeRoleFillerRealis, Symbol>> breakdowns;
 
     private final HTMLErrorRecorder renderer;
 
 	public static KBPScoringObserver<TypeRoleFillerRealis> strictScorer(final HTMLErrorRecorder renderer) {
 		return new StrictStandardScoringObserver("Strict", AssessedResponse.IsCompletelyCorrect,
-			renderer);
+			renderer, BreakdownFunctions.StandardBreakdowns);
 	}
 
 	public static KBPScoringObserver<TypeRoleFillerRealis> standardScorer(final HTMLErrorRecorder renderer) {
 		return new StrictStandardScoringObserver("Standard", AssessedResponse.IsCorrectUpToInexactJustifications,
-			renderer);
+			renderer, BreakdownFunctions.StandardBreakdowns);
 	}
+
+    public static KBPScoringObserver<TypeRoleFillerRealis> standardScorer(final HTMLErrorRecorder renderer,
+                final Map<String, Function<TypeRoleFillerRealis, Symbol>> additionalBreakdowns)
+    {
+        return new StrictStandardScoringObserver("Standard", AssessedResponse.IsCorrectUpToInexactJustifications,
+                renderer, plusStandardBreakdowns(additionalBreakdowns));
+    }
+
+    private static ImmutableMap<String, Function<TypeRoleFillerRealis, Symbol>>
+        plusStandardBreakdowns(Map<String, Function<TypeRoleFillerRealis, Symbol>> additionalBreakdowns)
+    {
+        final ImmutableMap.Builder<String, Function<TypeRoleFillerRealis,Symbol>> breakdowns = ImmutableMap.builder();
+
+        breakdowns.putAll(BreakdownFunctions.StandardBreakdowns);
+        breakdowns.putAll(additionalBreakdowns);
+
+        return breakdowns.build();
+    }
+
+
 
     @Override
     public void writeCorpusOutput(File directory) throws IOException {
         final ProvenancedConfusionMatrix<TypeRoleFillerRealis> corpusConfusionMatrix =
                 corpusConfusionMatrixBuilder.build();
 
-        final BreakdownWriter breakdownWriter = BreakdownWriter.create(BreakdownFunctions.StandardBreakdowns);
+        final BreakdownWriter breakdownWriter = BreakdownWriter.create(breakdowns);
         breakdownWriter.addFMeasureToPrint("Present", PRESENT);
         breakdownWriter.writeBreakdownsToFiles(corpusConfusionMatrix, directory);
 
@@ -76,12 +97,14 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 	}
 
 	private StrictStandardScoringObserver(final String name,
-		final Predicate<AssessedResponse> ResponseCorrect, final HTMLErrorRecorder renderer)
+		final Predicate<AssessedResponse> ResponseCorrect, final HTMLErrorRecorder renderer,
+        final Map<String, Function<TypeRoleFillerRealis, Symbol>> breakdowns)
 	{
 		super(name);
 		this.ResponseCorrect = checkNotNull(ResponseCorrect);
 		this.log = LoggerFactory.getLogger(name());
 		this.renderer = checkNotNull(renderer);
+        this.breakdowns = ImmutableMap.copyOf(breakdowns);
 	}
 
 	private void observeDocumentConfusionMatrix(final ProvenancedConfusionMatrix<TypeRoleFillerRealis> matrix) {
