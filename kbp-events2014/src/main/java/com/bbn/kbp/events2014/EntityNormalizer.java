@@ -56,5 +56,6 @@ public final class EntityNormalizer {
 		}
 	}
 
+
 	private final Table<Symbol, KBPString, KBPString> docidNameToCanonicalName;
 }
