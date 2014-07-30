@@ -103,6 +103,7 @@ public final class DeleteInjureForCorrectDie {
     }
 
     private static final Symbol LIFE_DIE = Symbol.from("Life.Die");
+    private static final Symbol LIFE_INJURE = Symbol.from("Life.Injure");
     private ImmutableSet<TypeRoleFillerRealis> responsesToDelete(AnswerKey answerKey) {
         final ImmutableSet.Builder<TypeRoleFillerRealis> ret = ImmutableSet.builder();
 
@@ -110,7 +111,8 @@ public final class DeleteInjureForCorrectDie {
             if (assessedResponse.response().type() == LIFE_DIE
                 && assessedResponse.isCorrectUpToInexactJustifications())
             {
-                ret.add(normalizedFingerprintExtractor.apply(assessedResponse.response()));
+                ret.add(normalizedFingerprintExtractor.apply(assessedResponse.response()).
+                        copyWithModifiedType(LIFE_INJURE));
             }
         }
         return ret.build();

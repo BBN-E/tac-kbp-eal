@@ -136,4 +136,8 @@ public final class TypeRoleFillerRealis implements Comparable<TypeRoleFillerReal
             return input.docID();
         }
     };
+
+    public TypeRoleFillerRealis copyWithModifiedType(Symbol newType) {
+        return TypeRoleFillerRealis.create(docID(), newType, role(), realis(), argumentCanonicalString());
+    }
 }
