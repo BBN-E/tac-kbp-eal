@@ -20,8 +20,9 @@ public class FMeasureTableRendererTest {
         final String expected=
                 "Name                            TP       FP       FN        P        R       F1\n"+
                 "===============================================================================\n"+
-                "foo                            1.0      2.0      3.0    33.33    25.00    28.57\n"+
-                "bar                            4.0      5.0      6.0    44.44    40.00    42.11\n";
+                "bar                            4.0      5.0      6.0    44.44    40.00    42.11\n"+
+                "foo                            1.0      2.0      3.0    33.33    25.00    28.57\n";
+
         final String result = renderer.render(data);
         assertEquals(expected, result);
     }
