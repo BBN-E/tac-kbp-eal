@@ -86,7 +86,8 @@ public final class BreakdownWriter<ProvenanceType> {
             final Map<String, FMeasureCounts> fMeasuresToPrint = Maps.transformValues(data, FmeasureVs(FMeasureSymbol.getValue()));
 
             final FMeasureTableRenderer tableRenderer = FMeasureTableRenderer.create()
-                    .setNameFieldLength(4 + MapUtils.longestKeyLength(fMeasuresToPrint));
+                    .setNameFieldLength(4 + MapUtils.longestKeyLength(fMeasuresToPrint))
+                    .sortByErrorCountDescending();
 
             fMeasures.append("F-Measure vs ").append(FMeasureSymbol.getKey()).append("\n\n");
             fMeasures.append(tableRenderer.render(fMeasuresToPrint));
