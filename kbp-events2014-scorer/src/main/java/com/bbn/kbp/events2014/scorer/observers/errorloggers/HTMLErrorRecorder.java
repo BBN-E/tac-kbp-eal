@@ -22,5 +22,5 @@ public interface HTMLErrorRecorder {
     public String vsAnnotated(String clazz, String title, Response headerResponse, Iterable<Scored<Response>> scoredResponses,
                               Iterable<AssessedResponse> annotatedResponses);
 
-    public String correct(String clazz, String title, Response response);
+    public String correct(Scored<Response> response);
 }
