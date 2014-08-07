@@ -37,4 +37,9 @@ public final class NullHTMLErrorRecorder implements HTMLErrorRecorder {
     {
         return "";
     }
+
+    @Override
+    public String correct(String clazz, String title, Response response) {
+        return "";
+    }
 }

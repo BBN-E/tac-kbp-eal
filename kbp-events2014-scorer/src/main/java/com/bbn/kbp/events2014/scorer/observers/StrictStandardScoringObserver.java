@@ -135,6 +135,7 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 				if (ResponseCorrect.apply(annotationForSelected)) {
 					textOut.append("True Positive\n");
 					confusionMatrixBuilder.record(PRESENT, PRESENT, answerable);
+                    htmlOut.append(renderer.correct("kbp-correct", "True positive", response));
 				} else {
 					textOut.append("False positive. Response annotated in pool as ")
                             .append(annotationForSelected.assessment()).append("\n");
