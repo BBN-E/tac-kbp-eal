@@ -1,0 +1,4 @@
+INCLUDE root.params
+
+docIdToFileMap: %kbpRepo%/data/evaluation.2014.docIDToOriginalTextMap.txt
+quoteFilter: %kbpRepo%/data/evaluation.2014.quoteFilter
