@@ -12,7 +12,6 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Ordering;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,9 +135,11 @@ public final class KBPScorer {
 			final Set<TypeRoleFillerRealis> allAnswerables = ImmutableSet.copyOf(
 				concat(systemOutput.answerables(), answerKey.answerables()));
 
-			final Ordering<TypeRoleFillerRealis> order = ByJustificationLocation.create(answerKey, systemOutput);
+            // TODO: ByJustification location is not consistent with equals
+        		//final Ordering<TypeRoleFillerRealis> order = ByJustificationLocation.create(answerKey, systemOutput);
+            //final Ordering<TypeRoleFillerRealis> order = Ordering.
 
-			for (final TypeRoleFillerRealis answerable : order.sortedCopy(allAnswerables)) {
+			for (final TypeRoleFillerRealis answerable : allAnswerables) {
 				log.info("Scoring equivalence class {}", answerable);
 
 				// notify observers we are starting a new equivalence class
