@@ -4,6 +4,7 @@ package com.bbn.kbp.events2014;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
+import com.google.common.collect.ComparisonChain;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -12,7 +13,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * Newlines are not allowed in KBPStrings and all the constructing static methods
  * will replace each newlines in provided strings with a single space.
  */
-public final class KBPString {
+public final class KBPString implements Comparable<KBPString> {
 	private KBPString(final String string, final CharOffsetSpan offsetSpan) {
 		this.string = checkNotNull(string);
 		this.offsetSpan = checkNotNull(offsetSpan);
@@ -71,6 +72,13 @@ public final class KBPString {
 		return Objects.equal(offsetSpan, other.charOffsetSpan())
 				&& Objects.equal(string, other.string);
 	}
+
+    @Override
+    public int compareTo(KBPString o) {
+        return ComparisonChain.start()
+                .compare(offsetSpan, o.charOffsetSpan())
+                .compare(string, o.string).result();
+    }
 
 	private final String string;
 	private final CharOffsetSpan offsetSpan;

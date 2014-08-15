@@ -119,7 +119,7 @@ public final class TypeRoleFillerRealis implements Comparable<TypeRoleFillerReal
 			.compare(type.toString(), o.type.toString())
 			.compare(role.toString(), o.type.toString())
 			.compare(realis, o.realis)
-			.compare(argumentCanonicalString.toString(), argumentCanonicalString.toString())
+			.compare(argumentCanonicalString, argumentCanonicalString)
 			.result();
 	}
 
