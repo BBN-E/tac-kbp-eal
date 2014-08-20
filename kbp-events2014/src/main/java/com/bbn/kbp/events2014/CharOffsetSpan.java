@@ -1,5 +1,7 @@
 package com.bbn.kbp.events2014;
 
+import com.bbn.bue.common.strings.offsets.CharOffset;
+import com.bbn.bue.common.strings.offsets.OffsetRange;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.ComparisonChain;
@@ -60,6 +62,10 @@ public class CharOffsetSpan implements Comparable<CharOffsetSpan> {
 	final int start;
 	final int end;
 	private final String string;
+
+    public OffsetRange<CharOffset> asCharOffsetRange() {
+        return OffsetRange.charOffsetRange(startInclusive(), endInclusive());
+    }
 
 	@Override
 	public String toString() {
