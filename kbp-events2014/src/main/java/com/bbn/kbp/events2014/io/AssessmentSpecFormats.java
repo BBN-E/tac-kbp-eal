@@ -140,6 +140,7 @@ public final class AssessmentSpecFormats {
 			this.directory = checkNotNull(directory);
 		}
 
+        private static final Splitter OnTabs = Splitter.on('\t').trimResults();
 		@Override
 		public SystemOutput read(final Symbol docid) throws IOException {
 			final File f = new File(directory, docid.toString());
@@ -155,7 +156,7 @@ public final class AssessmentSpecFormats {
 				if (line.isEmpty() || line.startsWith("#")) {
 					continue;
 				}
-				final List<String> parts = ImmutableList.copyOf(StringUtils.OnTabs.split(line));
+				final List<String> parts = ImmutableList.copyOf(OnTabs.split(line));
 				try {
                     // we ignore the first field because input system IDs are currently not preserved
                     try {
