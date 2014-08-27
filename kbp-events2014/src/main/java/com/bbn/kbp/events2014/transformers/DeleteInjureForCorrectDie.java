@@ -53,7 +53,7 @@ public final class DeleteInjureForCorrectDie {
             public AnswerKey apply(AnswerKey input) {
                 final ImmutableSet<TypeRoleFillerRealis> toDelete = responsesToDelete(input);
                 return AnswerKey.from(input.docId(), removeInjuresMatchingDies(input.annotatedResponses(), toDelete),
-                        input.unannotatedResponses());
+                        input.unannotatedResponses(), input.corefAnnotation());
             };
 
             private Iterable<AssessedResponse> removeInjuresMatchingDies(Iterable<AssessedResponse> currentResponses,

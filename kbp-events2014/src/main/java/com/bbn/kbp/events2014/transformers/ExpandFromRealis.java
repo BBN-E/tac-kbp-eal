@@ -47,7 +47,8 @@ public final class ExpandFromRealis implements Function<AnswerKey, AnswerKey> {
             }
         }
 
-        return AnswerKey.from(input.docId(), newAssessedResponses.build(), input.unannotatedResponses());
+        return AnswerKey.from(input.docId(), newAssessedResponses.build(), input.unannotatedResponses(),
+                input.corefAnnotation());
     }
 
     private static void trueMain(String[] argv) throws IOException {

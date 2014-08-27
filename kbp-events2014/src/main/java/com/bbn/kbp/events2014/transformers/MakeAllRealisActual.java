@@ -4,7 +4,6 @@ import com.bbn.bue.common.scoring.Scored;
 import com.bbn.kbp.events2014.*;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
@@ -54,7 +53,8 @@ public final class MakeAllRealisActual {
                 }
 
 
-                return AnswerKey.from(input.docId(), newAssessed.build(), newUnannotated.build());
+                return AnswerKey.from(input.docId(), newAssessed.build(), newUnannotated.build(),
+                        input.corefAnnotation());
             }
         };
     }

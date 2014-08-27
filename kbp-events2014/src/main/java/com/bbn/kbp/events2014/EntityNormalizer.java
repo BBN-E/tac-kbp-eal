@@ -1,6 +1,7 @@
 package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.symbols.Symbol;
+import com.google.common.base.Optional;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Table;
@@ -17,12 +18,13 @@ public final class EntityNormalizer {
 		final Table<Symbol, KBPString, KBPString> docIdAndStringToCanonical = HashBasedTable.create();
 
 		for (final AssessedResponse arg : answerKey.annotatedResponses()) {
-			if (arg.assessment().coreferenceId().isPresent()
+            final Optional<Integer> corefIdOpt = answerKey.corefAnnotation().corefId(arg.response().canonicalArgument());
+			if (corefIdOpt.isPresent()
                     // we ignore coreference assessment when the CAS is not acceptable,
                     // since it is optional in this case
                     && FieldAssessment.isAcceptable(arg.assessment().entityCorrectFiller()))
             {
-				final int corefId = arg.assessment().coreferenceId().get();
+				final int corefId = corefIdOpt.get();
 				final KBPString canonicalString = equivalenceClassToCanonical.get(arg.response().docID(), corefId);
 				if (canonicalString != null) {
 					final KBPString currentCanonicalization = docIdAndStringToCanonical.get(arg.response().docID(), arg.response().canonicalArgument());

@@ -328,7 +328,7 @@ public final class AssessmentSpecFormats {
 					final List<String> parts = Lists.newArrayList();
 					parts.add(Integer.toString(arg.response().responseID()));
 					addArgumentParts(arg.response(), parts, 1.0);
-					addAnnotationParts(arg.assessment(), parts);
+					addAnnotationParts(arg, answerKey.corefAnnotation(), parts);
 					out.println(Joiner.on("\t").join(parts));
 				}
                 // then unannotated responses, sorted by reponseID
@@ -336,7 +336,7 @@ public final class AssessmentSpecFormats {
 					final List<String> parts = Lists.newArrayList();
 					parts.add(Integer.toString(unannotated.responseID()));
 					addArgumentParts(unannotated, parts, 1.0);
-					addUnannotatedAnnotationParts(parts);
+					addUnannotatedAnnotationParts(unannotated, answerKey.corefAnnotation(), parts);
 					out.println(Joiner.on("\t").join(parts));
 				}
 			} finally {
@@ -356,14 +356,14 @@ public final class AssessmentSpecFormats {
 			if (docIDs().contains(docid)) {
 				return read(docid);
 			} else {
-				return AnswerKey.from(docid, ImmutableList.<AssessedResponse>of(),
-					ImmutableList.<Response>of());
+				return AnswerKey.createEmpty(docid);
 			}
 		}
 
         private synchronized AnswerKey uncachedRead(final Symbol docid) throws IOException {
             final ImmutableList.Builder<AssessedResponse> annotated = ImmutableList.builder();
             final ImmutableList.Builder<Response> unannotated = ImmutableList.builder();
+            final CorefAnnotation.Builder corefBuilder = assessmentCreator.corefBuilder(docid);
 
             final CharSource source = Files.asCharSource(new File(directory, docid.toString()), UTF_8);
             for (final String line : source.readLines()) {
@@ -382,12 +382,18 @@ public final class AssessmentSpecFormats {
                     }
 
                     final Response response = parseArgumentFields(argumentParts);
-                    final Optional<ResponseAssessment> annotation = parseAnnotation(annotationParts);
+                    final AssessmentCreator.AssessmentParseResult annotation = parseAnnotation(annotationParts);
 
-                    if (annotation.isPresent()) {
-                        annotated.add(AssessedResponse.from(response, annotation.get()));
+                    if (annotation.assessment().isPresent()) {
+                        annotated.add(AssessedResponse.from(response, annotation.assessment().get()));
                     } else {
                         unannotated.add(response);
+                    }
+
+                    if (annotation.corefId().isPresent()) {
+                        corefBuilder.corefCAS(response.canonicalArgument(), annotation.corefId().get());
+                    } else {
+                        corefBuilder.addUnannotatedCAS(response.canonicalArgument());
                     }
                 } catch (Exception e) {
                     throw new IOException(String.format(
@@ -395,15 +401,19 @@ public final class AssessmentSpecFormats {
                 }
             }
 
-            return assessmentCreator.createAnswerKey(docid, annotated.build(), unannotated.build());
+            return assessmentCreator.createAnswerKey(docid, annotated.build(), unannotated.build(),
+                    corefBuilder.build());
         }
 
-        private static final Set<String> emptyCorefEncodings = ImmutableSet.of("NIL", "");
-        private Optional<ResponseAssessment> parseAnnotation(final List<String> parts) {
+        private static final Set<String> emptyCorefEncodings = ImmutableSet.of("NIL", "", "UNANNOTATED");
+        private AssessmentCreator.AssessmentParseResult parseAnnotation(final List<String> parts) {
             checkArgument(parts.size() == 7, "Expected parts of size 7, but got %s", parts);
 
+            final Optional<Integer> coreference = emptyCorefEncodings.contains(parts.get(4))
+                    ?Optional.<Integer>absent():Optional.of(Integer.parseInt(parts.get(4)));
+
             if (parts.contains("UNANNOTATED")) {
-                return Optional.absent();
+                return AssessmentCreator.AssessmentParseResult.fromCorefOnly(coreference);
             }
 
             final Optional<FieldAssessment> AET = FieldAssessment.parseOptional(parts.get(0));
@@ -411,8 +421,6 @@ public final class AssessmentSpecFormats {
             final Optional<FieldAssessment> casAssessment = FieldAssessment.parseOptional(parts.get(2));
             final Optional<FieldAssessment> baseFillerAssessment = FieldAssessment.parseOptional(parts.get(3));
 
-            final Optional<Integer> coreference = emptyCorefEncodings.contains(parts.get(4))
-                    ?Optional.<Integer>absent():Optional.of(Integer.parseInt(parts.get(4)));
             final Optional<KBPRealis> realis = KBPRealis.parseOptional(parts.get(5));
             final Optional<MentionType> mentionTypeOfCAS = MentionType.parseOptional(parts.get(6));
 
@@ -420,13 +428,19 @@ public final class AssessmentSpecFormats {
                     realis, baseFillerAssessment, coreference, mentionTypeOfCAS);
         }
 
-        private static void addAnnotationParts(final ResponseAssessment ann, final List<String> parts) {
+        private static void addAnnotationParts(final AssessedResponse assessedResponse,
+                  final CorefAnnotation corefAnnotation, final List<String> parts)
+        {
+            final ResponseAssessment ann = assessedResponse.assessment();
 			parts.add(FieldAssessment.asCharacterOrNil(ann.justificationSupportsEventType()));
 			parts.add(FieldAssessment.asCharacterOrNil(ann.justificationSupportsRole()));
 			parts.add(FieldAssessment.asCharacterOrNil(ann.entityCorrectFiller()));
 			parts.add(FieldAssessment.asCharacterOrNil(ann.baseFillerCorrect()));
-			if (ann.coreferenceId().isPresent()) {
-				parts.add(Integer.toString(ann.coreferenceId().get()));
+
+            final Optional<Integer> corefId = corefAnnotation.corefId(
+                    assessedResponse.response().canonicalArgument());
+			if (corefId.isPresent()) {
+				parts.add(Integer.toString(corefId.get()));
 			} else {
 				parts.add("NIL");
 			}
@@ -434,8 +448,18 @@ public final class AssessmentSpecFormats {
 			parts.add(MentionType.stringOrNil(ann.mentionTypeOfCAS()));
 		}
 
-		private static void addUnannotatedAnnotationParts(final List<String> parts) {
-			parts.addAll(Collections.nCopies(7, "UNANNOTATED"));
+        private static final String UNANNOTATED = "UNANNOTATED";
+        private static void addUnannotatedAnnotationParts(Response unannotated, CorefAnnotation corefAnnotation,
+                                                          final List<String> parts)
+        {
+            parts.addAll(Collections.nCopies(4, UNANNOTATED));
+            final Optional<Integer> corefId = corefAnnotation.corefId(unannotated.canonicalArgument());
+            if (corefId.isPresent()) {
+                parts.add(corefId.get().toString());
+            } else {
+                parts.add(UNANNOTATED);
+            }
+            parts.addAll(Collections.nCopies(2, UNANNOTATED));
 		}
 
         private synchronized void assertNotClosed() {

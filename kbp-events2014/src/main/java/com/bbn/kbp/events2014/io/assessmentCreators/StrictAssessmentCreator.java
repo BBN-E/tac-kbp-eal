@@ -14,18 +14,25 @@ public final class StrictAssessmentCreator implements AssessmentCreator {
     private StrictAssessmentCreator() {}
 
     @Override
-    public Optional<ResponseAssessment> createAssessmentFromFields(Optional<FieldAssessment> aet,
+    public AssessmentParseResult createAssessmentFromFields(Optional<FieldAssessment> aet,
         Optional<FieldAssessment> aer, Optional<FieldAssessment> casAssessment, Optional<KBPRealis> realis,
         Optional<FieldAssessment> baseFillerAssessment, Optional<Integer> coreference,
         Optional<ResponseAssessment.MentionType> mentionTypeOfCAS)
     {
-        return Optional.of(ResponseAssessment.create(aet, aer, casAssessment, realis, baseFillerAssessment,
-                coreference, mentionTypeOfCAS));
+        return new AssessmentParseResult(ResponseAssessment.create(aet, aer, casAssessment, realis,
+                baseFillerAssessment, mentionTypeOfCAS), coreference.orNull());
     }
 
     @Override
-    public AnswerKey createAnswerKey(Symbol docID, List<AssessedResponse> assessedResponses, List<Response> unassessedResponses) {
-        return AnswerKey.fromPossiblyOverlapping(docID, assessedResponses, unassessedResponses);
+    public AnswerKey createAnswerKey(Symbol docID, List<AssessedResponse> assessedResponses,
+                                     List<Response> unassessedResponses, CorefAnnotation corefAnnotation)
+    {
+        return AnswerKey.fromPossiblyOverlapping(docID, assessedResponses, unassessedResponses, corefAnnotation);
+    }
+
+    @Override
+    public CorefAnnotation.Builder corefBuilder(Symbol docId) {
+        return CorefAnnotation.strictBuilder(docId);
     }
 
     public static AssessmentCreator create() {

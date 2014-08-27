@@ -1,22 +1,19 @@
 package com.bbn.kbp.events2014.io;
 
-import java.io.File;
-import java.io.IOException;
-
-import com.bbn.kbp.events2014.*;
-import junit.framework.TestCase;
-
-import org.junit.Test;
-
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events2014.*;
 import com.bbn.kbp.events2014.ResponseAssessment.MentionType;
-
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Files;
+import junit.framework.TestCase;
+import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
 
 public class TestLDCIO extends TestCase {
 	private final Symbol docid = Symbol.from("AFP_ENG_20030304.0250");
@@ -39,7 +36,7 @@ public class TestLDCIO extends TestCase {
 		ann = ResponseAssessment.create(Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.CORRECT),
                 Optional.of(FieldAssessment.CORRECT),
                 Optional.of(KBPRealis.Actual),
-                Optional.of(FieldAssessment.CORRECT), Optional.of(1),
+                Optional.of(FieldAssessment.CORRECT),
                 Optional.of(MentionType.NAME));
 		annArg = AssessedResponse.from(arg.item(), ann);
 	}
@@ -67,8 +64,10 @@ public class TestLDCIO extends TestCase {
 		tmpDir.deleteOnExit();
 
 		final AnnotationStore store1 = AssessmentSpecFormats.createAnnotationStore(tmpDir);
-		store1.write(AnswerKey.from(docid, ImmutableList.of(annArg), ImmutableList.<Response>of()));
-		store1.close();
+        final CorefAnnotation coref = CorefAnnotation.strictBuilder(docid)
+                .corefCAS(annArg.response().canonicalArgument(), 1).build();
+        store1.write(AnswerKey.from(docid, ImmutableList.of(annArg), ImmutableList.<Response>of(), coref));
+        store1.close();
 		final AnnotationStore store2 = AssessmentSpecFormats.openAnnotationStore(tmpDir);
 		final AnswerKey rereadArg = store2.read(docid);
 		store2.close();

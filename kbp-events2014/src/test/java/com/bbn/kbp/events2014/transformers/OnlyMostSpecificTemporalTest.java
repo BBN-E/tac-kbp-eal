@@ -32,6 +32,10 @@ public class OnlyMostSpecificTemporalTest {
         final CharOffsetSpan bf2 = CharOffsetSpan.fromOffsetsOnly(20, 21);
         final CharOffsetSpan pj2 = CharOffsetSpan.fromOffsetsOnly(20, 30);
 
+        final CorefAnnotation corefAnnotation = CorefAnnotation.strictBuilder(d)
+                .corefCAS(d19821231, 1)
+                .corefCAS(d19840304, 2).build();
+
         // this answer key has one correct temporal role (1982-12-31)
         // and one incorrect (1984-03-04)
         final AnswerKey answerKey = AnswerKey.from(d,
@@ -42,7 +46,7 @@ public class OnlyMostSpecificTemporalTest {
                             ResponseAssessment.create(Optional.of(FieldAssessment.CORRECT),
                                     Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.CORRECT),
                                     Optional.of(KBPRealis.Actual), Optional.of(FieldAssessment.CORRECT),
-                                    Optional.of(1), Optional.of(ResponseAssessment.MentionType.NOMINAL)
+                                    Optional.of(ResponseAssessment.MentionType.NOMINAL)
                                     )),
                     AssessedResponse.from(
                             Response.createFrom(d, type, role, d19840304, bf2,
@@ -50,8 +54,8 @@ public class OnlyMostSpecificTemporalTest {
                             ResponseAssessment.create(Optional.of(FieldAssessment.CORRECT),
                                     Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.INCORRECT),
                                     Optional.of(KBPRealis.Actual), Optional.of(FieldAssessment.CORRECT),
-                                    Optional.of(1), Optional.of(ResponseAssessment.MentionType.NOMINAL)))),
-                ImmutableList.<Response>of());
+                                    Optional.of(ResponseAssessment.MentionType.NOMINAL)))),
+                ImmutableList.<Response>of(), corefAnnotation);
 
         final SystemOutput systemOutput = SystemOutput.from(d,
                 ImmutableList.of(

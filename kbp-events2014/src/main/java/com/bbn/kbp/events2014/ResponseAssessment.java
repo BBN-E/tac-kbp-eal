@@ -2,11 +2,7 @@ package com.bbn.kbp.events2014;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
-import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Multiset;
-
-import java.util.Random;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -44,7 +40,6 @@ public final class ResponseAssessment {
 	private final FieldAssessment entityCorrectFiller;
 	private final FieldAssessment mentionCorrectFiller;
 	private final KBPRealis realis;
-	private final Integer coreferenceId;
 	private final MentionType mentionTypeOfCAS;
 
 	public Optional<FieldAssessment> justificationSupportsEventType() {
@@ -70,11 +65,6 @@ public final class ResponseAssessment {
 		return Optional.fromNullable(realis);
 	}
 
-	/** Coreference IDs for (EventType, Role, EntityString) tuples */
-	public Optional<Integer> coreferenceId() {
-		return Optional.fromNullable(coreferenceId);
-	}
-
 
 	public Optional<MentionType> mentionTypeOfCAS() {
 		return Optional.fromNullable(mentionTypeOfCAS);
@@ -91,7 +81,7 @@ public final class ResponseAssessment {
                                final FieldAssessment entityCorrectFiller,
                                final KBPRealis realis,
                                final FieldAssessment baseFillerCorrectFiller,
-                               final Integer coreferenceId, final MentionType casMentionType)
+                               final MentionType casMentionType)
 	{
 		this.justificationSupportsEventType = justificationSupportsEventType;
 		checkArgument(justificationSupportsEventType == null
@@ -109,7 +99,6 @@ public final class ResponseAssessment {
 
 
 		this.mentionCorrectFiller = baseFillerCorrectFiller;
-		this.coreferenceId = coreferenceId;
 		this.mentionTypeOfCAS = casMentionType;
 
 		// the filler and realis judgements should be present iff the event type and
@@ -128,33 +117,23 @@ public final class ResponseAssessment {
 			checkNotNull(realis);
 			checkNotNull(casMentionType);
 		}
-
-        if (entityCorrectFiller != null && entityCorrectFiller.isAcceptable()) {
-            checkNotNull(coreferenceId, "Coreference ID must be non-null if CAS is assessed correct or inexact");
-        } // otherwise, either present or absent coref is valid
 	}
 
 	public static ResponseAssessment create(final Optional<FieldAssessment> justificationSupportsEventType,
 			final Optional<FieldAssessment> justificationSupportsFiller,
 			final Optional<FieldAssessment> entityCorrectFiller,
 			final Optional<KBPRealis> realis,
-			final Optional<FieldAssessment> mentionCorrectFiller, final Optional<Integer> coreferenceId,
+			final Optional<FieldAssessment> mentionCorrectFiller,
 			final Optional<MentionType> mentionTypeOfCAS)
 	{
 		return new ResponseAssessment(justificationSupportsEventType.orNull(), justificationSupportsFiller.orNull(),
 			entityCorrectFiller.orNull(), realis.orNull(),
-			mentionCorrectFiller.orNull(), coreferenceId.orNull(), mentionTypeOfCAS.orNull());
+			mentionCorrectFiller.orNull(), mentionTypeOfCAS.orNull());
 	}
-
-    public ResponseAssessment copyWithModifiedCoref(Optional<Integer> newCoref) {
-        return create(justificationSupportsEventType(), justificationSupportsRole(),
-                entityCorrectFiller(), realis(), baseFillerCorrect(), newCoref,
-                mentionTypeOfCAS());
-    }
 
     public ResponseAssessment copyWithModifiedCASAssessment(FieldAssessment newCASAssessment) {
         return create(justificationSupportsEventType(), justificationSupportsRole(),
-                Optional.of(newCASAssessment), realis(), baseFillerCorrect(), coreferenceId(),
+                Optional.of(newCASAssessment), realis(), baseFillerCorrect(),
                 mentionTypeOfCAS());
     }
 
@@ -164,7 +143,7 @@ public final class ResponseAssessment {
         }
 
         return create(justificationSupportsEventType(), justificationSupportsRole(),
-                entityCorrectFiller(), newRealis, baseFillerCorrect(), coreferenceId(),
+                entityCorrectFiller(), newRealis, baseFillerCorrect(),
                 mentionTypeOfCAS());
     }
 
@@ -191,9 +170,6 @@ public final class ResponseAssessment {
 		if (mentionCorrectFiller != null) {
 			sb.append("; bF=").append(mentionCorrectFiller);
 		}
-		if (coreferenceId != null) {
-			sb.append("; coref=").append(coreferenceId);
-		}
 		if (mentionTypeOfCAS != null) {
 			sb.append("; mt=").append(mentionTypeOfCAS);
 		}
@@ -203,7 +179,7 @@ public final class ResponseAssessment {
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(coreferenceId, entityCorrectFiller,
+		return Objects.hashCode(entityCorrectFiller,
 			justificationSupportsEventType,justificationSupportsRole,
 			mentionCorrectFiller,
 			realis, mentionTypeOfCAS);
@@ -221,9 +197,6 @@ public final class ResponseAssessment {
 			return false;
 		}
 		final ResponseAssessment other = (ResponseAssessment) obj;
-		if (!Objects.equal(coreferenceId, other.coreferenceId)) {
-			return false;
-		}
 		if (entityCorrectFiller != other.entityCorrectFiller) {
 			return false;
 		}

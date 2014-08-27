@@ -3,10 +3,11 @@ package com.bbn.kbp.events2014.io.assessmentCreators;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.*;
 import com.google.common.base.Optional;
-import com.google.common.collect.*;
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multiset;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -60,11 +61,10 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
 
     /**
      * Attempts to create a {@link com.bbn.kbp.events2014.ResponseAssessment} from the provided fields
-     * in a way that tries to recover from some common violations of the specification.  It will suppress
-     * unnecessary fields and places items lacking coreference in singleton clusters with random indices. If
+     * in a way that tries to recover from some common violations of the specification.  If
      * there are any missing fields, {@link com.google.common.base.Optional#absent()} is returned.
      */
-    public Optional<ResponseAssessment> createAssessmentFromFields(final Optional<FieldAssessment> aet,
+    public AssessmentParseResult createAssessmentFromFields(final Optional<FieldAssessment> aet,
         final Optional<FieldAssessment> aer, final Optional<FieldAssessment> casAssessment,
         final Optional<KBPRealis> realis, final Optional<FieldAssessment> baseFillerAssessment,
         final Optional<Integer> coreference, final Optional<ResponseAssessment.MentionType> mentionTypeOfCAS)
@@ -94,7 +94,7 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
             fixedAER = Optional.absent();
         } else if (!fixedAER.isPresent() && FieldAssessment.isAcceptable(fixedAET)) {
             missing.add("AER");
-            return Optional.absent();
+            return AssessmentParseResult.fromCorefOnly(coreference);
         }
 
         if (FieldAssessment.isAcceptable(fixedAET) && FieldAssessment.isAcceptable(fixedAER)) {
@@ -102,22 +102,22 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
             // are required
             if (!fixedBF.isPresent()) {
                 missing.add("BF");
-                return Optional.absent();
+                return AssessmentParseResult.fromCorefOnly(coreference);
             }
 
             if (!fixedCAS.isPresent()) {
                 missing.add("CAS");
-                return Optional.absent();
+                return AssessmentParseResult.fromCorefOnly(coreference);
             }
 
             if (!fixedRealis.isPresent()) {
                 missing.add("Realis");
-                return Optional.absent();
+                return AssessmentParseResult.fromCorefOnly(coreference);
             }
 
             if (!fixedMentionType.isPresent()) {
                 missing.add("MentionType");
-                return Optional.absent();
+                return AssessmentParseResult.fromCorefOnly(coreference);
             }
 
         } else {
@@ -141,47 +141,21 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
             }
         }
 
-        return Optional.of(ResponseAssessment.create(fixedAET, fixedAER, fixedCAS,
-                fixedRealis, fixedBF, fixedCoref, fixedMentionType));
+        return new AssessmentParseResult(ResponseAssessment.create(fixedAET, fixedAER, fixedCAS,
+                fixedRealis, fixedBF, fixedMentionType), fixedCoref.orNull());
     }
 
     @Override
-    public AnswerKey createAnswerKey(Symbol docID, List<AssessedResponse> assessedResponses, List<Response> unassessedResponses) {
-        return AnswerKey.fromPossiblyOverlapping(docID, fixNonTimex(fixCoref(assessedResponses)), unassessedResponses);
+    public AnswerKey createAnswerKey(Symbol docID, List<AssessedResponse> assessedResponses,
+                                     List<Response> unassessedResponses, CorefAnnotation corefAnnotation)
+    {
+        return AnswerKey.fromPossiblyOverlapping(docID, fixNonTimex(assessedResponses),
+                unassessedResponses, corefAnnotation.copyWithUnannotatedAsSingletons(rng));
     }
 
-    /**
-     * If an annotation store erroneously has the same CAS in multiple coref clusters, map them all to the
-     * first cluster encountered.
-     */
-    private List<AssessedResponse> fixCoref(Iterable<AssessedResponse> assessedResponses) {
-        final Map<KBPString, Integer> CASToIndex = Maps.newHashMap();
-
-        for (AssessedResponse response : assessedResponses) {
-            if (!CASToIndex.containsKey(response.response().canonicalArgument())
-                    && response.assessment().coreferenceId().isPresent())
-            {
-                CASToIndex.put(response.response().canonicalArgument(), response.assessment().coreferenceId().get());
-            }
-        }
-
-        final ImmutableList.Builder<AssessedResponse> ret = ImmutableList.builder();
-
-        for (final AssessedResponse response : assessedResponses) {
-            final Integer mappedCoref = CASToIndex.get(response.response().canonicalArgument());
-
-            if (mappedCoref != null
-                    && (!response.assessment().coreferenceId().isPresent()
-                        || !response.assessment().coreferenceId().get().equals(mappedCoref)))
-            {
-                ret.add(AssessedResponse.from(response.response(),
-                        response.assessment().copyWithModifiedCoref(Optional.of(mappedCoref))));
-                ++numRemappedCoref;
-            } else {
-                ret.add(response);
-            }
-        }
-        return ret.build();
+    @Override
+    public CorefAnnotation.Builder corefBuilder(Symbol docId) {
+        return CorefAnnotation.laxBuilder(docId);
     }
 
     /**

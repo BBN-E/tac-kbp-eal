@@ -261,4 +261,13 @@ public final class Response  {
                 "This is a warning rather than an exception for backward-compatibility.", this, baseFiller);
         }
     }
+
+    public static Function<Response, KBPString> CASFunction() {
+        return new Function<Response, KBPString>() {
+            @Override
+            public KBPString apply(Response input) {
+                return input.canonicalArgument();
+            }
+        };
+    }
 }

@@ -4,15 +4,9 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
-import com.bbn.kbp.events2014.io.SystemOutputStore;
-import com.bbn.kbp.events2014.transformers.KeepBestJustificationOnly;
-import com.google.common.base.Function;
-import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableSet;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +51,9 @@ public final class KeepAnnotatedTuples {
         final AnnotationStore outputAssessmentStore = AssessmentSpecFormats.openOrCreateAnnotationStore(outputDir);
 
         for (final Symbol docid: inputAssessmentStore.docIDs()) {
-        	outputAssessmentStore.write(AnswerKey.from(docid, inputAssessmentStore.read(docid).annotatedResponses(), ImmutableSet.<Response>of()));
+            final AnswerKey answerKey = inputAssessmentStore.read(docid);
+            outputAssessmentStore.write(AnswerKey.from(docid, answerKey.annotatedResponses(), ImmutableSet.<Response>of(),
+                    answerKey.corefAnnotation()));
         }
     }
 }

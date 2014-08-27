@@ -27,72 +27,110 @@ public class MergeAssessmentStoresTest {
         final Response l = responseWithCAS("l");
         final Response m = responseWithCAS("m");
 
+        final CorefAnnotation baselineCoref = CorefAnnotation.strictBuilder(docid)
+                .corefCAS(b.canonicalArgument(), 200)
+                .corefCAS(f.canonicalArgument(), 199)
+                .corefCAS(h.canonicalArgument(), 198)
+                .corefCAS(i.canonicalArgument(), 197)
+                .corefCAS(j.canonicalArgument(), 197)
+                .addUnannotatedCAS(d.canonicalArgument())
+                .addUnannotatedCAS(l.canonicalArgument())
+                .build();
+
         final AnswerKey baseline = AnswerKey.from(docid,
                 // assessed in baseline
                 ImmutableSet.of(
-                    withCoref(b, 200),
-                    withCoref(f, 199),
-                    withCoref(h, 198),
-                    withCoref(i, 197),
-                    withCoref(j, 197)
+                    withCorrectAssessment(b),
+                    withCorrectAssessment(f),
+                    withCorrectAssessment(h),
+                    withCorrectAssessment(i),
+                    withCorrectAssessment(j)
                 ),
                 // unassessed in baseline
-                ImmutableSet.of(d, l)
-                );
+                ImmutableSet.of(d, l), baselineCoref);
+
+        final CorefAnnotation additionalCoref = CorefAnnotation.strictBuilder(docid)
+                // a is unassessed in baseline, so
+                // it should go directly into merged
+                // with no coref
+                .addUnannotatedCAS(a.canonicalArgument())
+                // b is assessed with coref in baseline,
+                // so it should take its coref from there
+                .corefCAS(b.canonicalArgument(), 1)
+                // c is not present in baseline and has no
+                // clustermates, so it gets put in a new
+                // singleton cluster in merged
+                .corefCAS(c.canonicalArgument(), 2)
+                // d & e are clustermates neither of which is
+                // assessed in the baseline, so they should go
+                // together into a new cluster in merged
+                .corefCAS(d.canonicalArgument(), 3)
+                .corefCAS(e.canonicalArgument(), 3)
+                // f is assessed with coref in the baseline and
+                // g is not, so g will get put in f's cluster in
+                // merged
+                .corefCAS(f.canonicalArgument(), 4)
+                .corefCAS(g.canonicalArgument(), 4)
+                // h, i, and j are assessed in baseline, h in
+                // one cluster and i & j in the other. k is not
+                // present in baseline. The coref assignments of
+                // baseline will be maintained in merged, and k
+                // will be placed in i & j's cluster as the
+                // dominant one
+                .corefCAS(h.canonicalArgument(), 5)
+                .corefCAS(i.canonicalArgument(), 5)
+                .corefCAS(j.canonicalArgument(), 5)
+                .corefCAS(k.canonicalArgument(), 5)
+                .addUnannotatedCAS(m.canonicalArgument())
+                .build();
 
         final AnswerKey additional = AnswerKey.from(docid,
                 ImmutableSet.of(
-                        // a is unassessed in baseline, so
-                        // it should go directly into merged
-                        // with no coref
-                        withNoCoref(a),
-                        // b is assessed with coref in baseline,
-                        // so it should take its coref from there
-                        withCoref(b, 1),
-                        // c is not present in baseline and has no
-                        // clustermates, so it gets put in a new
-                        // singleton cluster in merged
-                        withCoref(c, 2),
-                        // d & e are clustermates neither of which is
-                        // assessed in the baseline, so they should go
-                        // together into a new cluster in merged
-                        withCoref(d, 3),
-                        withCoref(e, 3),
-
-                        // f is assessed with coref in the baseline and
-                        // g is not, so g will get put in f's cluster in
-                        // merged
-                        withCoref(f, 4),
-                        withCoref(g, 4),
-
-                        // h, i, and j are assessed in baseline, h in
-                        // one cluster and i & j in the other. k is not
-                        // present in baseline. The coref assignments of
-                        // baseline will be maintained in merged, and k
-                        // will be placed in i & j's cluster as the
-                        // dominant one
-                        withCoref(h, 5),
-                        withCoref(i, 5),
-                        withCoref(j, 5),
-                        withCoref(k, 5)
+                        withWrongAssessment(a),
+                        withCorrectAssessment(b),
+                        withCorrectAssessment(c),
+                        withCorrectAssessment(d),
+                        withCorrectAssessment(e),
+                        withCorrectAssessment(f),
+                        withCorrectAssessment(g),
+                        withCorrectAssessment(h),
+                        withCorrectAssessment(i),
+                        withCorrectAssessment(j),
+                        withCorrectAssessment(k)
                 ),
-                ImmutableSet.of(m)
+                ImmutableSet.of(m), additionalCoref
                 );
+
+        final CorefAnnotation referenceCoref = CorefAnnotation.strictBuilder(docid)
+                .addUnannotatedCAS(a.canonicalArgument())
+                .addUnannotatedCAS(l.canonicalArgument())
+                .addUnannotatedCAS(m.canonicalArgument())
+                .corefCAS(b.canonicalArgument(), 200)
+                .corefCAS(c.canonicalArgument(), 201)
+                .corefCAS(d.canonicalArgument(), 202)
+                .corefCAS(e.canonicalArgument(), 202)
+                .corefCAS(f.canonicalArgument(), 199)
+                .corefCAS(g.canonicalArgument(), 199)
+                .corefCAS(h.canonicalArgument(), 198)
+                .corefCAS(i.canonicalArgument(), 197)
+                .corefCAS(j.canonicalArgument(), 197)
+                .corefCAS(k.canonicalArgument(), 197)
+                .build();
 
         final AnswerKey merged = AnswerKey.from(docid,
                 ImmutableSet.of(
-                        withNoCoref(a),
-                        withCoref(b, 200),
-                        withCoref(c, 201),
-                        withCoref(d, 202),
-                        withCoref(e, 202),
-                        withCoref(f, 199),
-                        withCoref(g, 199),
-                        withCoref(h, 198),
-                        withCoref(i, 197),
-                        withCoref(j, 197),
-                        withCoref(k, 197)),
-                ImmutableSet.of(l, m));
+                        withWrongAssessment(a),
+                        withCorrectAssessment(b),
+                        withCorrectAssessment(c),
+                        withCorrectAssessment(d),
+                        withCorrectAssessment(e),
+                        withCorrectAssessment(f),
+                        withCorrectAssessment(g),
+                        withCorrectAssessment(h),
+                        withCorrectAssessment(i),
+                        withCorrectAssessment(j),
+                        withCorrectAssessment(k)),
+                ImmutableSet.of(l, m), referenceCoref);
 
         final MergeAssessmentStores merger = MergeAssessmentStores.create();
 
@@ -103,11 +141,11 @@ public class MergeAssessmentStoresTest {
     private final Symbol type = Symbol.from("type");
     private final Symbol role = Symbol.from("role");
 
-    private AssessedResponse withCoref(Response r, int coref) {
-        return AssessedResponse.from(r, assessmentWithCoref(coref));
+    private AssessedResponse withCorrectAssessment(Response r) {
+        return AssessedResponse.from(r, correctAssessment());
     }
 
-    private AssessedResponse withNoCoref(Response r) {
+    private AssessedResponse withWrongAssessment(Response r) {
         return AssessedResponse.from(r, wrongAssessment());
     }
 
@@ -123,13 +161,13 @@ public class MergeAssessmentStoresTest {
         return ResponseAssessment.create(Optional.of(FieldAssessment.INCORRECT),
                 Optional.<FieldAssessment>absent(), Optional.<FieldAssessment>absent(),
                 Optional.<KBPRealis>absent(), Optional.<FieldAssessment>absent(),
-                Optional.<Integer>absent(), Optional.<ResponseAssessment.MentionType>absent());
+                Optional.<ResponseAssessment.MentionType>absent());
     }
 
-    private ResponseAssessment assessmentWithCoref(Integer corefIdx) {
+    private ResponseAssessment correctAssessment() {
         return ResponseAssessment.create(Optional.of(FieldAssessment.CORRECT),
                 Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.CORRECT),
                 Optional.of(KBPRealis.Actual), Optional.of(FieldAssessment.CORRECT),
-                Optional.of(corefIdx), Optional.of(ResponseAssessment.MentionType.NOMINAL));
+                Optional.of(ResponseAssessment.MentionType.NOMINAL));
     }
 }
