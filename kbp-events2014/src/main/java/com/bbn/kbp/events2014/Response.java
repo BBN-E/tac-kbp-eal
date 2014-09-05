@@ -204,10 +204,11 @@ public final class Response  {
         return hasher.hash();
     }
 
-	@Override
-	public int hashCode() {
-        return cachedSHA1Hash.hashCode();
-	}
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(docid.toString(), type.toString(), role.toString(), canonicalArgumentString, baseFiller,
+                additionalArgumentJustifications, predicateJustifications, realis.stableHashCode());
+    }
 
     public String uniqueIdentifier() {
         return cachedSHA1Hash.toString();
