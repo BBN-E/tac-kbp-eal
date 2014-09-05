@@ -53,23 +53,26 @@ public final class ImportSystemOutputToAnnotationStore {
                 log.info("Importing all responses");
             }
             importSystemOutputToAnnotationStore(params.getExistingDirectory("systemOutput"),
-                    params.getCreatableDirectory("annotationStore"), filter);
+                    params.getCreatableDirectory("annotationStore"), filter,
+                    params.getEnum("system.fileFormat", AssessmentSpecFormats.Format.class),
+                    params.getEnum("annStore.fileFormat", AssessmentSpecFormats.Format.class));
         } else {
             usage();
         }
     }
 
     private static void importSystemOutputToAnnotationStore(File systemOutputDir, File annStoreDir,
-        Function<SystemOutput, SystemOutput> filter) throws IOException
+        Function<SystemOutput, SystemOutput> filter, AssessmentSpecFormats.Format systemFileFormat,
+        AssessmentSpecFormats.Format annStoreFileFormat) throws IOException
     {
         log.info("Loading system output from {}", systemOutputDir);
         final SystemOutputStore systemOutput = AssessmentSpecFormats.openSystemOutputStore(
-                systemOutputDir);
+                systemOutputDir, systemFileFormat);
 
 
         log.info("Using assessment store at {}", annStoreDir);
         final AnnotationStore annStore = AssessmentSpecFormats.openOrCreateAnnotationStore(
-                annStoreDir);
+                annStoreDir, annStoreFileFormat);
 
         int totalNumAdded = 0;
         for (final Symbol docid : systemOutput.docIDs()) {

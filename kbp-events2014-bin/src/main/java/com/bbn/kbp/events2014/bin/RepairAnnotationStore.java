@@ -12,8 +12,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 /**
  * The pilot assessment annotation store does not entirely meet the specification.  This program will
  * transform such an annotation store to a compliant one, at the cost of throwing away some malformed
@@ -40,9 +38,10 @@ public final class RepairAnnotationStore {
 
         final Random rng = new Random(params.getInteger("randomSeed"));
         final RecoveryAssessmentCreator assessmentCreator = RecoveryAssessmentCreator.createWithRandomSeed(rng);
+        final AssessmentSpecFormats.Format fileFormat = params.getEnum("fileFormat", AssessmentSpecFormats.Format.class);
         final AnnotationStore annStore = AssessmentSpecFormats.recoverPossiblyBrokenAnnotationStore(
-                potentiallyBrokenStore, assessmentCreator);
-        final AnnotationStore outStore = AssessmentSpecFormats.createAnnotationStore(outputStorePath);
+                potentiallyBrokenStore, assessmentCreator, fileFormat);
+        final AnnotationStore outStore = AssessmentSpecFormats.createAnnotationStore(outputStorePath, fileFormat);
 
         for (final Symbol docid : annStore.docIDs()) {
             outStore.write(annStore.read(docid));

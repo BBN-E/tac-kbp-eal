@@ -3,15 +3,14 @@ package com.bbn.kbp.events2014.assessmentDiff;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.assessmentDiff.diffLoggers.BasicDiffLogger;
-import com.bbn.kbp.events2014.assessmentDiff.diffLoggers.DiffLogger;
-import com.bbn.kbp.events2014.assessmentDiff.diffLoggers.FancierDiffLogger;
-import com.bbn.kbp.events2014.assessmentDiff.diffLoggers.PlainDocCache;
-import com.bbn.kbp.events2014.assessmentDiff.observers.*;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
+import com.bbn.kbp.events2014.assessmentDiff.diffLoggers.DiffLogger;
+import com.bbn.kbp.events2014.assessmentDiff.diffLoggers.FancierDiffLogger;
+import com.bbn.kbp.events2014.assessmentDiff.diffLoggers.PlainDocCache;
+import com.bbn.kbp.events2014.assessmentDiff.observers.*;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.google.common.base.Charsets;
@@ -22,7 +21,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,8 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class KBPAssessmentDiff {
     private static final Logger log = LoggerFactory.getLogger(KBPAssessmentDiff.class);
@@ -44,12 +40,13 @@ public final class KBPAssessmentDiff {
         final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
         log.info(params.dump());
 
+        final AssessmentSpecFormats.Format fileFormat = params.getEnum("fileFormat", AssessmentSpecFormats.Format.class);
         final String leftName = params.getString("leftAnnotationName");
         final AnnotationStore leftAnnotationStore = AssessmentSpecFormats.openAnnotationStore(
-                params.getExistingDirectory("leftAnnotationStore"));
+                params.getExistingDirectory("leftAnnotationStore"), fileFormat);
         final String rightName = params.getString("rightAnnotationName");
         final AnnotationStore rightAnnotationStore = AssessmentSpecFormats.openAnnotationStore(
-                params.getExistingDirectory("rightAnnotationStore"));
+                params.getExistingDirectory("rightAnnotationStore"), fileFormat);
         final File outputDirectory = params.getCreatableDirectory("outputDirectory");
         final File plainDocMapFile = params.getExistingFile("plainDocidMap");
         
@@ -116,11 +113,13 @@ public final class KBPAssessmentDiff {
     }
 
     private static Optional<AnnotationStore> getBaselineAnnotationStore(Parameters params) throws IOException {
+        final AssessmentSpecFormats.Format fileFormat = params.getEnum("fileFormat", AssessmentSpecFormats.Format.class);
         final Optional<File> baselineAnnotationStoreDir = params.getOptionalExistingDirectory(
                 "baselineAnnotationStore");
         final Optional<AnnotationStore> baselineAnnotationStore;
         if (baselineAnnotationStoreDir.isPresent()) {
-            baselineAnnotationStore = Optional.of(AssessmentSpecFormats.openAnnotationStore(baselineAnnotationStoreDir.get()));
+            baselineAnnotationStore = Optional.of(AssessmentSpecFormats.openAnnotationStore(
+                    baselineAnnotationStoreDir.get(), fileFormat));
         } else {
             baselineAnnotationStore = Optional.absent();
         }

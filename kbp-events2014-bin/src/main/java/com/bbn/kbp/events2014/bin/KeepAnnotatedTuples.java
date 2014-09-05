@@ -39,16 +39,19 @@ public final class KeepAnnotatedTuples {
             final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
             log.info(params.dump());
 
-            keepAnnotatedTuples(params.getExistingDirectory("inputAnnotationStore"), params.getCreatableDirectory("outputAnnotationStore"));
+            keepAnnotatedTuples(params.getExistingDirectory("inputAnnotationStore"),
+                    params.getCreatableDirectory("outputAnnotationStore"),
+                    params.getEnum("fileFormat", AssessmentSpecFormats.Format.class));
         } else {
             usage();
         }
     }
 
-    private static void keepAnnotatedTuples(File inputDir, File outputDir) throws IOException
+    private static void keepAnnotatedTuples(File inputDir, File outputDir, AssessmentSpecFormats.Format fileFormat)
+            throws IOException
     {
-        final AnnotationStore inputAssessmentStore = AssessmentSpecFormats.openAnnotationStore(inputDir);
-        final AnnotationStore outputAssessmentStore = AssessmentSpecFormats.openOrCreateAnnotationStore(outputDir);
+        final AnnotationStore inputAssessmentStore = AssessmentSpecFormats.openAnnotationStore(inputDir, fileFormat);
+        final AnnotationStore outputAssessmentStore = AssessmentSpecFormats.openOrCreateAnnotationStore(outputDir, fileFormat);
 
         for (final Symbol docid: inputAssessmentStore.docIDs()) {
             final AnswerKey answerKey = inputAssessmentStore.read(docid);

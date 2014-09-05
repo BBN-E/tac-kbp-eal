@@ -3,6 +3,7 @@ package com.bbn.kbp.events2014.bin;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
+import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
@@ -61,7 +62,7 @@ public final class NISTValidator {
 
         final ValidateSystemOutput validator = ValidateSystemOutput.create(
                 TypeAndRoleValidator.create(SymbolUtils.setFrom("Time", "Place"),
-                        FileUtils.loadSymbolMultimap(rolesFile)));
+                        FileUtils.loadSymbolMultimap(Files.asCharSource(rolesFile, Charsets.UTF_8))));
 
         Verbosity verbosity = null;
 
@@ -95,7 +96,7 @@ public final class NISTValidator {
             log.info("Uncompressed submission to {}", uncompressedDirectory);
 
             logErrorsAndExit(errorFile, validator.validateOnly(uncompressedDirectory, MAX_ERRORS,
-                    docIdMap),  verbosity);
+                    docIdMap, AssessmentSpecFormats.Format.KBP2014),  verbosity);
         } catch (Exception e) {
             logErrorsAndExit(errorFile, ImmutableList.of(e), verbosity);
         }

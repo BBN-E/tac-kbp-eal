@@ -31,8 +31,9 @@ public final class PoolSystemOutput {
         final List<File> storesToPool = FileUtils.loadFileList(params.getExistingFile("storesToPool"));
         final File outputStorePath = params.getCreatableDirectory("pooledStore");
         final AddMode addMode = params.getEnum("addMode", AddMode.class);
+        final AssessmentSpecFormats.Format fileFormat = params.getEnum("fileFormat", AssessmentSpecFormats.Format.class);
 
-        final SystemOutputStore outputStore = getOutputStore(outputStorePath, addMode);
+        final SystemOutputStore outputStore = getOutputStore(outputStorePath, addMode, fileFormat);
 
         // gather all our input, which includes anything currently in the output store
         final Set<Symbol> allDocIds = Sets.newHashSet();
@@ -44,7 +45,7 @@ public final class PoolSystemOutput {
         allDocIds.addAll(outputStore.docIDs());
 
         for (final File inputStoreFile : storesToPool) {
-            final SystemOutputStore inputStore = AssessmentSpecFormats.openSystemOutputStore(inputStoreFile);
+            final SystemOutputStore inputStore = AssessmentSpecFormats.openSystemOutputStore(inputStoreFile, fileFormat);
             log.info("Importing responses for {} documents from {} to {}",
                     inputStore.docIDs().size(), inputStoreFile,
                     outputStorePath);
@@ -75,12 +76,14 @@ public final class PoolSystemOutput {
         }
     }
 
-    private static SystemOutputStore getOutputStore(File outputStorePath, AddMode addMode) throws IOException {
+    private static SystemOutputStore getOutputStore(File outputStorePath, AddMode addMode,
+                                                    AssessmentSpecFormats.Format fileFormat) throws IOException
+    {
         final SystemOutputStore outputStore;
         if (addMode == AddMode.CREATE) {
-            outputStore = AssessmentSpecFormats.createSystemOutputStore(outputStorePath);
+            outputStore = AssessmentSpecFormats.createSystemOutputStore(outputStorePath, fileFormat);
         } else if (addMode == AddMode.APPEND) {
-            outputStore = AssessmentSpecFormats.openSystemOutputStore(outputStorePath);
+            outputStore = AssessmentSpecFormats.openSystemOutputStore(outputStorePath, fileFormat);
         } else {
             throw new RuntimeException(String.format("Unknown add mode %s", addMode));
         }

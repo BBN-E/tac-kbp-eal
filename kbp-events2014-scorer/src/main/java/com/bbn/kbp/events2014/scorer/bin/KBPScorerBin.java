@@ -94,7 +94,7 @@ public final class KBPScorerBin {
 
         final KBPScorer scorer = KBPScorer.create();
         final AnnotationStore goldAnswerStore = AssessmentSpecFormats.openAnnotationStore(params
-                .getExistingDirectory("answerKey"));
+                .getExistingDirectory("answerKey"), params.getEnum("goldFileFormat", AssessmentSpecFormats.Format.class));
 
         checkArgument(params.isPresent("systemOutput") != params.isPresent("systemOutputsDir"),
                 "Exactly one of systemOutput and systemOutputsDir must be specified");
@@ -116,10 +116,11 @@ public final class KBPScorerBin {
         log.info("Scoring all subdirectories of {}", systemOutputsDir);
 
         final Set<Symbol> documentsToScore = loadDocumentsToScore(params);
+        final AssessmentSpecFormats.Format fileFormat = params.getEnum("systemFormat", AssessmentSpecFormats.Format.class);
 
         for (File subDir : systemOutputsDir.listFiles()) {
             if (subDir.isDirectory()) {
-                final SystemOutputStore systemOutputStore = AssessmentSpecFormats.openSystemOutputStore(subDir);
+                final SystemOutputStore systemOutputStore = AssessmentSpecFormats.openSystemOutputStore(subDir, fileFormat);
                 final File outputDir = new File(scoringOutputRoot, subDir.getName());
                 // we need new observers for each system output to avoid keeping stats from
                 // one system to another
@@ -134,8 +135,9 @@ public final class KBPScorerBin {
 
     private static void scoreSingleSystemOutputStore(AnnotationStore goldAnswerStore, KBPScorer scorer, Parameters params) throws IOException {
         final File systemOutputDir = params.getExistingDirectory("systemOutput");
+        final AssessmentSpecFormats.Format systemFormat = params.getEnum("systemFormat", AssessmentSpecFormats.Format.class);
         log.info("Scoring single system output {}", systemOutputDir);
-        final SystemOutputStore systemOutputStore = AssessmentSpecFormats.openSystemOutputStore(systemOutputDir);
+        final SystemOutputStore systemOutputStore = AssessmentSpecFormats.openSystemOutputStore(systemOutputDir, systemFormat);
         final Set<Symbol> documentsToScore;
         if (params.isPresent("documentsToScore")) {
             documentsToScore = loadDocumentsToScore(params);

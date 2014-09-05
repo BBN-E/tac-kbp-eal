@@ -41,16 +41,25 @@ public class TestLDCIO extends TestCase {
 		annArg = AssessedResponse.from(arg.item(), ann);
 	}
 
-	@Test
-	public void testArgumentRoundtrip() throws IOException {
+    @Test
+    public void testArgumentRoundtrip2014() throws IOException {
+        testArgumentRoundtrip(AssessmentSpecFormats.Format.KBP2014);
+    }
+
+    @Test
+    public void testArgumentRoundtrip2015() throws IOException {
+        testArgumentRoundtrip(AssessmentSpecFormats.Format.KBP2015);
+    }
+
+	public void testArgumentRoundtrip(AssessmentSpecFormats.Format format) throws IOException {
 		final File tmpDir = Files.createTempDir();
 		tmpDir.deleteOnExit();
 
-		final SystemOutputStore store1 = AssessmentSpecFormats.createSystemOutputStore(tmpDir);
+		final SystemOutputStore store1 = AssessmentSpecFormats.createSystemOutputStore(tmpDir, format);
 		store1.write(SystemOutput.from(docid, ImmutableList.of(arg)));
 		store1.close();
 
-		final SystemOutputStore source2 = AssessmentSpecFormats.openSystemOutputStore(tmpDir);
+		final SystemOutputStore source2 = AssessmentSpecFormats.openSystemOutputStore(tmpDir, format);
 		final SystemOutput rereadArg = source2.read(docid);
 		source2.close();
 
@@ -58,17 +67,26 @@ public class TestLDCIO extends TestCase {
 		assertEquals(arg, Iterables.getFirst(rereadArg.scoredResponses(), null));
 	}
 
-	@Test
-	public void testAnnotationRountrip() throws IOException {
+    @Test
+    public void testAnnotationRoundtrip2014() throws IOException {
+        testAnnotationRoundtrip(AssessmentSpecFormats.Format.KBP2014);
+    }
+
+    @Test
+    public void testAnnotationRoundtrip2015() throws IOException {
+        testAnnotationRoundtrip(AssessmentSpecFormats.Format.KBP2015);
+    }
+
+	public void testAnnotationRoundtrip(AssessmentSpecFormats.Format format) throws IOException {
 		final File tmpDir = Files.createTempDir();
 		tmpDir.deleteOnExit();
 
-		final AnnotationStore store1 = AssessmentSpecFormats.createAnnotationStore(tmpDir);
+		final AnnotationStore store1 = AssessmentSpecFormats.createAnnotationStore(tmpDir, format);
         final CorefAnnotation coref = CorefAnnotation.strictBuilder(docid)
                 .corefCAS(annArg.response().canonicalArgument(), 1).build();
         store1.write(AnswerKey.from(docid, ImmutableList.of(annArg), ImmutableList.<Response>of(), coref));
         store1.close();
-		final AnnotationStore store2 = AssessmentSpecFormats.openAnnotationStore(tmpDir);
+		final AnnotationStore store2 = AssessmentSpecFormats.openAnnotationStore(tmpDir, format);
 		final AnswerKey rereadArg = store2.read(docid);
 		store2.close();
 		assertEquals(1, rereadArg.annotatedResponses().size());
