@@ -147,9 +147,10 @@ public class AssessedResponse {
 		}
 	};
 
-    /**
-     * Orders {@code AssessedResponse}s by the ID of their response.
-     */
-    public static final Ordering<AssessedResponse> ById = com.bbn.kbp.events2014.Response.ById.onResultOf(
+    @Deprecated
+    public static final Ordering<AssessedResponse> ByOld2014Id = com.bbn.kbp.events2014.Response.ByOld2014Id.onResultOf(
             AssessedResponse.Response);
+    public static final Ordering<AssessedResponse> byUniqueIdentifierOrdering() {
+        return com.bbn.kbp.events2014.Response.byUniqueIdOrdering().onResultOf(AssessedResponse.Response);
+    }
 }

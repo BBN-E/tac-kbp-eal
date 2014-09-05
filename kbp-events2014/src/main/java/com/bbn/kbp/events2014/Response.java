@@ -57,12 +57,12 @@ public final class Response  {
 	}
 
     /**
-     * Returns a 'unique-ish' ID for this response. In the Java implementation,
+     * Returns a 'unique-ish' ID for this response used for the 2014 evaluation. In the Java implementation,
      * the response's {@code hashCode} is always returned.  Note that if you read input files
      * from another source into {@code Response} objects, the original IDs will be lost.
      * @return
      */
-    public int responseID() {
+    public int old2014ResponseID() {
         return hashCode();
     }
 
@@ -272,17 +272,27 @@ public final class Response  {
             return x.docID();
         }
     };
-    public static Function<Response, Integer> ResponseID = new Function<Response, Integer> () {
+    @Deprecated
+    public static Function<Response, Integer> Old2104ResponseID = new Function<Response, Integer> () {
         @Override
         public Integer apply(Response x) {
-            return x.responseID();
+            return x.old2014ResponseID();
         }
     };
+    public static Function<Response, String> uniqueIdFunction() {
+        return new Function<Response, String>() {
+            @Override
+            public String apply(Response x) {
+                return x.uniqueIdentifier();
+            }
+        };
+    }
 
-    /**
-     * Orders responses by their IDs.
-     */
-    public static final Ordering<Response> ById = Ordering.natural().onResultOf(Response.ResponseID);
+    @Deprecated
+    public static final Ordering<Response> ByOld2014Id = Ordering.natural().onResultOf(Response.Old2104ResponseID);
+    public static final Ordering<Response> byUniqueIdOrdering() {
+        return Ordering.natural().onResultOf(uniqueIdFunction());
+    }
 
     private void checkPredicateJustificationsContainsBaseFiller() {
         boolean foundContainingPJ = false;

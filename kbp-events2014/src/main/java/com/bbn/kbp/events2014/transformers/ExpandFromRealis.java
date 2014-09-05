@@ -59,12 +59,18 @@ public final class ExpandFromRealis implements Function<AnswerKey, AnswerKey> {
         final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
         log.info(params.dump());
 
+        boolean use2014Style = params.isPresent("use2014Format")?params.getBoolean("use2014Format"):false;
+
         final File inputStoreLocation = params.getExistingDirectory("inputStore");
-        final AnnotationStore inStore = AssessmentSpecFormats.openAnnotationStore(inputStoreLocation);
+        final AssessmentSpecFormats.Format fileFormats =
+                params.getEnum("storeFormats", AssessmentSpecFormats.Format.class);
+        final AnnotationStore inStore = AssessmentSpecFormats.openAnnotationStore(inputStoreLocation,
+                fileFormats);
         final AnnotationStore outStore;
 
         if (params.isPresent("outputStore")) {
-            outStore = AssessmentSpecFormats.openOrCreateAnnotationStore(params.getCreatableDirectory("outputStore"));
+            outStore = AssessmentSpecFormats.openOrCreateAnnotationStore(
+                    params.getCreatableDirectory("outputStore"), fileFormats);
         } else if (params.getBoolean("inPlace")) {
             outStore = inStore;
         } else {
