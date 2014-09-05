@@ -2,11 +2,16 @@ package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
+import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
+import com.google.common.hash.HashCode;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hasher;
+import com.google.common.hash.Hashing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +44,7 @@ public final class Response  {
 		this.predicateJustifications = ImmutableSet.copyOf(predicateJustifications);
         checkPredicateJustificationsContainsBaseFiller();
 		checkArgument(!predicateJustifications.isEmpty(), "Predicate justifications may not be empty");
+        this.cachedSHA1Hash = computeSHA1Hash();
 	 }
 
     public static Response createFrom(final Symbol docid, final Symbol type, final Symbol role,
@@ -171,12 +177,41 @@ public final class Response  {
 	private final Set<CharOffsetSpan> additionalArgumentJustifications;
 	private final Set<CharOffsetSpan> predicateJustifications;
 	private final KBPRealis realis;
+    private final HashCode cachedSHA1Hash;
+
+    private static final HashFunction SHA1_HASHER = Hashing.sha1();
+    private HashCode computeSHA1Hash() {
+        final Hasher hasher = SHA1_HASHER.newHasher()
+                .putString(docid.toString(), Charsets.UTF_8)
+                .putString(type.toString(), Charsets.UTF_8)
+                .putString(role.toString(), Charsets.UTF_8)
+                .putString(canonicalArgumentString.string(), Charsets.UTF_8)
+                .putInt(canonicalArgument().charOffsetSpan().startInclusive())
+                .putInt(canonicalArgument().charOffsetSpan().endInclusive())
+                .putInt(baseFiller.startInclusive())
+                .putInt(baseFiller.endInclusive());
+
+        for (final CharOffsetSpan pj : Ordering.natural().sortedCopy(predicateJustifications)) {
+            hasher.putInt(pj.startInclusive()).putInt(pj.endInclusive());
+        }
+
+        for (final CharOffsetSpan aaj : Ordering.natural().sortedCopy(additionalArgumentJustifications())) {
+            hasher.putInt(aaj.startInclusive()).putInt(aaj.endInclusive());
+        }
+
+        hasher.putInt(realis.ordinal());
+
+        return hasher.hash();
+    }
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(docid.toString(), type.toString(), role.toString(), canonicalArgumentString, baseFiller,
-			additionalArgumentJustifications, predicateJustifications, realis.stableHashCode());
+        return cachedSHA1Hash.hashCode();
 	}
+
+    public String uniqueIdentifier() {
+        return cachedSHA1Hash.toString();
+    }
 
 	@Override
 	public boolean equals(final Object obj) {
