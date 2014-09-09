@@ -7,25 +7,23 @@ import com.google.common.collect.ImmutableSet;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class TypeRoleFillerRealisSet {
-    private final Symbol docID;
     private final ImmutableSet<TypeRoleFillerRealis> coreffedArgs;
 
-    private TypeRoleFillerRealisSet(final Symbol docID, Iterable<TypeRoleFillerRealis> coreffedArgs) {
-        this.docID = checkNotNull(docID);
+    private TypeRoleFillerRealisSet(Iterable<TypeRoleFillerRealis> coreffedArgs) {
         this.coreffedArgs = ImmutableSet.copyOf(coreffedArgs);
-    }
-
-    public Symbol docID() {
-        return docID;
     }
 
     public ImmutableSet<TypeRoleFillerRealis> asSet() {
         return coreffedArgs;
     }
 
+    public static TypeRoleFillerRealisSet from(Iterable<TypeRoleFillerRealis> items) {
+        return new TypeRoleFillerRealisSet(items);
+    }
+
     @Override
     public int hashCode() {
-        return Objects.hashCode(docID, coreffedArgs);
+        return Objects.hashCode(coreffedArgs);
     }
 
     @Override
@@ -37,6 +35,6 @@ public final class TypeRoleFillerRealisSet {
             return false;
         }
         final TypeRoleFillerRealisSet other = (TypeRoleFillerRealisSet) obj;
-        return Objects.equal(this.docID, other.docID) && Objects.equal(this.coreffedArgs, other.coreffedArgs);
+        return Objects.equal(this.coreffedArgs, other.coreffedArgs);
     }
 }
