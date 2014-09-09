@@ -42,8 +42,9 @@ public final class DeleteInjureForCorrectDie {
         this.normalizedFingerprintExtractor = checkNotNull(normalizedFingerprintExtractor);
     }
 
-    public static  DeleteInjureForCorrectDie fromEntityNormalizer(EntityNormalizer entityNormalizer) {
-        return new DeleteInjureForCorrectDie(TypeRoleFillerRealis.extractFromSystemResponse(entityNormalizer));
+    public static  DeleteInjureForCorrectDie fromEntityNormalizer(Function<KBPString, KBPString> entityNormalizer) {
+        return new DeleteInjureForCorrectDie(
+                TypeRoleFillerRealis.extractFromSystemResponse(entityNormalizer));
     }
 
 

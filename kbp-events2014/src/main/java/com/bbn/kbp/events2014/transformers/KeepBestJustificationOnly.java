@@ -1,11 +1,9 @@
 package com.bbn.kbp.events2014.transformers;
 
 import com.bbn.bue.common.scoring.Scored;
-import com.bbn.kbp.events2014.EntityNormalizer;
-import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.SystemOutput;
-import com.bbn.kbp.events2014.TypeRoleFillerRealis;
+import com.bbn.kbp.events2014.*;
 import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
@@ -25,7 +23,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public final class KeepBestJustificationOnly implements Function<SystemOutput, SystemOutput> {
     private static final Logger log = LoggerFactory.getLogger(KeepBestJustificationOnly.class);
     // this 'normalizer' is just a dummy which does no normalization
-    private static final EntityNormalizer identityNormalizer = EntityNormalizer.createDummy();
+    private static final Function<KBPString, KBPString> identityNormalizer =
+            Functions.identity();
 
     @Override
     public SystemOutput apply(SystemOutput input) {

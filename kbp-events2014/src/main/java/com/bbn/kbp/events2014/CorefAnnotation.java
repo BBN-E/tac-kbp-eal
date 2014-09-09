@@ -2,6 +2,7 @@ package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.symbols.Symbol;
+import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
@@ -249,6 +250,52 @@ public final class CorefAnnotation {
 
     public Set<KBPString> allCASes() {
         return Sets.union(CASesToIDs.keySet(), unannotatedCASes());
+    }
+
+    /**
+     * Returns a function which normalizes {@link com.bbn.kbp.events2014.KBPString}s
+     * to some canonical coreferent {@code KBPString}.  The particular {@code KBPString}
+     * returned is undefined, other than being guaranteed to be coreferent and that it will
+     * be the same for all coreferent inputs. If a provided {@code KBPString} has no coreference
+     * information, a {@link java.util.NoSuchElementException} is thrown.
+     * @return
+     */
+    public Function<KBPString, KBPString> strictCASNormalizerFunction() {
+        return new Function<KBPString, KBPString>() {
+            @Override
+            public KBPString apply(KBPString input) {
+                final Integer id = CASesToIDs.get(input);
+                if (id != null) {
+                    // will never be null by construction of CASestoIDs & idToCASes
+                    return Iterables.getFirst(idToCASes.get(id), null);
+                } else {
+                    throw new NoSuchElementException("Cannot normalize " + input);
+                }
+            }
+        };
+    }
+
+    /**
+     * Returns a function which normalizes {@link com.bbn.kbp.events2014.KBPString}s
+     * to some canonical coreferent {@code KBPString}.  The particular {@code KBPString}
+     * returned is undefined, other than being guaranteed to be coreferent and that it will
+     * be the same for all coreferent inputs. If a provided {@code KBPString} has no coreference
+     * information, this behaves like the identity function.
+     * @return
+     */
+    public Function<KBPString, KBPString> laxCASNormalizerFunction() {
+        return new Function<KBPString, KBPString>() {
+            @Override
+            public KBPString apply(KBPString input) {
+                final Integer id = CASesToIDs.get(input);
+                if (id != null) {
+                    // will never be null by construction of CASestoIDs & idToCASes
+                    return Iterables.getFirst(idToCASes.get(id), null);
+                } else {
+                    return input;
+                }
+            }
+        };
     }
 
     public static final class Builder {

@@ -2,8 +2,11 @@ package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.symbols.Symbol;
 import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.*;
 
+import java.util.Set;
+
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class EventArgumentLinking {

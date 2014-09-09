@@ -87,7 +87,8 @@ public final class KBPScorer {
             // these annotations in order to group e.g. (BasketballGame, Winner, Louisville, Actual)
             // and (BasketballGame, Winner, The Cards, Actual) if the annotator had coreffed
             // "Louisville" and "The Cards"
-            final EntityNormalizer entityNormalizer = EntityNormalizer.fromAnnotation(key);
+            final Function<KBPString, KBPString> entityNormalizer =
+                    key.corefAnnotation().strictCASNormalizerFunction();
 
             // hard-coding the following two in is an ugly hack. Eventually they should get refactored
             // into a collection of filters built from each answer key.

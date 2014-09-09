@@ -4,11 +4,12 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.google.common.base.Objects;
 import com.google.common.base.Predicate;
 import com.google.common.collect.*;
-import static com.google.common.base.Predicates.compose;
-import static com.google.common.base.Predicates.in;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Predicates.compose;
+import static com.google.common.base.Predicates.in;
+import static com.google.common.collect.Iterables.concat;
 
 public class ResponseLinking {
     private final Symbol docId;
@@ -90,10 +91,14 @@ public class ResponseLinking {
     private void checkValidity() {
         // no incomplete response may appear in any response set
         final ImmutableSet<Response> allResponsesInSets = ImmutableSet.copyOf(
-                Iterables.concat(responseSets));
+                concat(responseSets));
         for (final Response incompleteResponse : incompleteResponses) {
             checkArgument(!allResponsesInSets.contains(incompleteResponse),
                     "A response may not be both completed and incomplete");
         }
+    }
+
+    public ImmutableSet<Response> allResponses() {
+        return ImmutableSet.copyOf(concat(concat(responseSets), incompleteResponses));
     }
 }

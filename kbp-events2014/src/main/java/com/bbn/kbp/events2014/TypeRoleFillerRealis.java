@@ -98,15 +98,16 @@ public final class TypeRoleFillerRealis implements Comparable<TypeRoleFillerReal
 	private final KBPRealis realis;
 	private final KBPString argumentCanonicalString;
 
-	public static Function<Response, TypeRoleFillerRealis> extractFromSystemResponse(final EntityNormalizer entityNormalizer) {
-		return new Function<Response, TypeRoleFillerRealis>() {
-			@Override
-			public TypeRoleFillerRealis apply(final Response arg) {
-				return TypeRoleFillerRealis.create(arg.docID(), arg.type(), arg.role(), arg.realis(),
-					entityNormalizer.normalizeFiller(arg.docID(), arg.canonicalArgument()));
-			}
-		};
-	}
+    public static Function<Response, TypeRoleFillerRealis> extractFromSystemResponse(
+            final Function<KBPString, KBPString> CASNormalizer) {
+        return new Function<Response, TypeRoleFillerRealis>() {
+            @Override
+            public TypeRoleFillerRealis apply(final Response arg) {
+                return TypeRoleFillerRealis.create(arg.docID(), arg.type(), arg.role(), arg.realis(),
+                        CASNormalizer.apply(arg.canonicalArgument()));
+            }
+        };
+    }
 
     public static TypeRoleFillerRealis fromSystemResponseUnnormalized(final Response r) {
         return TypeRoleFillerRealis.create(r.docID(), r.type(), r.role(), r.realis(), r.canonicalArgument());
