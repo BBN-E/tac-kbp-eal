@@ -2,10 +2,12 @@ package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.symbols.Symbol;
 import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.base.Predicate;
+import com.google.common.collect.*;
+import static com.google.common.base.Predicates.compose;
+import static com.google.common.base.Predicates.in;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class ResponseLinking {
@@ -20,6 +22,7 @@ public class ResponseLinking {
         this.responseSets = ImmutableSortedSet.copyOf(responseSets);
         this.incompleteResponses = ImmutableSortedSet.copyOf(
                 Response.byUniqueIdOrdering(), incompleteResponses);
+        checkValidity();
     }
 
     public static ResponseLinking from(Symbol docId, Iterable<ResponseSet> responseSets,
@@ -30,6 +33,27 @@ public class ResponseLinking {
 
     public static ResponseLinking createEmpty(Symbol docId) {
         return from(docId, ImmutableList.<ResponseSet>of(), ImmutableList.<Response>of());
+    }
+
+    /**
+     * Creates a response linking with containing all responses from the given
+     * answer key which are correct (up to justifications) and have CASes
+     * with coref annotations.  These will all be marked as 'incomplete'.
+     */
+    public static ResponseLinking createUnlinkedFor(AnswerKey answerKey) {
+        final Predicate<Response> CASHasBeenCoreffed =
+                compose(in(answerKey.corefAnnotation().annotatedCASes()),
+                        Response.CASFunction());
+
+        final ImmutableSet<Response> linkingCandidates = FluentIterable
+                .from(answerKey.annotatedResponses())
+                .filter(AssessedResponse.IsCorrectUpToInexactJustifications)
+                .transform(AssessedResponse.Response)
+                .filter(CASHasBeenCoreffed)
+                .toSet();
+
+        return from(answerKey.docId(), ImmutableSet.<ResponseSet>of(),
+                        Iterables.transform(answerKey.annotatedResponses(), AssessedResponse.Response));
     }
 
     public Symbol docID() {
@@ -61,5 +85,15 @@ public class ResponseLinking {
         return Objects.equal(this.docId, other.docId)
                 && Objects.equal(this.responseSets, other.responseSets)
                 && Objects.equal(this.incompleteResponses, incompleteResponses);
+    }
+
+    private void checkValidity() {
+        // no incomplete response may appear in any response set
+        final ImmutableSet<Response> allResponsesInSets = ImmutableSet.copyOf(
+                Iterables.concat(responseSets));
+        for (final Response incompleteResponse : incompleteResponses) {
+            checkArgument(!allResponsesInSets.contains(incompleteResponse),
+                    "A response may not be both completed and incomplete");
+        }
     }
 }
