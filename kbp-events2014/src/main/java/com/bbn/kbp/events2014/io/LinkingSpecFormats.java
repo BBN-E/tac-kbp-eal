@@ -30,6 +30,11 @@ public final class LinkingSpecFormats {
         throw new UnsupportedOperationException();
     }
 
+    public static LinkingStore openOrCreateLinkingStore(File directory) {
+        directory.mkdirs();
+        return new DirectoryLinkingStore(directory);
+    }
+
     /**
      * {@link com.bbn.kbp.events2014.io.LinkingStore} implementations which uses a directory
      * with one file per doc ID.  Each file contains a {@link com.bbn.kbp.events2014.ResponseSet}
