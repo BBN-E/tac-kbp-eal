@@ -3,15 +3,16 @@ package com.bbn.kbp.events2014.assessmentDiff;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.bue.common.symbols.SymbolUtils;
+import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.AssessedResponse;
+import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.ResponseAssessment;
 import com.bbn.kbp.events2014.assessmentDiff.diffLoggers.BasicDiffLogger;
 import com.bbn.kbp.events2014.assessmentDiff.diffLoggers.DiffLogger;
 import com.bbn.kbp.events2014.assessmentDiff.diffLoggers.FancierDiffLogger;
 import com.bbn.kbp.events2014.assessmentDiff.diffLoggers.PlainDocCache;
 import com.bbn.kbp.events2014.assessmentDiff.observers.*;
-import com.bbn.kbp.events2014.AnswerKey;
-import com.bbn.kbp.events2014.AssessedResponse;
-import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.ResponseAssessment;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.google.common.base.Charsets;
@@ -22,7 +23,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,8 +30,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class KBPAssessmentDiff {
     private static final Logger log = LoggerFactory.getLogger(KBPAssessmentDiff.class);
@@ -51,15 +49,19 @@ public final class KBPAssessmentDiff {
         final AnnotationStore rightAnnotationStore = AssessmentSpecFormats.openAnnotationStore(
                 params.getExistingDirectory("rightAnnotationStore"));
         final File outputDirectory = params.getCreatableDirectory("outputDirectory");
-        final File plainDocMapFile = params.getExistingFile("plainDocidMap");
-        
+
         // the user may optionally specify a "baseline store". Any responses which are assessed
         // in the baseline store will have their assessments ignored when diffing. This is
         // useful for diffing two "marginal" sets of annotations on top of an existing
         // repository
         final Optional<AnnotationStore> baselineAnnotationStore = getBaselineAnnotationStore(params);
 
-        final Set<Symbol> commonDocIds = Sets.intersection(leftAnnotationStore.docIDs(), rightAnnotationStore.docIDs());
+        Set<Symbol> commonDocIds = Sets.intersection(leftAnnotationStore.docIDs(), rightAnnotationStore.docIDs());
+        if (params.isPresent("restrictTo")) {
+            final Set<Symbol> restrictTo = SymbolUtils.setFrom(Files.readLines(
+                    params.getExistingFile("restrictTo"), Charsets.UTF_8));
+            commonDocIds = Sets.intersection(commonDocIds, restrictTo);
+        }
         logCoverage(leftName, leftAnnotationStore.docIDs(), rightName, rightAnnotationStore.docIDs(),
                 Files.asCharSink(new File(outputDirectory, "coverage.txt"), Charsets.UTF_8));
 
@@ -67,8 +69,17 @@ public final class KBPAssessmentDiff {
         final Map<String, AssessmentPairObserver> observers = createObservers(outputDirectory);
 
         //final DiffLogger diffLogger = new BasicDiffLogger();
-        final ImmutableMap<Symbol, File> plainDocidMap = FileUtils.loadSymbolToFileMap( plainDocMapFile );
-        final DiffLogger diffLogger = new FancierDiffLogger(new PlainDocCache(plainDocidMap));
+
+        final DiffLogger diffLogger;
+        if (params.isPresent("plainDocidMap")) {
+            log.info("Using fancy diff logger");
+            final File plainDocMapFile = params.getExistingFile("plainDocidMap");
+            final ImmutableMap<Symbol, File> plainDocidMap = FileUtils.loadSymbolToFileMap(plainDocMapFile);
+            diffLogger = new FancierDiffLogger(new PlainDocCache(plainDocidMap));
+        } else {
+            log.info("Using basic diff loggier. For fancier diffs, specify plainDocidMap param");
+            diffLogger = new BasicDiffLogger();
+        }
 
         int totalCommonResponses = 0;
         int totalCommonResponsesNotInBaseline = 0;
