@@ -170,7 +170,9 @@ public final class LinkingSpecFormats {
         }
 
         private void checkNotClosed() throws IOException {
-            throw new IOException("Cannot perform I/O operations on a closed output store");
+            if (closed) {
+                throw new IOException("Cannot perform I/O operations on a closed output store");
+            }
         }
     }
 }
