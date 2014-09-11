@@ -13,6 +13,7 @@ public interface LinkingStore {
     public ResponseLinking read(SystemOutput systemOutput) throws IOException;
     public ResponseLinking read(AnswerKey answerKey) throws IOException;
     public ResponseLinking readOrEmpty(SystemOutput systemOutput) throws IOException;
+    public ResponseLinking readOrEmpty(AnswerKey answerKey) throws IOException;
     public void write(ResponseLinking toWrite) throws IOException;
     public void close() throws IOException;
 }

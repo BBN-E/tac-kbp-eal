@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -80,7 +81,7 @@ public final class LinkingSpecFormats {
         }
 
         private static final Splitter ON_TABS = Splitter.on('\t').trimResults();
-        public ResponseLinking read(Symbol docID, ImmutableSet<Response> responses) throws IOException {
+        public ResponseLinking read(Symbol docID, Set<Response> responses) throws IOException {
             checkNotClosed();
 
             final File f = new File(directory, docID.toString());
@@ -134,14 +135,23 @@ public final class LinkingSpecFormats {
         }
 
         @Override
+        public ResponseLinking readOrEmpty(AnswerKey answerKey) throws IOException {
+            return readOrEmpty(answerKey.docId(), answerKey.allResponses());
+        }
+
+        @Override
         public ResponseLinking readOrEmpty(SystemOutput systemOutput) throws IOException {
+            return readOrEmpty(systemOutput.docId(), systemOutput.responses());
+        }
+
+        public ResponseLinking readOrEmpty(Symbol docID, Set<Response> responses) throws IOException {
             checkNotClosed();
 
-            final File f = new File(directory, systemOutput.docId().toString());
+            final File f = new File(directory, docID.toString());
             if (!f.exists()) {
-                return ResponseLinking.createEmpty(systemOutput.docId());
+                return ResponseLinking.createEmpty(docID);
             } else {
-                return read(systemOutput);
+                return read(docID, responses);
             }
         }
 
