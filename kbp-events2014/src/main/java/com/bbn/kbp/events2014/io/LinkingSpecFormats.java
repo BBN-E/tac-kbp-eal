@@ -3,10 +3,7 @@ package com.bbn.kbp.events2014.io;
 import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.ResponseLinking;
-import com.bbn.kbp.events2014.ResponseSet;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.*;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
@@ -23,6 +20,7 @@ import java.util.Map;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterables.transform;
 
 public final class LinkingSpecFormats {
@@ -71,18 +69,27 @@ public final class LinkingSpecFormats {
                     .toSet();
         }
 
-        private static final Splitter ON_TABS = Splitter.on('\t').trimResults();
+        @Override
+        public ResponseLinking read(AnswerKey answerKey) throws IOException {
+            return read(answerKey.docId(), answerKey.allResponses());
+        }
+
         @Override
         public ResponseLinking read(SystemOutput systemOutput) throws IOException {
+            return read(systemOutput.docId(), systemOutput.responses());
+        }
+
+        private static final Splitter ON_TABS = Splitter.on('\t').trimResults();
+        public ResponseLinking read(Symbol docID, ImmutableSet<Response> responses) throws IOException {
             checkNotClosed();
 
-            final File f = new File(directory, systemOutput.docId().toString());
+            final File f = new File(directory, docID.toString());
             if (!f.exists()) {
                 throw new FileNotFoundException(String.format("File %s for doc ID %s not found", f.getAbsolutePath(),
-                        systemOutput.docId()));
+                        docID));
             }
 
-            final Map<String, Response> responsesByUID = Maps.uniqueIndex(systemOutput.responses(),
+            final Map<String, Response> responsesByUID = Maps.uniqueIndex(responses,
                     Response.uniqueIdFunction());
 
             final ImmutableSet.Builder<ResponseSet> ret = ImmutableSet.builder();
@@ -123,8 +130,7 @@ public final class LinkingSpecFormats {
                 }
             }
 
-            return ResponseLinking.from(systemOutput.docId(), ret.build(),
-                    incompleteResponses);
+            return ResponseLinking.from(docID, ret.build(), incompleteResponses);
         }
 
         @Override
