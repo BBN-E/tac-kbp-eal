@@ -1,10 +1,7 @@
 package com.bbn.kbp.events2014.linking;
 
 import com.bbn.kbp.events2014.*;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
+import com.google.common.collect.*;
 
 import java.util.Set;
 
@@ -20,15 +17,27 @@ public final class ExactMatchEventArgumentLinkingAligner implements EventArgumen
     }
 
     /** Converts a {@link ResponseLinking} to an {@link EventArgumentLinking} using
-     * a {@link CorefAnnotation} to canonicalize the responses.  If the canonicalization
+     * a {@link CorefAnnotation} from an {@link com.bbn.kbp.events2014.AnswerKey}
+     * to canonicalize the responses.  If the canonicalization
      * is inconsistent with the response linking, an {@link java.lang.IllegalArgumentException}
      * will be thrown.
      */
     public EventArgumentLinking align(ResponseLinking responseLinking,
-                       CorefAnnotation corefAnnotation) throws InconsistentLinkingException
+                       AnswerKey answerKey) throws InconsistentLinkingException
     {
-        checkArgument(corefAnnotation.docId() == responseLinking.docID());
+        checkArgument(answerKey.docId() == responseLinking.docID());
 
+        if (!responseLinking.allResponses().equals(answerKey.allResponses())) {
+            final Set<Response> inLinkingButNotKey = Sets.difference(
+                    responseLinking.allResponses(), answerKey.allResponses());
+            final Set<Response> inKeyButNotLinking = Sets.difference(
+                    answerKey.allResponses(), responseLinking.allResponses());
+            throw new InconsistentLinkingException("Response linking and answer key do "
+                    + "not cover exactly the same responses. In key only: "
+                    + inKeyButNotLinking + ", in linking only: " + inLinkingButNotKey);
+        }
+
+        final CorefAnnotation corefAnnotation = answerKey.corefAnnotation();
 
         final ImmutableMultimap<TypeRoleFillerRealis, Response> canonicalToResponses =
                 Multimaps.index(responseLinking.allResponses(),
@@ -49,6 +58,33 @@ public final class ExactMatchEventArgumentLinkingAligner implements EventArgumen
 
         return EventArgumentLinking.create(responseLinking.docID(), coreffedArgs.build(),
                 incompleteResponses);
+    }
+
+    @Override
+    public ResponseLinking alignToResponseLinking(EventArgumentLinking eventArgumentLinking,
+                                                  AnswerKey answerKey)
+    {
+        final ImmutableMultimap<TypeRoleFillerRealis, Response> canonicalToResponses =
+                Multimaps.index(answerKey.allResponses(),
+                        TypeRoleFillerRealis.extractFromSystemResponse(
+                                answerKey.corefAnnotation().strictCASNormalizerFunction()));
+
+        final ImmutableSet.Builder<Response> incompletes = ImmutableSet.builder();
+        for (final TypeRoleFillerRealis incompleteEquivClass : eventArgumentLinking.incomplete()) {
+            incompletes.addAll(canonicalToResponses.get(incompleteEquivClass));
+        }
+
+        final ImmutableSet.Builder<ResponseSet> responseSets = ImmutableSet.builder();
+        for (final TypeRoleFillerRealisSet equivClassSet : eventArgumentLinking.linkedAsSet()) {
+            final ImmutableSet.Builder<Response> setBuilder = ImmutableSet.builder();
+            for (final TypeRoleFillerRealis trfr : equivClassSet.asSet()) {
+                setBuilder.addAll(canonicalToResponses.get(trfr));
+            }
+            responseSets.add(ResponseSet.from(setBuilder.build()));
+        }
+
+        return ResponseLinking.from(answerKey.docId(), responseSets.build(),
+                incompletes.build());
     }
 
     /** Maps a {@code Set<Response>} to a {@code Set<TypeRoleFillerRealis>} which
