@@ -8,6 +8,7 @@ import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.Iterables.transform;
 
 public final class EventArgumentLinking {
     private final Symbol docID;
@@ -57,5 +58,13 @@ public final class EventArgumentLinking {
         final EventArgumentLinking other = (EventArgumentLinking) obj;
         return Objects.equal(this.docID, other.docID) && Objects.equal(this.coreffedArgSets, other.coreffedArgSets)
                 && Objects.equal(this.incomplete, other.incomplete);
+    }
+
+    public static EventArgumentLinking createMinimalLinkingFrom(AnswerKey answerKey) {
+        return EventArgumentLinking.create(answerKey.docId(),
+                ImmutableSet.<TypeRoleFillerRealisSet>of(),
+                ImmutableSet.copyOf(transform(answerKey.allResponses(),
+                        TypeRoleFillerRealis.extractFromSystemResponse(
+                                answerKey.corefAnnotation().strictCASNormalizerFunction()))));
     }
 }
