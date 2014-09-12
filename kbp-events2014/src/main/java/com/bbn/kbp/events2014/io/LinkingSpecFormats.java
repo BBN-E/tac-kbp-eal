@@ -5,13 +5,12 @@ import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.*;
 import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.*;
 import com.google.common.io.Files;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -71,23 +70,22 @@ public final class LinkingSpecFormats {
         }
 
         @Override
-        public ResponseLinking read(AnswerKey answerKey) throws IOException {
+        public Optional<ResponseLinking> read(AnswerKey answerKey) throws IOException {
             return read(answerKey.docId(), answerKey.allResponses());
         }
 
         @Override
-        public ResponseLinking read(SystemOutput systemOutput) throws IOException {
+        public Optional<ResponseLinking> read(SystemOutput systemOutput) throws IOException {
             return read(systemOutput.docId(), systemOutput.responses());
         }
 
         private static final Splitter ON_TABS = Splitter.on('\t').trimResults();
-        public ResponseLinking read(Symbol docID, Set<Response> responses) throws IOException {
+        public Optional<ResponseLinking> read(Symbol docID, Set<Response> responses) throws IOException {
             checkNotClosed();
 
             final File f = new File(directory, docID.toString());
             if (!f.exists()) {
-                throw new FileNotFoundException(String.format("File %s for doc ID %s not found", f.getAbsolutePath(),
-                        docID));
+                return Optional.absent();
             }
 
             final Map<String, Response> responsesByUID = Maps.uniqueIndex(responses,
@@ -131,30 +129,8 @@ public final class LinkingSpecFormats {
                 }
             }
 
-            return ResponseLinking.from(docID, ret.build(), incompleteResponses);
+            return Optional.of(ResponseLinking.from(docID, ret.build(), incompleteResponses));
         }
-
-        @Override
-        public ResponseLinking readOrEmpty(AnswerKey answerKey) throws IOException {
-            return readOrEmpty(answerKey.docId(), answerKey.allResponses());
-        }
-
-        @Override
-        public ResponseLinking readOrEmpty(SystemOutput systemOutput) throws IOException {
-            return readOrEmpty(systemOutput.docId(), systemOutput.responses());
-        }
-
-        public ResponseLinking readOrEmpty(Symbol docID, Set<Response> responses) throws IOException {
-            checkNotClosed();
-
-            final File f = new File(directory, docID.toString());
-            if (!f.exists()) {
-                return ResponseLinking.createEmpty(docID);
-            } else {
-                return read(docID, responses);
-            }
-        }
-
 
         @Override
         public void write(ResponseLinking responseLinking) throws IOException {
