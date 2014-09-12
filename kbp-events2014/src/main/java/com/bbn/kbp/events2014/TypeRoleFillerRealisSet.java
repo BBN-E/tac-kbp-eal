@@ -13,6 +13,11 @@ public final class TypeRoleFillerRealisSet {
         this.coreffedArgs = ImmutableSet.copyOf(coreffedArgs);
     }
 
+    public static TypeRoleFillerRealisSet create(Iterable<TypeRoleFillerRealis> coreffedArgs)
+    {
+        return new TypeRoleFillerRealisSet(coreffedArgs);
+    }
+
     public ImmutableSet<TypeRoleFillerRealis> asSet() {
         return coreffedArgs;
     }
