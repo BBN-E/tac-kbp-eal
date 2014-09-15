@@ -133,6 +133,8 @@ public final class LinkingSpecFormats {
         }
 
         @Override
+        // should there be a "INCOMPLETE " prefix to the incomplete line output?
+        // should the space joiner be tabs instead?
         public void write(ResponseLinking responseLinking) throws IOException {
             checkNotClosed();
 
