@@ -135,8 +135,6 @@ public final class LinkingSpecFormats {
 
         private static final Joiner TAB_JOINER = Joiner.on("\t");
         @Override
-        // should there be a "INCOMPLETE " prefix to the incomplete line output?
-        // should the space joiner be tabs instead?
         public void write(ResponseLinking responseLinking) throws IOException {
             checkNotClosed();
 
@@ -147,7 +145,7 @@ public final class LinkingSpecFormats {
             }
 
             // incompletes last
-            lines.add(TAB_JOINER.join(
+            lines.add("INCOMPLETE\t" + TAB_JOINER.join(
                     transform(responseLinking.incompleteResponses(), Response.uniqueIdFunction())));
 
             final File f = new File(directory, responseLinking.docID().toString());
