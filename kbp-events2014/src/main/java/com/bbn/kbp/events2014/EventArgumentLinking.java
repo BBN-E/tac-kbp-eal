@@ -1,13 +1,16 @@
 package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.symbols.Symbol;
-import com.google.common.base.Objects;
+import com.google.common.base.*;
 import com.google.common.collect.*;
 
 import java.util.Set;
 
+import static com.google.common.base.Functions.compose;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Predicates.and;
+import static com.google.common.base.Predicates.compose;
 import static com.google.common.collect.Iterables.transform;
 
 public final class EventArgumentLinking {
@@ -60,11 +63,25 @@ public final class EventArgumentLinking {
                 && Objects.equal(this.incomplete, other.incomplete);
     }
 
+    private static final Function<AssessedResponse,KBPRealis> REALIS_OF_RESPONSE =
+            compose(Response.realisFunction(), AssessedResponse.Response);
+    private static final Predicate<AssessedResponse> REALIS_IS_ACTUAL =
+            compose(Predicates.equalTo(KBPRealis.Actual), REALIS_OF_RESPONSE);
+    private static final Predicate<AssessedResponse> CORRECT_AND_ACTUAL = and(
+            AssessedResponse.IsCorrectUpToInexactJustifications,
+            REALIS_IS_ACTUAL);
+
+
     public static EventArgumentLinking createMinimalLinkingFrom(AnswerKey answerKey) {
+        final Function<Response, TypeRoleFillerRealis> TO_EQUIVALENCE_CLASS =
+                TypeRoleFillerRealis.extractFromSystemResponse(
+                        answerKey.corefAnnotation().strictCASNormalizerFunction());
+
         return EventArgumentLinking.create(answerKey.docId(),
                 ImmutableSet.<TypeRoleFillerRealisSet>of(),
-                ImmutableSet.copyOf(transform(answerKey.allResponses(),
-                        TypeRoleFillerRealis.extractFromSystemResponse(
-                                answerKey.corefAnnotation().strictCASNormalizerFunction()))));
+                ImmutableSet.copyOf(FluentIterable.from(answerKey.annotatedResponses())
+                        .filter(CORRECT_AND_ACTUAL)
+                        .transform(AssessedResponse.Response)
+                        .transform(TO_EQUIVALENCE_CLASS)));
     }
 }
