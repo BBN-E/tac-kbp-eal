@@ -14,6 +14,7 @@ import com.bbn.kbp.events2014.io.LinkingSpecFormats;
 import com.bbn.kbp.events2014.io.LinkingStore;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.linking.LinkingStrategy;
+import com.bbn.kbp.events2014.linking.SameEventTypeLinker;
 import com.google.common.collect.ImmutableSet;
 
 public final class ApplyLinkingStrategy {
@@ -48,11 +49,14 @@ public final class ApplyLinkingStrategy {
 			 final File systemLinkingStoreDir = params.getExistingDirectory("systemLinkingStore");
 			 final LinkingStore linkingStore = LinkingSpecFormats.openOrCreateLinkingStore(systemLinkingStoreDir);
 		     
+			 // default to SameEventTypeLinker for now. We could parameterize this in future when there's multiple strategies.
+			 LinkingStrategy linkingStrategy = new SameEventTypeLinker();
+			 
 			 for(final Symbol docID : docIDs) {
 				 final SystemOutput docOutput = systemOutputStore.read(docID);
 				 log.info("For document {} got {} responses", docID, docOutput.size());
 				 
-				 final ResponseLinking responseLinking = LinkingStrategy.sameEventTypeLinking(docOutput);
+				 final ResponseLinking responseLinking = linkingStrategy.linkResponses(docOutput);
 				 linkingStore.write(responseLinking);
 			 }
 			 

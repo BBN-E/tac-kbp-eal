@@ -316,4 +316,13 @@ public final class Response  {
             }
         };
     }
+    
+    public static Function<Response, Symbol> typeFunction() {
+    	return new Function<Response, Symbol>() {
+    		@Override
+    		public Symbol apply(Response input) {
+    			return input.type();
+    		}
+    	};
+    }
 }
