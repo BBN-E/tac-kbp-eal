@@ -149,7 +149,7 @@ public final class LinkingSpecFormats {
                     transform(responseLinking.incompleteResponses(), Response.uniqueIdFunction())));
 
             final File f = new File(directory, responseLinking.docID().toString());
-            Files.asCharSink(f, Charsets.UTF_8).writeLines(lines);
+            Files.asCharSink(f, Charsets.UTF_8).writeLines(lines, "\n");
         }
 
         @Override

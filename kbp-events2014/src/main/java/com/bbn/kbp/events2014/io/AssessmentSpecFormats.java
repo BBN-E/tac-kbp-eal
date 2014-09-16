@@ -229,7 +229,7 @@ public final class AssessmentSpecFormats {
                     out.print(format.identifierField(response));
 					out.print("\t");
 					final double confidence = output.confidence(response);
-					out.println(argToString(response, confidence));
+					out.print(argToString(response, confidence) + "\n");
 				}
 			} finally {
 				out.close();
@@ -369,7 +369,7 @@ public final class AssessmentSpecFormats {
 					parts.add(format.identifierField(arg.response()));
 					addArgumentParts(arg.response(), parts, 1.0);
 					addAnnotationParts(arg, answerKey.corefAnnotation(), parts);
-					out.println(Joiner.on("\t").join(parts));
+					out.print(Joiner.on("\t").join(parts)+"\n");
 				}
                 // then unannotated responses, sorted by reponseID
 				for (final Response unannotated : format.responseOrdering().sortedCopy(answerKey.unannotatedResponses())) {
@@ -377,7 +377,7 @@ public final class AssessmentSpecFormats {
 					parts.add(format.identifierField(unannotated));
 					addArgumentParts(unannotated, parts, 1.0);
 					addUnannotatedAnnotationParts(unannotated, answerKey.corefAnnotation(), parts);
-					out.println(Joiner.on("\t").join(parts));
+					out.print(Joiner.on("\t").join(parts) + "\n");
 				}
 			} finally {
 				out.close();
