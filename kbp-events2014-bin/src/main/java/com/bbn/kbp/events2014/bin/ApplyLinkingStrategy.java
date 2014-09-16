@@ -50,7 +50,7 @@ public final class ApplyLinkingStrategy {
 			 final LinkingStore linkingStore = LinkingSpecFormats.openOrCreateLinkingStore(systemLinkingStoreDir);
 		     
 			 // default to SameEventTypeLinker for now. We could parameterize this in future when there's multiple strategies.
-			 LinkingStrategy linkingStrategy = new SameEventTypeLinker();
+			 LinkingStrategy linkingStrategy = SameEventTypeLinker.create();
 			 
 			 for(final Symbol docID : docIDs) {
 				 final SystemOutput docOutput = systemOutputStore.read(docID);

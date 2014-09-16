@@ -14,6 +14,12 @@ import com.google.common.collect.Multimaps;
 
 public final class SameEventTypeLinker implements LinkingStrategy {
 	
+	private SameEventTypeLinker() {}
+	
+	public static SameEventTypeLinker create() {
+		return new SameEventTypeLinker();
+	}
+	
 	@Override
 	public ResponseLinking linkResponses(SystemOutput systemOutput) {
 		final Symbol docId = systemOutput.docId();
