@@ -5,6 +5,7 @@ import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.*;
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.*;
@@ -132,6 +133,7 @@ public final class LinkingSpecFormats {
             return Optional.of(ResponseLinking.from(docID, ret.build(), incompleteResponses));
         }
 
+        private static final Joiner TAB_JOINER = Joiner.on("\t");
         @Override
         // should there be a "INCOMPLETE " prefix to the incomplete line output?
         // should the space joiner be tabs instead?
@@ -140,12 +142,12 @@ public final class LinkingSpecFormats {
 
             final List<String> lines = Lists.newArrayList();
             for (final ResponseSet responseSet : responseLinking.responseSets()) {
-                lines.add(StringUtils.SpaceJoiner.join(
+                lines.add(TAB_JOINER.join(
                         transform(responseSet.asSet(), Response.uniqueIdFunction())));
             }
 
             // incompletes last
-            lines.add(StringUtils.SpaceJoiner.join(
+            lines.add(TAB_JOINER.join(
                     transform(responseLinking.incompleteResponses(), Response.uniqueIdFunction())));
 
             final File f = new File(directory, responseLinking.docID().toString());
