@@ -80,7 +80,7 @@ public final class LinkingSpecFormats {
             return read(systemOutput.docId(), systemOutput.responses());
         }
 
-        private static final Splitter ON_TABS = Splitter.on('\t').trimResults();
+        private static final Splitter ON_TABS = Splitter.on('\t').trimResults().omitEmptyStrings();
         public Optional<ResponseLinking> read(Symbol docID, Set<Response> responses) throws IOException {
             checkNotClosed();
 
