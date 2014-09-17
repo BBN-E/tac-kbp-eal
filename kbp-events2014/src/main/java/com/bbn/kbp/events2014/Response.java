@@ -179,6 +179,10 @@ public final class Response  {
 	private final KBPRealis realis;
     private final HashCode cachedSHA1Hash;
 
+    // see computeSHA1Hash
+    private static final int PJ_CODE = 0;
+    private static final int AAJ_CODE = 1;
+
     private static final HashFunction SHA1_HASHER = Hashing.sha1();
     private HashCode computeSHA1Hash() {
         final Hasher hasher = SHA1_HASHER.newHasher()
@@ -191,10 +195,15 @@ public final class Response  {
                 .putInt(baseFiller.startInclusive())
                 .putInt(baseFiller.endInclusive());
 
+        // we put PJ_CODE and AAJ_CODE into the hash because without them,
+        // observe that shifting a second PJ element to being the first AAJ
+        // element results in the same hash
+        hasher.putInt(PJ_CODE);
         for (final CharOffsetSpan pj : Ordering.natural().sortedCopy(predicateJustifications)) {
             hasher.putInt(pj.startInclusive()).putInt(pj.endInclusive());
         }
 
+        hasher.putInt(AAJ_CODE);
         for (final CharOffsetSpan aaj : Ordering.natural().sortedCopy(additionalArgumentJustifications())) {
             hasher.putInt(aaj.startInclusive()).putInt(aaj.endInclusive());
         }
