@@ -1,19 +1,33 @@
 package com.bbn.kbp.events2014.linking;
 
 import com.bbn.kbp.events2014.*;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.*;
 
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Predicates.compose;
+import static com.google.common.base.Predicates.in;
 
 public final class ExactMatchEventArgumentLinkingAligner implements EventArgumentLinkingAligner {
-    private ExactMatchEventArgumentLinkingAligner() {
+    private boolean correctOnly;
+    private final ImmutableSet<KBPRealis> realisesWhichMustBeAligned;
 
+    private ExactMatchEventArgumentLinkingAligner(boolean correctOnly,
+                                                  Iterable<KBPRealis> realisesWhichMustBeAligned)
+    {
+        this.correctOnly = correctOnly;
+        this.realisesWhichMustBeAligned = ImmutableSet.copyOf(realisesWhichMustBeAligned);
     }
 
-    public static ExactMatchEventArgumentLinkingAligner create() {
-        return new ExactMatchEventArgumentLinkingAligner();
+    /**
+     * Creates an aligner which will expect the response linking to account for all
+     * correctly assessed responses with actual realis and no others.
+     */
+    public static ExactMatchEventArgumentLinkingAligner createForCorrectWithRealises(Iterable<KBPRealis> realises) {
+        return new ExactMatchEventArgumentLinkingAligner(true, realises);
     }
 
     /** Converts a {@link ResponseLinking} to an {@link EventArgumentLinking} using
@@ -26,12 +40,13 @@ public final class ExactMatchEventArgumentLinkingAligner implements EventArgumen
                        AnswerKey answerKey) throws InconsistentLinkingException
     {
         checkArgument(answerKey.docId() == responseLinking.docID());
+        final ImmutableSet<Response> relevantResponses = getRelevantResponses(answerKey);
 
-        if (!responseLinking.allResponses().equals(answerKey.allResponses())) {
+        if (!responseLinking.allResponses().equals(relevantResponses)) {
             final Set<Response> inLinkingButNotKey = Sets.difference(
-                    responseLinking.allResponses(), answerKey.allResponses());
+                    responseLinking.allResponses(), relevantResponses);
             final Set<Response> inKeyButNotLinking = Sets.difference(
-                    answerKey.allResponses(), responseLinking.allResponses());
+                    relevantResponses, responseLinking.allResponses());
             throw new InconsistentLinkingException("Response linking and answer key do "
                     + "not cover exactly the same responses. In key only: "
                     + inKeyButNotLinking + ", in linking only: " + inLinkingButNotKey);
@@ -60,12 +75,30 @@ public final class ExactMatchEventArgumentLinkingAligner implements EventArgumen
                 incompleteResponses);
     }
 
+    private ImmutableSet<Response> getRelevantResponses(AnswerKey answerKey) {
+        final FluentIterable<Response> responses;
+
+        if (correctOnly) {
+            responses = FluentIterable.from(answerKey.annotatedResponses())
+                .filter(AssessedResponse.IsCorrectUpToInexactJustifications)
+                .transform(AssessedResponse.Response);
+        } else {
+            responses = FluentIterable.from(answerKey.allResponses());
+        }
+
+        final Predicate<Response> HasRelevantRealis = compose(
+                in(realisesWhichMustBeAligned),
+                Response.realisFunction());
+
+        return responses.filter(HasRelevantRealis).toSet();
+    }
+
     @Override
     public ResponseLinking alignToResponseLinking(EventArgumentLinking eventArgumentLinking,
                                                   AnswerKey answerKey)
     {
         final ImmutableMultimap<TypeRoleFillerRealis, Response> canonicalToResponses =
-                Multimaps.index(answerKey.allResponses(),
+                Multimaps.index(getRelevantResponses(answerKey),
                         TypeRoleFillerRealis.extractFromSystemResponse(
                                 answerKey.corefAnnotation().strictCASNormalizerFunction()));
 

@@ -11,6 +11,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.and;
 import static com.google.common.base.Predicates.compose;
+import static com.google.common.base.Predicates.in;
 import static com.google.common.collect.Iterables.transform;
 
 public final class EventArgumentLinking {
@@ -65,23 +66,26 @@ public final class EventArgumentLinking {
 
     private static final Function<AssessedResponse,KBPRealis> REALIS_OF_RESPONSE =
             compose(Response.realisFunction(), AssessedResponse.Response);
-    private static final Predicate<AssessedResponse> REALIS_IS_ACTUAL =
-            compose(Predicates.equalTo(KBPRealis.Actual), REALIS_OF_RESPONSE);
-    private static final Predicate<AssessedResponse> CORRECT_AND_ACTUAL = and(
-            AssessedResponse.IsCorrectUpToInexactJustifications,
-            REALIS_IS_ACTUAL);
 
 
-    public static EventArgumentLinking createMinimalLinkingFrom(AnswerKey answerKey) {
-        final Function<Response, TypeRoleFillerRealis> TO_EQUIVALENCE_CLASS =
+    public static EventArgumentLinking createMinimalLinkingFrom(AnswerKey answerKey,
+                                                                Set<KBPRealis> realisesToLink)
+    {
+        final Function<Response, TypeRoleFillerRealis> ToEquivalenceClass =
                 TypeRoleFillerRealis.extractFromSystemResponse(
                         answerKey.corefAnnotation().strictCASNormalizerFunction());
+
+        final Predicate<AssessedResponse> RealisIsRelevant =
+                compose(in(realisesToLink), REALIS_OF_RESPONSE);
+        final Predicate<AssessedResponse> CorrectWithRelevantRealis = and(
+                AssessedResponse.IsCorrectUpToInexactJustifications,
+                RealisIsRelevant);
 
         return EventArgumentLinking.create(answerKey.docId(),
                 ImmutableSet.<TypeRoleFillerRealisSet>of(),
                 ImmutableSet.copyOf(FluentIterable.from(answerKey.annotatedResponses())
-                        .filter(CORRECT_AND_ACTUAL)
+                        .filter(CorrectWithRelevantRealis)
                         .transform(AssessedResponse.Response)
-                        .transform(TO_EQUIVALENCE_CLASS)));
+                        .transform(ToEquivalenceClass)));
     }
 }
