@@ -10,6 +10,7 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.EventArgumentLinking;
+import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
@@ -58,7 +59,8 @@ public final class ConvertToAndWriteEquivalenceClass {
 			 final Set<Symbol> argumentKeyStoreDocIDs = argumentKeyStore.docIDs();
 			 final ImmutableSet<Symbol> linkingKeyStoreDocIDs = linkingKeyStore.docIDs();
 			 
-			 final ExactMatchEventArgumentLinkingAligner aligner = ExactMatchEventArgumentLinkingAligner.create();
+			 final ExactMatchEventArgumentLinkingAligner aligner = 
+					 ExactMatchEventArgumentLinkingAligner.createForCorrectWithRealises(ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other));
 			 
 			 final File linkingOutputEqStoreDir = params.getExistingDirectory("linkingOutputEqStore");	// destination directory to write equivalence response ids
 			 final LinkingStore linkingOutputEqStore = LinkingSpecFormats.openOrCreateLinkingStore(linkingOutputEqStoreDir);
