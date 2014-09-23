@@ -84,6 +84,10 @@ public final class CorefAnnotation {
         return Optional.absent();
     }
 
+    public boolean isComplete() {
+        return unannotated.isEmpty();
+    }
+
     /**
      * Reverse a multimap. Will throw {@link java.lang.IllegalArgumentException} if
      * any value in the multimap appears for multiple keys.
