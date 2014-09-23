@@ -2,11 +2,16 @@ package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
+import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
+import com.google.common.hash.HashCode;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hasher;
+import com.google.common.hash.Hashing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +44,7 @@ public final class Response  {
 		this.predicateJustifications = ImmutableSet.copyOf(predicateJustifications);
         checkPredicateJustificationsContainsBaseFiller();
 		checkArgument(!predicateJustifications.isEmpty(), "Predicate justifications may not be empty");
+        this.cachedSHA1Hash = computeSHA1Hash();
 	 }
 
     public static Response createFrom(final Symbol docid, final Symbol type, final Symbol role,
@@ -51,12 +57,12 @@ public final class Response  {
 	}
 
     /**
-     * Returns a 'unique-ish' ID for this response. In the Java implementation,
+     * Returns a 'unique-ish' ID for this response used for the 2014 evaluation. In the Java implementation,
      * the response's {@code hashCode} is always returned.  Note that if you read input files
      * from another source into {@code Response} objects, the original IDs will be lost.
      * @return
      */
-    public int responseID() {
+    public int old2014ResponseID() {
         return hashCode();
     }
 
@@ -171,12 +177,51 @@ public final class Response  {
 	private final Set<CharOffsetSpan> additionalArgumentJustifications;
 	private final Set<CharOffsetSpan> predicateJustifications;
 	private final KBPRealis realis;
+    private final HashCode cachedSHA1Hash;
 
-	@Override
-	public int hashCode() {
-		return Objects.hashCode(docid.toString(), type.toString(), role.toString(), canonicalArgumentString, baseFiller,
-			additionalArgumentJustifications, predicateJustifications, realis.stableHashCode());
-	}
+    // see computeSHA1Hash
+    private static final int PJ_CODE = 0;
+    private static final int AAJ_CODE = 1;
+
+    private static final HashFunction SHA1_HASHER = Hashing.sha1();
+    private HashCode computeSHA1Hash() {
+        final Hasher hasher = SHA1_HASHER.newHasher()
+                .putString(docid.toString(), Charsets.UTF_8)
+                .putString(type.toString(), Charsets.UTF_8)
+                .putString(role.toString(), Charsets.UTF_8)
+                .putString(canonicalArgumentString.string(), Charsets.UTF_8)
+                .putInt(canonicalArgument().charOffsetSpan().startInclusive())
+                .putInt(canonicalArgument().charOffsetSpan().endInclusive())
+                .putInt(baseFiller.startInclusive())
+                .putInt(baseFiller.endInclusive());
+
+        // we put PJ_CODE and AAJ_CODE into the hash because without them,
+        // observe that shifting a second PJ element to being the first AAJ
+        // element results in the same hash
+        hasher.putInt(PJ_CODE);
+        for (final CharOffsetSpan pj : Ordering.natural().sortedCopy(predicateJustifications)) {
+            hasher.putInt(pj.startInclusive()).putInt(pj.endInclusive());
+        }
+
+        hasher.putInt(AAJ_CODE);
+        for (final CharOffsetSpan aaj : Ordering.natural().sortedCopy(additionalArgumentJustifications())) {
+            hasher.putInt(aaj.startInclusive()).putInt(aaj.endInclusive());
+        }
+
+        hasher.putInt(realis.ordinal());
+
+        return hasher.hash();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(docid.toString(), type.toString(), role.toString(), canonicalArgumentString, baseFiller,
+                additionalArgumentJustifications, predicateJustifications, realis.stableHashCode());
+    }
+
+    public String uniqueIdentifier() {
+        return cachedSHA1Hash.toString();
+    }
 
 	@Override
 	public boolean equals(final Object obj) {
@@ -236,17 +281,27 @@ public final class Response  {
             return x.docID();
         }
     };
-    public static Function<Response, Integer> ResponseID = new Function<Response, Integer> () {
+    @Deprecated
+    public static Function<Response, Integer> Old2104ResponseID = new Function<Response, Integer> () {
         @Override
         public Integer apply(Response x) {
-            return x.responseID();
+            return x.old2014ResponseID();
         }
     };
+    public static Function<Response, String> uniqueIdFunction() {
+        return new Function<Response, String>() {
+            @Override
+            public String apply(Response x) {
+                return x.uniqueIdentifier();
+            }
+        };
+    }
 
-    /**
-     * Orders responses by their IDs.
-     */
-    public static final Ordering<Response> ById = Ordering.natural().onResultOf(Response.ResponseID);
+    @Deprecated
+    public static final Ordering<Response> ByOld2014Id = Ordering.natural().onResultOf(Response.Old2104ResponseID);
+    public static final Ordering<Response> byUniqueIdOrdering() {
+        return Ordering.natural().onResultOf(uniqueIdFunction());
+    }
 
     private void checkPredicateJustificationsContainsBaseFiller() {
         boolean foundContainingPJ = false;
@@ -267,6 +322,24 @@ public final class Response  {
             @Override
             public KBPString apply(Response input) {
                 return input.canonicalArgument();
+            }
+        };
+    }
+
+    public static Function<Response, Symbol> typeFunction() {
+    	return new Function<Response, Symbol>() {
+    		@Override
+    		public Symbol apply(Response input) {
+    			return input.type();
+    		}
+    	};
+    }
+
+    public static Function<Response, KBPRealis> realisFunction() {
+        return new Function<Response, KBPRealis>() {
+            @Override
+            public KBPRealis apply(Response input) {
+                return input.realis();
             }
         };
     }

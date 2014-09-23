@@ -1,19 +1,17 @@
 package com.bbn.kbp.events2014.assessmentDiff.diffLoggers;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.ResponseAssessment;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
-
 import org.apache.commons.lang.StringEscapeUtils;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -62,7 +60,8 @@ public final class FancierDiffLogger implements DiffLogger {
     }
     
     private void logIdTypeRoleCAS(Response response, StringBuilder out) {
-        out.append(String.format("<h2>Response Id: %s</h2>", response.responseID()));
+        out.append(String.format("<h2>Response Id: %s (old-style: %s)</h2>", response.uniqueIdentifier(),
+                response.old2014ResponseID()));
         out.append(String.format("<h2>(Docid: %s, Type: %s, Role: %s, CAS: %s)</h2>", response.docID(),
                 response.type(), response.role(), response.canonicalArgument()));
     }

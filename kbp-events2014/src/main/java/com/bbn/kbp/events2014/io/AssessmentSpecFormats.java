@@ -50,6 +50,35 @@ public final class AssessmentSpecFormats {
 		throw new UnsupportedOperationException();
 	}
 
+    public enum Format {
+        KBP2014 {
+            @Override
+            public String identifierField(Response response) {
+                return Integer.toString(response.old2014ResponseID());
+            }
+
+            @Override
+            protected Ordering<Response> responseOrdering() {
+                return Response.ByOld2014Id;
+            }
+        }
+        , KBP2015 {
+            @Override
+            public String identifierField(Response response) {
+                return response.uniqueIdentifier();
+            }
+
+            @Override
+            protected Ordering<Response> responseOrdering() {
+                return Response.byUniqueIdOrdering();
+            }
+        };
+
+        protected abstract String identifierField(Response response);
+
+        protected abstract Ordering<Response> responseOrdering();
+    };
+
     /**
      * Creates a directory-based assessment store in the specified directory. Will throw an
      * {@link java.io.IOException} if the directory exists and is non-empty.
@@ -57,13 +86,13 @@ public final class AssessmentSpecFormats {
      * @return
      * @throws IOException
      */
-	public static AnnotationStore createAnnotationStore(final File directory) throws IOException {
+	public static AnnotationStore createAnnotationStore(final File directory, Format format) throws IOException {
 		if (directory.exists() && !FileUtils.isEmptyDirectory(directory)) {
 			throw new IOException(String.format(
 				"Non-empty output directory %s when attempting to create assessment store", directory));
 		}
 		directory.mkdirs();
-		return new DirectoryAnnotationStore(directory, StrictAssessmentCreator.create(), false);
+		return new DirectoryAnnotationStore(directory, StrictAssessmentCreator.create(), false, format);
 	}
 
     /**
@@ -75,26 +104,28 @@ public final class AssessmentSpecFormats {
      * @return
      * @throws IOException
      */
-	public static AnnotationStore openAnnotationStore(final File directory) throws IOException {
+	public static AnnotationStore openAnnotationStore(final File directory, Format format) throws IOException {
 		if (!directory.exists() || !directory.isDirectory()) {
             throw new IOException(String.format("Annotation store directory %s either does not exist or is not a directory", directory));
         }
-		return new DirectoryAnnotationStore(directory, StrictAssessmentCreator.create(), false);
+		return new DirectoryAnnotationStore(directory, StrictAssessmentCreator.create(), false, format);
 	}
 
     public static AnnotationStore recoverPossiblyBrokenAnnotationStore(File directory,
-                        RecoveryAssessmentCreator assessmentCreator) throws IOException
+                        RecoveryAssessmentCreator assessmentCreator, Format format) throws IOException
     {
         if (!directory.exists() || !directory.isDirectory()) {
             throw new IOException(String.format("Annotation store directory %s either does not exist or is not a directory", directory));
         }
-        return new DirectoryAnnotationStore(directory, assessmentCreator, false);
+        return new DirectoryAnnotationStore(directory, assessmentCreator, false, format);
     }
 
 
-    public static AnnotationStore openOrCreateAnnotationStore(final File directory) throws IOException {
+    public static AnnotationStore openOrCreateAnnotationStore(final File directory,
+                                                              Format format) throws IOException
+    {
         directory.mkdirs();
-        return new DirectoryAnnotationStore(directory, StrictAssessmentCreator.create(), false);
+        return new DirectoryAnnotationStore(directory, StrictAssessmentCreator.create(), false, format);
     }
 
     /**
@@ -103,13 +134,15 @@ public final class AssessmentSpecFormats {
      * @param directory
      * @return
      */
-	public static SystemOutputStore createSystemOutputStore(final File directory) throws IOException {
+	public static SystemOutputStore createSystemOutputStore(final File directory,
+                                                            Format format) throws IOException
+    {
 		if (directory.exists() && !FileUtils.isEmptyDirectory(directory)) {
             throw new IOException(String.format(
                     "Cannot create system output store: directory is non-empty: %s", directory));
 		}
 		directory.mkdirs();
-		return new DirectorySystemOutputStore(directory);
+		return new DirectorySystemOutputStore(directory, format);
 	}
 
     /**
@@ -117,16 +150,16 @@ public final class AssessmentSpecFormats {
      * @param directory
      * @return
      */
-	public static SystemOutputStore openSystemOutputStore(final File directory) {
+	public static SystemOutputStore openSystemOutputStore(final File directory, Format format) {
 		checkArgument(directory.exists() && directory.isDirectory(), "Directory to open as annotation store %s either does not exist or is not a directory", directory );
-		return new DirectorySystemOutputStore(directory);
+		return new DirectorySystemOutputStore(directory, format);
 	}
 
-    public static SystemOutputStore openOrCreateSystemOutputStore(final File directory) throws IOException {
+    public static SystemOutputStore openOrCreateSystemOutputStore(final File directory, Format format) throws IOException {
         if (directory.exists()) {
-            return openSystemOutputStore(directory);
+            return openSystemOutputStore(directory, format);
         } else {
-            return createSystemOutputStore(directory);
+            return createSystemOutputStore(directory, format);
         }
     }
 
@@ -134,10 +167,12 @@ public final class AssessmentSpecFormats {
 		private static Logger log = LoggerFactory.getLogger(DirectorySystemOutputStore.class);
 
 		private final File directory;
+        private final Format format;
 
-		private DirectorySystemOutputStore(final File directory) {
+		private DirectorySystemOutputStore(final File directory, final Format format) {
 			checkArgument(directory.isDirectory(), "Specified directory %s for system output store is not a directory", directory);
 			this.directory = checkNotNull(directory);
+            this.format = checkNotNull(format);
 		}
 
         private static final Splitter OnTabs = Splitter.on('\t').trimResults();
@@ -189,11 +224,12 @@ public final class AssessmentSpecFormats {
 				new OutputStreamWriter(new FileOutputStream(f), Charsets.UTF_8)));
 
 			try {
-                for (final Response response : Response.ById.sortedCopy(output.responses())) {
-					out.print(response.responseID());
+                for (final Response response : format.responseOrdering().sortedCopy(output.responses())) {
+					//out.print(response.responseID());
+                    out.print(format.identifierField(response));
 					out.print("\t");
 					final double confidence = output.confidence(response);
-					out.println(argToString(response, confidence));
+					out.print(argToString(response, confidence) + "\n");
 				}
 			} finally {
 				out.close();
@@ -250,10 +286,11 @@ public final class AssessmentSpecFormats {
         // object which actually creates ResponseAssessments
         // can be used to control how strict we are about
         // the input
-        private AssessmentCreator assessmentCreator;
+        private final AssessmentCreator assessmentCreator;
+        private final Format format;
 
 		private DirectoryAnnotationStore(final File directory, AssessmentCreator assessmentCreator,
-                                         final boolean doCaching) throws IOException
+                                         final boolean doCaching, final Format format) throws IOException
         {
 			checkArgument(directory.exists(), "Directory %s for annotation store does not exist", directory);
             // this is a half-hearted attempt at preventing multiple assessment stores
@@ -277,6 +314,7 @@ public final class AssessmentSpecFormats {
             this.docIDs = loadInitialDocIds();
             this.assessmentCreator = checkNotNull(assessmentCreator);
             this.doCaching = doCaching;
+            this.format = checkNotNull(format);
 		}
 
         @Override
@@ -324,20 +362,22 @@ public final class AssessmentSpecFormats {
 
 			try {
                 // first annotated responses, sorted by response ID
-				for (final AssessedResponse arg : AssessedResponse.ById.sortedCopy(answerKey.annotatedResponses())) {
+                final Ordering<AssessedResponse> assessedResponseOrdering =
+                        format.responseOrdering().onResultOf(AssessedResponse.Response);
+                for (final AssessedResponse arg : assessedResponseOrdering.sortedCopy(answerKey.annotatedResponses())) {
 					final List<String> parts = Lists.newArrayList();
-					parts.add(Integer.toString(arg.response().responseID()));
+					parts.add(format.identifierField(arg.response()));
 					addArgumentParts(arg.response(), parts, 1.0);
 					addAnnotationParts(arg, answerKey.corefAnnotation(), parts);
-					out.println(Joiner.on("\t").join(parts));
+					out.print(Joiner.on("\t").join(parts)+"\n");
 				}
                 // then unannotated responses, sorted by reponseID
-				for (final Response unannotated : Response.ById.sortedCopy(answerKey.unannotatedResponses())) {
+				for (final Response unannotated : format.responseOrdering().sortedCopy(answerKey.unannotatedResponses())) {
 					final List<String> parts = Lists.newArrayList();
-					parts.add(Integer.toString(unannotated.responseID()));
+					parts.add(format.identifierField(unannotated));
 					addArgumentParts(unannotated, parts, 1.0);
 					addUnannotatedAnnotationParts(unannotated, answerKey.corefAnnotation(), parts);
-					out.println(Joiner.on("\t").join(parts));
+					out.print(Joiner.on("\t").join(parts) + "\n");
 				}
 			} finally {
 				out.close();

@@ -39,8 +39,9 @@ public final class KeepOnlyBestResponses {
         final File outputStoreLocation = params.getCreatableDirectory("outputStore");
         final boolean keepInferenceCases = params.getBoolean("keepInferenceCases");
 
-        final SystemOutputStore sourceStore = AssessmentSpecFormats.openSystemOutputStore(inputStoreLocation);
-        final SystemOutputStore destStore = AssessmentSpecFormats.createSystemOutputStore(outputStoreLocation);
+        final AssessmentSpecFormats.Format fileFormat = params.getEnum("fileFormat", AssessmentSpecFormats.Format.class);
+        final SystemOutputStore sourceStore = AssessmentSpecFormats.openSystemOutputStore(inputStoreLocation, fileFormat);
+        final SystemOutputStore destStore = AssessmentSpecFormats.createSystemOutputStore(outputStoreLocation, fileFormat);
         final Function<SystemOutput, SystemOutput> bestJustFilter = KeepBestJustificationOnly.create();
         final Function<SystemOutput, SystemOutput> probablyInferenceFilter =
                 ProbableInferenceCases.createKeepingMultisentenceJustifications();

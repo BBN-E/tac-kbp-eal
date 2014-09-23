@@ -1,7 +1,5 @@
 package com.bbn.kbp.events2014;
 
-import java.util.*;
-
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.scoring.Scoreds;
 import com.bbn.bue.common.symbols.Symbol;
@@ -10,6 +8,11 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.*;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 import static com.bbn.bue.common.collections.IterableUtils.allEqual;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -114,7 +117,7 @@ public final class SystemOutput {
 			return Optional.of(getFirst(args, null));
 		}
 
-		return Optional.of(Collections.max(args, ByConfidenceThenHashID));
+		return Optional.of(Collections.max(args, ByConfidenceThenOld2014ID));
 	}
 
 	public static SystemOutput from(final Symbol docId, final Iterable<Scored<Response>> scoredResponses) {
@@ -122,19 +125,15 @@ public final class SystemOutput {
 			Scoreds.asMapKeepingHigestScore(scoredResponses));
 	}
 
-	/**
-	 * Orders output arguments in ascending order of confidence, then {@link #hashCode}.
-	 */
-	private final Ordering<Response> ByConfidenceThenHashID = new Ordering<Response> () {
+	private final Ordering<Response> ByConfidenceThenOld2014ID = new Ordering<Response> () {
 			@Override
 			public int compare(final Response left, final Response right) {
 				return ComparisonChain.start()
 						.compare(confidence(left), confidence(right))
-						.compare(left.responseID(), right.responseID())
+						.compare(left.old2014ResponseID(), right.old2014ResponseID())
 						.result();
 			}
 		};
-
 
     public static Function<SystemOutput, Symbol> DocID = new Function<SystemOutput, Symbol>() {
         @Override

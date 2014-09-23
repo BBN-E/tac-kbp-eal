@@ -82,10 +82,11 @@ public final  class MergeAssessmentStores {
         log.info("Merged store will be written to: {}", outputPath);
 
         final MergeAssessmentStores merger = MergeAssessmentStores.create();
+        final AssessmentSpecFormats.Format fileFormat = params.getEnum("fileFormat", AssessmentSpecFormats.Format.class);
 
-        final AnnotationStore baseline = AssessmentSpecFormats.openAnnotationStore(baselinePath);
-        final AnnotationStore additional = AssessmentSpecFormats.openAnnotationStore(additionalPath);
-        final AnnotationStore outStore = AssessmentSpecFormats.createAnnotationStore(outputPath);
+        final AnnotationStore baseline = AssessmentSpecFormats.openAnnotationStore(baselinePath, fileFormat);
+        final AnnotationStore additional = AssessmentSpecFormats.openAnnotationStore(additionalPath, fileFormat);
+        final AnnotationStore outStore = AssessmentSpecFormats.createAnnotationStore(outputPath, fileFormat);
 
         for (final Symbol docid : Sets.union(baseline.docIDs(), additional.docIDs())) {
             outStore.write(

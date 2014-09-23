@@ -42,12 +42,13 @@ public final class KBPAssessmentDiff {
         final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
         log.info(params.dump());
 
+        final AssessmentSpecFormats.Format fileFormat = params.getEnum("fileFormat", AssessmentSpecFormats.Format.class);
         final String leftName = params.getString("leftAnnotationName");
         final AnnotationStore leftAnnotationStore = AssessmentSpecFormats.openAnnotationStore(
-                params.getExistingDirectory("leftAnnotationStore"));
+                params.getExistingDirectory("leftAnnotationStore"), fileFormat);
         final String rightName = params.getString("rightAnnotationName");
         final AnnotationStore rightAnnotationStore = AssessmentSpecFormats.openAnnotationStore(
-                params.getExistingDirectory("rightAnnotationStore"));
+                params.getExistingDirectory("rightAnnotationStore"), fileFormat);
         final File outputDirectory = params.getCreatableDirectory("outputDirectory");
 
         // the user may optionally specify a "baseline store". Any responses which are assessed
@@ -127,11 +128,13 @@ public final class KBPAssessmentDiff {
     }
 
     private static Optional<AnnotationStore> getBaselineAnnotationStore(Parameters params) throws IOException {
+        final AssessmentSpecFormats.Format fileFormat = params.getEnum("fileFormat", AssessmentSpecFormats.Format.class);
         final Optional<File> baselineAnnotationStoreDir = params.getOptionalExistingDirectory(
                 "baselineAnnotationStore");
         final Optional<AnnotationStore> baselineAnnotationStore;
         if (baselineAnnotationStoreDir.isPresent()) {
-            baselineAnnotationStore = Optional.of(AssessmentSpecFormats.openAnnotationStore(baselineAnnotationStoreDir.get()));
+            baselineAnnotationStore = Optional.of(AssessmentSpecFormats.openAnnotationStore(
+                    baselineAnnotationStoreDir.get(), fileFormat));
         } else {
             baselineAnnotationStore = Optional.absent();
         }

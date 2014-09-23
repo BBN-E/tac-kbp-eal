@@ -52,16 +52,19 @@ public final class ApplyQuoteFilter {
         final Map<File, File> inputStoreToOutputStore = getInputOutput(params);
 
         for (final Map.Entry<File,File> inputOutputPair : inputStoreToOutputStore.entrySet()) {
-            filterStore(inputOutputPair.getKey(), inputOutputPair.getValue(), quoteFilter);
+            filterStore(inputOutputPair.getKey(), inputOutputPair.getValue(), quoteFilter,
+                    params.getEnum("fileFormat", AssessmentSpecFormats.Format.class));
         }
     }
 
-    private static void filterStore(File sourceStorePath, File destStorePath, QuoteFilter quoteFilter) throws IOException {
+    private static void filterStore(File sourceStorePath, File destStorePath, QuoteFilter quoteFilter,
+                                    AssessmentSpecFormats.Format fileFormat) throws IOException
+    {
         log.info("Filtering {} to {}", sourceStorePath, destStorePath);
         final SystemOutputStore sourceStore =
-                AssessmentSpecFormats.openSystemOutputStore(sourceStorePath);
+                AssessmentSpecFormats.openSystemOutputStore(sourceStorePath, fileFormat);
         final SystemOutputStore destStore =
-                AssessmentSpecFormats.createSystemOutputStore(destStorePath);
+                AssessmentSpecFormats.createSystemOutputStore(destStorePath, fileFormat);
 
         log.info("Source store has {} documents", sourceStore.docIDs().size());
         for (final Symbol docID : sourceStore.docIDs()) {

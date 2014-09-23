@@ -64,9 +64,10 @@ public final class ValidateSystemOutput {
      * @return
      */
     public List<Throwable> validateOnly(File systemOutputStoreFile, int maxErrors,
-                                        Map<Symbol, File> docIDMap) throws IOException
+                                        Map<Symbol, File> docIDMap,
+                                        AssessmentSpecFormats.Format fileFormat) throws IOException
     {
-        return validate(systemOutputStoreFile, maxErrors, docIDMap, false);
+        return validate(systemOutputStoreFile, maxErrors, docIDMap, fileFormat, false);
     }
 
     /** Like {@link #validateOnly(java.io.File, int, java.util.Map)} except it also logs the response in human
@@ -79,14 +80,16 @@ public final class ValidateSystemOutput {
      * @throws IOException
      */
     public List<Throwable> validateAndDump(File systemOutputStoreFile, int maxErrors,
-                                           Map<Symbol,File> docIDMap) throws IOException
+                                           Map<Symbol,File> docIDMap, AssessmentSpecFormats.Format fileFormat)
+            throws IOException
     {
-        return validate(systemOutputStoreFile, maxErrors, docIDMap, true);
+        return validate(systemOutputStoreFile, maxErrors, docIDMap, fileFormat, true);
     }
 
 
     private List<Throwable> validate(File systemOutputStoreFile, int maxErrors,
-                                     Map<Symbol, File> docIDMap, boolean dump) throws IOException
+                                     Map<Symbol, File> docIDMap, AssessmentSpecFormats.Format fileFormat,
+                                     boolean dump) throws IOException
     {
         final List<Throwable> errors = Lists.newArrayList();
 
@@ -98,7 +101,7 @@ public final class ValidateSystemOutput {
         SystemOutputStore outputStore = null;
         ImmutableSet<Symbol> docIDs = null;
         try {
-            outputStore = AssessmentSpecFormats.openSystemOutputStore(systemOutputStoreFile);
+            outputStore = AssessmentSpecFormats.openSystemOutputStore(systemOutputStoreFile, fileFormat);
             docIDs = outputStore.docIDs();
         } catch (Exception e) {
             errors.add(e);
@@ -278,6 +281,7 @@ public final class ValidateSystemOutput {
             final ValidateSystemOutput validator = create(typeAndRoleValidator);
 
             final File systemOutputStoreFile = params.getExistingFileOrDirectory("systemOutputStore");
+            final AssessmentSpecFormats.Format fileFormat = params.getEnum("fileFormat", AssessmentSpecFormats.Format.class);
 
             final File docIDMappingFile = params.getExistingFile("docIDMap");
             log.info("Using map from document IDs to original text: {}", docIDMappingFile);
@@ -285,9 +289,9 @@ public final class ValidateSystemOutput {
 
             final List<Throwable> errors;
             if (params.getBoolean("dump")) {
-                errors = validator.validateAndDump(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap);
+                errors = validator.validateAndDump(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap, fileFormat);
             } else {
-                errors = validator.validateOnly(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap);
+                errors = validator.validateOnly(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap, fileFormat);
             }
             if (!errors.isEmpty()) {
                 throw errors.get(0);
