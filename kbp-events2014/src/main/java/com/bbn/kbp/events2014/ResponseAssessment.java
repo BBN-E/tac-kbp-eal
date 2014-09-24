@@ -71,10 +71,8 @@ public final class ResponseAssessment {
 	}
 
 
-	final ImmutableSet<FieldAssessment> CWL = ImmutableSet.of(FieldAssessment.CORRECT,
+	private static final ImmutableSet<FieldAssessment> CWL = ImmutableSet.of(FieldAssessment.CORRECT,
 		FieldAssessment.INCORRECT, FieldAssessment.INEXACT);
-	final ImmutableSet<FieldAssessment> CW = ImmutableSet.of(FieldAssessment.CORRECT,
-		FieldAssessment.INCORRECT);
 
 	private ResponseAssessment(final FieldAssessment justificationSupportsEventType,
                                final FieldAssessment justificationSupportsRole,
