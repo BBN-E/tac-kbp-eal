@@ -70,7 +70,7 @@ public final class FMeasureTableRenderer {
         return sb.toString();
     }
 
-    private void FMeasureTableRenderer() { }
+    private FMeasureTableRenderer() { }
 
     public FMeasureTableRenderer sortByErrorCountDescending() {
         this.ordering = BY_ERROR_COUNT_DESCENDING;

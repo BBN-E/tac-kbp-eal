@@ -27,7 +27,7 @@ public final class ResponseAssessment {
 		}
 
 		public static Optional<MentionType> parseOptional(final String s) {
-			if (s.equals("NIL")) {
+			if ("NIL".equals(s)) {
 				return Optional.absent();
 			} else {
 				return Optional.of(MentionType.valueOf(s));

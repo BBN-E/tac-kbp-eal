@@ -76,7 +76,7 @@ public final class KBPAssessmentDiff {
             log.info("Using fancy diff logger");
             final File plainDocMapFile = params.getExistingFile("plainDocidMap");
             final ImmutableMap<Symbol, File> plainDocidMap = FileUtils.loadSymbolToFileMap(plainDocMapFile);
-            diffLogger = new FancierDiffLogger(new PlainDocCache(plainDocidMap));
+            diffLogger = new FancierDiffLogger(PlainDocCache.createFromDocIDToFileMap(plainDocidMap));
         } else {
             log.info("Using basic diff loggier. For fancier diffs, specify plainDocidMap param");
             diffLogger = new BasicDiffLogger();

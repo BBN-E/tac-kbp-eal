@@ -12,11 +12,11 @@ public enum KBPRealis {
 	public static final String NIL = "NIL";
 
     public static KBPRealis parse(String s) {
-        if (s.toLowerCase().equals("actual")) {
+        if ("actual".equalsIgnoreCase(s)) {
             return Actual;
-        } else if (s.toLowerCase().equals("generic")) {
+        } else if ("generic".equalsIgnoreCase(s)) {
             return Generic;
-        } else if (s.toLowerCase().equals("other")) {
+        } else if ("other".equalsIgnoreCase(s)) {
             return Other;
         }
 

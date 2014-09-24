@@ -203,7 +203,8 @@ public final class ValidateSystemOutput {
     private static void dumpResponses(Map<Symbol, File> docIDMap, SystemOutput docOutput) throws IOException {
         final String originalText = getOriginalText(docOutput.docId(), docIDMap);
         final StringBuilder msg = new StringBuilder();
-        msg.append("\n"); // more readable if we skip a line after the log stamp
+        // more readable if we skip a line after the log stamp
+        msg.append("\n");
         for (final Response response : docOutput.responses()) {
             msg.append(renderResponse(response, originalText));
         }

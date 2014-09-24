@@ -1,23 +1,22 @@
 package com.bbn.kbp.events2014.scorer.observers;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Set;
-
+import com.bbn.bue.common.diff.ProvenancedConfusionMatrix;
+import com.bbn.bue.common.diff.SummaryConfusionMatrix;
+import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AssessedResponse;
+import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.scorer.AnswerKeyAnswerSource;
+import com.bbn.kbp.events2014.scorer.SystemOutputAnswerSource;
 import com.google.common.base.Charsets;
+import com.google.common.base.Function;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.bbn.bue.common.diff.ProvenancedConfusionMatrix;
-import com.bbn.bue.common.diff.SummaryConfusionMatrix;
-import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.scorer.AnswerKeyAnswerSource;
-import com.bbn.kbp.events2014.scorer.SystemOutputAnswerSource;
-import com.google.common.base.Function;
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -33,11 +32,6 @@ public final class BuildConfusionMatrix<Answerable> extends KBPScoringObserver<A
 	private final Function<Collection<AssessedResponse>, Symbol> rightAnswerFunction;
 	private final Function<Collection<Response>, Symbol> leftAnswerFunction;
 	private final SummaryConfusionMatrix.Builder corpusConfusionMatrixBuilder = SummaryConfusionMatrix.builder();
-
-	@Override
-	public void endCorpus() {
-
-	}
 
     @Override
     public void writeCorpusOutput(File directory) throws IOException {
