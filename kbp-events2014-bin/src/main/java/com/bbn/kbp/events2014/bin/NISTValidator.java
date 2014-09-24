@@ -32,8 +32,8 @@ import static com.google.common.base.Preconditions.checkArgument;
  */
 public final class NISTValidator {
     private static final Logger log = LoggerFactory.getLogger(NISTValidator.class);
-    private final static int ERROR_CODE = 255;
-    private final static int MAX_ERRORS = 10;
+    private static final int ERROR_CODE = 255;
+    private static final int MAX_ERRORS = 10;
 
     public enum Verbosity { VERBOSE, COMPACT}
 
