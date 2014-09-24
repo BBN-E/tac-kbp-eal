@@ -8,7 +8,6 @@ import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 
 import java.util.Map;
@@ -25,7 +24,9 @@ public final class BreakdownFunctions {
      * Will identify genres for ACE and pilot documents. Ideally this would be refactored to read the mappings from
      * a file.
      */
-    public static final Function<TypeRoleFillerRealis,Symbol> Genre = new Function<TypeRoleFillerRealis, Symbol>() {
+    public static final Function<TypeRoleFillerRealis,Symbol> Genre = new GenreFunction();
+
+    private static class GenreFunction implements Function<TypeRoleFillerRealis, Symbol> {
         @Override
         public Symbol apply(TypeRoleFillerRealis input) {
             final String docid = input.docID().toString();
@@ -37,15 +38,15 @@ public final class BreakdownFunctions {
             return UNKNOWN;
         }
 
-        private final Symbol UNKNOWN = Symbol.from("Unknown");
-        private final Symbol NW = Symbol.from("Newswire");
-        private final Symbol DF = Symbol.from("Forum");
-        private final Symbol BLOG = Symbol.from("Blog");
-        private final Symbol SPEECH = Symbol.from("Speech");
-        private final Symbol BC = Symbol.from("Broadcast conversation");
-        private final Symbol BN = Symbol.from("Broadast News");
+        private static final Symbol UNKNOWN = Symbol.from("Unknown");
+        private static final Symbol NW = Symbol.from("Newswire");
+        private static final Symbol DF = Symbol.from("Forum");
+        private static final Symbol BLOG = Symbol.from("Blog");
+        private static final Symbol SPEECH = Symbol.from("Speech");
+        private static final Symbol BC = Symbol.from("Broadcast conversation");
+        private static final Symbol BN = Symbol.from("Broadast News");
 
-        private final Map<String, Symbol> prefixToGenre = MultimapUtils.copyAsMap(
+        private static final Map<String, Symbol> prefixToGenre = MultimapUtils.copyAsMap(
                 ImmutableMultimap.<Symbol, String>builder()
                         .putAll(BC, "CNN_CF", "CNN_IP")
                         .putAll(BN, "CNN_", "CNNHL")
