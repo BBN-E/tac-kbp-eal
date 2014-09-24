@@ -16,6 +16,10 @@ import java.io.IOException;
 public final class KeepAnnotatedTuples {
     private static final Logger log = LoggerFactory.getLogger(KeepAnnotatedTuples.class);
 
+    private KeepAnnotatedTuples() {
+        throw new UnsupportedOperationException();
+    }
+
     public static void main(final String[] argv) {
         try {
             trueMain(argv);
