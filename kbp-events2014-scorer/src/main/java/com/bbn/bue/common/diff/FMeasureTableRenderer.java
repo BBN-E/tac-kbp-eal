@@ -25,15 +25,15 @@ public final class FMeasureTableRenderer {
         return this;
     }
 
+    private static final int TP_FIELD_LENGTH = 8;
+    private static final int FP_FIELD_LENGTH = 8;
+    private static final int FN_FIELD_LENGTH = 8;
+    private static final int P_FIELD_LENGTH = 8;
+    private static final int R_FIELD_LENGTH = 8;
+    private static final int F1_FIELD_LENGTH = 8;
+
     public String render(Map<String, FMeasureCounts> fMeasureCounts) {
         final StringBuilder sb = new StringBuilder();
-
-        final int TP_FIELD_LENGTH = 8;
-        final int FP_FIELD_LENGTH = 8;
-        final int FN_FIELD_LENGTH = 8;
-        final int P_FIELD_LENGTH = 8;
-        final int R_FIELD_LENGTH = 8;
-        final int F1_FIELD_LENGTH = 8;
 
         final String titleFormatString = String.format(
                 "%%-%ds %%%ds %%%ds %%%ds %%%ds %%%ds %%%ds\n",
