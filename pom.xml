@@ -34,6 +34,10 @@
 
         <junit.version>4.11</junit.version>
         <guava.version>16.0</guava.version>
+
+        <!-- Sonar server properties. These only work BBN-internally -->
+      <sonar.host.url>http://e-apache-2.bbn.com:9000</sonar.host.url>
+      <sonar.jdbc.url>jdbc:mysql://mysql.d4m.bbn.com:3306/sonar?useUnicode=true&amp;characterEncoding=utf8</sonar.jdbc.url>
     </properties>
 
     <build>
