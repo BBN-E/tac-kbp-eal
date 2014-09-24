@@ -20,7 +20,7 @@ import java.util.Set;
 
 public final class PoolSystemOutput {
     private static Logger log = LoggerFactory.getLogger(PoolSystemOutput.class);
-    private enum AddMode { CREATE, APPEND };
+    private enum AddMode { CREATE, APPEND }
 
     private static void trueMain(String[] argv) throws IOException {
         if (argv.length != 1) {

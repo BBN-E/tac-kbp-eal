@@ -35,7 +35,7 @@ public final class NISTValidator {
     private final static int ERROR_CODE = 255;
     private final static int MAX_ERRORS = 10;
 
-    public enum Verbosity { VERBOSE, COMPACT};
+    public enum Verbosity { VERBOSE, COMPACT}
 
     private static void usage() {
         log.error("usage: NISTValidator rolesFile docIdToOriginalTextMap [VERBOSE|COMPACT] submissionFile");

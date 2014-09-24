@@ -87,7 +87,7 @@ public final class AnswerKey {
         final Iterable<Response> newTrulyUnannotated =
             Iterables.filter(newUnannotated, not(in(currentlyAnnotated)));
         final CorefAnnotation.Builder corefBuilder = corefAnnotation.strictCopyBuilder();
-        corefBuilder.addUnannotatedCASes(transform(newTrulyUnannotated, Response.CASFunction()));;
+        corefBuilder.addUnannotatedCASes(transform(newTrulyUnannotated, Response.CASFunction()));
 
 		return AnswerKey.from(docId(), annotatedResponses(),
 			concat(unannotatedResponses(), newTrulyUnannotated), corefBuilder.build());

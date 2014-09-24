@@ -85,6 +85,9 @@ public final class KBPScorerBin {
         return corpusObservers;
     }
 
+    public static final String SYSTEM_OUTPUT_PARAM = "systemOutput";
+    public static final String SYSTEM_OUTPUTS_DIR_PARAM = "systemOutputsDir";
+
     public static void main(final String[] argv) throws IOException {
         if (argv.length != 1) {
             usage();
@@ -96,9 +99,9 @@ public final class KBPScorerBin {
         final AnnotationStore goldAnswerStore = AssessmentSpecFormats.openAnnotationStore(params
                 .getExistingDirectory("answerKey"), params.getEnum("goldFileFormat", AssessmentSpecFormats.Format.class));
 
-        checkArgument(params.isPresent("systemOutput") != params.isPresent("systemOutputsDir"),
+        checkArgument(params.isPresent(SYSTEM_OUTPUT_PARAM) != params.isPresent(SYSTEM_OUTPUTS_DIR_PARAM),
                 "Exactly one of systemOutput and systemOutputsDir must be specified");
-        if (params.isPresent("systemOutput")) {
+        if (params.isPresent(SYSTEM_OUTPUT_PARAM)) {
             scoreSingleSystemOutputStore(goldAnswerStore, scorer, params);
         } else if (params.isPresent("systemOutputsDir")) {
             scoreMultipleSystemOutputStores(goldAnswerStore, scorer, params);
@@ -131,7 +134,7 @@ public final class KBPScorerBin {
     }
 
     private static void scoreSingleSystemOutputStore(AnnotationStore goldAnswerStore, KBPScorer scorer, Parameters params) throws IOException {
-        final File systemOutputDir = params.getExistingDirectory("systemOutput");
+        final File systemOutputDir = params.getExistingDirectory(SYSTEM_OUTPUT_PARAM);
         final AssessmentSpecFormats.Format systemFormat = params.getEnum("systemFormat", AssessmentSpecFormats.Format.class);
         log.info("Scoring single system output {}", systemOutputDir);
         final SystemOutputStore systemOutputStore = AssessmentSpecFormats.openSystemOutputStore(systemOutputDir, systemFormat);

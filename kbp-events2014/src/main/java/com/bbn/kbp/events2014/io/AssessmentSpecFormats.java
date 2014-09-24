@@ -77,7 +77,7 @@ public final class AssessmentSpecFormats {
         protected abstract String identifierField(Response response);
 
         protected abstract Ordering<Response> responseOrdering();
-    };
+    }
 
     /**
      * Creates a directory-based assessment store in the specified directory. Will throw an

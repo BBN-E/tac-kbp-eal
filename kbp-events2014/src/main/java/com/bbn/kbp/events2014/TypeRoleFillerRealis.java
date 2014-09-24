@@ -124,14 +124,14 @@ public final class TypeRoleFillerRealis implements Comparable<TypeRoleFillerReal
 			.result();
 	}
 
-    public static Function<TypeRoleFillerRealis,Symbol> Type = new Function<TypeRoleFillerRealis, Symbol>() {
+    public static final Function<TypeRoleFillerRealis,Symbol> Type = new Function<TypeRoleFillerRealis, Symbol>() {
         @Override
         public Symbol apply(TypeRoleFillerRealis input) {
             return input.type();
         }
     };
 
-    public static Function<TypeRoleFillerRealis, Symbol> DocID = new Function<TypeRoleFillerRealis, Symbol>() {
+    public static final Function<TypeRoleFillerRealis, Symbol> DocID = new Function<TypeRoleFillerRealis, Symbol>() {
         @Override
         public Symbol apply(TypeRoleFillerRealis input) {
             return input.docID();

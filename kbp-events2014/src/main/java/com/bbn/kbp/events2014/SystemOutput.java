@@ -135,14 +135,14 @@ public final class SystemOutput {
 			}
 		};
 
-    public static Function<SystemOutput, Symbol> DocID = new Function<SystemOutput, Symbol>() {
+    public static final Function<SystemOutput, Symbol> DocID = new Function<SystemOutput, Symbol>() {
         @Override
         public Symbol apply(SystemOutput input) {
             return input.docId();
         }
     };
 
-    public static Function<SystemOutput, ImmutableSet<Response>> Responses = new Function<SystemOutput, ImmutableSet<Response>>() {
+    public static final Function<SystemOutput, ImmutableSet<Response>> Responses = new Function<SystemOutput, ImmutableSet<Response>>() {
         @Override
         public ImmutableSet<Response> apply(SystemOutput input) {
             return input.responses();

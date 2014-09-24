@@ -1,10 +1,5 @@
 package com.bbn.kbp.events2014.bin;
 
-import java.io.File;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ResponseLinking;
@@ -16,6 +11,10 @@ import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.linking.LinkingStrategy;
 import com.bbn.kbp.events2014.linking.SameEventTypeLinker;
 import com.google.common.collect.ImmutableSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
 
 public final class ApplyLinkingStrategy {
 	 private static final Logger log = LoggerFactory.getLogger(ApplyLinkingStrategy.class);
@@ -63,7 +62,7 @@ public final class ApplyLinkingStrategy {
 			 			 
 	            
 		 } catch (Throwable t) {
-			 t.printStackTrace();
+             log.error("Exception: {}", t);
 			 System.exit(1);
 		 }
 	 }
