@@ -20,6 +20,10 @@ public final class ImportSystemOutputToAnnotationStore {
     private static final Logger log =
             LoggerFactory.getLogger(ImportSystemOutputToAnnotationStore.class);
 
+    private ImportSystemOutputToAnnotationStore() {
+        throw new UnsupportedOperationException();
+    }
+
     public static void main(final String[] argv) {
         try {
             trueMain(argv);
