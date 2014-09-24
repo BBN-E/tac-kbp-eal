@@ -1,12 +1,11 @@
 package com.bbn.kbp.events2014;
 
-import com.bbn.bue.common.symbols.Symbol;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableSet;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import java.util.Iterator;
 
-public final class TypeRoleFillerRealisSet {
+public final class TypeRoleFillerRealisSet implements Iterable<TypeRoleFillerRealis> {
     private final ImmutableSet<TypeRoleFillerRealis> coreffedArgs;
 
     private TypeRoleFillerRealisSet(Iterable<TypeRoleFillerRealis> coreffedArgs) {
@@ -41,5 +40,10 @@ public final class TypeRoleFillerRealisSet {
         }
         final TypeRoleFillerRealisSet other = (TypeRoleFillerRealisSet) obj;
         return Objects.equal(this.coreffedArgs, other.coreffedArgs);
+    }
+
+    @Override
+    public Iterator<TypeRoleFillerRealis> iterator() {
+        return coreffedArgs.iterator();
     }
 }
