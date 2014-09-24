@@ -51,11 +51,6 @@ public final class CorefAnnotation {
                 "Same CAS may not be both annotated and unannotated");
     }
 
-    /*public static CorefAnnotation create(final Symbol docId, final Multimap<Integer, KBPString> idToCASes,
-                                         Set<KBPString> unannotated)
-    {
-        return new CorefAnnotation(docId, idToCASes, reverse(idToCASes), unannotated);
-    }*/
 
     public static CorefAnnotation create(final Symbol docId, final Map<KBPString, Integer> CASesToIds,
                                          Set<KBPString> unannotated)
@@ -86,20 +81,6 @@ public final class CorefAnnotation {
 
     public boolean isComplete() {
         return unannotated.isEmpty();
-    }
-
-    /**
-     * Reverse a multimap. Will throw {@link java.lang.IllegalArgumentException} if
-     * any value in the multimap appears for multiple keys.
-     */
-    private static <K,V> ImmutableMap<V,K> reverse(Multimap<K,V> multimap) {
-        final ImmutableMap.Builder<V,K> ret = ImmutableMap.builder();
-
-        for (final Map.Entry<K,V> entry : multimap.entries()) {
-            ret.put(entry.getValue(), entry.getKey());
-        }
-
-        return ret.build();
     }
 
     @Override
