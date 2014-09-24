@@ -50,7 +50,6 @@ public final class SecondPhaseAssessmentPooler {
                 outputAnnotationStorePath, fileFormat);
 
         // gather all our input, which includes anything currently in the output store
-        final Set<Symbol> allDocIds = Sets.newHashSet();
         final Map<String, SystemOutputStore> storesToCombine = Maps.newHashMap();
 
         log.info("Output annotation store currently contains responses for {} documents. These will not be altered.",
@@ -102,9 +101,6 @@ public final class SecondPhaseAssessmentPooler {
     private static AnswerKey responsesNeededToScore(Iterable<SystemOutput> systemOutputs, AnswerKey answerKey) {
         final KeepBestJustificationOnly keepBestJustificationOnly =
                 KeepBestJustificationOnly.createForCorefAnnotation(answerKey.corefAnnotation());
-        final KeepBestJustificationOnly coreflessKeepBestJustificationOnly =
-                KeepBestJustificationOnly.create();
-
 
         final ImmutableSet<SystemOutput> locallyBestUsingCoref = FluentIterable.from(systemOutputs)
                 .transform(keepBestJustificationOnly).toSet();
