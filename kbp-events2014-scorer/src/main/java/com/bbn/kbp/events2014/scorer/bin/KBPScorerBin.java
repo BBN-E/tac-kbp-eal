@@ -122,9 +122,6 @@ public final class KBPScorerBin {
             if (subDir.isDirectory()) {
                 final SystemOutputStore systemOutputStore = AssessmentSpecFormats.openSystemOutputStore(subDir, fileFormat);
                 final File outputDir = new File(scoringOutputRoot, subDir.getName());
-                // we need new observers for each system output to avoid keeping stats from
-                // one system to another
-                final List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers = getCorpusObservers(params);
 
                 outputDir.mkdirs();
                 scorer.run(systemOutputStore, goldAnswerStore, documentsToScore,
@@ -144,8 +141,6 @@ public final class KBPScorerBin {
         } else {
             documentsToScore = union(systemOutputStore.docIDs(), goldAnswerStore.docIDs());
         }
-
-        final List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers = getCorpusObservers(params);
 
         scorer.run(systemOutputStore, goldAnswerStore, documentsToScore,
                 getScoringConfiguration(params),
