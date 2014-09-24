@@ -18,7 +18,11 @@ import java.io.File;
 
 public final class ApplyLinkingStrategy {
 	 private static final Logger log = LoggerFactory.getLogger(ApplyLinkingStrategy.class);
-	 
+
+    private ApplyLinkingStrategy() {
+        throw new UnsupportedOperationException();
+    }
+
 	 private static void usage() {
 		 log.error("Applies a linking strategy to produce response sets from a system's responses.\n" +
 				 "usage: applyLinkingStrategy parameterFile\n" +
