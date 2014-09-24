@@ -159,12 +159,4 @@ public final class FancierDiffLogger implements DiffLogger {
         return justificationsString;
     }
     
-    public static class Builder {
-        public FancierDiffLogger build() {
-            return new FancierDiffLogger(plainDocCache);
-        }
-    }
-    
-    
-
 }
