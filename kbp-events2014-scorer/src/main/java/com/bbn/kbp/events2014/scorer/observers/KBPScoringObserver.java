@@ -210,8 +210,4 @@ public abstract class KBPScoringObserver<Answerable> {
 				== answerKeyAnswerSource.answerKey().docId());
 		}
 	}
-
-    private static String writeHTML(String title, String html) {
-        return "<html><head>" + title + "</head><body>" + html + "</body></html>";
-    }
 }
