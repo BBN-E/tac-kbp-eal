@@ -159,76 +159,7 @@ public final class FancierDiffLogger implements DiffLogger {
         return justificationsString;
     }
     
-    private String unifiedJustifications(final String originalDocText, final Response response) {
-        final List<CharOffsetSpan> offsetSpans = justificationSpans(response);
-        Collections.sort(offsetSpans);
-        int startInclusive = offsetSpans.get(0).startInclusive();
-        int endInclusive = offsetSpans.get(offsetSpans.size()-1).endInclusive();
-        startInclusive = (startInclusive - 100) >= 0 ? startInclusive - 100 : 0;
-        endInclusive = (endInclusive + 100) < originalDocText.length()? endInclusive+100 : endInclusive;
-        String context = originalDocText.substring(startInclusive, endInclusive);
-        return "...." + context + " ....";
-    }
-    
-    /*
-    public String unifiedJustifications(final Response response) {
-        final List<String> plainDoc;
-        try {
-            plainDoc = cache.getPlainDoc(response.docID());
-        } catch (final IOException ioe) {
-            return String.format("Cannot load text file for doc ID %s",
-                    response.docID());
-        }
-        
-        response.predicateJustifications().
-        
-        
-
-        final List<OffsetSpan> offsetSpans = justificationSpans(response);
-
-        final Set<SentenceTheory> sentencesToRender = Sets.newHashSet();
-        for (final OffsetSpan span : offsetSpans) {
-            sentencesToRender.addAll(OffsetRange.sentenceTheoriesContaining(dt, span.range()));
-        }
-
-        final List<SentenceTheory> adjacentSentences = Lists.newArrayList();
-        for (final SentenceTheory st : sentencesToRender) {
-            if (st.sentenceNumber() > 0) {
-                adjacentSentences.add(dt.sentenceTheory(st.sentenceNumber()-1));
-            }
-            if (st.sentenceNumber() +1 != dt.numSentences()) {
-                adjacentSentences.add(dt.sentenceTheory(st.sentenceNumber()+1));
-            }
-        }
-        sentencesToRender.addAll(adjacentSentences);
-        final List<SentenceTheory> toRenderList= Lists.newArrayList(sentencesToRender);
-
-        Collections.sort(toRenderList, SentenceTheory.BySentenceNumber);
-
-        final StringBuilder sb = new StringBuilder();
-        sb.append("<div class=\"kbp-unified-justs-snippet\">");
-        final XMLStyleAnnotationFormatter formatter = XMLStyleAnnotationFormatter.create();
-        int lastIdx = -1;
-        for (final SentenceTheory st : toRenderList) {
-            if (!st.span().empty()) {
-                if (lastIdx +1 != st.sentenceNumber()) {
-                    sb.append("... ");
-                }
-                sb.append("<span class=\"sentence\">");
-                sb.append(formatter.format(dt, st.span().offsetRange(), offsetSpans));
-                sb.append("</span>");
-            }
-            lastIdx = st.sentenceNumber();
-        }
-        sb.append("</div>");
-
-        return sb.toString();
-    }
-    */
-    
     public static class Builder {
-        private PlainDocCache plainDocCache;
-        
         public FancierDiffLogger build() {
             return new FancierDiffLogger(plainDocCache);
         }
