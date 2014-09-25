@@ -128,6 +128,14 @@
 			</jvmSettings>	
 		</program>
 
+		<program>
+			<mainClass>com.bbn.kbp.events2014.bin.ConvertToAndWriteEquivalenceClass</mainClass>
+			<name>convertToAndWriteEquivalenceClass</name>
+			<jvmSettings>
+				<maxMemorySize>1g</maxMemorySize>
+			</jvmSettings>
+		</program>
+
             </programs>
       </configuration>
   </plugin>

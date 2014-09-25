@@ -9,15 +9,26 @@ import org.slf4j.LoggerFactory;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.AssessedResponse;
+import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.EventArgumentLinking;
 import com.bbn.kbp.events2014.KBPRealis;
+import com.bbn.kbp.events2014.KBPString;
+import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
+import com.bbn.kbp.events2014.ResponseSet;
+import com.bbn.kbp.events2014.TypeRoleFillerRealis;
+import com.bbn.kbp.events2014.TypeRoleFillerRealisSet;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
+import com.bbn.kbp.events2014.io.EventArgumentEquivalenceSpecFormats;
+import com.bbn.kbp.events2014.io.EventArgumentEquivalenceStore;
 import com.bbn.kbp.events2014.io.LinkingSpecFormats;
 import com.bbn.kbp.events2014.io.LinkingStore;
 import com.bbn.kbp.events2014.linking.ExactMatchEventArgumentLinkingAligner;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 
 public final class ConvertToAndWriteEquivalenceClass {
@@ -28,9 +39,9 @@ public final class ConvertToAndWriteEquivalenceClass {
 				 "usage: convertToAndWriteEquivalenceClass parameterFile\n" +
 				 "Parameter files are lines of key : value pairs\n" +
 				 "Parameters:\n" +
-				 "\targumentKeyStore: directory containing assessed EA tuples\n" +
-				 "\tlinkingInputStore: directory containing linked Response unique ids\n" +
-				 "\tlinkingOutputEqStore: directory to write out the linked Equivalence ids\n");
+				 "\targumentAnnotationStore: directory containing assessed EA tuples\n" +
+				 "\tlinkingStore: directory containing linked Response IDs\n" +
+				 "\tequivalenceStore: directory to write out the linked Equivalence IDs\n");
 		 System.exit(1);
 	 }
 	
@@ -46,44 +57,83 @@ public final class ConvertToAndWriteEquivalenceClass {
 			 final AssessmentSpecFormats.Format fileFormat = AssessmentSpecFormats.Format.KBP2014;
 			 
 			 // produced by annotators after they have assessed EA tuples
-			 final File argumentKeyStoreDir = params.getExistingDirectory("argumentKeyStore");
-			 final AnnotationStore argumentKeyStore = AssessmentSpecFormats.openAnnotationStore(argumentKeyStoreDir, fileFormat);
+			 final File argumentAnnotationStoreDir = params.getExistingDirectory("argumentAnnotationStore");
+			 final AnnotationStore argumentAnnotationStore = AssessmentSpecFormats.openAnnotationStore(argumentAnnotationStoreDir, fileFormat);
 			 // DirectoryAnnotationStore implements AnnotationStore
 			 // fileFormat is only used in argumentKeyStore.write method
 			 
-			 // produced by annotators after they have grouped EA tuples into event frames
-			 final File linkingKeyStoreDir = params.getExistingDirectory("linkingInputStore");
-			 final LinkingStore linkingKeyStore = LinkingSpecFormats.openOrCreateLinkingStore(linkingKeyStoreDir);
+			 // produced by annotators after they have grouped EA tuples into event frames, or from system output
+			 final File linkingStoreDir = params.getExistingDirectory("linkingStore");
+			 final LinkingStore linkingStore = LinkingSpecFormats.openOrCreateLinkingStore(linkingStoreDir);
 			 // DirectoryLinkingStore implements LinkingStore
 			 
-			 final Set<Symbol> argumentKeyStoreDocIDs = argumentKeyStore.docIDs();
-			 final ImmutableSet<Symbol> linkingKeyStoreDocIDs = linkingKeyStore.docIDs();
+			 //final Set<Symbol> argumentKeyStoreDocIDs = argumentAnnotationStore.docIDs();
+			 final ImmutableSet<Symbol> linkingStoreDocIDs = linkingStore.docIDs();
 			 
-			 final ExactMatchEventArgumentLinkingAligner aligner = 
-					 ExactMatchEventArgumentLinkingAligner.createForCorrectWithRealises(ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other));
+			 // if linkingStoreIsGold=true, then it is produced as a result of assessment
+			 // if false, then it is produced by system
+			 final boolean linkingStoreIsGold = params.getBoolean("linkingStoreIsGold");
+			 final ExactMatchEventArgumentLinkingAligner aligner = linkingStoreIsGold ?
+					ExactMatchEventArgumentLinkingAligner.createForCorrectWithRealises(ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other)) :
+					ExactMatchEventArgumentLinkingAligner.createWithRealises(ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other));
+					 
+			 //final ExactMatchEventArgumentLinkingAligner aligner = 
+			 //		 ExactMatchEventArgumentLinkingAligner.createWithRealises(ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other));
 			 
-			 final File linkingOutputEqStoreDir = params.getExistingDirectory("linkingOutputEqStore");	// destination directory to write equivalence response ids
-			 final LinkingStore linkingOutputEqStore = LinkingSpecFormats.openOrCreateLinkingStore(linkingOutputEqStoreDir);
+			 final File equivalenceStoreDir = params.getExistingDirectory("equivalenceStore");	// destination directory to write equivalence response ids
+			 final EventArgumentEquivalenceStore equivalenceStore = EventArgumentEquivalenceSpecFormats.openOrCreateEquivalenceStore(equivalenceStoreDir);
 			 
-			 for(final Symbol docID : linkingKeyStoreDocIDs) {
-				 final AnswerKey answerKey = argumentKeyStore.read(docID);
+			 for(final Symbol docID : linkingStoreDocIDs) {
+				 final AnswerKey answerKey = argumentAnnotationStore.read(docID);
 				 // AnswerKey: Set<AssessedResponse> annotatedArgs, Set<Response> unannotatedResponses, CorefAnnotation corefAnnotation
 				 // CorefAnnotation is CorefAnnotation.Builder with suppressExceptionOnDupes=false
+				 //
+				 // Some EA tuples might not be assessed. But all CAS should be assessed for coreference, i.e. within the assessment portion of a EA tuple, 
+				 // its 5th column should have an integer representing its coreferent id. Or else, there should be some other tuple having the same CAS which is assessed.
+				 // Else, if a particular CAS is not assessed in any tuple, it will not be found in CASesToIDs and it will be found in 'unannotated' in CorefAnnotation
+				 // 
+				 // Reads all EA tuples into answerKey: Set<AssessedResponse> annotatedArgs; ImmutableSet<Response> unannotatedResponses; CorefAnnotation corefAnnotation;
+				 // CorefAnnotation: ImmutableMultimap<Integer, KBPString> idToCASes; ImmutableMap<KBPString, Integer> CASesToIDs; ImmutableSet<KBPString> unannotated;
 				 
-				 final Optional<ResponseLinking> linkingKey = linkingKeyStore.read(answerKey);
+				 final Optional<ResponseLinking> responseLinking = linkingStore.read(answerKey);
 				 // ResponseLinking: Symbol docId, Set<ResponseSet> responseSets, Set<Response> incompleteResponses (if there is a INCOMPELTE line)
-				 // Each file in the linkingKeyStore are lines, where each line is tab-separated unique-response-id
+				 // Each file in the linkingStore are lines, where each line is tab-separated unique-response-id
 				 // The answerKey is provided simply to map from the unique-response-id to a Response object
-				 // Hence, the responses in linkingKeyStore can be a subset of those in the answerKey (argumentKeyStore)
+				 // Hence, the responses in linkingStore should be a subset of those in the answerKey (argumentAnnotationStore)
+				 System.out.println("== LINKED responses ==");
+				 for(final ResponseSet responses : responseLinking.get().responseSets()) {
+					 for(final Response response : responses) {
+						 System.out.println(response.uniqueIdentifier() + " " + response);
+					 }
+					 System.out.println("--------");
+				 }
+				 System.out.println("== INCOMPLETE / not-linked responses ==");
+				 for(final Response response : responseLinking.get().incompleteResponses()) {
+					 System.out.println(response.uniqueIdentifier() + " " + response);
+				 }
 				 
-				 final EventArgumentLinking ealKey = aligner.align(linkingKey.get(), answerKey);
-				 // this requires that the set of Response of linkingKey and answerKey be the same, else an exception will be thrown
+				 final EventArgumentLinking equivalenceLinking = aligner.align(responseLinking.get(), answerKey);
 				 
-				 final ResponseLinking responseLinking = aligner.alignToResponseLinking(ealKey, answerKey);
-				 linkingOutputEqStore.write(responseLinking);
+				 
+				 System.out.println("== LINKED Equivalence classes ==");
+				 for(final TypeRoleFillerRealisSet eqSet : equivalenceLinking.linkedAsSet()) {
+					 for(final TypeRoleFillerRealis eq : eqSet.asSet()) {
+						 System.out.println(eq);
+					 }
+					 System.out.println("--------");
+				 }
+				 System.out.println("== INCOMPLETE / not-linked Equivalence classes ==");
+				 for(final TypeRoleFillerRealis eq : equivalenceLinking.incomplete()) {
+					 System.out.println(eq);
+				 }
+				 
+				 equivalenceStore.write(equivalenceLinking);
+				 
+				 //final ResponseLinking responseLinking = aligner.alignToResponseLinking(ealKey, answerKey);
+				 
 			 }
 			 
-			 linkingOutputEqStore.close();
+			 
 			    
 		 } catch (Throwable t) {
 			 t.printStackTrace();
