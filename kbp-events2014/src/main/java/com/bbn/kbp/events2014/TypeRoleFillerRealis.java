@@ -2,9 +2,15 @@ package com.bbn.kbp.events2014;
 
 
 import com.bbn.bue.common.symbols.Symbol;
+import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Ordering;
+import com.google.common.hash.HashCode;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hasher;
+import com.google.common.hash.Hashing;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -57,6 +63,10 @@ public final class TypeRoleFillerRealis implements Comparable<TypeRoleFillerReal
 			realis);
 	}
 
+	public String uniqueIdentifier() {
+		return cachedSHA1Hash.toString();
+	}
+	
 	@Override
 	public boolean equals(final Object obj) {
 		if (this == obj) {
@@ -90,6 +100,7 @@ public final class TypeRoleFillerRealis implements Comparable<TypeRoleFillerReal
 		this.role = role;
 		this.realis = realis;
 		this.argumentCanonicalString = argumentCanonicalString;
+		this.cachedSHA1Hash = computeSHA1Hash();
 	}
 
 	private final Symbol docid;
@@ -97,7 +108,22 @@ public final class TypeRoleFillerRealis implements Comparable<TypeRoleFillerReal
 	private final Symbol role;
 	private final KBPRealis realis;
 	private final KBPString argumentCanonicalString;
+	private final HashCode cachedSHA1Hash;
 
+	private static final HashFunction SHA1_HASHER = Hashing.sha1();
+    private HashCode computeSHA1Hash() {
+        final Hasher hasher = SHA1_HASHER.newHasher()
+                .putString(docid.toString(), Charsets.UTF_8)
+                .putString(type.toString(), Charsets.UTF_8)
+                .putString(role.toString(), Charsets.UTF_8)
+                .putString(argumentCanonicalString.string(), Charsets.UTF_8)
+                .putInt(argumentCanonicalString.charOffsetSpan().startInclusive())
+                .putInt(argumentCanonicalString.charOffsetSpan().endInclusive())
+                .putInt(realis.ordinal());
+        
+        return hasher.hash();
+    }
+	
     public static Function<Response, TypeRoleFillerRealis> extractFromSystemResponse(
             final Function<KBPString, KBPString> CASNormalizer) {
         return new Function<Response, TypeRoleFillerRealis>() {
@@ -140,5 +166,14 @@ public final class TypeRoleFillerRealis implements Comparable<TypeRoleFillerReal
 
     public TypeRoleFillerRealis copyWithModifiedType(Symbol newType) {
         return TypeRoleFillerRealis.create(docID(), newType, role(), realis(), argumentCanonicalString());
+    }
+    
+    public static Function<TypeRoleFillerRealis, String> uniqueIdFunction() {
+        return new Function<TypeRoleFillerRealis, String>() {
+            @Override
+            public String apply(TypeRoleFillerRealis x) {
+                return x.uniqueIdentifier();
+            }
+        };
     }
 }
