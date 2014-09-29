@@ -118,13 +118,13 @@ public final class ConvertToAndWriteEquivalenceClass {
 				 System.out.println("== LINKED Equivalence classes ==");
 				 for(final TypeRoleFillerRealisSet eqSet : equivalenceLinking.linkedAsSet()) {
 					 for(final TypeRoleFillerRealis eq : eqSet.asSet()) {
-						 System.out.println(eq);
+						 System.out.println(eq.uniqueIdentifier() + " " + eq);
 					 }
 					 System.out.println("--------");
 				 }
 				 System.out.println("== INCOMPLETE / not-linked Equivalence classes ==");
 				 for(final TypeRoleFillerRealis eq : equivalenceLinking.incomplete()) {
-					 System.out.println(eq);
+					 System.out.println(eq.uniqueIdentifier() + " " + eq);
 				 }
 				 
 				 equivalenceStore.write(equivalenceLinking);
