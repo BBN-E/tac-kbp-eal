@@ -1,18 +1,12 @@
 package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.symbols.Symbol;
-import com.google.common.base.*;
-import com.google.common.collect.*;
+import com.google.common.base.Function;
+import com.google.common.base.Objects;
+import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableSet;
 
-import java.util.Set;
-
-import static com.google.common.base.Functions.compose;
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Predicates.and;
-import static com.google.common.base.Predicates.compose;
-import static com.google.common.base.Predicates.in;
-import static com.google.common.collect.Iterables.transform;
 
 public final class EventArgumentLinking {
     private final Symbol docID;
@@ -64,27 +58,15 @@ public final class EventArgumentLinking {
                 && Objects.equal(this.incomplete, other.incomplete);
     }
 
-    private static final Function<AssessedResponse,KBPRealis> REALIS_OF_RESPONSE =
-            compose(Response.realisFunction(), AssessedResponse.Response);
-
-
-    public static EventArgumentLinking createMinimalLinkingFrom(AnswerKey answerKey,
-                                                                Set<KBPRealis> realisesToLink)
+    public static EventArgumentLinking createMinimalLinkingFrom(AnswerKey answerKey)
     {
         final Function<Response, TypeRoleFillerRealis> ToEquivalenceClass =
                 TypeRoleFillerRealis.extractFromSystemResponse(
                         answerKey.corefAnnotation().strictCASNormalizerFunction());
 
-        final Predicate<AssessedResponse> RealisIsRelevant =
-                compose(in(realisesToLink), REALIS_OF_RESPONSE);
-        final Predicate<AssessedResponse> CorrectWithRelevantRealis = and(
-                AssessedResponse.IsCorrectUpToInexactJustifications,
-                RealisIsRelevant);
-
         return EventArgumentLinking.create(answerKey.docId(),
                 ImmutableSet.<TypeRoleFillerRealisSet>of(),
                 ImmutableSet.copyOf(FluentIterable.from(answerKey.annotatedResponses())
-                        .filter(CorrectWithRelevantRealis)
                         .transform(AssessedResponse.Response)
                         .transform(ToEquivalenceClass)));
     }
