@@ -1,12 +1,22 @@
 package com.bbn.kbp.events2014.linking;
 
+import com.bbn.bue.common.parameters.Parameters;
+import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.*;
+import com.bbn.kbp.events2014.io.AnnotationStore;
+import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
+import com.bbn.kbp.events2014.io.LinkingSpecFormats;
+import com.bbn.kbp.events2014.io.LinkingStore;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -43,6 +53,8 @@ import static com.google.common.collect.Iterables.transform;
  * </pre>
  */
 public final class NaiveResponseLinkingProjector {
+    private static final Logger log = LoggerFactory.getLogger(NaiveResponseLinkingProjector.class);
+
     private final ResponseLinking sourceLinking;
 
     private NaiveResponseLinkingProjector(ResponseLinking sourceLinking) {
@@ -97,5 +109,45 @@ public final class NaiveResponseLinkingProjector {
 
         return ExactMatchEventArgumentLinkingAligner.create().alignToResponseLinking(
                 projectedEventArgumentLinking, targetAnswerKey);
+    }
+
+    public static void main(String[] argv) {
+        // we wrap the main method in this way to
+        // ensure a non-zero return value on failure
+        try {
+            trueMain(argv);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    private static void trueMain(String[] argv) throws IOException {
+        final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
+
+        final LinkingStore sourceLinkingStore = LinkingSpecFormats.openOrCreateLinkingStore(
+                params.getExistingDirectory("sourceLinkingStore"));
+        final AnnotationStore sourceAnnotationStore = AssessmentSpecFormats.openAnnotationStore(
+                params.getExistingDirectory("sourceAnnotationStore"), AssessmentSpecFormats.Format.KBP2015);
+        final LinkingStore targetLinkingStore = LinkingSpecFormats.openOrCreateLinkingStore(
+                params.getCreatableDirectory("targetLinkingStore"));
+        final AnnotationStore targetAnnotationStore = AssessmentSpecFormats.openAnnotationStore(
+                params.getExistingDirectory("targetAnnotationStore"), AssessmentSpecFormats.Format.KBP2015);
+
+        final NaiveResponseLinkingProjector projector = NaiveResponseLinkingProjector.create();
+
+        for (final Symbol docID : sourceLinkingStore.docIDs()) {
+            final Optional<ResponseLinking> sourceResponseLinkingOpt =
+                    sourceLinkingStore.read(sourceAnnotationStore.read(docID));
+            if (sourceResponseLinkingOpt.isPresent()) {
+                log.info("Projecting {}", docID);
+                final AnswerKey targetAnswerKey = targetAnnotationStore.read(docID);
+                final ResponseLinking targetResponseLinking = projector.from(sourceResponseLinkingOpt.get())
+                        .projectTo(targetAnswerKey);
+                targetLinkingStore.write(targetResponseLinking);
+            } else {
+                throw new RuntimeException("Can't happen");
+            }
+        }
     }
 }

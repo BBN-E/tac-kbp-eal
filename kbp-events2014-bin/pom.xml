@@ -143,6 +143,14 @@
 			</jvmSettings>
 		</program>
 
+                <program>
+                    <mainClass>com.bbn.kbp.events2014.linking.NaiveResponseLinkingProjector</mainClass>
+                    <name>naiveLinkingProject</name>
+                    <jvmSettings>
+                        <maxMemorySize>1g</maxMemorySize>
+                    </jvmSettings>
+                </program>
+
             </programs>
       </configuration>
   </plugin>
