@@ -527,10 +527,9 @@ public final class AssessmentSpecFormats {
 	}
 
 	private static String cleanString(String s) {
-		s = s.replace('\t', ' ');
-		s = s.replace("\r\n", " ");
-		s = s.replace('\n', ' ');
-		return s;
+		return s.replace('\t', ' ')
+		    .replace("\r\n", " ")
+            .replace('\n', ' ');
 	}
 
 	public static Response parseArgumentFields(final List<String> parts) {
