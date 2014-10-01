@@ -1,29 +1,17 @@
 package com.bbn.kbp.events2014.bin;
 
-import java.io.File;
-
+import com.bbn.bue.common.parameters.Parameters;
+import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events2014.*;
+import com.bbn.kbp.events2014.io.*;
+import com.bbn.kbp.events2014.linking.ExactMatchEventArgumentLinkingAligner;
 import com.bbn.kbp.events2014.linking.LinkingUtils;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.bbn.bue.common.parameters.Parameters;
-import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.AnswerKey;
-import com.bbn.kbp.events2014.EventArgumentLinking;
-import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.ResponseLinking;
-import com.bbn.kbp.events2014.ResponseSet;
-import com.bbn.kbp.events2014.TypeRoleFillerRealis;
-import com.bbn.kbp.events2014.TypeRoleFillerRealisSet;
-import com.bbn.kbp.events2014.io.AnnotationStore;
-import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
-import com.bbn.kbp.events2014.io.EventArgumentEquivalenceSpecFormats;
-import com.bbn.kbp.events2014.io.EventArgumentEquivalenceStore;
-import com.bbn.kbp.events2014.io.LinkingSpecFormats;
-import com.bbn.kbp.events2014.io.LinkingStore;
-import com.bbn.kbp.events2014.linking.ExactMatchEventArgumentLinkingAligner;
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableSet;
+import java.io.File;
 
 public final class ConvertToAndWriteEquivalenceClass {
 	private static final Logger log = LoggerFactory.getLogger(ConvertToAndWriteEquivalenceClass.class);
@@ -75,7 +63,7 @@ public final class ConvertToAndWriteEquivalenceClass {
                  answerKeyFilter = LinkingUtils.linkableResponseFilter2015ForSystemOutput();
              }
 
-			 final File equivalenceStoreDir = params.getExistingDirectory("equivalenceStore");	// destination directory to write equivalence response ids
+			 final File equivalenceStoreDir = params.getCreatableDirectory("equivalenceStore");	// destination directory to write equivalence response ids
 			 final EventArgumentEquivalenceStore equivalenceStore = EventArgumentEquivalenceSpecFormats.openOrCreateEquivalenceStore(equivalenceStoreDir);
 			 
 			 for(final Symbol docID : linkingStoreDocIDs) {
