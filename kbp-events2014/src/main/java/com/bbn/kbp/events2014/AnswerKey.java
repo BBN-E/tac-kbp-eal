@@ -228,6 +228,21 @@ public final class AnswerKey {
         return Optional.absent();
     }
 
+    public AnswerKey filter(Filter filter) {
+        final ImmutableSet<AssessedResponse> newAnnotated = FluentIterable.from(annotatedResponses())
+                .filter(filter.assessedFilter()).toSet();
+        final ImmutableSet<Response> newUnannotated = FluentIterable.from(unannotatedResponses())
+                .filter(filter.unassessedFilter()).toSet();
+        final CorefAnnotation newCorefAnnotation = removeCorefForAbsentStrings(newAnnotated,
+                newUnannotated, corefAnnotation());
+        return new AnswerKey(docId(), newAnnotated, newUnannotated, newCorefAnnotation);
+    }
+
+    public interface Filter {
+        public Predicate<AssessedResponse> assessedFilter();
+        public Predicate<Response> unassessedFilter();
+    }
+
     @Override
     public int hashCode() {
         return Objects.hashCode(docid, annotatedArgs, unannotatedResponses, corefAnnotation);
