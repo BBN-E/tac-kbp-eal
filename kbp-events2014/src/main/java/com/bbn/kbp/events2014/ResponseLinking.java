@@ -80,4 +80,11 @@ public class ResponseLinking {
     public ImmutableSet<Response> allResponses() {
         return ImmutableSet.copyOf(concat(concat(responseSets), incompleteResponses));
     }
+
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("docID", docId)
+                .add("responseSets", responseSets)
+                .add("incomplete", incompleteResponses).toString();
+    }
 }
