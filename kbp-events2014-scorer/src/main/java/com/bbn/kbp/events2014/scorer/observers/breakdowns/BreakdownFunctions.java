@@ -58,7 +58,7 @@ public final class BreakdownFunctions {
                         .putAll(SPEECH, "fsh_")
                         .build()
                         .inverse());
-    };
+    }
 
     public static final Map<String, Function<TypeRoleFillerRealis, Symbol>> StandardBreakdowns = ImmutableMap.of(
             "Type", TypeRoleFillerRealis.Type,
