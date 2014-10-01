@@ -1,6 +1,7 @@
 package com.bbn.kbp.events2014.linking;
 
 import com.bbn.kbp.events2014.*;
+import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 
 import java.util.Set;
@@ -28,24 +29,12 @@ public final class ExactMatchEventArgumentLinkingAligner implements EventArgumen
                        AnswerKey answerKey) throws InconsistentLinkingException
     {
         checkArgument(answerKey.docId() == responseLinking.docID());
-        final ImmutableSet<Response> allResponses = answerKey.allResponses();
-
-        if (!responseLinking.allResponses().equals(allResponses)) {
-            final Set<Response> inLinkingButNotKey = Sets.difference(
-                    responseLinking.allResponses(), allResponses);
-            final Set<Response> inKeyButNotLinking = Sets.difference(
-                    allResponses, responseLinking.allResponses());
-            throw new InconsistentLinkingException("Response linking and answer key do "
-                    + "not cover exactly the same responses. In key only: "
-                    + inKeyButNotLinking + ", in linking only: " + inLinkingButNotKey);
-        }
-
-        final CorefAnnotation corefAnnotation = answerKey.corefAnnotation();
+        assertLinkingSubsetOfAnswerKey(responseLinking, answerKey);
 
         final ImmutableMultimap<TypeRoleFillerRealis, Response> canonicalToResponses =
                 Multimaps.index(responseLinking.allResponses(),
                         TypeRoleFillerRealis.extractFromSystemResponse(
-                                corefAnnotation.strictCASNormalizerFunction()));
+                                answerKey.corefAnnotation().strictCASNormalizerFunction()));
 
         final Multimap<Response, TypeRoleFillerRealis> responsesToCanonical =
                 canonicalToResponses.inverse();
@@ -63,10 +52,21 @@ public final class ExactMatchEventArgumentLinkingAligner implements EventArgumen
                 incompleteResponses);
     }
 
+    private void assertLinkingSubsetOfAnswerKey(ResponseLinking responseLinking, AnswerKey answerKey) throws InconsistentLinkingException {
+        final Set<Response> inLinkingButNotKey = Sets.difference(responseLinking.allResponses(), answerKey.allResponses());
+        if(!inLinkingButNotKey.isEmpty()) {
+            throw new InconsistentLinkingException("Response linking should be a subset of answer key."
+            		+ " In linking only:\n" + inLinkingButNotKey);
+        }
+    }
+
     @Override
     public ResponseLinking alignToResponseLinking(EventArgumentLinking eventArgumentLinking,
                                                   AnswerKey answerKey)
     {
+    	// For every Response in answerKey, answerKey.corefAnnotation().strictCASNormalizerFunction() will try to find 
+    	// a canonical coreferent for the Response's CAS (KBPString), by checking CorefAnnotation.CASesToIDs
+    	// If the KBPString does not exist in CASesToIDs, then an Exception will be thrown 
         final ImmutableMultimap<TypeRoleFillerRealis, Response> canonicalToResponses =
                 Multimaps.index(answerKey.allResponses(),
                         TypeRoleFillerRealis.extractFromSystemResponse(

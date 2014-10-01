@@ -12,13 +12,14 @@ import static com.google.common.base.Predicates.and;
 import static com.google.common.base.Predicates.compose;
 import static com.google.common.base.Predicates.in;
 
-class LinkableResponseFilter2015 implements AnswerKey.Filter {
+class LinkableResponseFilter2015ForGold implements AnswerKey.Filter {
     private static final ImmutableSet<KBPRealis> linkableRealises =
             ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other);
 
     private static final Predicate<Response> realisIsLinkable =
             compose(in(linkableRealises), Response.realisFunction());
-    private static final Predicate<AssessedResponse> responsesRealisIsLinkable =
+    // package private so LinkableResponseFilter2015ForSystem can share it
+    static final Predicate<AssessedResponse> responsesRealisIsLinkable =
             compose(realisIsLinkable, AssessedResponse.Response);
 
     @Override

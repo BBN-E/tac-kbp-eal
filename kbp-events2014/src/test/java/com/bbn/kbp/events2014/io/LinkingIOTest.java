@@ -31,7 +31,7 @@ public class LinkingIOTest {
         final File dir = new File(LinkingIOTest.class.getResource("/com/bbn/kbp/events2014/io/linkingTest").getFile());
         final AnnotationStore annotationStore = AssessmentSpecFormats.openAnnotationStore(dir, AssessmentSpecFormats.Format.KBP2015);
         final AnswerKey answerKey = annotationStore.read(Symbol.from("AFP_ENG_20091024.0206"));
-        final AnswerKey onlyLinkableAnswerKey = answerKey.filter(LinkingUtils.linkableResponseFilter2015());
+        final AnswerKey onlyLinkableAnswerKey = answerKey.filter(LinkingUtils.linkableResponseFilter2015ForGold());
 
         final EventArgumentLinking original = EventArgumentLinking.createMinimalLinkingFrom(
                 onlyLinkableAnswerKey);

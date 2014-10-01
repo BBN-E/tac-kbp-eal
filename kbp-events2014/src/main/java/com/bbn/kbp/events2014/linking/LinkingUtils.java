@@ -7,10 +7,17 @@ public final class LinkingUtils {
         throw new UnsupportedOperationException();
     }
 
-    public static final LinkableResponseFilter2015 linkableResponseFilter2015 =
-            new LinkableResponseFilter2015();
+    public static final LinkableResponseFilter2015ForGold linkableResponseFilter2015ForGold =
+            new LinkableResponseFilter2015ForGold();
 
-    public static AnswerKey.Filter linkableResponseFilter2015() {
-        return linkableResponseFilter2015;
+    public static final LinkableResponseFilter2015ForSystem linkableResponseFilter2015ForSystem =
+            new LinkableResponseFilter2015ForSystem();
+
+    public static AnswerKey.Filter linkableResponseFilter2015ForGold() {
+        return linkableResponseFilter2015ForGold;
+    }
+
+    public static AnswerKey.Filter linkableResponseFilter2015ForSystemOutput() {
+        return linkableResponseFilter2015ForSystem;
     }
 }
