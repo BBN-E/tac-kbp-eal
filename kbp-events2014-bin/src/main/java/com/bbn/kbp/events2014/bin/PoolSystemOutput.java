@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Set;
 
 public final class PoolSystemOutput {
-    private static Logger log = LoggerFactory.getLogger(PoolSystemOutput.class);
+    private static final Logger log = LoggerFactory.getLogger(PoolSystemOutput.class);
     private enum AddMode { CREATE, APPEND }
 
     private static void trueMain(String[] argv) throws IOException {

@@ -16,7 +16,7 @@ import java.io.File;
 import java.io.IOException;
 
 public final class KeepOnlyBestResponses {
-    private static Logger log = LoggerFactory.getLogger(KeepOnlyBestResponses.class);
+    private static final Logger log = LoggerFactory.getLogger(KeepOnlyBestResponses.class);
 
     private static void usage() {
         log.error("usage: KeepOnlyBestResponses paramFile\n" +

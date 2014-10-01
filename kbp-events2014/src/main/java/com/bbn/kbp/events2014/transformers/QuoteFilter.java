@@ -32,7 +32,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * input it is applied to.
  */
 public final class QuoteFilter implements Function<SystemOutput, SystemOutput>  {
-    private final Logger log = LoggerFactory.getLogger(QuoteFilter.class);
+    private static final Logger log = LoggerFactory.getLogger(QuoteFilter.class);
     private static final Set<String> BANNED_REGION_STARTS =
             ImmutableSet.of("<quote>",
                     // handle case of <quote orig_author="foo">

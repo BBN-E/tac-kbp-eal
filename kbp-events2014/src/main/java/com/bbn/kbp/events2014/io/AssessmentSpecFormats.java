@@ -45,7 +45,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *
  */
 public final class AssessmentSpecFormats {
-    private static Logger log = LoggerFactory.getLogger(AssessmentSpecFormats.class);
+    private static final Logger log = LoggerFactory.getLogger(AssessmentSpecFormats.class);
 	private AssessmentSpecFormats() {
 		throw new UnsupportedOperationException();
 	}
@@ -164,7 +164,7 @@ public final class AssessmentSpecFormats {
     }
 
     private static final class DirectorySystemOutputStore implements SystemOutputStore {
-		private static Logger log = LoggerFactory.getLogger(DirectorySystemOutputStore.class);
+		private static final Logger log = LoggerFactory.getLogger(DirectorySystemOutputStore.class);
 
 		private final File directory;
         private final Format format;

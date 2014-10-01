@@ -18,7 +18,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @param <Answerable>
  */
 public class SkipIncompleteAnnotations<Answerable> extends KBPScoringObserver<Answerable> {
-	private static Logger log = LoggerFactory.getLogger(SkipIncompleteAnnotations.class);
+	private static final Logger log = LoggerFactory.getLogger(SkipIncompleteAnnotations.class);
 
 	private final KBPScoringObserver<Answerable> innerObserver;
 	private int docs = 0;

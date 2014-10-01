@@ -23,7 +23,7 @@ import static com.google.common.base.Preconditions.checkArgument;
  *
  */
 public final  class MergeAssessmentStores {
-    private static Logger log = LoggerFactory.getLogger(MergeAssessmentStores.class);
+    private static final Logger log = LoggerFactory.getLogger(MergeAssessmentStores.class);
     private MergeAssessmentStores() {}
 
     private int numAdditionalMerged = 0;

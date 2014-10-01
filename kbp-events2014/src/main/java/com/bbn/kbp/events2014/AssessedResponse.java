@@ -148,7 +148,7 @@ public class AssessedResponse {
 	};
 
     /**
-     * @deprecated 
+     * @deprecated
      */
     @Deprecated
     public static final Ordering<AssessedResponse> ByOld2014Id = com.bbn.kbp.events2014.Response.ByOld2014Id.onResultOf(

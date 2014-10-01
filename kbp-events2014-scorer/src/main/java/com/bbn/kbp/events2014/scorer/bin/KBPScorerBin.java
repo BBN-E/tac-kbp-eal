@@ -29,7 +29,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.Sets.union;
 
 public final class KBPScorerBin {
-    private static Logger log = LoggerFactory.getLogger(KBPScorerBin.class);
+    private static final Logger log = LoggerFactory.getLogger(KBPScorerBin.class);
 
     private KBPScorerBin() {
         throw new UnsupportedOperationException();

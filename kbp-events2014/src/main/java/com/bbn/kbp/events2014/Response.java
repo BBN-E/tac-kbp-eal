@@ -25,7 +25,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * See the assessment guidelines for more details.
  */
 public final class Response  {
-    private static Logger log = LoggerFactory.getLogger(Response.class);
+    private static final Logger log = LoggerFactory.getLogger(Response.class);
 
     private Response(final Symbol docid, final Symbol type, final Symbol role,
 		final KBPString canonicalArgumentString,
