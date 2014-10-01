@@ -281,6 +281,9 @@ public final class Response  {
             return x.docID();
         }
     };
+    /**
+     * @deprecated
+     */
     @Deprecated
     public static Function<Response, Integer> Old2104ResponseID = new Function<Response, Integer> () {
         @Override
@@ -297,6 +300,9 @@ public final class Response  {
         };
     }
 
+    /**
+     * @deprecated
+     */
     @Deprecated
     public static final Ordering<Response> ByOld2014Id = Ordering.natural().onResultOf(Response.Old2104ResponseID);
     public static final Ordering<Response> byUniqueIdOrdering() {

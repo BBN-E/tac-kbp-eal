@@ -11,7 +11,7 @@ class LinkableResponseFilter2015ForSystem implements AnswerKey.Filter {
     @Override
     public Predicate<AssessedResponse> assessedFilter() {
         return LinkableResponseFilter2015ForGold.responsesRealisIsLinkable;
-    }   
+    }
 
     @Override
     public Predicate<Response> unassessedFilter() {
