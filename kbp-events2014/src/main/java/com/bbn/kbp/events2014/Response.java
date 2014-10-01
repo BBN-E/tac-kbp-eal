@@ -285,7 +285,7 @@ public final class Response  {
      * @deprecated
      */
     @Deprecated
-    public static Function<Response, Integer> Old2104ResponseID = new Function<Response, Integer> () {
+    public static final Function<Response, Integer> Old2104ResponseID = new Function<Response, Integer> () {
         @Override
         public Integer apply(Response x) {
             return x.old2014ResponseID();
