@@ -4,6 +4,7 @@ package com.bbn.kbp.events2014;
 import com.bbn.bue.common.symbols.Symbol;
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
+import com.google.common.base.Optional;
 import com.google.common.collect.ComparisonChain;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -105,6 +106,30 @@ public final class TypeRoleFillerRealis implements Comparable<TypeRoleFillerReal
             public TypeRoleFillerRealis apply(final Response arg) {
                 return TypeRoleFillerRealis.create(arg.docID(), arg.type(), arg.role(), arg.realis(),
                         CASNormalizer.apply(arg.canonicalArgument()));
+            }
+        };
+    }
+
+    /**
+     * Function to turn a {@link com.bbn.kbp.events2014.Response} to its equivalence class if
+     * the coreference information is known for the filler.  If it isn't, {@link com.google.common.base.Optional#absent()}
+     * is returned.
+     *
+     */
+    public static Function<Response, Optional<TypeRoleFillerRealis>> extractFromSystemResponseIfPossible(
+            final Function<KBPString, Optional<KBPString>> CASNormalizer)
+    {
+        return new Function<Response, Optional<TypeRoleFillerRealis>>() {
+            @Override
+            public Optional<TypeRoleFillerRealis> apply(final Response arg) {
+                final Optional<KBPString> normalizedCAS = CASNormalizer.apply(arg.canonicalArgument());
+
+                if (normalizedCAS.isPresent()) {
+                    return Optional.of(TypeRoleFillerRealis.create(arg.docID(), arg.type(),
+                            arg.role(), arg.realis(), normalizedCAS.get()));
+                } else {
+                    return Optional.absent();
+                }
             }
         };
     }

@@ -238,24 +238,34 @@ public final class CorefAnnotation {
     }
 
     /**
+     * Returns the normalization of a {@link com.bbn.kbp.events2014.KBPString}
+     * to some canonical coreferent {@code KBPString}.  The particular {@code KBPString}
+     * returned is undefined, other than being guaranteed to be coreferent and that it will
+     * be the same for all coreferent inputs. If a provided {@code KBPString} has no coreference
+     * information, a {@link java.util.NoSuchElementException} is thrown.
+     */
+    public KBPString normalizeStrictly(KBPString s) {
+        final Integer id = CASesToIDs.get(s);
+        if (id != null) {
+            // will never be null by construction of CASestoIDs & idToCASes
+            return Iterables.getFirst(idToCASes.get(id), null);
+        } else {
+            throw new NoSuchElementException("Cannot normalize " + s);
+        }
+    }
+
+    /**
      * Returns a function which normalizes {@link com.bbn.kbp.events2014.KBPString}s
      * to some canonical coreferent {@code KBPString}.  The particular {@code KBPString}
      * returned is undefined, other than being guaranteed to be coreferent and that it will
      * be the same for all coreferent inputs. If a provided {@code KBPString} has no coreference
      * information, a {@link java.util.NoSuchElementException} is thrown.
-     * @return
      */
     public Function<KBPString, KBPString> strictCASNormalizerFunction() {
         return new Function<KBPString, KBPString>() {
             @Override
             public KBPString apply(KBPString input) {
-                final Integer id = CASesToIDs.get(input);
-                if (id != null) {
-                    // will never be null by construction of CASestoIDs & idToCASes
-                    return Iterables.getFirst(idToCASes.get(id), null);
-                } else {
-                    throw new NoSuchElementException("Cannot normalize " + input);
-                }
+                return normalizeStrictly(input);
             }
         };
     }
@@ -266,7 +276,6 @@ public final class CorefAnnotation {
      * returned is undefined, other than being guaranteed to be coreferent and that it will
      * be the same for all coreferent inputs. If a provided {@code KBPString} has no coreference
      * information, this behaves like the identity function.
-     * @return
      */
     public Function<KBPString, KBPString> laxCASNormalizerFunction() {
         return new Function<KBPString, KBPString>() {
@@ -278,6 +287,28 @@ public final class CorefAnnotation {
                     return Iterables.getFirst(idToCASes.get(id), null);
                 } else {
                     return input;
+                }
+            }
+        };
+    }
+
+    /**
+     * Returns a function which normalizes {@link com.bbn.kbp.events2014.KBPString}s
+     * to some canonical coreferent {@code KBPString}.  The particular {@code KBPString}
+     * returned is undefined, other than being guaranteed to be coreferent and that it will
+     * be the same for all coreferent inputs. If a provided {@code KBPString} has no coreference
+     * information, a {@link com.google.common.base.Optional#absent()} is returned.
+     */
+    public Function<KBPString, Optional<KBPString>> normalizeCASIfPossibleFunction() {
+        return new Function<KBPString, Optional<KBPString>>() {
+            @Override
+            public Optional<KBPString> apply(KBPString input) {
+                final Integer id = CASesToIDs.get(input);
+                if (id != null) {
+                    // will never be null by construction of CASestoIDs & idToCASes
+                    return Optional.of(Iterables.getFirst(idToCASes.get(id), null));
+                } else {
+                    return Optional.absent();
                 }
             }
         };
