@@ -72,4 +72,8 @@ public final class ResponseSet implements Comparable<ResponseSet>, Iterable<Resp
     public Iterator<Response> iterator() {
         return asSet().iterator();
     }
+
+    public String toString() {
+        return responses.toString();
+    }
 }
