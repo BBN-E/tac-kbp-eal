@@ -5,7 +5,11 @@ import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
+import java.util.Set;
+
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class EventArgumentLinking {
@@ -19,6 +23,10 @@ public final class EventArgumentLinking {
         this.docID = checkNotNull(docID);
         this.coreffedArgSets = ImmutableSet.copyOf(coreffedArgSets);
         this.incomplete = ImmutableSet.copyOf(incomplete);
+        for (final TypeRoleFillerRealisSet trfrSet : coreffedArgSets) {
+            final Set<TypeRoleFillerRealis> intersection = Sets.intersection(trfrSet.asSet(), this.incomplete);
+            checkArgument(intersection.isEmpty(), "A TRFR cannot be both incomplete and linked: %s", intersection);
+        }
     }
 
     public static EventArgumentLinking create(Symbol docID,
