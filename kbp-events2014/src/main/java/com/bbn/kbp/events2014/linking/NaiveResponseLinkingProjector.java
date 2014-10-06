@@ -141,7 +141,7 @@ public final class NaiveResponseLinkingProjector {
                     sourceLinkingStore.read(sourceAnnotationStore.read(docID));
             if (sourceResponseLinkingOpt.isPresent()) {
                 log.info("Projecting {}", docID);
-                final AnswerKey targetAnswerKey = targetAnnotationStore.read(docID);
+                final AnswerKey targetAnswerKey = targetAnnotationStore.read(docID).filter(LinkingUtils.linkableResponseFilter2015ForGold());
                 final ResponseLinking targetResponseLinking = projector.from(sourceResponseLinkingOpt.get())
                         .projectTo(targetAnswerKey);
                 targetLinkingStore.write(targetResponseLinking);
