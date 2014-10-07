@@ -129,9 +129,13 @@ public final class KBPTIMEXExpression {
     public static KBPTIMEXExpression parseTIMEX(String s) {
         final Matcher m = stuffDashStuffDashStuff.matcher(s);
         if (m.matches()) {
-            return new KBPTIMEXExpression(m.group(1), m.group(2), m.group(3));
+            try {
+                return new KBPTIMEXExpression(m.group(1), m.group(2), m.group(3));
+            } catch (IllegalArgumentException iae) {
+                throw new KBPTIMEXException("Error parsing " + s + " as a KBP TIMEX expression", iae);
+            }
         } else {
-            throw new IllegalArgumentException(String.format(
+            throw new KBPTIMEXException(String.format(
                     "Cannot parse %s as a KBP Timex expresison", s));
         }
     }
@@ -151,5 +155,15 @@ public final class KBPTIMEXExpression {
         }
         final KBPTIMEXExpression other = (KBPTIMEXExpression) obj;
         return Objects.equal(this.year, other.year) && Objects.equal(this.month, other.month) && Objects.equal(this.day, other.day);
+    }
+
+    public static final class KBPTIMEXException extends RuntimeException {
+        public KBPTIMEXException(String msg, Throwable e) {
+            super(msg, e);
+        }
+
+        public KBPTIMEXException(String msg) {
+            super(msg);
+        }
     }
 }

@@ -54,16 +54,23 @@ public final class OnlyMostSpecificTemporal implements Function<SystemOutput, Sy
                 && response.assessment().entityCorrectFiller().get().isAcceptable()
                 && response.response().isTemporal())
             {
-                final KBPTIMEXExpression time = KBPTIMEXExpression.parseTIMEX(
-                        response.response().canonicalArgument().string());
+                try {
+                    final KBPTIMEXExpression time = KBPTIMEXExpression.parseTIMEX(
+                            response.response().canonicalArgument().string());
 
 
-                final TypeRoleFillerRealis responseSignature = responseSignature(response.response());
+                    final TypeRoleFillerRealis responseSignature = responseSignature(response.response());
 
-                for (final KBPTIMEXExpression lessSpecificTimex : time.lessSpecificCompatibleTimes()) {
-                    bannedResponseSignatures.add(responseSignature.copyWithCAS(
-                            KBPString.from(lessSpecificTimex.toString(), DUMMY_OFFSETS)));
+                    for (final KBPTIMEXExpression lessSpecificTimex : time.lessSpecificCompatibleTimes()) {
+                        bannedResponseSignatures.add(responseSignature.copyWithCAS(
+                                KBPString.from(lessSpecificTimex.toString(), DUMMY_OFFSETS)));
+                    }
+                } catch (KBPTIMEXExpression.KBPTIMEXException timexException) {
+                    log.warn("While applying only-most-specific-temporal rule, encountered an illegal temporal "
+                        + "expression " + response.response().canonicalArgument().string() + " which was evaluated as "
+                        + "correct. Such responses should have incorrect CAS assessments.");
                 }
+
             }
         }
 
