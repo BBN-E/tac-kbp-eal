@@ -1,0 +1,5 @@
+INCLUDE root.params
+
+inputStoresDir: %participantDir%
+outputStoresDir: %quoteFiltered%
+quoteFilter: %kbpRepo%/data/evaluation.2014.quoteFilter

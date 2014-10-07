@@ -1,0 +1,10 @@
+INCLUDE root.params
+
+answerKey: %expanded%
+systemOutputsDir: %quoteFiltered%
+scoringOutputRoot: %scoreOutput%
+annotationComplete: true
+documentsToScore: %kbpRepo%/data/preliminaryEvaluation.list
+neutralizeRealis: false
+goldFileFormat: KBP2014
+systemFormat: KBP2014
