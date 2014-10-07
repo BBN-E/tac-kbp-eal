@@ -34,6 +34,10 @@ public final class KBPTIMEXExpression {
         checkArgument(day.length() == 2, "KBPTime day wrong size: %s", day);
     }
 
+    private boolean isX(char c) {
+        return c == 'X' || c =='x';
+    }
+
     /**
      * returns false for an empty string.
      * @param s
@@ -44,7 +48,7 @@ public final class KBPTIMEXExpression {
             return false;
         }
         for (int i=0; i<s.length(); ++i) {
-            if (s.charAt(i)!='X') {
+            if (!isX(s.charAt(i))) {
                 return false;
             }
         }
@@ -65,7 +69,7 @@ public final class KBPTIMEXExpression {
         boolean seenX = false;
         for (int i=0; i<s.length(); ++i) {
             final char c= s.charAt(i);
-            if ('X' == c) {
+            if (isX(c)) {
                 seenX = true;
             } else if (Character.isDigit(c)) {
                 if (seenX) {
@@ -90,7 +94,7 @@ public final class KBPTIMEXExpression {
         final StringBuilder curYear = new StringBuilder(year);
 
         for (int i=1; i>=0; --i) {
-            if (curDay.charAt(i) != 'X') {
+            if (!isX(curDay.charAt(i))) {
                 curDay.setCharAt(i, 'X');
                 ret.add(KBPTIMEXExpression.fromYMD(curYear.toString(),
                         curMonth.toString(), curDay.toString()));
@@ -98,7 +102,7 @@ public final class KBPTIMEXExpression {
         }
 
         for (int i=1; i>=0; --i) {
-            if (curMonth.charAt(i) != 'X') {
+            if (!isX(curMonth.charAt(i))) {
                 curMonth.setCharAt(i, 'X');
                 ret.add(KBPTIMEXExpression.fromYMD(curYear.toString(),
                         curMonth.toString(), curDay.toString()));
@@ -107,7 +111,7 @@ public final class KBPTIMEXExpression {
 
         // don't terminate at 0 because all Xes is an invalid year
         for (int i=3; i>=1; --i) {
-            if (curYear.charAt(i) != 'X') {
+            if (!isX(curYear.charAt(i))) {
                 curYear.setCharAt(i, 'X');
                 ret.add(KBPTIMEXExpression.fromYMD(curYear.toString(),
                         curMonth.toString(), curDay.toString()));
