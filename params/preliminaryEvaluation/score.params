@@ -8,3 +8,5 @@ documentsToScore: %kbpRepo%/data/preliminaryEvaluation.list
 neutralizeRealis: false
 goldFileFormat: KBP2014
 systemFormat: KBP2014
+bootstrapSeed: 0
+numBootstrapSamples: 10000

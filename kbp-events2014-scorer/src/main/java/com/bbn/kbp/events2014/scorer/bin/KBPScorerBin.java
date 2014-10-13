@@ -5,16 +5,20 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.scorer.KBPScorer;
-import com.bbn.kbp.events2014.TypeRoleFillerRealis;
-import com.bbn.kbp.events2014.scorer.observers.*;
+import com.bbn.kbp.events2014.scorer.observers.BuildConfusionMatrix;
+import com.bbn.kbp.events2014.scorer.observers.ExitOnUnannotatedAnswerKey;
+import com.bbn.kbp.events2014.scorer.observers.KBPScoringObserver;
+import com.bbn.kbp.events2014.scorer.observers.StrictStandardScoringObserver;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.HTMLErrorRecorder;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.NullHTMLErrorRecorder;
 import com.bbn.kbp.events2014.transformers.MakeAllRealisActual;
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -74,13 +78,17 @@ public final class KBPScorerBin {
             corpusObservers.add(ExitOnUnannotatedAnswerKey.<TypeRoleFillerRealis>create());
         }
 
+        final int bootstrapSeed = params.getInteger("bootstrapSeed");
+        final int numBootstrapSamples = params.getPositiveInteger("numBootstrapSamples");
 
         final HTMLErrorRecorder dummyRecorder = NullHTMLErrorRecorder.getInstance();
         // Lax scorer
         corpusObservers.add(BuildConfusionMatrix.<TypeRoleFillerRealis>forAnswerFunctions(
                 "Lax", KBPScorer.IsPresent, KBPScorer.AnyAnswerSemanticallyCorrect));
-        corpusObservers.add(StrictStandardScoringObserver.strictScorer(dummyRecorder));
-        corpusObservers.add(StrictStandardScoringObserver.standardScorer(dummyRecorder));
+        corpusObservers.add(StrictStandardScoringObserver.strictScorer(dummyRecorder, ImmutableList.of(StrictStandardScoringObserver.createStandardOutputter(),
+                StrictStandardScoringObserver.createBootstrapOutputter(bootstrapSeed, numBootstrapSamples))));
+        corpusObservers.add(StrictStandardScoringObserver.standardScorer(dummyRecorder, ImmutableList.of(StrictStandardScoringObserver.createStandardOutputter(),
+                StrictStandardScoringObserver.createBootstrapOutputter(bootstrapSeed, numBootstrapSamples))));
 
         return corpusObservers;
     }
