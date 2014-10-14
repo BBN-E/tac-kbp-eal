@@ -3,7 +3,6 @@ package com.bbn.kbp.events2014.scorer.observers.breakdowns;
 import com.bbn.bue.common.collections.MultimapUtils;
 import com.bbn.bue.common.diff.ProvenancedConfusionMatrix;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
@@ -71,17 +70,24 @@ public final class BreakdownFunctions {
         throw new UnsupportedOperationException();
     }
 
-    public static <ProvenanceType>
-        ImmutableMap<String, Map<Symbol, ProvenancedConfusionMatrix<ProvenanceType>>> computeBreakdowns(
+    /**
+     *
+     * @return A mapping from each breakdown type to inner maps. These inner maps map from
+     * the categories for that breakdown type to confusion matrices for only that category.
+     */
+    public static <SignatureType, ProvenanceType>
+        ImmutableMap<String, BrokenDownProvenancedConfusionMatrix<SignatureType, ProvenanceType>>
+    computeBreakdowns(
             ProvenancedConfusionMatrix<ProvenanceType> corpusConfusionMatrix,
-            Map<String, Function<? super ProvenanceType, Symbol>> breakdowns)
+            Map<String, Function<? super ProvenanceType, SignatureType>> breakdowns,
+            Ordering<SignatureType> resultKeyOrdering)
     {
-        final ImmutableMap.Builder<String, Map<Symbol, ProvenancedConfusionMatrix<ProvenanceType>>> printModes =
+        final ImmutableMap.Builder<String, BrokenDownProvenancedConfusionMatrix<SignatureType, ProvenanceType>> printModes =
                 ImmutableMap.builder();
 
-        for (final Map.Entry<String, Function<? super ProvenanceType, Symbol>> breakdownEntry : breakdowns.entrySet()) {
+        for (final Map.Entry<String, Function<? super ProvenanceType, SignatureType>> breakdownEntry : breakdowns.entrySet()) {
             printModes.put(breakdownEntry.getKey(), corpusConfusionMatrix.breakdown(breakdownEntry.getValue(),
-                    Ordering.from(new SymbolUtils.ByString())));
+                    resultKeyOrdering));
         }
         return printModes.build();
     }

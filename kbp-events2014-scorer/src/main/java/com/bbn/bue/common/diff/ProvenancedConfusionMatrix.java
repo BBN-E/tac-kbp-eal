@@ -3,13 +3,12 @@ package com.bbn.bue.common.diff;
 import com.bbn.bue.common.collections.CollectionUtils;
 import com.bbn.bue.common.collections.MapUtils;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.TypeRoleFillerRealis;
+import com.bbn.kbp.events2014.scorer.observers.breakdowns.BrokenDownProvenancedConfusionMatrix;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.google.common.collect.Table.Cell;
 
-import java.security.Signature;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -109,12 +108,11 @@ public final class ProvenancedConfusionMatrix<CellFiller> {
      * from all observed signatures to {@link com.bbn.bue.common.diff.ProvenancedConfusionMatrix}es consisting of
      * only those provenances with the corresponding signature under the provided function.
      *
-     * The signature function may never return a signature of {@code null}. No guarantee is made
-     * about the iteration order of the resulting map.
+     * The signature function may never return a signature of {@code null}.
      *
      * {@code keyOrder} is the order the keys should be in the iteration order of the resulting map.
      */
-    public <SignatureType> ImmutableMap<SignatureType, ProvenancedConfusionMatrix<CellFiller>>
+    public <SignatureType> BrokenDownProvenancedConfusionMatrix<SignatureType, CellFiller>
         breakdown(Function<? super CellFiller, SignatureType> signatureFunction,
                   Ordering<SignatureType> keyOrdering)
     {
@@ -143,7 +141,7 @@ public final class ProvenancedConfusionMatrix<CellFiller> {
         {
             trueRet.put(entry.getKey(), entry.getValue().build());
         }
-        return trueRet.build();
+        return BrokenDownProvenancedConfusionMatrix.fromMap(trueRet.build());
     }
 
 	public SummaryConfusionMatrix buildSummaryMatrix() {
