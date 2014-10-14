@@ -464,7 +464,7 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 
             ret.append(String.format("%15s", name));
             for (double val : values) {
-                ret.append(String.format("%15.2f", val));
+                ret.append(String.format("%15.2f", 100.0*val));
             }
             ret.append("\n");
             return ret.toString();
