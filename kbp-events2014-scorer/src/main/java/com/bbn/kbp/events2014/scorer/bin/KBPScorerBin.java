@@ -92,7 +92,8 @@ public final class KBPScorerBin {
     }
 
     private static final String NUM_BOOTSTRAP_SAMPLES = "numBootstrapSamples";
-    private static ImmutableList<StrictStandardScoringObserver.Outputter> getOutputters(Parameters params) {
+    // package-private so BBN's internal scorer can borrow it
+    static ImmutableList<StrictStandardScoringObserver.Outputter> getOutputters(Parameters params) {
         final ImmutableList.Builder<StrictStandardScoringObserver.Outputter> ret = ImmutableList.builder();
         ret.add(StrictStandardScoringObserver.createStandardOutputter());
         if (params.isPresent(NUM_BOOTSTRAP_SAMPLES)) {
