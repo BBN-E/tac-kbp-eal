@@ -78,19 +78,29 @@ public final class KBPScorerBin {
             corpusObservers.add(ExitOnUnannotatedAnswerKey.<TypeRoleFillerRealis>create());
         }
 
-        final int bootstrapSeed = params.getInteger("bootstrapSeed");
-        final int numBootstrapSamples = params.getPositiveInteger("numBootstrapSamples");
+
 
         final HTMLErrorRecorder dummyRecorder = NullHTMLErrorRecorder.getInstance();
+        final ImmutableList<StrictStandardScoringObserver.Outputter> outputters = getOutputters(params);
         // Lax scorer
         corpusObservers.add(BuildConfusionMatrix.<TypeRoleFillerRealis>forAnswerFunctions(
                 "Lax", KBPScorer.IsPresent, KBPScorer.AnyAnswerSemanticallyCorrect));
-        corpusObservers.add(StrictStandardScoringObserver.strictScorer(dummyRecorder, ImmutableList.of(StrictStandardScoringObserver.createStandardOutputter(),
-                StrictStandardScoringObserver.createBootstrapOutputter(bootstrapSeed, numBootstrapSamples))));
-        corpusObservers.add(StrictStandardScoringObserver.standardScorer(dummyRecorder, ImmutableList.of(StrictStandardScoringObserver.createStandardOutputter(),
-                StrictStandardScoringObserver.createBootstrapOutputter(bootstrapSeed, numBootstrapSamples))));
+        corpusObservers.add(StrictStandardScoringObserver.strictScorer(dummyRecorder, outputters));
+        corpusObservers.add(StrictStandardScoringObserver.standardScorer(dummyRecorder, outputters));
 
         return corpusObservers;
+    }
+
+    private static final String NUM_BOOTSTRAP_SAMPLES = "numBootstrapSamples";
+    private static ImmutableList<StrictStandardScoringObserver.Outputter> getOutputters(Parameters params) {
+        final ImmutableList.Builder<StrictStandardScoringObserver.Outputter> ret = ImmutableList.builder();
+        ret.add(StrictStandardScoringObserver.createStandardOutputter());
+        if (params.isPresent(NUM_BOOTSTRAP_SAMPLES)) {
+            final int bootstrapSeed = params.getInteger("bootstrapSeed");
+            final int numBootstrapSamples = params.getPositiveInteger("numBootstrapSamples");
+            ret.add(StrictStandardScoringObserver.createBootstrapOutputter(bootstrapSeed, numBootstrapSamples));
+        }
+        return ret.build();
     }
 
     public static final String SYSTEM_OUTPUT_PARAM = "systemOutput";
