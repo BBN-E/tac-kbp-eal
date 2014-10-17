@@ -1,10 +1,11 @@
 package com.bbn.kbp.events2014.scorer.observers;
 
-import com.bbn.bue.common.annotations.MoveToBUECommon;
 import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Ordering;
 
+import com.bbn.bue.common.annotations.MoveToBUECommon;
+
+import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -56,89 +57,94 @@ public final class PercentileComputer {
         return new PercentileComputer(Algorithm.EXCEL);
     }
 
-    public Percentiles calculatePercentiles(Iterable<Double> data) {
+    public Percentiles calculatePercentilesAdoptingData(double[] data) {
         return new Percentiles(data);
     }
+
+  public Percentiles calculatePercentilesCopyingData(double[] data) {
+    return new Percentiles(data.clone());
+  }
 
     // these may assume percentile is valid and data non-empty
     private enum Algorithm {
         NIST {
             @Override
-            public double computePercentile(double percentile, List<Double> data) {
-                final int N = data.size();
+            public double computePercentile(double percentile, double[] data) {
+                final int N = data.length;
                 final double rank = percentile * (N+1);
                 final int k = (int)rank;
                 final double d = rank - k;
 
                 if (k == 0) {
-                    return data.get(0);
+                    return data[0];
                 } else if (k == N) {
-                    return data.get(N-1);
+                    return data[N-1];
                 } else {
                     // we subtract 1 when looking up because NIST uses 1-based indexing
-                    final double yK = data.get(k-1);
-                    final double yKPlusOne = data.get(k);
+                    final double yK = data[k-1];
+                    final double yKPlusOne = data[k];
                     return yK+d*(yKPlusOne-yK);
                 }
             }
         },
         EXCEL {
             @Override
-            public double computePercentile(double percentile, List<Double> data) {
-                final int N = data.size();
+            public double computePercentile(double percentile, double[] data) {
+                final int N = data.length;
                 final double rank = percentile * (N-1)+1;
                 final int k = (int)rank;
                 final double d = rank - k;
 
                 if (k == 0) {
-                    return data.get(0);
+                    return data[0];
                 } else if (k == N) {
-                    return data.get(N-1);
+                    return data[N-1];
                 } else {
                     // we subtract 1 when looking up because NIST uses 1-based indexing
-                    final double yK = data.get(k-1);
-                    final double yKPlusOne = data.get(k);
+                    final double yK = data[k-1];
+                    final double yKPlusOne = data[k];
                     return yK+d*(yKPlusOne-yK);
                 }
             }
         };
 
-        public abstract double computePercentile(double percentile, List<Double> data);
+        public abstract double computePercentile(double percentile, double[] data);
     }
 
 
     public class Percentiles {
-        private final List<Double> data;
+        private final double[] data;
 
-        private Percentiles(Iterable<Double> data) {
-            this.data = Ordering.natural().sortedCopy(data);
+        private Percentiles(double[] data) {
+          this.data = data;
+          Arrays.sort(data);
         }
 
         public int numObservedValues() {
-            return data.size();
+            return data.length;
         }
 
         public double median() {
-            if (data.isEmpty()) {
+            if (data.length == 0) {
                 throw new NoSuchElementException("No median exists because no data has been observed");
             }
 
-            if (data.size() % 2 == 0) {
+            if (data.length % 2 == 0) {
                 // if we have an event number of elements, return the mean of the two
                 // middle element
-                return 0.5 * ((data.get(data.size() / 2) + data.get(data.size() / 2 -1)));
+                return 0.5 * ((data[data.length / 2] + data[data.length / 2 -1]));
             } else {
                 // if we have an odd number of elements, return the unique middle element
-                return data.get(data.size() / 2);
+                return data[data.length / 2];
             }
         }
 
         public double min() {
-            return data.get(0);
+            return data[0];
         }
 
         public double max() {
-            return data.get(data.size() -1);
+            return data[data.length -1];
         }
 
         /**
@@ -146,12 +152,12 @@ public final class PercentileComputer {
          * depending on what {@link com.bbn.kbp.events2014.scorer.observers.PercentileComputer}
          * generated this data. If no data was observed, this will throw a {@link java.util.NoSuchElementException}.
          * This method takes time linear in the number of observed values.
-         * @param percentile Must be in [0.0, 1.0)
+         * @param p Must be in [0.0, 1.0)
          * @return
          */
         public double percentile(double p) {
             checkArgument(p >= 0.0 && p < 1.0, "Percentiles must be in [0.0, 1.0)");
-            if (data.isEmpty()) {
+            if (data.length == 0) {
                 throw new NoSuchElementException("Cannot query percentiles when no data has been observed");
             }
             return algorithm.computePercentile(p, data);

@@ -78,7 +78,12 @@
  <artifactId>commons-lang</artifactId>
  <version>2.3</version>
 </dependency>
- 
+
+      <dependency>
+          <groupId>com.carrotsearch</groupId>
+          <artifactId>hppc</artifactId>
+          <version>0.6.0</version>
+      </dependency>
 
   </dependencies>
 

@@ -1,11 +1,32 @@
 package com.bbn.kbp.events2014.scorer.observers;
 
+import com.google.common.base.Charsets;
+import com.google.common.base.Function;
+import com.google.common.base.Functions;
+import com.google.common.base.Predicate;
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.Ordering;
+import com.google.common.io.ByteSink;
+import com.google.common.io.Files;
+
 import com.bbn.bue.common.annotations.MoveToBUECommon;
 import com.bbn.bue.common.collections.MapUtils;
 import com.bbn.bue.common.diff.FMeasureTableRenderer;
 import com.bbn.bue.common.diff.ProvenancedConfusionMatrix;
 import com.bbn.bue.common.diff.SummaryConfusionMatrix;
 import com.bbn.bue.common.evaluation.FMeasureCounts;
+import com.bbn.bue.common.io.GZIPByteSink;
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.scoring.Scoreds;
 import com.bbn.bue.common.serialization.jackson.JacksonSerializer;
@@ -20,19 +41,28 @@ import com.bbn.kbp.events2014.scorer.observers.breakdowns.BreakdownComputer;
 import com.bbn.kbp.events2014.scorer.observers.breakdowns.BreakdownFunctions;
 import com.bbn.kbp.events2014.scorer.observers.breakdowns.BrokenDownSummaryConfusionMatrix;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.HTMLErrorRecorder;
-import com.google.common.base.*;
-import com.google.common.collect.*;
-import com.google.common.io.Files;
+import com.carrotsearch.hppc.DoubleArrayList;
+import com.carrotsearch.hppc.cursors.DoubleCursor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.io.PrintWriter;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.Iterables.*;
+import static com.google.common.collect.Iterables.any;
+import static com.google.common.collect.Iterables.getFirst;
+import static com.google.common.collect.Iterables.transform;
 
 public final class StrictStandardScoringObserver extends KBPScoringObserver<TypeRoleFillerRealis> {
 	public static final Symbol PRESENT = Symbol.from("PRESENT");
@@ -389,26 +419,33 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
                         transform(bootstrappedResults.next(), DocumentResult.GetBreakdownMatricesFunction).iterator()));
             }
 
-            writeSampledBreakdownsToFiles(combineMapsToMultimap(resultsForSamples), outputDirectory);
+          final ImmutableMultimap<String, BrokenDownSummaryConfusionMatrix<Symbol>> resultsByBreakdownType =
+              combineMapsToMultimap(resultsForSamples);
+          writeSampledBreakdownsToFiles(resultsByBreakdownType, outputDirectory);
         }
 
 
-        private void writeSampledBreakdownsToFiles(Multimap<String, BrokenDownSummaryConfusionMatrix<Symbol>> data,
+
+      private void writeSampledBreakdownsToFiles(Multimap<String, BrokenDownSummaryConfusionMatrix<Symbol>> data,
                                                   File outputDirectory) throws IOException {
             for (final Map.Entry<String, Collection<BrokenDownSummaryConfusionMatrix<Symbol>>> printMode
                     : data.asMap().entrySet())
             {
                 final String modeName = printMode.getKey();
                 final File scoringBreakdownFilename = new File(outputDirectory, modeName + ".bootstrapped");
-                writeSamplesScoringBreakdown(modeName, printMode.getValue(), scoringBreakdownFilename);
+                final File rawDir = new File(outputDirectory, modeName + ".bootstrapped.raw");
+                rawDir.mkdir();
+                writeSamplesScoringBreakdown(modeName, printMode.getValue(),
+                                             scoringBreakdownFilename, rawDir);
             }
         }
 
         private static final ImmutableList<Double> PERCENTILES_TO_PRINT =
                 ImmutableList.of(0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99);
 
-        private void writeSamplesScoringBreakdown(String modeName, Collection<BrokenDownSummaryConfusionMatrix<Symbol>> data,
-                                                  File outputFile) throws IOException {
+        private void writeSamplesScoringBreakdown(String modeName,
+                                                  Collection<BrokenDownSummaryConfusionMatrix<Symbol>> data,
+                                                  File outputFile, File rawDir) throws IOException {
             final StringBuilder sb = new StringBuilder();
 
             sb.append("BREAKDOWN BY ").append(modeName).append("\n");
@@ -423,9 +460,9 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
                 final PercentileComputer nistComputer = PercentileComputer.nistPercentileComputer();
 
                 for (final Map.Entry<String, Collection<FMeasureCounts>> entry : fMeasuresToPrint.asMap().entrySet()) {
-                    final List<Double> precisions = Lists.newArrayList();
-                    final List<Double> recalls = Lists.newArrayList();
-                    final List<Double> fs = Lists.newArrayList();
+                  final DoubleArrayList precisions = new DoubleArrayList(entry.getValue().size());
+                  final DoubleArrayList recalls = new DoubleArrayList(entry.getValue().size());
+                  final DoubleArrayList fs = new DoubleArrayList(entry.getValue().size());
 
                     for (final FMeasureCounts counts : entry.getValue()) {
                         precisions.add((double)counts.precision());
@@ -433,9 +470,16 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
                         fs.add((double) counts.F1());
                     }
 
-                    precisionPercentiles.put(entry.getKey(), nistComputer.calculatePercentiles(precisions));
-                    recallPercentiles.put(entry.getKey(), nistComputer.calculatePercentiles(recalls));
-                    fPercentiles.put(entry.getKey(), nistComputer.calculatePercentiles(fs));
+                    final String rawPrefix = entry.getKey()+"_" + FMeasureSymbol.getKey();
+                    writeArray(precisions, new File(rawDir, rawPrefix + ".precisions.txt"));
+                    writeArray(recalls, new File(rawDir, rawPrefix + ".recalls.txt"));
+                    writeArray(fs, new File(rawDir, rawPrefix + ".fs.txt"));
+                    precisionPercentiles.put(entry.getKey(),
+                      nistComputer.calculatePercentilesAdoptingData(precisions.toArray()));
+                    recallPercentiles.put(entry.getKey(),
+                      nistComputer.calculatePercentilesAdoptingData(recalls.toArray()));
+                    fPercentiles.put(entry.getKey(),
+                      nistComputer.calculatePercentilesAdoptingData(fs.toArray()));
                 }
 
                 dumpPercentilesForMetric("Precision", precisionPercentiles.build(), FMeasureSymbol, sb);
@@ -446,7 +490,16 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
             Files.asCharSink(outputFile, Charsets.UTF_8).write(sb.toString());
         }
 
-        private void dumpPercentilesForMetric(String metricName,
+      private void writeArray(DoubleArrayList numbers, File file) throws IOException {
+        final ByteSink sink  = GZIPByteSink.gzipCompress(Files.asByteSink(file));
+        final PrintWriter out = new PrintWriter(sink.asCharSink(Charsets.UTF_8).openBufferedStream());
+        for (final DoubleCursor cursor : numbers) {
+          out.println(cursor.value);
+        }
+        out.close();;
+      }
+
+      private void dumpPercentilesForMetric(String metricName,
                 ImmutableMap<String, PercentileComputer.Percentiles> percentiles,
                 Map.Entry<String, Collection<Symbol>> FMeasureSymbol, StringBuilder output) {
             output.append(metricName).append(" vs ").append(FMeasureSymbol.getKey()).append("\n\n");
