@@ -1,17 +1,25 @@
 package com.bbn.bue.common.diff;
 
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.FluentIterable;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableTable;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
+import com.google.common.collect.Table;
+import com.google.common.collect.Table.Cell;
+
 import com.bbn.bue.common.collections.CollectionUtils;
 import com.bbn.bue.common.collections.MapUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.scorer.observers.breakdowns.BrokenDownProvenancedConfusionMatrix;
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.*;
-import com.google.common.collect.Table.Cell;
 
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -57,14 +65,8 @@ public final class ProvenancedConfusionMatrix<CellFiller> {
 		if (cell != null) {
 			return cell;
 		} else {
-			if (leftLabels().contains(left) && rightLabels().contains(right)) {
-				return ImmutableList.of();
-			} else {
-				throw new NoSuchElementException(String.format(
-					"Invalid label pair (%s, %s). Valid left labels are %s. Valid right labels are %s",
-					left, right, leftLabels(), rightLabels()));
-			}
-		}
+                  return ImmutableList.of();
+                }
 	}
 
     /**
