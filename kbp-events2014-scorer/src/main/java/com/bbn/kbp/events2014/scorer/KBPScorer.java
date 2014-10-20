@@ -1,17 +1,24 @@
 package com.bbn.kbp.events2014.scorer;
 
-import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.*;
-import com.bbn.kbp.events2014.io.AnnotationStore;
-import com.bbn.kbp.events2014.io.SystemOutputStore;
-import com.bbn.kbp.events2014.scorer.observers.KBPScoringObserver;
-import com.bbn.kbp.events2014.transformers.DeleteInjureForCorrectDie;
-import com.bbn.kbp.events2014.transformers.OnlyMostSpecificTemporal;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+
+import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.AssessedResponse;
+import com.bbn.kbp.events2014.KBPString;
+import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.TypeRoleFillerRealis;
+import com.bbn.kbp.events2014.io.AnnotationStore;
+import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.events2014.scorer.observers.KBPScoringObserver;
+import com.bbn.kbp.events2014.transformers.DeleteInjureForCorrectDie;
+import com.bbn.kbp.events2014.transformers.OnlyMostSpecificTemporal;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

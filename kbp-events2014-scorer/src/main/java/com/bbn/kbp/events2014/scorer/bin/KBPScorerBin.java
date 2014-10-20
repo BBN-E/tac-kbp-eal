@@ -1,5 +1,10 @@
 package com.bbn.kbp.events2014.scorer.bin;
 
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
@@ -17,10 +22,7 @@ import com.bbn.kbp.events2014.scorer.observers.StrictStandardScoringObserver;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.HTMLErrorRecorder;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.NullHTMLErrorRecorder;
 import com.bbn.kbp.events2014.transformers.MakeAllRealisActual;
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,6 +98,7 @@ public final class KBPScorerBin {
     static ImmutableList<StrictStandardScoringObserver.Outputter> getOutputters(Parameters params) {
         final ImmutableList.Builder<StrictStandardScoringObserver.Outputter> ret = ImmutableList.builder();
         ret.add(StrictStandardScoringObserver.createStandardOutputter());
+      ret.add(StrictStandardScoringObserver.createEquivalenceClassIDOutputter());
         if (params.isPresent(NUM_BOOTSTRAP_SAMPLES)) {
             final int bootstrapSeed = params.getInteger("bootstrapSeed");
             final int numBootstrapSamples = params.getPositiveInteger("numBootstrapSamples");

@@ -109,6 +109,10 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
         return new BootstrapOutputter(seed, numSamples);
     }
 
+  public static Outputter createEquivalenceClassIDOutputter() {
+    return new EquivalenceClassIDOutputter();
+  }
+
     private static ImmutableMap<String, Function<TypeRoleFillerRealis, Symbol>>
         plusStandardBreakdowns(Map<String, Function<TypeRoleFillerRealis, Symbol>> additionalBreakdowns)
     {
@@ -554,6 +558,72 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 
     }
 
+  /**
+   * Outputs a list of the IDs of the true and false positive equivalence classes for later analysis.
+   */
+    public static final class EquivalenceClassIDOutputter implements Outputter {
+      private enum IDListType {
+        TruePositives {
+          @Override
+          public Symbol leftKey() {
+            return PRESENT;
+          }
+
+          @Override
+          public Symbol rightKey() {
+            return PRESENT;
+          }
+        },
+
+        FalsePositive {
+          @Override
+          public Symbol leftKey() {
+            return PRESENT;
+          }
+
+          @Override
+          public Symbol rightKey() {
+            return ABSENT;
+          }
+        };
+
+        public abstract Symbol leftKey();
+        public abstract Symbol rightKey();
+      }
+
+      @Override
+      public void writeOutput(Iterable<DocumentResult> documentResults,
+                              File outputDirectory) throws IOException {
+        // we use an ImmutableSets as values to get deterministic iteration order
+        final Map<IDListType, ImmutableSet.Builder<String>> equivalenceClassesByType =
+            Maps.newHashMap();
+
+        // initialize the map value set builders
+        for (final IDListType idListType : IDListType.values()) {
+          equivalenceClassesByType.put(idListType, ImmutableSet.<String>builder());
+        }
+
+        // for each document...
+        for (final DocumentResult documentResult : documentResults) {
+          // for true positives and false positives...
+          for (final IDListType idListType : IDListType.values()) {
+            final ImmutableSet.Builder<String> idsForType = equivalenceClassesByType.get(idListType);
+            List<TypeRoleFillerRealis> confusionCellContents =
+                documentResult.confusionMatrix.cell(idListType.leftKey(), idListType.rightKey());
+            // record the Ids of all answers of that type
+            for (final TypeRoleFillerRealis equivClass : confusionCellContents) {
+              idsForType.add(equivClass.uniqueIdentifier());
+            }
+          }
+        }
+
+        for (final IDListType idListType : IDListType.values()) {
+          final File outputFile = new File(outputDirectory, idListType.name() + ".ids.txt");
+          Files.asCharSink(outputFile, Charsets.UTF_8).writeLines(
+              equivalenceClassesByType.get(idListType).build());
+        }
+      }
+    }
 
     /**
      * Computes and outputs what would happen if we had perfect precision, recall, etc.
