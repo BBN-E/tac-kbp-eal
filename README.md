@@ -7,7 +7,6 @@ This repository contains three artifacts:
 the task. While these are mainly to support the executables in this repository,
 if your system is based on Java or another JVM language, feel free to
 use them. 
-validating system answers, etc.
 * `kbp-events2014-scorer` contains the scoring code (but not scoring binary).
 * `kbp-events2014-bin` contains all the executable programs: the validator, the pooler, the scorer, etc.
 
@@ -143,7 +142,7 @@ Add the following to the `dependencies` section of your project's `pom.xml` (or 
       <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
-This artifact is not deployed to Maven Central or anywhere, so you will need to
+This artifact is not deployed to Maven Central, so you will need to
 install it in your local repository as described above.
 
 ### How can I used the LDC's assessment of the pilot with this code?
