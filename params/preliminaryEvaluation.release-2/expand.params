@@ -1,0 +1,4 @@
+INCLUDE root.params
+
+inputStore: %assessmentDir%
+outputStore: %expanded%
