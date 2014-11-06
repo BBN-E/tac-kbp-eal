@@ -11,6 +11,9 @@ import com.google.common.collect.Ordering;
 
 import java.util.Map;
 
+import static com.google.common.base.Functions.compose;
+import static com.google.common.base.Functions.toStringFunction;
+
 public final class BreakdownFunctions {
     public static final Function<TypeRoleFillerRealis,Symbol> TypeDotRole = new Function<TypeRoleFillerRealis, Symbol> () {
 
@@ -63,7 +66,9 @@ public final class BreakdownFunctions {
             "Type", TypeRoleFillerRealis.Type,
             "Role", BreakdownFunctions.TypeDotRole,
             "Genre", BreakdownFunctions.Genre,
-            "DocId", TypeRoleFillerRealis.DocID);
+            "DocId", TypeRoleFillerRealis.DocID,
+            "Realis", compose(Symbol.FromString,
+                        compose(toStringFunction(), TypeRoleFillerRealis.realisFunction())));
 
 
     private BreakdownFunctions() {

@@ -7,7 +7,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.Ordering;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
@@ -192,12 +191,22 @@ public final class TypeRoleFillerRealis implements Comparable<TypeRoleFillerReal
     public TypeRoleFillerRealis copyWithModifiedType(Symbol newType) {
         return TypeRoleFillerRealis.create(docID(), newType, role(), realis(), argumentCanonicalString());
     }
-    
+
+    /******************** oh, to be able to use Java 8-functions ***********/
     public static Function<TypeRoleFillerRealis, String> uniqueIdFunction() {
         return new Function<TypeRoleFillerRealis, String>() {
             @Override
             public String apply(TypeRoleFillerRealis x) {
                 return x.uniqueIdentifier();
+            }
+        };
+    }
+
+    public static Function<TypeRoleFillerRealis, KBPRealis> realisFunction() {
+        return new Function<TypeRoleFillerRealis, KBPRealis>() {
+            @Override
+            public KBPRealis apply(TypeRoleFillerRealis input) {
+                return input.realis;
             }
         };
     }
