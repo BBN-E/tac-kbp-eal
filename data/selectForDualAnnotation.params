@@ -1,0 +1,4 @@
+annotatorsFile: /d4m/home/rgabbard/repos/eval-server-assessment-store/EAE_completed_docs.tab
+outputDirectory: /d4m/home/rgabbard/repos/eval-server-assessment-store/dual
+annotationStore: /d4m/home/rgabbard/repos/eval-server-assessment-store/annotation
+excludeListFile: /d4m/home/rgabbard/repos/eval-server-assessment-store/had_second_phase.txt
