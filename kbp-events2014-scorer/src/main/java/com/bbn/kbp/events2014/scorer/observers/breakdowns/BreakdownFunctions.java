@@ -48,7 +48,7 @@ public final class BreakdownFunctions {
         private static final Symbol BC = Symbol.from("Broadcast conversation");
         private static final Symbol BN = Symbol.from("Broadast News");
 
-        private static final Map<String, Symbol> prefixToGenre = MultimapUtils.copyAsMap(
+        private static final ImmutableMap<String, Symbol> prefixToGenre = MultimapUtils.copyAsMap(
                 ImmutableMultimap.<Symbol, String>builder()
                         .putAll(BC, "CNN_CF", "CNN_IP")
                         .putAll(BN, "CNN_", "CNNHL")
