@@ -238,6 +238,14 @@ public final class AnswerKey {
         return new AnswerKey(docId(), newAnnotated, newUnannotated, newCorefAnnotation);
     }
 
+    public AnswerKey unannotatedCopy() {
+        final CorefAnnotation.Builder newCorefAnnotation = CorefAnnotation.strictBuilder(docId());
+        for (final Response response : allResponses()) {
+            newCorefAnnotation.addUnannotatedCAS(response.canonicalArgument());
+        }
+        return AnswerKey.from(docId(), ImmutableSet.<AssessedResponse>of(), allResponses(), newCorefAnnotation.build());
+    }
+
     public interface Filter {
         public Predicate<AssessedResponse> assessedFilter();
         public Predicate<Response> unassessedFilter();
