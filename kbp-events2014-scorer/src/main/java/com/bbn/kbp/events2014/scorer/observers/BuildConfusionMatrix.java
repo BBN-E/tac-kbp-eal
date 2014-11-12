@@ -76,7 +76,7 @@ public final class BuildConfusionMatrix<Answerable> extends KBPScoringObserver<A
 
             @Override
             public void writeDocumentOutput(File directory) throws IOException {
-
+				directory.mkdirs();
                 textOut.append("Confusion matrix for ").append(name());
                 final ProvenancedConfusionMatrix<?> confusionMatrix = confusionMatrixBuilder.build();
                 final SummaryConfusionMatrix summaryMatrix = confusionMatrix.buildSummaryMatrix();
