@@ -29,7 +29,7 @@
                   <mainClass>com.bbn.kbp.events2014.scorer.bin.KBPScorerBin</mainClass>
                   <name>kbpScorer</name>
                   <jvmSettings>
-                      <maxMemorySize>1g</maxMemorySize>
+                      <maxMemorySize>4G</maxMemorySize>
                   </jvmSettings>
               </program>
 
