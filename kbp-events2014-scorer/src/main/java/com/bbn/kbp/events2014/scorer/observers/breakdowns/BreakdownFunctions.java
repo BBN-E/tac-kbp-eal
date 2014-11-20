@@ -48,7 +48,7 @@ public final class BreakdownFunctions {
         private static final Symbol BC = Symbol.from("Broadcast conversation");
         private static final Symbol BN = Symbol.from("Broadast News");
 
-        private static final ImmutableMap<String, Symbol> prefixToGenre = MultimapUtils.copyAsMap(
+        private static final ImmutableMap<String, Symbol> prefixToGenre = ImmutableMap.copyOf(MultimapUtils.copyAsMap(
                 ImmutableMultimap.<Symbol, String>builder()
                         .putAll(BC, "CNN_CF", "CNN_IP")
                         .putAll(BN, "CNN_", "CNNHL")
@@ -59,7 +59,7 @@ public final class BreakdownFunctions {
                                 "FLOPPING_ACES", "GETTINGPOLITICAL", "HEALINGIRAQ", "MARKBACKER", "OIADVANTAGE", "TTRACY")
                         .putAll(SPEECH, "fsh_")
                         .build()
-                        .inverse());
+                        .inverse()));
     }
 
     public static final Map<String, Function<TypeRoleFillerRealis, Symbol>> StandardBreakdowns = ImmutableMap.of(
