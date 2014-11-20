@@ -1,0 +1,12 @@
+INCLUDE root.params
+
+answerKey: %expanded%
+systemOutputsDir: %quoteFiltered%
+scoringOutputRoot: %scoreOutput%
+annotationComplete: true
+documentsToScore: %kbpRepo%/data/final_pre_qc.list
+neutralizeRealis: false
+goldFileFormat: KBP2014
+systemFormat: KBP2014
+bootstrapSeed: 0
+numBootstrapSamples: 10000

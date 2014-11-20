@@ -1,0 +1,11 @@
+INCLUDE ../kbpRepoPath.params
+
+outputDir: %kbpRepo%/output/final_pre_qc
+participantDir: %outputDir%/participantSubmissions
+assessmentDir: %outputDir%/ldcAssessment/data/LDC_assessments
+
+expanded: %outputDir%/expanded
+
+quoteFiltered: %outputDir%/quoteFiltered
+scoreOutput: %outputDir%/scoreOutput
+fileFormat: KBP2014
