@@ -106,6 +106,7 @@ public abstract class SummaryConfusionMatrix {
     public abstract double columnSum(Symbol column);
 
     public abstract SummaryConfusionMatrix filteredCopy(CellFilter filter);
+    public abstract SummaryConfusionMatrix copyWithTransformedLabels(Function<Symbol, Symbol> f);
 
     protected abstract void accumulateTo(Builder builder);
 
@@ -214,6 +215,15 @@ public abstract class SummaryConfusionMatrix {
                 if (filter.keepCell(cell.getRowKey(), cell.getColumnKey())) {
                     ret.accumulate(cell.getRowKey(), cell.getColumnKey(), cell.getValue());
                 }
+            }
+            return ret.build();
+        }
+
+        @Override
+        public SummaryConfusionMatrix copyWithTransformedLabels(Function<Symbol, Symbol> f) {
+            final SummaryConfusionMatrix.Builder ret = SummaryConfusionMatrix.builder();
+            for (final Table.Cell<Symbol, Symbol, Double> cell : table.cellSet()) {
+                ret.accumulate(f.apply(cell.getRowKey()), f.apply(cell.getColumnKey()), cell.getValue());
             }
             return ret.build();
         }
@@ -345,5 +355,17 @@ public abstract class SummaryConfusionMatrix {
             }
             return builder.build();
         }
+
+        @Override
+        public SummaryConfusionMatrix copyWithTransformedLabels(Function<Symbol, Symbol> f) {
+            final SummaryConfusionMatrix.Builder builder = SummaryConfusionMatrix.builder();
+            for (final Symbol left : leftLabels()) {
+                for (final Symbol right : rightLabels()) {
+                    builder.accumulate(f.apply(left), f.apply(right), cell(left, right));
+                }
+            }
+            return builder.build();
+        }
+
     }
 }
