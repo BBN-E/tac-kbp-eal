@@ -4,7 +4,7 @@ answerKey: %expanded%
 systemOutputsDir: %quoteFiltered%
 scoringOutputRoot: %scoreOutput%
 annotationComplete: true
-documentsToScore: %kbpRepo%/data/final_pre_qc.list
+documentsToScore: %kbpRepo%/data/final_post_qc.list
 neutralizeRealis: false
 goldFileFormat: KBP2014
 systemFormat: KBP2014

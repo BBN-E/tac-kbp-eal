@@ -1,6 +1,6 @@
 INCLUDE ../kbpRepoPath.params
 
-outputDir: %kbpRepo%/output/final_pre_qc
+outputDir: %kbpRepo%/output/final_post_qc
 participantDir: %outputDir%/participantSubmissions
 assessmentDir: %outputDir%/ldcAssessment/data/LDC_assessments
 

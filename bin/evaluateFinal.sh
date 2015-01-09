@@ -11,8 +11,8 @@ QUOTEFILTER=true
 : ${PARTICIPANTS:?"Need to set PARTICIPANTS to /nfs/mercury-04/u10/kbp/eval/KBP2014_event-argument_runs_20140819"}
 : ${ASSESSMENTS:?"Need to set $ASSESSMENTS to path of a copy of LDC2014E40_TAC_2014_KBP_Event_Argument_Extraction_Pilot_Assessment_Results.tgz"}
 
-EVALDIR=${KBPOPENREPO}/output/final_pre_qc
-LOG=$EVALDIR/log/final_pre_qc.log 
+EVALDIR=${KBPOPENREPO}/output/final_post_qc
+LOG=$EVALDIR/log/final_post_qc.log 
 
 echo "Using working copy $KBPOPENREPO"
 echo "Writing log to $EVALDIR/log"
