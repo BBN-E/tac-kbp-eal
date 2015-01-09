@@ -4,12 +4,10 @@ import com.bbn.bue.common.diff.SummaryConfusionMatrix;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.AnswerKey;
-import com.bbn.kbp.events2014.AssessedResponse;
-import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.ResponseAssessment;
+import com.bbn.kbp.events2014.*;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.*;
 import org.slf4j.Logger;
@@ -112,7 +110,7 @@ public final class DualAnnotationAgreement {
             .put("CAS", SummaryConfusionMatrix.builder())
             .put("CAS type", SummaryConfusionMatrix.builder())
             .put("Realis", SummaryConfusionMatrix.builder()).build();
-
+        final ImmutableSet<String> USES_CORRECT_INEXACT = ImmutableSet.of("AET", "AER", "BF", "CAS");
 
         public void recordAgreement(ResponseAssessment leftAssessment, ResponseAssessment rightAssessment) {
             recordAssessment(assessmentNameToConfusionMatrix.get("AET"),
@@ -135,6 +133,8 @@ public final class DualAnnotationAgreement {
         }
 
         private static final Symbol NA = Symbol.from("n/a");
+        private static final Symbol PRESENT = Symbol.from("Present");
+
         private static <T> Symbol asSymbol(Optional<T> assessment) {
             if (assessment.isPresent()) {
                 return Symbol.from(assessment.get().toString());
@@ -150,18 +150,74 @@ public final class DualAnnotationAgreement {
             }
         };
 
+        private static final Function<Symbol, Symbol> ASSESSMENT_IS_PRESENT = new Function<Symbol, Symbol>() {
+            @Override
+            public Symbol apply(Symbol x) {
+                if (NA.equals(x)) {
+                    return NA;
+                } else {
+                    return PRESENT;
+                }
+            }
+        };
+
+        private static final Function<Symbol, Symbol> COUNT_CORRECT_AND_INEXACT_AS_THE_SAME = new Function<Symbol, Symbol>() {
+            private final ImmutableSet<Symbol> IS_CORRECT_OR_INEXACT = ImmutableSet.of(
+                    Symbol.from(FieldAssessment.CORRECT.toString()),
+                    Symbol.from(FieldAssessment.INEXACT.toString()));
+            private final Symbol NOT_INCORRECT = Symbol.from("NotIncorrect");
+
+            @Override
+            public Symbol apply(Symbol x) {
+                if (IS_CORRECT_OR_INEXACT.contains(x)) {
+                    return NOT_INCORRECT;
+                } else {
+                    return x;
+                }
+            }
+        };
+
+        private static final KappaCalculator kappaCalculator = KappaCalculator.create();
         public void dumpResults() {
             for (final Map.Entry<String, SummaryConfusionMatrix.Builder> assessmentResults
                     : assessmentNameToConfusionMatrix.entrySet()) {
                 final String assessmentName = assessmentResults.getKey();
                 final SummaryConfusionMatrix confusionMatrix = assessmentResults.getValue().build();
                 System.out.println(" ============== " + assessmentName + " ==============\n\n");
-                System.out.println("Raw confusion matrix:\n");
-                System.out.println(confusionMatrix.prettyPrint());
+
                 final SummaryConfusionMatrix filteredConfusionMatrix = confusionMatrix.filteredCopy(NEITHER_IS_NA);
-                System.out.println("When defined only:\n");
+                System.out.println("Confusion matrix when both assessments are present:\n");
                 System.out.println(filteredConfusionMatrix.prettyPrint());
-                System.out.println();
+                System.out.format("Agreement: %.2f%%\n", 100.0 * filteredConfusionMatrix.accuracy());
+                System.out.format("Agreement kappa: %.2f\n\n", 100.0 * kappaCalculator.computeKappa(filteredConfusionMatrix));
+
+
+                if (USES_CORRECT_INEXACT.contains(assessmentName)) {
+                    final SummaryConfusionMatrix lenientConfusionMatrix =
+                            filteredConfusionMatrix.copyWithTransformedLabels(COUNT_CORRECT_AND_INEXACT_AS_THE_SAME);
+                    System.out.println("Confusion matrix when both assessments are present, collapsing CORRECT and INEXACT:\n");
+                    System.out.println(lenientConfusionMatrix.prettyPrint());
+                    System.out.format("Agreement: %.2f%%\n", 100.0 * lenientConfusionMatrix.accuracy());
+                    System.out.format("Agreement kappa: %.2f\n\n", 100.0 * kappaCalculator.computeKappa(lenientConfusionMatrix));
+
+                }
+            }
+
+            System.out.println("\n\n\nBelow are the 'presence agreement' numbers indicating how often both annotators made "
+                    + " a certain assessment at all, regardless of how they assessed.  A difference on assessment presence "
+                    + " generally indicates a difference on some prior assessment this assessment depends on.");
+
+            for (final Map.Entry<String, SummaryConfusionMatrix.Builder> assessmentResults
+                    : assessmentNameToConfusionMatrix.entrySet()) {
+                final String assessmentName = assessmentResults.getKey();
+                final SummaryConfusionMatrix confusionMatrix = assessmentResults.getValue().build();
+                System.out.println(" ============== " + assessmentName + " ==============\n\n");
+                System.out.println("Agreement concerning assessment presence");
+                final SummaryConfusionMatrix presenceConfusionMatrix =
+                        confusionMatrix.copyWithTransformedLabels(ASSESSMENT_IS_PRESENT);
+                System.out.println(presenceConfusionMatrix.prettyPrint());
+                System.out.format("Presence agreement: %.2f%%\n", 100.0 * presenceConfusionMatrix.accuracy());
+                System.out.format("Presence kappa: %.2f\n\n", 100.0 * kappaCalculator.computeKappa(presenceConfusionMatrix));
             }
         }
     }
