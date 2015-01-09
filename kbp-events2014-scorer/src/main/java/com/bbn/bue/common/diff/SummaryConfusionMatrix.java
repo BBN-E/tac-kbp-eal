@@ -105,7 +105,13 @@ public abstract class SummaryConfusionMatrix {
     public abstract double rowSum(Symbol row);
     public abstract double columnSum(Symbol column);
 
+    public abstract SummaryConfusionMatrix filteredCopy(CellFilter filter);
+
     protected abstract void accumulateTo(Builder builder);
+
+    public interface CellFilter {
+        boolean keepCell(Symbol row, Symbol column);
+    }
 
     public static class Builder {
 		private final Table<Symbol, Symbol, Double> table = HashBasedTable.create();
@@ -199,6 +205,17 @@ public abstract class SummaryConfusionMatrix {
 
         public double columnSum(Symbol columnSymbol) {
             return DoubleUtils.sum(table.column(columnSymbol).values());
+        }
+
+        @Override
+        public SummaryConfusionMatrix filteredCopy(CellFilter filter) {
+            final SummaryConfusionMatrix.Builder ret = SummaryConfusionMatrix.builder();
+            for (final Table.Cell<Symbol, Symbol, Double> cell : table.cellSet()) {
+                if (filter.keepCell(cell.getRowKey(), cell.getColumnKey())) {
+                    ret.accumulate(cell.getRowKey(), cell.getColumnKey(), cell.getValue());
+                }
+            }
+            return ret.build();
         }
 
         protected void accumulateTo(Builder builder) {
@@ -314,6 +331,19 @@ public abstract class SummaryConfusionMatrix {
                 return 0.0;
             }
             return data[colIdx] + data[colIdx+2];
+        }
+
+        @Override
+        public SummaryConfusionMatrix filteredCopy(CellFilter filter) {
+            final SummaryConfusionMatrix.Builder builder = SummaryConfusionMatrix.builder();
+            for (final Symbol left : leftLabels()) {
+                for (final Symbol right : rightLabels()) {
+                    if (filter.keepCell(left, right)) {
+                        builder.accumulate(left, right, cell(left, right));
+                    }
+                }
+            }
+            return builder.build();
         }
     }
 }
