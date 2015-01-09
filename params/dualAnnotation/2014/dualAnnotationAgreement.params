@@ -1,0 +1,8 @@
+INCLUDE ../../kbpRepoPath.params
+
+dualAnnotation.docIDsToCompare: %kbpRepo%/data/2014.dual_annotation.list
+dualAnnotation.fileFormat: KBP2014
+dualAnnotation.left.name: Original
+dualAnnotation.left.path: /nfs/mercury-04/u10/kbp/eval/final_post_qc
+dualAnnotation.right.name: Dual
+dualAnnotation.right.path: %kbpRepo%/../eval-server-dual/annotation
