@@ -117,11 +117,12 @@ public abstract class SummaryConfusionMatrix {
     public static class Builder {
 		private final Table<Symbol, Symbol, Double> table = HashBasedTable.create();
 
-		public void accumulate(final SummaryConfusionMatrix matrix) {
+		public Builder accumulate(final SummaryConfusionMatrix matrix) {
             matrix.accumulateTo(this);
+            return this;
 		}
 
-		public void accumulate(final Symbol row, final Symbol col, final double val) {
+		public Builder accumulate(final Symbol row, final Symbol col, final double val) {
 			final Double cur = table.get(row, col);
 			final double setVal;
 			if (cur != null) {
@@ -130,7 +131,7 @@ public abstract class SummaryConfusionMatrix {
 				setVal = val;
 			}
 			table.put(row, col, setVal);
-
+            return this;
 		}
 
         /**
@@ -138,8 +139,9 @@ public abstract class SummaryConfusionMatrix {
          * the predictions are on the rows and the gold-standard on the columns, using this
          * method in such cases and make the code clearer and reduce errors.
          */
-        public void accumulatePredictedGold(final Symbol row, final Symbol col, final double val) {
+        public Builder accumulatePredictedGold(final Symbol row, final Symbol col, final double val) {
             accumulate(row, col, val);
+            return this;
         }
 
 		public SummaryConfusionMatrix build() {
