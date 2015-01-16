@@ -1,12 +1,17 @@
 package com.bbn.kbp.events2014.bin;
 
 import com.bbn.bue.common.diff.SummaryConfusionMatrix;
+import com.bbn.bue.common.evaluation.FMeasureInfo;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
+import com.bbn.bue.common.primitives.DoubleUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.*;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
+import com.bbn.nlp.coreference.measures.B3Scorer;
+import com.bbn.nlp.coreference.measures.BLANCScorer;
+import com.bbn.nlp.coreference.measures.MUCScorer;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.*;
@@ -15,9 +20,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 /**
  * Assesses the agreement for dual annotation on the same files.
@@ -77,6 +85,7 @@ public final class DualAnnotationAgreement {
         log.info("Loading right annotation store {} from {}", rightStoreName, rightStorePath);
 
         final AgreementRecorder agreementRecorder = new AgreementRecorder();
+        final CorefRecorder corefRecorder = new CorefRecorder();
 
         for (final Symbol docID : docIDsToCompare) {
             final AnswerKey leftAnnotation = leftAnnStore.read(docID);
@@ -96,9 +105,70 @@ public final class DualAnnotationAgreement {
             } else {
                 reportResponseMismatch(docID, leftAnnotationsIndexed.keySet(), rightAnnotationsIndexed.keySet());
             }
+
+            corefRecorder.observe(leftAnnotation.corefAnnotation(), rightAnnotation.corefAnnotation());
         }
 
         agreementRecorder.dumpResults();
+        System.out.println();
+        System.out.println();
+        corefRecorder.dumpResults();
+    }
+
+    private static class CorefRecorder {
+        private final B3Scorer b3Scorer = B3Scorer.createByElementScorer();
+        private final BLANCScorer blancScorer = BLANCScorer.create();
+        private final MUCScorer mucScorer = MUCScorer.create();
+        private final List<Float> b3Scores = Lists.newArrayList();
+        private final List<Double> blancScores = Lists.newArrayList();
+        private final List<Float> mucScores = Lists.newArrayList();
+
+        public void observe(CorefAnnotation left, CorefAnnotation right) {
+            checkArgument(left.docId().equals(right.docId()));
+            checkArgument(left.annotatedCASes().equals(right.annotatedCASes()));
+            final Collection<Collection<KBPString>> leftAsClusters = asCollectionOfCollections(left);
+            final Collection<Collection<KBPString>> rightAsClusters = asCollectionOfCollections(right);
+
+            b3Scores.add(b3Scorer.score(rightAsClusters, leftAsClusters).F1());
+            blancScores.add(blancScorer.score(rightAsClusters, leftAsClusters).blancF());
+            final Optional<FMeasureInfo> mucScore = mucScorer.score(rightAsClusters, leftAsClusters);
+            if (mucScore.isPresent()) {
+                mucScores.add(mucScore.get().F1());
+            } else {
+                log.warn("No valid MUC score can be computer for {}; it will not be included in the MUC score average",
+                        left.docId());
+            }
+        }
+
+        public void dumpResults() {
+            System.out.format("Mean coref score by B^3: %.2f\n", 100.0 * floatMean(b3Scores));
+            System.out.format("Mean coref score by BLANC: %.2f\n", 100.0 * doubleMean(blancScores));
+            System.out.format("Mean coref score by MUC: %.2f\n", 100.0 * floatMean(mucScores));
+        }
+
+        public double doubleMean(Collection<Double> vals) {
+            return DoubleUtils.sum(vals)/vals.size();
+        }
+
+        public float floatMean(Collection<Float> vals) {
+            float sum = 0.0f;
+            for (float x : vals) {
+                sum += x;
+            }
+            return sum /vals.size();
+        }
+
+
+
+        private Collection<Collection<KBPString>> asCollectionOfCollections(CorefAnnotation coref) {
+            final Multimap<Integer, KBPString> corefIdToResponse = HashMultimap.create();
+
+            for (final KBPString cas : coref.annotatedCASes()) {
+                corefIdToResponse.put(coref.corefId(cas).get(), cas);
+            }
+
+            return corefIdToResponse.asMap().values();
+        }
     }
 
     private static class AgreementRecorder {
@@ -111,6 +181,7 @@ public final class DualAnnotationAgreement {
             .put("CAS type", SummaryConfusionMatrix.builder())
             .put("Realis", SummaryConfusionMatrix.builder()).build();
         final ImmutableSet<String> USES_CORRECT_INEXACT = ImmutableSet.of("AET", "AER", "BF", "CAS");
+
 
         public void recordAgreement(ResponseAssessment leftAssessment, ResponseAssessment rightAssessment) {
             recordAssessment(assessmentNameToConfusionMatrix.get("AET"),
