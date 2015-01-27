@@ -134,6 +134,14 @@ public final class CorefAnnotation {
         return builder.build();
     }
 
+    public int numClusters() {
+        return idToCASes.keySet().size();
+    }
+
+    public ImmutableMultimap<Integer, KBPString> clusterIDToMembersMap() {
+        return idToCASes;
+    }
+
     public Symbol docId() {
         return docId;
     }
