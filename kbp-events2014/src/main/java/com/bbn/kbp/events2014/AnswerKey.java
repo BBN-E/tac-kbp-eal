@@ -228,6 +228,15 @@ public final class AnswerKey {
         return Optional.absent();
     }
 
+    public Optional<AssessedResponse> assess(Response response) {
+        final Optional<ResponseAssessment> ret = assessment(response);
+        if (ret.isPresent()) {
+            return Optional.of(AssessedResponse.from(response, ret.get()));
+        } else {
+            return Optional.absent();
+        }
+    }
+
     public AnswerKey filter(Filter filter) {
         final ImmutableSet<AssessedResponse> newAnnotated = FluentIterable.from(annotatedResponses())
                 .filter(filter.assessedFilter()).toSet();
