@@ -10,23 +10,24 @@ import java.io.IOException;
 import java.util.Set;
 
 /**
- * A utility for removing files from all datasets used by the annotation tool. We
- * used this when removing long documents during the evaluation.
+ * A utility for removing files from all datasets used by the annotation tool. We used this when
+ * removing long documents during the evaluation.
  */
 public final class FilterDatasets {
+
   private FilterDatasets() {
     throw new UnsupportedOperationException();
   }
 
   public static void main(String[] argv) {
-      // we wrap the main method in this way to
-      // ensure a non-zero return value on failure
-      try {
-          trueMain(argv);
-      } catch (Exception e) {
-          e.printStackTrace();
-          System.exit(1);
-      }
+    // we wrap the main method in this way to
+    // ensure a non-zero return value on failure
+    try {
+      trueMain(argv);
+    } catch (Exception e) {
+      e.printStackTrace();
+      System.exit(1);
+    }
   }
 
   private static void trueMain(String[] argv) throws IOException {

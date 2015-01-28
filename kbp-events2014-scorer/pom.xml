@@ -1,109 +1,113 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <parent>
-      <artifactId>kbp-events2014-all</artifactId>
-      <groupId>com.bbn.kbp.events2014</groupId>
-      <version>2.0.0-SNAPSHOT</version>
-      <relativePath>../pom.xml</relativePath>
-  </parent>
+    <parent>
+        <artifactId>kbp-events2014-all</artifactId>
+        <groupId>com.bbn.kbp.events2014</groupId>
+        <version>2.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
 
-  <modelVersion>4.0.0</modelVersion>
+    <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>kbp-events2014-scorer</artifactId>
-  <version>2.0.0-SNAPSHOT</version>
-  <packaging>jar</packaging>
+    <artifactId>kbp-events2014-scorer</artifactId>
+    <version>2.0.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
 
-  <name>2014 KBP Event Arguments Task Scorer</name>
-  <url>http://www.bbn.com/</url>
+    <name>2014 KBP Event Arguments Task Scorer</name>
+    <url>http://www.bbn.com/</url>
 
-  <build>
-      <plugins>
-                <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>appassembler-maven-plugin</artifactId>
-        <version>${appassembler.maven.plugin.version}</version>
-        <configuration>
-            <programs>
-                <program>
-                    <mainClass>com.bbn.kbp.events2014.assessmentDiff.KBPAssessmentDiff</mainClass>
-                    <name>assessmentDiff</name>
-                    <jvmSettings>
-                        <maxMemorySize>2G</maxMemorySize>
-                        <!-- <extraArguments>
-                            <extraArgument>-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=1044</extraArgument>
-                        </extraArguments> -->
-                    </jvmSettings>
-                </program>
-              </programs>
-              </configuration>
-              </plugin>
-  </plugins>
-  </build>
-  <dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>appassembler-maven-plugin</artifactId>
+                <version>${appassembler.maven.plugin.version}</version>
+                <configuration>
+                    <programs>
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.assessmentDiff.KBPAssessmentDiff
+                            </mainClass>
+                            <name>assessmentDiff</name>
+                            <jvmSettings>
+                                <maxMemorySize>2G</maxMemorySize>
+                                <!-- <extraArguments>
+                                    <extraArgument>-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=1044</extraArgument>
+                                </extraArguments> -->
+                            </jvmSettings>
+                        </program>
+                    </programs>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    <dependencies>
 
-<dependency>
-      <groupId>com.bbn.kbp.events2014</groupId>
-      <artifactId>kbp-events2014</artifactId>
-      <version>2.0.0-SNAPSHOT</version>
-  </dependency>
+        <dependency>
+            <groupId>com.bbn.kbp.events2014</groupId>
+            <artifactId>kbp-events2014</artifactId>
+            <version>2.0.0-SNAPSHOT</version>
+        </dependency>
 
-  <dependency>
-      <groupId>com.bbn.bue</groupId>
-      <artifactId>common-core-open</artifactId>
-  </dependency>
+        <dependency>
+            <groupId>com.bbn.bue</groupId>
+            <artifactId>common-core-open</artifactId>
+        </dependency>
 
-<dependency>
-      <groupId>com.bbn.bue</groupId>
-      <artifactId>common-core-jackson-serialization-open</artifactId>
-  </dependency>
+        <dependency>
+            <groupId>com.bbn.bue</groupId>
+            <artifactId>common-core-jackson-serialization-open</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <!-- <scope>test</scope> -->
-    </dependency>
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <!-- <scope>test</scope> -->
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
 
-	<dependency>
-	<groupId>org.slf4j</groupId>
-	<artifactId>slf4j-api</artifactId>
-</dependency>
-
- 
- <dependency>
- <groupId>commons-lang</groupId>
- <artifactId>commons-lang</artifactId>
- <version>2.3</version>
-</dependency>
-
-      <dependency>
-          <groupId>com.carrotsearch</groupId>
-          <artifactId>hppc</artifactId>
-          <version>0.6.0</version>
-      </dependency>
-
-  </dependencies>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
 
 
-<reporting>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <version>${maven.javadoc.plugin.version}</version>
-        <configuration>
-          <show>package</show>
-          <quiet>true</quiet>
-          <linksource>true</linksource>
-          <links>
-            <link>http://docs.guava-libraries.googlecode.com/git-history/v${guava.version}/javadoc/</link>
-          </links>
-        </configuration>
-      </plugin>
-    </plugins>
-  </reporting>
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>2.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.carrotsearch</groupId>
+            <artifactId>hppc</artifactId>
+            <version>0.6.0</version>
+        </dependency>
+
+    </dependencies>
+
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${maven.javadoc.plugin.version}</version>
+                <configuration>
+                    <show>package</show>
+                    <quiet>true</quiet>
+                    <linksource>true</linksource>
+                    <links>
+                        <link>
+                            http://docs.guava-libraries.googlecode.com/git-history/v${guava.version}/javadoc/
+                        </link>
+                    </links>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
 
 </project>

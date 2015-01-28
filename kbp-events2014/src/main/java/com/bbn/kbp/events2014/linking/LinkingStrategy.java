@@ -5,5 +5,6 @@ import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.SystemOutput;
 
 public interface LinkingStrategy {
-	public ResponseLinking linkResponses(final SystemOutput systemOutput, final AnswerKey answerKey);
+
+  public ResponseLinking linkResponses(final SystemOutput systemOutput, final AnswerKey answerKey);
 }

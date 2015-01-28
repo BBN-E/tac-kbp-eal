@@ -10,36 +10,40 @@ import java.util.Set;
  * A do-nothing implementation of HTMLErrorRecorder
  */
 public final class NullHTMLErrorRecorder implements HTMLErrorRecorder {
-    private NullHTMLErrorRecorder() {}
-    public static NullHTMLErrorRecorder getInstance() {
-        return new NullHTMLErrorRecorder();
-    }
+
+  private NullHTMLErrorRecorder() {
+  }
+
+  public static NullHTMLErrorRecorder getInstance() {
+    return new NullHTMLErrorRecorder();
+  }
 
 
-    @Override
-    public String preamble() {
-        return "";
-    }
+  @Override
+  public String preamble() {
+    return "";
+  }
 
-    @Override
-    public String vsAnnotated(String clazz, String title, Response headerResponse, Scored<Response> response, AssessedResponse annotatedResponse) {
-        return "";
-    }
+  @Override
+  public String vsAnnotated(String clazz, String title, Response headerResponse,
+      Scored<Response> response, AssessedResponse annotatedResponse) {
+    return "";
+  }
 
-    @Override
-    public String vsAnnotated(String clazz, String title, Response response, Set<AssessedResponse> annotatedResponses) {
-        return "";
-    }
+  @Override
+  public String vsAnnotated(String clazz, String title, Response response,
+      Set<AssessedResponse> annotatedResponses) {
+    return "";
+  }
 
-    @Override
-    public String vsAnnotated(String clazz, String title, Response headerResponse,
-                              Iterable<Scored<Response>> scoredResponses, Iterable<AssessedResponse> annotatedResponses)
-    {
-        return "";
-    }
+  @Override
+  public String vsAnnotated(String clazz, String title, Response headerResponse,
+      Iterable<Scored<Response>> scoredResponses, Iterable<AssessedResponse> annotatedResponses) {
+    return "";
+  }
 
-    @Override
-    public String correct(Scored<Response> response) {
-        return "";
-    }
+  @Override
+  public String correct(Scored<Response> response) {
+    return "";
+  }
 }

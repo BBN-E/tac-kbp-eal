@@ -1,23 +1,24 @@
 package com.bbn.kbp.events2014.scorer;
 
-import java.io.IOException;
+import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.SystemOutput;
 
 import junit.framework.TestCase;
 
 import org.junit.Test;
 
-import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.AnswerKey;
-import com.bbn.kbp.events2014.SystemOutput;
+import java.io.IOException;
 
 public class ScorerTest extends TestCase {
-	private SystemOutput gold;
-	private SystemOutput predicted;
-	private AnswerKey completelyAnnotated;
 
-	@Override
-	public void setUp() throws IOException {
-		/*gold = AssessmentSpecFormats.argumentSourceFrom(asCharSource(
+  private SystemOutput gold;
+  private SystemOutput predicted;
+  private AnswerKey completelyAnnotated;
+
+  @Override
+  public void setUp() throws IOException {
+                /*gold = AssessmentSpecFormats.argumentSourceFrom(asCharSource(
 			getResource(ScorerTest.class, "/AFP_ENG_20030304.0250.sgm.gold.ldc.txt"),
 			Charsets.UTF_8)).get();
 
@@ -28,10 +29,10 @@ public class ScorerTest extends TestCase {
 		completelyAnnotated = AssessmentSpecFormats.annotationSourceFrom((asCharSource(
 			getResource(ScorerTest.class, "/AFP_ENG_20030304.0250.sgm.annotated.ldc.txt"),
 			Charsets.UTF_8))).get();*/
-	}
+  }
 
-	@Test
-	public void testCompleteAnnotationScoring() {
+  @Test
+  public void testCompleteAnnotationScoring() {
 		/*final AnswerableExtractorAligner<AllFields, KBPOutputArgument, KBPAnnotatedArgument> aligner = AnswerableExtractorAligner.forAnswerExtractors(
 			KBPScorer.ExtractAllFieldsFromSystemResponse, KBPScorer.ExtractAllFieldsFromAnnotation);
 
@@ -39,12 +40,12 @@ public class ScorerTest extends TestCase {
 				aligner.align(predicted, completelyAnnotated);
 
 		KBPScorer.scoreComplete(alignment);*/
-	}
+  }
 
-	private static final Symbol PRESENT = Symbol.from("PRESENT");
-	private static final Symbol ABSENT = Symbol.from("ABSENT");
-	private static final Symbol CORRECT = Symbol.from("CORRECT");
-	private static final Symbol INCORRECT = Symbol.from("INCORRECT");
+  private static final Symbol PRESENT = Symbol.from("PRESENT");
+  private static final Symbol ABSENT = Symbol.from("ABSENT");
+  private static final Symbol CORRECT = Symbol.from("CORRECT");
+  private static final Symbol INCORRECT = Symbol.from("INCORRECT");
 
 /*	@Test
 	public void testIncompleteOnComplete() {

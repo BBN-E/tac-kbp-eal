@@ -8,9 +8,11 @@ import java.io.File;
 import java.io.IOException;
 
 /**
-* Created by rgabbard on 5/20/14.
-*/
+ * Created by rgabbard on 5/20/14.
+ */
 public interface AssessmentPairObserver {
-    public void observe(Response response, ResponseAssessment left, ResponseAssessment right);
-    public void finish(DiffLogger diffLogger, File outputDir) throws IOException;
+
+  public void observe(Response response, ResponseAssessment left, ResponseAssessment right);
+
+  public void finish(DiffLogger diffLogger, File outputDir) throws IOException;
 }

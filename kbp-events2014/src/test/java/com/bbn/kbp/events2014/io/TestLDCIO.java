@@ -2,96 +2,111 @@ package com.bbn.kbp.events2014.io;
 
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.*;
+import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.AssessedResponse;
+import com.bbn.kbp.events2014.CharOffsetSpan;
+import com.bbn.kbp.events2014.CorefAnnotation;
+import com.bbn.kbp.events2014.FieldAssessment;
+import com.bbn.kbp.events2014.KBPRealis;
+import com.bbn.kbp.events2014.KBPString;
+import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.ResponseAssessment;
 import com.bbn.kbp.events2014.ResponseAssessment.MentionType;
+import com.bbn.kbp.events2014.SystemOutput;
+
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Files;
+
 import junit.framework.TestCase;
+
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 
 public class TestLDCIO extends TestCase {
-	private final Symbol docid = Symbol.from("AFP_ENG_20030304.0250");
-	private Scored<Response> arg;
-	private ResponseAssessment ann;
-	private AssessedResponse annArg;
 
-	@Override
-	public void setUp() {
-		final KBPString cas = KBPString.from("Phillipines",
-			CharOffsetSpan.fromOffsetsOnly(42, 64));
-		arg = Scored.from(Response.createFrom(docid,
-			Symbol.from("Conflict.Attack"),
-			Symbol.from("Attacker"),
-			cas,
-			cas.charOffsetSpan(),
-			ImmutableSet.of(CharOffsetSpan.fromOffsetsOnly(327, 397)),
-			ImmutableSet.of(CharOffsetSpan.fromOffsetsOnly(373, 383)),
-			KBPRealis.Actual), 0.5465980768203735);
-		ann = ResponseAssessment.create(Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.CORRECT),
-                Optional.of(FieldAssessment.CORRECT),
-                Optional.of(KBPRealis.Actual),
-                Optional.of(FieldAssessment.CORRECT),
-                Optional.of(MentionType.NAME));
-		annArg = AssessedResponse.from(arg.item(), ann);
-	}
+  private final Symbol docid = Symbol.from("AFP_ENG_20030304.0250");
+  private Scored<Response> arg;
+  private ResponseAssessment ann;
+  private AssessedResponse annArg;
 
-    @Test
-    public void testArgumentRoundtrip2014() throws IOException {
-        testArgumentRoundtrip(AssessmentSpecFormats.Format.KBP2014);
-    }
+  @Override
+  public void setUp() {
+    final KBPString cas = KBPString.from("Phillipines",
+        CharOffsetSpan.fromOffsetsOnly(42, 64));
+    arg = Scored.from(Response.createFrom(docid,
+        Symbol.from("Conflict.Attack"),
+        Symbol.from("Attacker"),
+        cas,
+        cas.charOffsetSpan(),
+        ImmutableSet.of(CharOffsetSpan.fromOffsetsOnly(327, 397)),
+        ImmutableSet.of(CharOffsetSpan.fromOffsetsOnly(373, 383)),
+        KBPRealis.Actual), 0.5465980768203735);
+    ann = ResponseAssessment
+        .create(Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.CORRECT),
+            Optional.of(FieldAssessment.CORRECT),
+            Optional.of(KBPRealis.Actual),
+            Optional.of(FieldAssessment.CORRECT),
+            Optional.of(MentionType.NAME));
+    annArg = AssessedResponse.from(arg.item(), ann);
+  }
 
-    @Test
-    public void testArgumentRoundtrip2015() throws IOException {
-        testArgumentRoundtrip(AssessmentSpecFormats.Format.KBP2015);
-    }
+  @Test
+  public void testArgumentRoundtrip2014() throws IOException {
+    testArgumentRoundtrip(AssessmentSpecFormats.Format.KBP2014);
+  }
 
-	public void testArgumentRoundtrip(AssessmentSpecFormats.Format format) throws IOException {
-		final File tmpDir = Files.createTempDir();
-		tmpDir.deleteOnExit();
+  @Test
+  public void testArgumentRoundtrip2015() throws IOException {
+    testArgumentRoundtrip(AssessmentSpecFormats.Format.KBP2015);
+  }
 
-		final SystemOutputStore store1 = AssessmentSpecFormats.createSystemOutputStore(tmpDir, format);
-		store1.write(SystemOutput.from(docid, ImmutableList.of(arg)));
-		store1.close();
+  public void testArgumentRoundtrip(AssessmentSpecFormats.Format format) throws IOException {
+    final File tmpDir = Files.createTempDir();
+    tmpDir.deleteOnExit();
 
-		final SystemOutputStore source2 = AssessmentSpecFormats.openSystemOutputStore(tmpDir, format);
-		final SystemOutput rereadArg = source2.read(docid);
-		source2.close();
+    final SystemOutputStore store1 = AssessmentSpecFormats.createSystemOutputStore(tmpDir, format);
+    store1.write(SystemOutput.from(docid, ImmutableList.of(arg)));
+    store1.close();
 
-		assertEquals(1, rereadArg.size());
-		assertEquals(arg, Iterables.getFirst(rereadArg.scoredResponses(), null));
-	}
+    final SystemOutputStore source2 = AssessmentSpecFormats.openSystemOutputStore(tmpDir, format);
+    final SystemOutput rereadArg = source2.read(docid);
+    source2.close();
 
-    @Test
-    public void testAnnotationRoundtrip2014() throws IOException {
-        testAnnotationRoundtrip(AssessmentSpecFormats.Format.KBP2014);
-    }
+    assertEquals(1, rereadArg.size());
+    assertEquals(arg, Iterables.getFirst(rereadArg.scoredResponses(), null));
+  }
 
-    @Test
-    public void testAnnotationRoundtrip2015() throws IOException {
-        testAnnotationRoundtrip(AssessmentSpecFormats.Format.KBP2015);
-    }
+  @Test
+  public void testAnnotationRoundtrip2014() throws IOException {
+    testAnnotationRoundtrip(AssessmentSpecFormats.Format.KBP2014);
+  }
 
-	public void testAnnotationRoundtrip(AssessmentSpecFormats.Format format) throws IOException {
-		final File tmpDir = Files.createTempDir();
-		tmpDir.deleteOnExit();
+  @Test
+  public void testAnnotationRoundtrip2015() throws IOException {
+    testAnnotationRoundtrip(AssessmentSpecFormats.Format.KBP2015);
+  }
 
-		final AnnotationStore store1 = AssessmentSpecFormats.createAnnotationStore(tmpDir, format);
-        final CorefAnnotation coref = CorefAnnotation.strictBuilder(docid)
-                .corefCAS(annArg.response().canonicalArgument(), 1).build();
-        store1.write(AnswerKey.from(docid, ImmutableList.of(annArg), ImmutableList.<Response>of(), coref));
-        store1.close();
-		final AnnotationStore store2 = AssessmentSpecFormats.openAnnotationStore(tmpDir, format);
-		final AnswerKey rereadArg = store2.read(docid);
-		store2.close();
-		assertEquals(1, rereadArg.annotatedResponses().size());
-		assertEquals(annArg, Iterables.getFirst(rereadArg.annotatedResponses(), null));
-	}
+  public void testAnnotationRoundtrip(AssessmentSpecFormats.Format format) throws IOException {
+    final File tmpDir = Files.createTempDir();
+    tmpDir.deleteOnExit();
+
+    final AnnotationStore store1 = AssessmentSpecFormats.createAnnotationStore(tmpDir, format);
+    final CorefAnnotation coref = CorefAnnotation.strictBuilder(docid)
+        .corefCAS(annArg.response().canonicalArgument(), 1).build();
+    store1.write(
+        AnswerKey.from(docid, ImmutableList.of(annArg), ImmutableList.<Response>of(), coref));
+    store1.close();
+    final AnnotationStore store2 = AssessmentSpecFormats.openAnnotationStore(tmpDir, format);
+    final AnswerKey rereadArg = store2.read(docid);
+    store2.close();
+    assertEquals(1, rereadArg.annotatedResponses().size());
+    assertEquals(annArg, Iterables.getFirst(rereadArg.annotatedResponses(), null));
+  }
 
     /*@Ignore("temporarily ignored until we can update the file")
     @Test
