@@ -35,6 +35,11 @@
                         </program>
 
                         <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.ConvertTo2015Format</mainClass>
+                            <name>convertTo2015Format</name>
+                        </program>
+
+                        <program>
                             <mainClass>com.bbn.kbp.events2014.transformers.MergeAssessmentStores
                             </mainClass>
                             <name>mergeAssessmentStores</name>
