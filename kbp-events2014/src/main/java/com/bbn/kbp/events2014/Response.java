@@ -345,4 +345,13 @@ public final class Response {
       }
     };
   }
+
+  public static Function<Response, CharOffsetSpan> baseFillerFunction() {
+    return new Function<Response, CharOffsetSpan>() {
+      @Override
+      public CharOffsetSpan apply(final Response input) {
+        return input.baseFiller();
+      }
+    };
+  }
 }
