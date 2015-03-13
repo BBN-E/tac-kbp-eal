@@ -17,6 +17,7 @@ import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.nlp.coreference.measures.B3Scorer;
 import com.bbn.nlp.coreference.measures.BLANCScorer;
+import com.bbn.nlp.coreference.measures.BLANCScorers;
 import com.bbn.nlp.coreference.measures.MUCScorer;
 
 import com.google.common.base.Function;
@@ -150,7 +151,7 @@ public final class DualAnnotationAgreement {
   private static class CorefRecorder {
 
     private final B3Scorer b3Scorer = B3Scorer.createByElementScorer();
-    private final BLANCScorer blancScorer = BLANCScorer.create();
+    private final BLANCScorer blancScorer = BLANCScorers.getStandardBLANCScorer();
     private final MUCScorer mucScorer = MUCScorer.create();
     private final List<Float> b3Scores = Lists.newArrayList();
     private final List<Double> blancScores = Lists.newArrayList();
@@ -163,7 +164,7 @@ public final class DualAnnotationAgreement {
       final Collection<Collection<KBPString>> rightAsClusters = asCollectionOfCollections(right);
 
       b3Scores.add(b3Scorer.score(rightAsClusters, leftAsClusters).F1());
-      blancScores.add(blancScorer.score(rightAsClusters, leftAsClusters).blancF());
+      blancScores.add(blancScorer.score(rightAsClusters, leftAsClusters).blancScore());
       final Optional<FMeasureInfo> mucScore = mucScorer.score(rightAsClusters, leftAsClusters);
       if (mucScore.isPresent()) {
         mucScores.add(mucScore.get().F1());
