@@ -42,12 +42,14 @@ import static com.google.common.collect.Sets.union;
 public final class KBPScorer {
 
   private static final Logger log = LoggerFactory.getLogger(KBPScorer.class);
+  private final ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers;
 
-  private KBPScorer() {
+  private KBPScorer(final ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers) {
+    this.scoringObservers = scoringObservers;
   }
 
-  public static KBPScorer create() {
-    return new KBPScorer();
+  public static KBPScorer create(ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers) {
+    return new KBPScorer(scoringObservers);
   }
 
   /**
@@ -72,10 +74,9 @@ public final class KBPScorer {
       final File baseOutputDir)
       throws IOException {
     final Map<KBPScoringObserver<TypeRoleFillerRealis>, File> scorerToOutputDir =
-        makeScorerToOutputDir(baseOutputDir, scoringConfiguration.scoringObservers());
+        makeScorerToOutputDir(baseOutputDir, scoringObservers);
 
-    for (final KBPScoringObserver<TypeRoleFillerRealis> observer : scoringConfiguration
-        .scoringObservers()) {
+    for (final KBPScoringObserver<TypeRoleFillerRealis> observer : scoringObservers) {
       observer.startCorpus();
     }
 
@@ -131,7 +132,7 @@ public final class KBPScorer {
 
       final ImmutableMap<KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver,
           KBPScoringObserver<TypeRoleFillerRealis>> docObserversToCorpusObservers =
-          documentObserversForCorpusObservers(scoringConfiguration.scoringObservers(), answerKey,
+          documentObserversForCorpusObservers(scoringObservers, answerKey,
               systemOutput);
 
       final Set<KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver> docObservers =
@@ -230,7 +231,7 @@ public final class KBPScorer {
     }
 
     log.info("Reports for corpus:");
-    for (final KBPScoringObserver<?> observer : scoringConfiguration.scoringObservers) {
+    for (final KBPScoringObserver<?> observer : scoringObservers) {
       observer.endCorpus();
     }
 
@@ -307,14 +308,12 @@ public final class KBPScorer {
 
     private final ImmutableList<Function<AnswerKey, AnswerKey>> answerKeyTransformations;
     private final ImmutableList<Function<SystemOutput, SystemOutput>> systemOutputTransformations;
-    private final ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers;
 
     private ScoringConfiguration(Iterable<Function<AnswerKey, AnswerKey>> answerKeyTransformations,
         Iterable<Function<SystemOutput, SystemOutput>> systemOutputTransformations,
         Iterable<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers) {
       this.answerKeyTransformations = ImmutableList.copyOf(answerKeyTransformations);
       this.systemOutputTransformations = ImmutableList.copyOf(systemOutputTransformations);
-      this.scoringObservers = ImmutableList.copyOf(scoringObservers);
     }
 
     public static ScoringConfiguration create(
@@ -340,11 +339,6 @@ public final class KBPScorer {
     public ImmutableList<Function<SystemOutput, SystemOutput>> systemOutputTransformations() {
       return systemOutputTransformations;
     }
-
-    public ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers() {
-      return scoringObservers;
-    }
-
 
   }
 }

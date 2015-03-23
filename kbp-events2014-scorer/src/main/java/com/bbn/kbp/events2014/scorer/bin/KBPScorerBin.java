@@ -80,7 +80,7 @@ public final class KBPScorerBin {
         systemOutputTransformations, scoringObservers);
   }
 
-  private static List<KBPScoringObserver<TypeRoleFillerRealis>> getCorpusObservers(
+  private static ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> getCorpusObservers(
       Parameters params) {
     final List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers = Lists.newArrayList();
 
@@ -96,7 +96,7 @@ public final class KBPScorerBin {
     corpusObservers.add(StrictStandardScoringObserver.strictScorer(dummyRecorder, outputters));
     corpusObservers.add(StrictStandardScoringObserver.standardScorer(dummyRecorder, outputters));
 
-    return corpusObservers;
+    return ImmutableList.copyOf(corpusObservers);
   }
 
   private static final String NUM_BOOTSTRAP_SAMPLES = "numBootstrapSamples";
@@ -126,7 +126,7 @@ public final class KBPScorerBin {
     final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
     log.info(params.dump());
 
-    final KBPScorer scorer = KBPScorer.create();
+    final KBPScorer scorer = KBPScorer.create(getCorpusObservers(params));
     final AnnotationStore goldAnswerStore = AssessmentSpecFormats.openAnnotationStore(params
         .getExistingDirectory("answerKey"),
         params.getEnum("goldFileFormat", AssessmentSpecFormats.Format.class));
