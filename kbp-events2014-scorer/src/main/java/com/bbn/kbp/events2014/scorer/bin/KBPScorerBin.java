@@ -3,8 +3,6 @@ package com.bbn.kbp.events2014.scorer.bin;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.AnswerKey;
-import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
@@ -16,9 +14,7 @@ import com.bbn.kbp.events2014.scorer.observers.KBPScoringObserver;
 import com.bbn.kbp.events2014.scorer.observers.StrictStandardScoringObserver;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.HTMLErrorRecorder;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.NullHTMLErrorRecorder;
-import com.bbn.kbp.events2014.transformers.MakeAllRealisActual;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -61,23 +57,6 @@ public final class KBPScorerBin {
             "\tdocumentsToScore: file listing which documents to score."
     );
     System.exit(1);
-  }
-
-  private static KBPScorer.ScoringConfiguration getScoringConfiguration(Parameters params) {
-    final List<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers =
-        getCorpusObservers(params);
-
-    final List<Function<AnswerKey, AnswerKey>> answerKeyTransformations = Lists.newArrayList();
-    final List<Function<SystemOutput, SystemOutput>> systemOutputTransformations =
-        Lists.newArrayList();
-
-    if (params.getBoolean("neutralizeRealis")) {
-      answerKeyTransformations.add(MakeAllRealisActual.forAnswerKey());
-      systemOutputTransformations.add(MakeAllRealisActual.forSystemOutput());
-    }
-
-    return KBPScorer.ScoringConfiguration.create(answerKeyTransformations,
-        systemOutputTransformations, scoringObservers);
   }
 
   private static ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> getCorpusObservers(
@@ -126,7 +105,8 @@ public final class KBPScorerBin {
     final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
     log.info(params.dump());
 
-    final KBPScorer scorer = KBPScorer.create(getCorpusObservers(params));
+    final KBPScorer scorer = KBPScorer.create(PreprocessorKBP2014.fromParameters(params),
+        getCorpusObservers(params));
     final AnnotationStore goldAnswerStore = AssessmentSpecFormats.openAnnotationStore(params
         .getExistingDirectory("answerKey"),
         params.getEnum("goldFileFormat", AssessmentSpecFormats.Format.class));
@@ -163,8 +143,7 @@ public final class KBPScorerBin {
         final File outputDir = new File(scoringOutputRoot, subDir.getName());
 
         outputDir.mkdirs();
-        scorer.run(systemOutputStore, goldAnswerStore, documentsToScore,
-            getScoringConfiguration(params), outputDir);
+        scorer.run(systemOutputStore, goldAnswerStore, documentsToScore, outputDir);
       }
     }
   }
@@ -184,9 +163,7 @@ public final class KBPScorerBin {
       documentsToScore = union(systemOutputStore.docIDs(), goldAnswerStore.docIDs());
     }
 
-    scorer.run(systemOutputStore, goldAnswerStore, documentsToScore,
-        getScoringConfiguration(params),
-        params.getCreatableDirectory("scoringOutput"));
+    scorer.run(systemOutputStore, goldAnswerStore, documentsToScore, params.getCreatableDirectory("scoringOutput"));
   }
 
   private static ImmutableSet<Symbol> loadDocumentsToScore(Parameters params) throws IOException {

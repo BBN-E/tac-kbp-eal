@@ -2,8 +2,8 @@ package com.bbn.kbp.events2014.scorer.observers;
 
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.scorer.AnswerKeyAnswerSource;
-import com.bbn.kbp.events2014.scorer.SystemOutputAnswerSource;
+import com.bbn.kbp.events2014.scorer.AnswerKeyEquivalenceClasses;
+import com.bbn.kbp.events2014.scorer.SystemOutputEquivalenceClasses;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,8 +38,8 @@ public abstract class KBPScoringObserver<Answerable> {
    * Returns the object whose methods will be called for document-level events.
    */
   public abstract KBPAnswerSourceObserver answerSourceObserver(
-      final SystemOutputAnswerSource<Answerable> systemOutputSource,
-      final AnswerKeyAnswerSource<Answerable> answerKeyAnswerSource);
+      final SystemOutputEquivalenceClasses<Answerable> systemOutputSource,
+      final AnswerKeyEquivalenceClasses<Answerable> answerKeyAnswerSource);
 
   public final String name() {
     return name;
@@ -71,14 +71,14 @@ public abstract class KBPScoringObserver<Answerable> {
    */
   public abstract class KBPAnswerSourceObserver {
 
-    private final SystemOutputAnswerSource<Answerable> systemOutputSource;
-    private final AnswerKeyAnswerSource<Answerable> answerKeyAnswerSource;
+    private final SystemOutputEquivalenceClasses<Answerable> systemOutputSource;
+    private final AnswerKeyEquivalenceClasses<Answerable> answerKeyAnswerSource;
 
-    public final AnswerKeyAnswerSource<Answerable> answerKeyAnswerSource() {
+    public final AnswerKeyEquivalenceClasses<Answerable> answerKeyAnswerSource() {
       return answerKeyAnswerSource;
     }
 
-    public final SystemOutputAnswerSource<Answerable> systemOutputAnswerSource() {
+    public final SystemOutputEquivalenceClasses<Answerable> systemOutputAnswerSource() {
       return systemOutputSource;
     }
 
@@ -156,14 +156,14 @@ public abstract class KBPScoringObserver<Answerable> {
     /**
      * Get the system output for this document.
      */
-    protected final SystemOutputAnswerSource<Answerable> systemOutput() {
+    protected final SystemOutputEquivalenceClasses<Answerable> systemOutput() {
       return systemOutputSource;
     }
 
     /**
      * Get the answer key for this document.
      */
-    protected final AnswerKeyAnswerSource<Answerable> answerKey() {
+    protected final AnswerKeyEquivalenceClasses<Answerable> answerKey() {
       return answerKeyAnswerSource;
     }
 
@@ -178,8 +178,8 @@ public abstract class KBPScoringObserver<Answerable> {
 			}*/
     }
 
-    public KBPAnswerSourceObserver(final SystemOutputAnswerSource<Answerable> systemOutputSource,
-        final AnswerKeyAnswerSource<Answerable> answerKeyAnswerSource) {
+    public KBPAnswerSourceObserver(final SystemOutputEquivalenceClasses<Answerable> systemOutputSource,
+        final AnswerKeyEquivalenceClasses<Answerable> answerKeyAnswerSource) {
       this.systemOutputSource = checkNotNull(systemOutputSource);
       this.answerKeyAnswerSource = checkNotNull(answerKeyAnswerSource);
       checkArgument(systemOutputSource.systemOutput().docId()

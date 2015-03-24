@@ -18,12 +18,12 @@ import static com.google.common.collect.Iterables.transform;
 public final class ByJustificationLocation<Answerable extends Comparable<Answerable>>
     extends Ordering<Answerable> {
 
-  private final AnswerKeyAnswerSource<Answerable> answerKeySource;
-  private final SystemOutputAnswerSource<Answerable> systemSource;
+  private final AnswerKeyEquivalenceClasses<Answerable> answerKeySource;
+  private final SystemOutputEquivalenceClasses<Answerable> systemSource;
 
   public static <Answerable extends Comparable<Answerable>> ByJustificationLocation<Answerable> create(
-      final AnswerKeyAnswerSource<Answerable> answerKeySource,
-      final SystemOutputAnswerSource<Answerable> systemSource) {
+      final AnswerKeyEquivalenceClasses<Answerable> answerKeySource,
+      final SystemOutputEquivalenceClasses<Answerable> systemSource) {
     return new ByJustificationLocation<Answerable>(answerKeySource, systemSource);
   }
 
@@ -60,8 +60,8 @@ public final class ByJustificationLocation<Answerable extends Comparable<Answera
     }
   }
 
-  private ByJustificationLocation(final AnswerKeyAnswerSource<Answerable> answerKeySource,
-      final SystemOutputAnswerSource<Answerable> systemSource) {
+  private ByJustificationLocation(final AnswerKeyEquivalenceClasses<Answerable> answerKeySource,
+      final SystemOutputEquivalenceClasses<Answerable> systemSource) {
     checkArgument(answerKeySource.answerKey().docId() == systemSource.systemOutput().docId());
     this.answerKeySource = checkNotNull(answerKeySource);
     this.systemSource = checkNotNull(systemSource);

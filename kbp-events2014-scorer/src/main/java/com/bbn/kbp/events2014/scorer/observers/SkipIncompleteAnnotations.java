@@ -1,7 +1,7 @@
 package com.bbn.kbp.events2014.scorer.observers;
 
-import com.bbn.kbp.events2014.scorer.AnswerKeyAnswerSource;
-import com.bbn.kbp.events2014.scorer.SystemOutputAnswerSource;
+import com.bbn.kbp.events2014.scorer.AnswerKeyEquivalenceClasses;
+import com.bbn.kbp.events2014.scorer.SystemOutputEquivalenceClasses;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -61,8 +61,8 @@ public class SkipIncompleteAnnotations<Answerable> extends KBPScoringObserver<An
 
   @Override
   public KBPAnswerSourceObserver answerSourceObserver(
-      final SystemOutputAnswerSource<Answerable> systemOutputSource,
-      final AnswerKeyAnswerSource<Answerable> answerKeyAnswerSource) {
+      final SystemOutputEquivalenceClasses<Answerable> systemOutputSource,
+      final AnswerKeyEquivalenceClasses<Answerable> answerKeyAnswerSource) {
     ++docs;
     if (answerKeyAnswerSource.answerKey().completelyAnnotated()) {
       return innerObserver.answerSourceObserver(systemOutputSource,

@@ -14,20 +14,20 @@ import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class SystemOutputAnswerSource<Answerable> implements AnswerSource<Answerable, Response> {
+public class SystemOutputEquivalenceClasses<Answerable> implements AnswerSource<Answerable, Response> {
 
   private final SystemOutput systemOutput;
   private final Multimap<Answerable, Response> equivalenceClasses;
 
-  private SystemOutputAnswerSource(final SystemOutput systemOutput,
+  private SystemOutputEquivalenceClasses(final SystemOutput systemOutput,
       final Multimap<Answerable, Response> equivalenceClasses) {
     this.systemOutput = checkNotNull(systemOutput);
     this.equivalenceClasses = ImmutableMultimap.copyOf(equivalenceClasses);
   }
 
-  public static <Answerable> SystemOutputAnswerSource<Answerable> forAnswerable(
+  public static <Answerable> SystemOutputEquivalenceClasses<Answerable> forAnswerable(
       final SystemOutput systemOutput, final Function<Response, Answerable> answerableExtractor) {
-    return new SystemOutputAnswerSource<Answerable>(systemOutput,
+    return new SystemOutputEquivalenceClasses<Answerable>(systemOutput,
         Multimaps.index(systemOutput.responses(), answerableExtractor));
   }
 
