@@ -17,21 +17,21 @@ import static com.bbn.kbp.events2014.AssessedResponse.Response;
 import static com.google.common.base.Functions.compose;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class AnswerKeyAnswerSource<Answerable>
+public class AnswerKeyEquivalenceClasses<Answerable>
     implements AnswerSource<Answerable, AssessedResponse> {
 
   private final AnswerKey answerKey;
   private final Multimap<Answerable, AssessedResponse> equivalenceClasses;
 
-  private AnswerKeyAnswerSource(final AnswerKey answerKey,
+  private AnswerKeyEquivalenceClasses(final AnswerKey answerKey,
       final Multimap<Answerable, AssessedResponse> equivalenceClasses) {
     this.answerKey = checkNotNull(answerKey);
     this.equivalenceClasses = ImmutableMultimap.copyOf(equivalenceClasses);
   }
 
-  public static <Answerable> AnswerKeyAnswerSource<Answerable> forAnswerable(
+  public static <Answerable> AnswerKeyEquivalenceClasses<Answerable> forAnswerable(
       final AnswerKey answerKey, final Function<Response, Answerable> answerableExtractor) {
-    return new AnswerKeyAnswerSource<Answerable>(answerKey,
+    return new AnswerKeyEquivalenceClasses<Answerable>(answerKey,
         Multimaps.index(answerKey.annotatedResponses(),
             compose(answerableExtractor, Response)));
   }

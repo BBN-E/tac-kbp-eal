@@ -1,7 +1,7 @@
 package com.bbn.kbp.events2014.scorer.observers;
 
-import com.bbn.kbp.events2014.scorer.AnswerKeyAnswerSource;
-import com.bbn.kbp.events2014.scorer.SystemOutputAnswerSource;
+import com.bbn.kbp.events2014.scorer.AnswerKeyEquivalenceClasses;
+import com.bbn.kbp.events2014.scorer.SystemOutputEquivalenceClasses;
 
 /**
  * Does nothing except throw an exception if it encounters an unannotated answer key.
@@ -17,8 +17,8 @@ public final class ExitOnUnannotatedAnswerKey<Answerable> extends KBPScoringObse
 
   @Override
   public KBPAnswerSourceObserver answerSourceObserver(
-      final SystemOutputAnswerSource<Answerable> systemOutputSource,
-      final AnswerKeyAnswerSource<Answerable> answerKeyAnswerSource) {
+      final SystemOutputEquivalenceClasses<Answerable> systemOutputSource,
+      final AnswerKeyEquivalenceClasses<Answerable> answerKeyAnswerSource) {
     return new KBPAnswerSourceObserver(systemOutputSource, answerKeyAnswerSource) {
       @Override
       public void start() {

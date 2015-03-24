@@ -5,8 +5,8 @@ import com.bbn.bue.common.diff.SummaryConfusionMatrix;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.scorer.AnswerKeyAnswerSource;
-import com.bbn.kbp.events2014.scorer.SystemOutputAnswerSource;
+import com.bbn.kbp.events2014.scorer.AnswerKeyEquivalenceClasses;
+import com.bbn.kbp.events2014.scorer.SystemOutputEquivalenceClasses;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
@@ -49,8 +49,8 @@ public final class BuildConfusionMatrix<Answerable> extends KBPScoringObserver<A
 
   @Override
   public KBPAnswerSourceObserver answerSourceObserver(
-      final SystemOutputAnswerSource<Answerable> systemOutputSource,
-      final AnswerKeyAnswerSource<Answerable> answerKeyAnswerSource) {
+      final SystemOutputEquivalenceClasses<Answerable> systemOutputSource,
+      final AnswerKeyEquivalenceClasses<Answerable> answerKeyAnswerSource) {
     return new KBPAnswerSourceObserver(systemOutputSource, answerKeyAnswerSource) {
       final StringBuilder textOut = new StringBuilder();
 

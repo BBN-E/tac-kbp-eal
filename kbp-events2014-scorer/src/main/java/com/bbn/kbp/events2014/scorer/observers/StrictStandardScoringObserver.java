@@ -15,8 +15,8 @@ import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
-import com.bbn.kbp.events2014.scorer.AnswerKeyAnswerSource;
-import com.bbn.kbp.events2014.scorer.SystemOutputAnswerSource;
+import com.bbn.kbp.events2014.scorer.AnswerKeyEquivalenceClasses;
+import com.bbn.kbp.events2014.scorer.SystemOutputEquivalenceClasses;
 import com.bbn.kbp.events2014.scorer.observers.breakdowns.BreakdownComputer;
 import com.bbn.kbp.events2014.scorer.observers.breakdowns.BreakdownFunctions;
 import com.bbn.kbp.events2014.scorer.observers.breakdowns.BrokenDownSummaryConfusionMatrix;
@@ -169,8 +169,8 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
 
   @Override
   public KBPAnswerSourceObserver answerSourceObserver(
-      final SystemOutputAnswerSource<TypeRoleFillerRealis> systemOutputSource,
-      final AnswerKeyAnswerSource<TypeRoleFillerRealis> answerKeyAnswerSource) {
+      final SystemOutputEquivalenceClasses<TypeRoleFillerRealis> systemOutputSource,
+      final AnswerKeyEquivalenceClasses<TypeRoleFillerRealis> answerKeyAnswerSource) {
     return new StrictStandardAnswerSourceObserver(systemOutputSource, answerKeyAnswerSource);
   }
 
@@ -182,11 +182,11 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
     private final ProvenancedConfusionMatrix.Builder<TypeRoleFillerRealis> confusionMatrixBuilder;
     private final StringBuilder htmlOut;
     private final StringBuilder textOut;
-    private final SystemOutputAnswerSource<TypeRoleFillerRealis> systemOutputSource;
+    private final SystemOutputEquivalenceClasses<TypeRoleFillerRealis> systemOutputSource;
 
     public StrictStandardAnswerSourceObserver(
-        SystemOutputAnswerSource<TypeRoleFillerRealis> systemOutputSource,
-        AnswerKeyAnswerSource<TypeRoleFillerRealis> answerKeyAnswerSource) {
+        SystemOutputEquivalenceClasses<TypeRoleFillerRealis> systemOutputSource,
+        AnswerKeyEquivalenceClasses<TypeRoleFillerRealis> answerKeyAnswerSource) {
       super(systemOutputSource, answerKeyAnswerSource);
       this.systemOutputSource = systemOutputSource;
       confusionMatrixBuilder = ProvenancedConfusionMatrix.builder();

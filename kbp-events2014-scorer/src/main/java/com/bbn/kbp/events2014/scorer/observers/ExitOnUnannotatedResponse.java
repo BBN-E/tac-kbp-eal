@@ -2,9 +2,9 @@ package com.bbn.kbp.events2014.scorer.observers;
 
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.scorer.AnswerKeyAnswerSource;
+import com.bbn.kbp.events2014.scorer.AnswerKeyEquivalenceClasses;
 import com.bbn.kbp.events2014.scorer.IncompleteAnnotationException;
-import com.bbn.kbp.events2014.scorer.SystemOutputAnswerSource;
+import com.bbn.kbp.events2014.scorer.SystemOutputEquivalenceClasses;
 
 import java.util.Set;
 
@@ -23,8 +23,8 @@ public final class ExitOnUnannotatedResponse<Answerable> extends KBPScoringObser
 
   @Override
   public KBPAnswerSourceObserver answerSourceObserver(
-      final SystemOutputAnswerSource<Answerable> systemOutputSource,
-      final AnswerKeyAnswerSource<Answerable> answerKeyAnswerSource) {
+      final SystemOutputEquivalenceClasses<Answerable> systemOutputSource,
+      final AnswerKeyEquivalenceClasses<Answerable> answerKeyAnswerSource) {
     return new KBPAnswerSourceObserver(systemOutputSource, answerKeyAnswerSource) {
       @Override
       public void unannotatedSelectedResponse(final Answerable answerable,
