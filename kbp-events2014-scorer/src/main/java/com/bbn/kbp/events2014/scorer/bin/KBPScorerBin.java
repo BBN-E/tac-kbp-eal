@@ -63,21 +63,22 @@ public final class KBPScorerBin {
     System.exit(1);
   }
 
-  private static KBPScorer.ScoringConfiguration getScoringConfiguration(Parameters params) {
-    final List<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers =
-        getCorpusObservers(params);
-
+  private static ImmutableList<Function<AnswerKey, AnswerKey>> getAnswerKeyTransformations(Parameters params) {
     final List<Function<AnswerKey, AnswerKey>> answerKeyTransformations = Lists.newArrayList();
+    if (params.getBoolean("neutralizeRealis")) {
+      answerKeyTransformations.add(MakeAllRealisActual.forAnswerKey());
+    }
+    return ImmutableList.copyOf(answerKeyTransformations);
+  }
+
+  private static ImmutableList<Function<SystemOutput, SystemOutput>> getSystemOutputTransformations(Parameters params) {
     final List<Function<SystemOutput, SystemOutput>> systemOutputTransformations =
         Lists.newArrayList();
 
     if (params.getBoolean("neutralizeRealis")) {
-      answerKeyTransformations.add(MakeAllRealisActual.forAnswerKey());
       systemOutputTransformations.add(MakeAllRealisActual.forSystemOutput());
     }
-
-    return KBPScorer.ScoringConfiguration.create(answerKeyTransformations,
-        systemOutputTransformations, scoringObservers);
+    return ImmutableList.copyOf(systemOutputTransformations);
   }
 
   private static ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> getCorpusObservers(
@@ -149,6 +150,9 @@ public final class KBPScorerBin {
       KBPScorer scorer, Parameters params) throws IOException {
     final File systemOutputsDir = params.getExistingDirectory("systemOutputsDir");
     final File scoringOutputRoot = params.getCreatableDirectory("scoringOutputRoot");
+    final ImmutableList<Function<AnswerKey, AnswerKey>> answerKeyTransformations = getAnswerKeyTransformations(params);
+    final ImmutableList<Function<SystemOutput, SystemOutput>> systemOutputTransformations = getSystemOutputTransformations(
+        params);
 
     log.info("Scoring all subdirectories of {}", systemOutputsDir);
 
@@ -164,7 +168,7 @@ public final class KBPScorerBin {
 
         outputDir.mkdirs();
         scorer.run(systemOutputStore, goldAnswerStore, documentsToScore,
-            getScoringConfiguration(params), outputDir);
+            answerKeyTransformations, systemOutputTransformations, outputDir);
       }
     }
   }
@@ -177,6 +181,9 @@ public final class KBPScorerBin {
     log.info("Scoring single system output {}", systemOutputDir);
     final SystemOutputStore systemOutputStore =
         AssessmentSpecFormats.openSystemOutputStore(systemOutputDir, systemFormat);
+    final ImmutableList<Function<AnswerKey, AnswerKey>> answerKeyTransformations = getAnswerKeyTransformations(params);
+    final ImmutableList<Function<SystemOutput, SystemOutput>> systemOutputTransformations = getSystemOutputTransformations(
+        params);
     final Set<Symbol> documentsToScore;
     if (params.isPresent("documentsToScore")) {
       documentsToScore = loadDocumentsToScore(params);
@@ -185,7 +192,7 @@ public final class KBPScorerBin {
     }
 
     scorer.run(systemOutputStore, goldAnswerStore, documentsToScore,
-        getScoringConfiguration(params),
+        answerKeyTransformations, systemOutputTransformations,
         params.getCreatableDirectory("scoringOutput"));
   }
 

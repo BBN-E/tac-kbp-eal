@@ -57,11 +57,12 @@ public final class KBPScorer {
    * store.
    */
   public void run(SystemOutputStore systemOutputStore, AnnotationStore goldAnswerStore,
-      ScoringConfiguration scoringConfiguration,
+      ImmutableList<Function<AnswerKey, AnswerKey>> answerKeyTransformations,
+      ImmutableList<Function<SystemOutput, SystemOutput>> systemOutputTransformations,
       File baseOutputDir) throws IOException {
     run(systemOutputStore, goldAnswerStore,
         union(systemOutputStore.docIDs(), goldAnswerStore.docIDs()),
-        scoringConfiguration, baseOutputDir);
+        answerKeyTransformations, systemOutputTransformations, baseOutputDir);
   }
 
   /**
@@ -70,7 +71,8 @@ public final class KBPScorer {
   public void run(final SystemOutputStore systemAnswerStore,
       final AnnotationStore goldAnswerStore,
       final Set<Symbol> documentsToScore,
-      final ScoringConfiguration scoringConfiguration,
+      final ImmutableList<Function<AnswerKey, AnswerKey>> answerKeyTransformations,
+      final ImmutableList<Function<SystemOutput, SystemOutput>> systemOutputTransformations,
       final File baseOutputDir)
       throws IOException {
     final Map<KBPScoringObserver<TypeRoleFillerRealis>, File> scorerToOutputDir =
@@ -85,8 +87,7 @@ public final class KBPScorer {
 
       AnswerKey key = goldAnswerStore.readOrEmpty(docid);
 
-      for (Function<AnswerKey, AnswerKey> answerKeyTransformation : scoringConfiguration
-          .answerKeyTransformations()) {
+      for (Function<AnswerKey, AnswerKey> answerKeyTransformation : answerKeyTransformations) {
         key = answerKeyTransformation.apply(key);
       }
 
@@ -119,8 +120,7 @@ public final class KBPScorer {
               key, TypeRoleFillerRealis.extractFromSystemResponse(entityNormalizer));
 
       SystemOutput rawSystemOutput = systemAnswerStore.readOrEmpty(docid);
-      for (final Function<SystemOutput, SystemOutput> systemOutputTransformation : scoringConfiguration
-          .systemOutputTransformations()) {
+      for (final Function<SystemOutput, SystemOutput> systemOutputTransformation : systemOutputTransformations) {
         rawSystemOutput = systemOutputTransformation.apply(rawSystemOutput);
       }
       rawSystemOutput = temporalFilter.apply(rawSystemOutput);
@@ -301,44 +301,4 @@ public final class KBPScorer {
         }
       };
 
-  /**
-   * This object is mutable for convenience, and since it won't be stored.
-   */
-  public static class ScoringConfiguration {
-
-    private final ImmutableList<Function<AnswerKey, AnswerKey>> answerKeyTransformations;
-    private final ImmutableList<Function<SystemOutput, SystemOutput>> systemOutputTransformations;
-
-    private ScoringConfiguration(Iterable<Function<AnswerKey, AnswerKey>> answerKeyTransformations,
-        Iterable<Function<SystemOutput, SystemOutput>> systemOutputTransformations,
-        Iterable<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers) {
-      this.answerKeyTransformations = ImmutableList.copyOf(answerKeyTransformations);
-      this.systemOutputTransformations = ImmutableList.copyOf(systemOutputTransformations);
-    }
-
-    public static ScoringConfiguration create(
-        Iterable<Function<AnswerKey, AnswerKey>> answerKeyTransformations,
-        Iterable<Function<SystemOutput, SystemOutput>> systemOutputTransformations,
-        Iterable<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers) {
-      return new ScoringConfiguration(answerKeyTransformations, systemOutputTransformations,
-          scoringObservers);
-    }
-
-    public static ScoringConfiguration create(
-        Iterable<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers) {
-      return new ScoringConfiguration(
-          ImmutableList.<Function<AnswerKey, AnswerKey>>of(),
-          ImmutableList.<Function<SystemOutput, SystemOutput>>of(),
-          scoringObservers);
-    }
-
-    public ImmutableList<Function<AnswerKey, AnswerKey>> answerKeyTransformations() {
-      return answerKeyTransformations;
-    }
-
-    public ImmutableList<Function<SystemOutput, SystemOutput>> systemOutputTransformations() {
-      return systemOutputTransformations;
-    }
-
-  }
 }
