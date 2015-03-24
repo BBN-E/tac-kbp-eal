@@ -7,6 +7,7 @@ import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.events2014.scorer.AnswerKeyAnswerSource;
 import com.bbn.kbp.events2014.scorer.SystemOutputAnswerSource;
 
 import com.google.common.base.Function;
@@ -30,23 +31,17 @@ public interface Preprocess {
 
   public class Result {
 
-    private final AnswerKey answerKey;
+    private final AnswerKeyAnswerSource<TypeRoleFillerRealis> answerKey;
     private final SystemOutputAnswerSource<TypeRoleFillerRealis> systemOutput;
-    private final ImmutableList<Function<AnswerKey, AnswerKey>> answerKeyTransformations;
-    private final ImmutableList<Function<SystemOutput, SystemOutput>> systemOutputTransformations;
     private Function<KBPString, KBPString> normalizer;
 
-    protected Result(AnswerKey answerKey, SystemOutputAnswerSource<TypeRoleFillerRealis> systemOutput,
-        ImmutableList<Function<AnswerKey, AnswerKey>> answerKeyTransformations,
-        ImmutableList<Function<SystemOutput, SystemOutput>> systemOutputTransformations,
+    protected Result(AnswerKeyAnswerSource<TypeRoleFillerRealis> answerKey, SystemOutputAnswerSource<TypeRoleFillerRealis> systemOutput,
         Symbol docid) {
       this.answerKey = answerKey;
       this.systemOutput = systemOutput;
-      this.answerKeyTransformations = answerKeyTransformations;
-      this.systemOutputTransformations = systemOutputTransformations;
     }
 
-    public AnswerKey getAnswerKey() {
+    public AnswerKeyAnswerSource<TypeRoleFillerRealis> getAnswerKey() {
       return answerKey;
     }
 
@@ -56,14 +51,6 @@ public interface Preprocess {
 
     public Function<KBPString, KBPString> normalizer() {
       return normalizer;
-    }
-
-    public ImmutableList<Function<AnswerKey, AnswerKey>> answerKeyTransformations() {
-      return answerKeyTransformations;
-    }
-
-    public ImmutableList<Function<SystemOutput, SystemOutput>> systemOutputTransformations() {
-      return systemOutputTransformations;
     }
 
   }

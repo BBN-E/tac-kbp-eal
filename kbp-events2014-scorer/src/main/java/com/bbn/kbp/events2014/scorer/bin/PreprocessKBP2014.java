@@ -7,6 +7,7 @@ import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.events2014.scorer.AnswerKeyAnswerSource;
 import com.bbn.kbp.events2014.scorer.SystemOutputAnswerSource;
 import com.bbn.kbp.events2014.transformers.DeleteInjureForCorrectDie;
 import com.bbn.kbp.events2014.transformers.OnlyMostSpecificTemporal;
@@ -22,12 +23,7 @@ import java.util.Set;
  */
 public final class PreprocessKBP2014 implements Preprocess {
 
-  private final SystemOutputStore systemAnswerStore;
-  private final AnnotationStore goldAnswerStore;
-  private final Set<Symbol> documentsToScore;
-
-  private PreprocessKBP2014() {
-    throw new UnsupportedOperationException();
+  public PreprocessKBP2014() {
   }
 
   @Override
@@ -75,8 +71,10 @@ public final class PreprocessKBP2014 implements Preprocess {
     final SystemOutputAnswerSource<TypeRoleFillerRealis> systemOutput =
         SystemOutputAnswerSource.forAnswerable(rawSystemOutput,
             TypeRoleFillerRealis.extractFromSystemResponse(entityNormalizer));
-    Preprocess.Result result = new Preprocess.Result(key, systemOutput, answerKeyTransformations,
-        systemOutputTransformations, docid);
+    final AnswerKeyAnswerSource<TypeRoleFillerRealis> answerKey =
+        AnswerKeyAnswerSource.forAnswerable(
+            key, TypeRoleFillerRealis.extractFromSystemResponse(entityNormalizer));
+    Preprocess.Result result = new Preprocess.Result(answerKey, systemOutput, docid);
     return result;
   }
 }
