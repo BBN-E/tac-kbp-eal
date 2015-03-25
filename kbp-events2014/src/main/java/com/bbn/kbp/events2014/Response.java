@@ -337,6 +337,15 @@ public final class Response {
     };
   }
 
+  public static Function<Response, Symbol> roleFunction() {
+    return new Function<Response, Symbol>() {
+      @Override
+      public Symbol apply(final Response input) {
+        return input.role();
+      }
+    };
+  }
+
   public static Function<Response, KBPRealis> realisFunction() {
     return new Function<Response, KBPRealis>() {
       @Override
