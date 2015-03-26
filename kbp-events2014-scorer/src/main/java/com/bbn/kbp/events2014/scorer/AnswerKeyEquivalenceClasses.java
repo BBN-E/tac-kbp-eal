@@ -21,7 +21,7 @@ public class AnswerKeyEquivalenceClasses<Answerable>
     implements AnswerSource<Answerable, AssessedResponse> {
 
   private final AnswerKey answerKey;
-  private final Multimap<Answerable, AssessedResponse> equivalenceClasses;
+  private final ImmutableMultimap<Answerable, AssessedResponse> equivalenceClasses;
 
   private AnswerKeyEquivalenceClasses(final AnswerKey answerKey,
       final Multimap<Answerable, AssessedResponse> equivalenceClasses) {
@@ -48,5 +48,9 @@ public class AnswerKeyEquivalenceClasses<Answerable>
 
   public AnswerKey answerKey() {
     return answerKey;
+  }
+
+  public ImmutableMultimap<Answerable, AssessedResponse> asMultimap() {
+    return equivalenceClasses;
   }
 }
