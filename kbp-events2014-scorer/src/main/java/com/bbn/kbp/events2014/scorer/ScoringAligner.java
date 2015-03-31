@@ -85,10 +85,13 @@ final class StandardScoringAligner<EquivClassType> implements ScoringAligner<Equ
             if (assessmentOfSelectedResponse.get().isCorrectUpToInexactJustifications()) {
               truePositives.add(eqivClass);
             } else {
-              // it was a correct equivalence class, but we blew our chance at asserting it
-              // note we could have correct responses that weren't our most confident, but
-              // we don't get credit for that.
+              // it was a correct equivalence class, but we the system response for that
+              // equivalence class was incorrect (e.g. due to bad justifications).
+              // This counts as both a false positive and a false negative. Note that there
+              // could be a correct system response for the equivalence class which has a lower
+              // confidence, but it won't count.
               falseNegatives.add(eqivClass);
+              falsePositives.add(eqivClass);
             }
           } else {
             // the best system response for this equivalence class is unassessed
