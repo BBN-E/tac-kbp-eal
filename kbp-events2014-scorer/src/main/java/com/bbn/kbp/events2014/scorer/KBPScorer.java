@@ -11,10 +11,8 @@ import com.bbn.kbp.events2014.scorer.bin.Preprocessor;
 import com.bbn.kbp.events2014.scorer.observers.KBPScoringObserver;
 
 import com.google.common.base.Function;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +27,6 @@ import java.util.Set;
 import static com.bbn.kbp.events2014.AssessedResponse.IsCorrectUpToInexactJustifications;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.any;
-import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Sets.union;
 
 /**
@@ -80,8 +77,6 @@ public final class KBPScorer {
     for (final Symbol docid : documentsToScore) {
       log.info("Scoring document: {}", docid);
 
-
-
       final Preprocessor.Result preprocessorResult = preprocessor.preprocess(
           systemAnswerStore.readOrEmpty(docid), goldAnswerStore.readOrEmpty(docid));
 
@@ -101,103 +96,10 @@ public final class KBPScorer {
           AnswerKeyEquivalenceClasses.forAnswerable(
               preprocessorResult.answerKey(), equivalenceClassFunction);
 
-      final ImmutableMap<KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver,
-          KBPScoringObserver<TypeRoleFillerRealis>> docObserversToCorpusObservers =
-          documentObserversForCorpusObservers(scoringObservers, answerKeyEquivalenceClasses,
-              systemOutputEquivalenceClasses);
-
-      final Set<KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver> docObservers =
-          docObserversToCorpusObservers.keySet();
-
-      // notify observers we are starting a new document
-      for (final KBPScoringObserver<?>.KBPAnswerSourceObserver observer : docObservers) {
-        observer.start();
-      }
-
-      final Set<TypeRoleFillerRealis> allAnswerables = ImmutableSet.copyOf(
-          concat(systemOutputEquivalenceClasses.answerables(), answerKeyEquivalenceClasses.answerables()));
-
-      // TODO: ByJustification location is not consistent with equals
-      //final Ordering<TypeRoleFillerRealis> order = ByJustificationLocation.create(answerKeyEquivalenceClasses, systemOutputEquivalenceClasses);
-      //final Ordering<TypeRoleFillerRealis> order = Ordering.
-
-      for (final TypeRoleFillerRealis answerable : allAnswerables) {
-        log.info("Scoring equivalence class {}", answerable);
-
-        // notify observers we are starting a new equivalence class
-        for (final KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver observer : docObservers) {
-          observer.startAnswerable(answerable);
-        }
-
-        final Set<Response> responses = systemOutputEquivalenceClasses.answers(answerable);
-        final Set<AssessedResponse> annotatedResponses = answerKeyEquivalenceClasses.answers(answerable);
-
-        // let observers see the responses jointly
-        for (final KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver observer : docObservers) {
-          observer.observe(answerable, responses, annotatedResponses);
-        }
-
-        if (!responses.isEmpty()) {
-          // get safe because responses non-empty
-          final Response selectedSystemResponse = systemOutputEquivalenceClasses.systemOutput()
-              .selectFromMultipleSystemResponses(
-                  responses).get();
-          final Optional<AssessedResponse> annotationForArgument =
-              AssessedResponse.findAnnotationForArgument(
-                  selectedSystemResponse, annotatedResponses);
-
-          if (annotationForArgument.isPresent()) {
-            // notify observers we have a selected system response
-            // with aligned assessment
-            for (final KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver observer : docObservers) {
-              observer.annotatedSelectedResponse(answerable, selectedSystemResponse,
-                  annotationForArgument.get(), annotatedResponses);
-            }
-          } else {
-            // notify observers we have a selected system response
-            // but not assessment to align to it
-            for (final KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver observer : docObservers) {
-              observer.unannotatedSelectedResponse(answerable, selectedSystemResponse,
-                  annotatedResponses);
-            }
-          }
-
-          if (annotatedResponses.isEmpty()) {
-            // notify observers we have system responses but not annotated responses
-            for (final KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver observer : docObservers) {
-              observer.responsesOnlyNonEmpty(answerable, responses);
-            }
-          }
-        } else if (!annotatedResponses.isEmpty()) {
-          // notify observers we have annotated responses but not system responses
-          for (final KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver observer : docObservers) {
-            observer.annotationsOnlyNonEmpty(answerable, annotatedResponses);
-          }
-        } else {
-          throw new RuntimeException("Can't happen: alignment failure.");
-        }
-
-        // notify observers we are ending this equivalence class
-        for (final KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver observer : docObservers) {
-          observer.endAnswerable(answerable);
-        }
-      }
-
-      // notify observers we are finished with this document
-      for (final KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver observer : docObservers) {
-        observer.end();
-      }
-
-			/*for (final Map.Entry<KBPScoringObserver<TypeRoleFillerRealis>, File> corpusOutput : scorerToOutputDir.entrySet()) {
-                                corpusOutput.getKey().writeCorpusHTML(corpusOutput.getValue());
-			}*/
-
-      for (final KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver observer : docObservers) {
-        File outputDir =
-            new File(scorerToOutputDir.get(docObserversToCorpusObservers.get(observer)),
-                docid.toString());
-        outputDir.mkdirs();
-        observer.writeDocumentOutput(outputDir);
+      for (final KBPScoringObserver<TypeRoleFillerRealis> scoringObserver : scoringObservers) {
+        final File docLogDir = new File(scorerToOutputDir.get(scoringObserver), docid.toString());
+        docLogDir.mkdirs();
+        scoringObserver.observeDocument(scoringAlignment, docLogDir);
       }
     }
 
@@ -210,23 +112,6 @@ public final class KBPScorer {
         .entrySet()) {
       corpusOutput.getKey().writeCorpusOutput(corpusOutput.getValue());
     }
-
-  }
-
-  private static ImmutableMap<KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver, KBPScoringObserver<TypeRoleFillerRealis>> documentObserversForCorpusObservers(
-      List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers,
-      AnswerKeyEquivalenceClasses<TypeRoleFillerRealis> answerKey,
-      SystemOutputEquivalenceClasses<TypeRoleFillerRealis> systemOutput) {
-    // for each corpus observer, get a document observer, and maintain a mapping back to the corpus
-    // observer it came from. I really wish Java had typedefs
-    final ImmutableMap.Builder<KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver, KBPScoringObserver<TypeRoleFillerRealis>>
-        docObserverToCorpusObserversBuilder = ImmutableMap.builder();
-    for (final KBPScoringObserver<TypeRoleFillerRealis> corpusObserver : corpusObservers) {
-      final KBPScoringObserver<TypeRoleFillerRealis>.KBPAnswerSourceObserver docObserver =
-          corpusObserver.answerSourceObserver(systemOutput, answerKey);
-      docObserverToCorpusObserversBuilder.put(docObserver, corpusObserver);
-    }
-    return docObserverToCorpusObserversBuilder.build();
   }
 
   private static <T> Map<KBPScoringObserver<T>, File> makeScorerToOutputDir(

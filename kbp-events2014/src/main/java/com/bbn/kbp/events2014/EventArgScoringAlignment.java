@@ -9,11 +9,11 @@ import com.google.common.collect.Multimap;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class EventArgScoringAlignment<EquivClassType> {
-
   private final Symbol docID;
   private final ImmutableSet<EquivClassType> truePositiveECs;
   private final ImmutableSet<EquivClassType> falsePositiveECs;
   private final ImmutableSet<EquivClassType> falseNegativeECs;
+  private final ImmutableSet<EquivClassType> unassessed;
   private final ImmutableSetMultimap<EquivClassType, AssessedResponse> ecsToAnswerKey;
   private final ImmutableSetMultimap<EquivClassType, Response> ecsToSystem;
 
@@ -21,14 +21,28 @@ public final class EventArgScoringAlignment<EquivClassType> {
       final Iterable<EquivClassType> truePositiveECs,
       final Iterable<EquivClassType> falsePositiveECs,
       final Iterable<EquivClassType> falseNegativeECs,
+      final Iterable<EquivClassType> unassessed,
       final Multimap<EquivClassType, AssessedResponse> ecsToAnswerKey,
       final Multimap<EquivClassType, Response> ecsToSystem) {
     this.docID = checkNotNull(docID);
     this.truePositiveECs = ImmutableSet.copyOf(truePositiveECs);
     this.falsePositiveECs = ImmutableSet.copyOf(falsePositiveECs);
     this.falseNegativeECs = ImmutableSet.copyOf(falseNegativeECs);
+    this.unassessed = ImmutableSet.copyOf(unassessed);
     this.ecsToAnswerKey = ImmutableSetMultimap.copyOf(ecsToAnswerKey);
     this.ecsToSystem = ImmutableSetMultimap.copyOf(ecsToSystem);
+  }
+
+  public static <EquivClassType> EventArgScoringAlignment<EquivClassType> create(final Symbol docID,
+      final Iterable<EquivClassType> truePositiveECs,
+      final Iterable<EquivClassType> falsePositiveECs,
+      final Iterable<EquivClassType> falseNegativeECs,
+      final Iterable<EquivClassType> unassessed,
+      final Multimap<EquivClassType, AssessedResponse> ecsToAnswerKey,
+      final Multimap<EquivClassType, Response> ecsToSystem) {
+    return new EventArgScoringAlignment<EquivClassType>(docID, truePositiveECs, falsePositiveECs,
+        falseNegativeECs,
+        unassessed, ecsToAnswerKey, ecsToSystem);
   }
 
   public Symbol docID() {
@@ -53,5 +67,9 @@ public final class EventArgScoringAlignment<EquivClassType> {
 
   public ImmutableSet<EquivClassType> truePositiveEquivalenceClasses() {
     return truePositiveECs;
+  }
+
+  public ImmutableSet<EquivClassType> unassessed() {
+    return unassessed;
   }
 }

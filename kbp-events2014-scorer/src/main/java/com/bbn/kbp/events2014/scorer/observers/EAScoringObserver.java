@@ -13,9 +13,8 @@ import com.bbn.bue.common.serialization.jackson.JacksonSerializer;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events2014.AssessedResponse;
-import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.EventArgScoringAlignment;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
-import com.bbn.kbp.events2014.scorer.AnswerKeyEquivalenceClasses;
 import com.bbn.kbp.events2014.scorer.SystemOutputEquivalenceClasses;
 import com.bbn.kbp.events2014.scorer.observers.breakdowns.BreakdownComputer;
 import com.bbn.kbp.events2014.scorer.observers.breakdowns.BreakdownFunctions;
@@ -34,7 +33,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -60,11 +58,9 @@ import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.Iterables.any;
-import static com.google.common.collect.Iterables.getFirst;
 import static com.google.common.collect.Iterables.transform;
 
-public final class StrictStandardScoringObserver extends KBPScoringObserver<TypeRoleFillerRealis> {
+public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRealis> {
 
   public static final Symbol PRESENT = Symbol.from("PRESENT");
   public static final Symbol ABSENT = Symbol.from("ABSENT");
@@ -82,17 +78,10 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
   private final HTMLErrorRecorder renderer;
   private final ImmutableList<Outputter> outputters;
 
-  public static KBPScoringObserver<TypeRoleFillerRealis> strictScorer(
-      final HTMLErrorRecorder renderer,
-      Iterable<? extends Outputter> outputters) {
-    return new StrictStandardScoringObserver("Strict", AssessedResponse.IsCompletelyCorrect,
-        renderer, BreakdownFunctions.StandardBreakdowns, outputters);
-  }
-
   public static KBPScoringObserver<TypeRoleFillerRealis> standardScorer(
       final HTMLErrorRecorder renderer,
       Iterable<? extends Outputter> outputters) {
-    return new StrictStandardScoringObserver("Standard",
+    return new EAScoringObserver("Standard",
         AssessedResponse.IsCorrectUpToInexactJustifications,
         renderer, BreakdownFunctions.StandardBreakdowns, outputters);
   }
@@ -101,7 +90,7 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
       final HTMLErrorRecorder renderer,
       final Map<String, Function<TypeRoleFillerRealis, Symbol>> additionalBreakdowns,
       final Iterable<? extends Outputter> outputters) {
-    return new StrictStandardScoringObserver("Standard",
+    return new EAScoringObserver("Standard",
         AssessedResponse.IsCorrectUpToInexactJustifications,
         renderer, plusStandardBreakdowns(additionalBreakdowns), outputters);
   }
@@ -140,15 +129,86 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
     for (final Outputter outputter : outputters) {
       outputter.writeOutput(documentResults, directory);
     }
-
-    // nobody was using this, I think...
-        /*final FMeasureCounts corpusFMeasure = corpusConfusionMatrix.buildSummaryMatrix()
-                .FMeasureVsAllOthers(PRESENT);
-        ImprovementWriter.writeImprovements(directory, "Aggregate", corpusFMeasure,
-                ImmutableMap.of("Aggregate", corpusConfusionMatrix.buildSummaryMatrix()));*/
   }
 
-  private StrictStandardScoringObserver(final String name,
+  @Override
+  public void observeDocument(final EventArgScoringAlignment<TypeRoleFillerRealis> scoringAlignment,
+      final File perDocLogDir) throws IOException {
+    final ProvenancedConfusionMatrix.Builder<TypeRoleFillerRealis> confusionMatrixBuilder =
+        ProvenancedConfusionMatrix.builder();
+    final StringBuilder htmlOut = new StringBuilder();
+    final StringBuilder textOut = new StringBuilder();
+    final SystemOutputEquivalenceClasses<TypeRoleFillerRealis> systemOutputSource;
+
+    htmlOut.append(renderer.preamble());
+
+    for (final TypeRoleFillerRealis truePositive : scoringAlignment
+        .truePositiveEquivalenceClasses()) {
+      //textOut.append("True Positive\n");
+      confusionMatrixBuilder.record(PRESENT, PRESENT, truePositive);
+      //htmlOut.append(renderer.correct(systemOutputSource.systemOutput().score(response)));
+    }
+
+    for (final TypeRoleFillerRealis falsePositive : scoringAlignment
+        .falsePositiveEquivalenceClasses()) {
+      confusionMatrixBuilder.record(PRESENT, ABSENT, falsePositive);
+      /*textOut.append("False positive. Response annotated in pool as ")
+          .append(annotationForSelected.assessment()).append("\n");
+      confusionMatrixBuilder.record(PRESENT, ABSENT, answerable);
+      htmlOut.append(renderer
+          .vsAnnotated("kbp-false-positive-annotated", "False positive (annotated)", response,
+              systemOutputSource.systemOutput().score(response), annotationForSelected));*/
+
+      //checkForFalseNegative(answerable, allAssessments);
+    }
+
+    for (final TypeRoleFillerRealis falseNegative : scoringAlignment
+        .falseNegativeEquivalenceClasses()) {
+      confusionMatrixBuilder.record(ABSENT, PRESENT, falseNegative);
+      /*textOut.append(
+          "FN: No correct system response present, but the following correct response is in the pool: ")
+          .append(Iterables.find(assessedResponses, ResponseCorrect)).append("\n");
+      htmlOut.append(renderer.vsAnnotated("kbp-false-negative", "False negative",
+          getFirst(assessedResponses, null).response(),
+          assessedResponses));*/
+    }
+
+    for (final TypeRoleFillerRealis unassessed : scoringAlignment.unassessed()) {
+      // we count unassessed as false positives, if we can count them at all
+      confusionMatrixBuilder.record(PRESENT, ABSENT, unassessed);
+
+      /*textOut.append("No assessment for ").append(unannotated).append(", counting as wrong\n");
+      htmlOut.append(renderer
+          .vsAnnotated("kbp-false-positive-unannotated", "False positive (unannotated)",
+              unannotated,
+              ImmutableList.of(systemOutputSource.systemOutput().score(unannotated)),
+              answerKey().answers(answerable)));
+      checkForFalseNegative(answerable, annotatedResponses);*/
+      // NOTE: something can be unassessed and FN
+    }
+
+    final ProvenancedConfusionMatrix<TypeRoleFillerRealis> confusionMatrix =
+        confusionMatrixBuilder.build();
+    observeDocumentConfusionMatrix(confusionMatrix);
+
+    final StringBuilder sb = new StringBuilder();
+    sb.append("===== Confusion matrix for ").append(name()).append(" =====\n");
+
+    final SummaryConfusionMatrix summaryConfusionMatrix = confusionMatrix.buildSummaryMatrix();
+    sb.append(summaryConfusionMatrix.prettyPrint()).append("\n");
+    sb.append(confusionMatrix.prettyPrint()).append("\n");
+
+    Files.asCharSink(new File(perDocLogDir, "confusionMatrix.txt"), Charsets.UTF_8)
+        .write(sb.toString());
+
+    final String html = htmlOut.toString();
+    if (!html.isEmpty()) {
+      Files.asCharSink(new File(perDocLogDir, "errors.html"), Charsets.UTF_8).write(html);
+    }
+  }
+
+
+  private EAScoringObserver(final String name,
       final Predicate<AssessedResponse> ResponseCorrect, final HTMLErrorRecorder renderer,
       final Map<String, Function<TypeRoleFillerRealis, Symbol>> breakdowns,
       final Iterable<? extends Outputter> outputters) {
@@ -164,130 +224,6 @@ public final class StrictStandardScoringObserver extends KBPScoringObserver<Type
       final ProvenancedConfusionMatrix<TypeRoleFillerRealis> matrix) {
     documentResults
         .add(new DocumentResult(matrix, breakdownComputer.computeBreakdownSummaries(matrix)));
-  }
-
-
-  @Override
-  public KBPAnswerSourceObserver answerSourceObserver(
-      final SystemOutputEquivalenceClasses<TypeRoleFillerRealis> systemOutputSource,
-      final AnswerKeyEquivalenceClasses<TypeRoleFillerRealis> answerKeyAnswerSource) {
-    return new StrictStandardAnswerSourceObserver(systemOutputSource, answerKeyAnswerSource);
-  }
-
-  /**
-   * *************************************** Inner classes ****************************
-   */
-  private class StrictStandardAnswerSourceObserver extends KBPAnswerSourceObserver {
-
-    private final ProvenancedConfusionMatrix.Builder<TypeRoleFillerRealis> confusionMatrixBuilder;
-    private final StringBuilder htmlOut;
-    private final StringBuilder textOut;
-    private final SystemOutputEquivalenceClasses<TypeRoleFillerRealis> systemOutputSource;
-
-    public StrictStandardAnswerSourceObserver(
-        SystemOutputEquivalenceClasses<TypeRoleFillerRealis> systemOutputSource,
-        AnswerKeyEquivalenceClasses<TypeRoleFillerRealis> answerKeyAnswerSource) {
-      super(systemOutputSource, answerKeyAnswerSource);
-      this.systemOutputSource = systemOutputSource;
-      confusionMatrixBuilder = ProvenancedConfusionMatrix.builder();
-      htmlOut = new StringBuilder();
-      textOut = new StringBuilder();
-    }
-
-    @Override
-    public void start() {
-      htmlOut.append(renderer.preamble());
-    }
-
-    @Override
-    public void annotatedSelectedResponse(final TypeRoleFillerRealis answerable,
-        final Response response,
-        final AssessedResponse annotationForSelected, final Set<AssessedResponse> allAssessments) {
-      if (ResponseCorrect.apply(annotationForSelected)) {
-        textOut.append("True Positive\n");
-        confusionMatrixBuilder.record(PRESENT, PRESENT, answerable);
-        htmlOut.append(renderer.correct(systemOutputSource.systemOutput().score(response)));
-      } else {
-        textOut.append("False positive. Response annotated in pool as ")
-            .append(annotationForSelected.assessment()).append("\n");
-        confusionMatrixBuilder.record(PRESENT, ABSENT, answerable);
-        htmlOut.append(renderer
-            .vsAnnotated("kbp-false-positive-annotated", "False positive (annotated)", response,
-                systemOutputSource.systemOutput().score(response), annotationForSelected));
-
-        checkForFalseNegative(answerable, allAssessments);
-      }
-    }
-
-    private boolean checkForFalseNegative(final TypeRoleFillerRealis answerable,
-        final Set<AssessedResponse> assessedResponses) {
-      if (any(assessedResponses, ResponseCorrect)) {
-        // if any correct answer was found for this equivalence class in the answer key,
-        // then this is  a false negative
-        textOut.append(
-            "FN: No correct system response present, but the following correct response is in the pool: ")
-            .append(Iterables.find(assessedResponses, ResponseCorrect)).append("\n");
-        confusionMatrixBuilder.record(ABSENT, PRESENT, answerable);
-        htmlOut.append(renderer.vsAnnotated("kbp-false-negative", "False negative",
-            getFirst(assessedResponses, null).response(),
-            assessedResponses));
-        return true;
-      } else {
-        return false;
-      }
-    }
-
-    @Override
-    public void unannotatedSelectedResponse(final TypeRoleFillerRealis answerable,
-        final Response unannotated,
-        Set<AssessedResponse> annotatedResponses) {
-      textOut.append("No assessment for ").append(unannotated).append(", counting as wrong\n");
-      confusionMatrixBuilder.record(PRESENT, ABSENT, answerable);
-      htmlOut.append(renderer
-          .vsAnnotated("kbp-false-positive-unannotated", "False positive (unannotated)",
-              unannotated,
-              ImmutableList.of(systemOutputSource.systemOutput().score(unannotated)),
-              answerKey().answers(answerable)));
-      checkForFalseNegative(answerable, annotatedResponses);
-    }
-
-    @Override
-    public void annotationsOnlyNonEmpty(final TypeRoleFillerRealis answerable,
-        final Set<AssessedResponse> annotatedResponses) {
-      if (checkForFalseNegative(answerable, annotatedResponses)) {
-// pass - recording done within checkForFalseNegative
-      } else {
-        textOut.append("TN: No system response, but all matching answers in the pool are wrong.\n");
-// true negative, no action
-      }
-    }
-
-    @Override
-    public void end() {
-      final ProvenancedConfusionMatrix<TypeRoleFillerRealis> confusionMatrix =
-          confusionMatrixBuilder.build();
-      observeDocumentConfusionMatrix(confusionMatrix);
-    }
-
-    @Override
-    public void writeDocumentOutput(File directory) throws IOException {
-      final StringBuilder sb = new StringBuilder();
-      sb.append("===== Confusion matrix for ").append(name()).append(" =====\n");
-
-      final ProvenancedConfusionMatrix<TypeRoleFillerRealis> confusionMatrix =
-          confusionMatrixBuilder.build();
-      final SummaryConfusionMatrix summaryConfusionMatrix = confusionMatrix.buildSummaryMatrix();
-      sb.append(summaryConfusionMatrix.prettyPrint()).append("\n");
-      sb.append(confusionMatrix.prettyPrint()).append("\n");
-
-      Files.asCharSink(new File(directory, "confusionMatrix.txt"), Charsets.UTF_8)
-          .write(sb.toString());
-
-      final String html = htmlOut.toString();
-      if (!html.isEmpty()) {
-        Files.asCharSink(new File(directory, "errors.html"), Charsets.UTF_8).write(html);
-      }
-    }
   }
 
 
