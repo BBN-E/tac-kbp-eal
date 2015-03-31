@@ -8,10 +8,9 @@ import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.scorer.KBPScorer;
-import com.bbn.kbp.events2014.scorer.observers.BuildConfusionMatrix;
+import com.bbn.kbp.events2014.scorer.observers.EAScoringObserver;
 import com.bbn.kbp.events2014.scorer.observers.ExitOnUnannotatedAnswerKey;
 import com.bbn.kbp.events2014.scorer.observers.KBPScoringObserver;
-import com.bbn.kbp.events2014.scorer.observers.StrictStandardScoringObserver;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.HTMLErrorRecorder;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.NullHTMLErrorRecorder;
 
@@ -64,16 +63,12 @@ public final class KBPScorerBin {
     final List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers = Lists.newArrayList();
 
     if (params.getBoolean("annotationComplete")) {
-      corpusObservers.add(ExitOnUnannotatedAnswerKey.<TypeRoleFillerRealis>create());
+      corpusObservers.add(ExitOnUnannotatedAnswerKey.create());
     }
 
     final HTMLErrorRecorder dummyRecorder = NullHTMLErrorRecorder.getInstance();
-    final ImmutableList<StrictStandardScoringObserver.Outputter> outputters = getOutputters(params);
-    // Lax scorer
-    corpusObservers.add(BuildConfusionMatrix.<TypeRoleFillerRealis>forAnswerFunctions(
-        "Lax", KBPScorer.IsPresent, KBPScorer.AnyAnswerSemanticallyCorrect));
-    corpusObservers.add(StrictStandardScoringObserver.strictScorer(dummyRecorder, outputters));
-    corpusObservers.add(StrictStandardScoringObserver.standardScorer(dummyRecorder, outputters));
+    final ImmutableList<EAScoringObserver.Outputter> outputters = getOutputters(params);
+    corpusObservers.add(EAScoringObserver.standardScorer(dummyRecorder, outputters));
 
     return ImmutableList.copyOf(corpusObservers);
   }
@@ -81,15 +76,15 @@ public final class KBPScorerBin {
   private static final String NUM_BOOTSTRAP_SAMPLES = "numBootstrapSamples";
 
   // package-private so BBN's internal scorer can borrow it
-  static ImmutableList<StrictStandardScoringObserver.Outputter> getOutputters(Parameters params) {
-    final ImmutableList.Builder<StrictStandardScoringObserver.Outputter> ret =
+  static ImmutableList<EAScoringObserver.Outputter> getOutputters(Parameters params) {
+    final ImmutableList.Builder<EAScoringObserver.Outputter> ret =
         ImmutableList.builder();
-    ret.add(StrictStandardScoringObserver.createStandardOutputter());
-    ret.add(StrictStandardScoringObserver.createEquivalenceClassIDOutputter());
+    ret.add(EAScoringObserver.createStandardOutputter());
+    ret.add(EAScoringObserver.createEquivalenceClassIDOutputter());
     if (params.isPresent(NUM_BOOTSTRAP_SAMPLES)) {
       final int bootstrapSeed = params.getInteger("bootstrapSeed");
       final int numBootstrapSamples = params.getPositiveInteger("numBootstrapSamples");
-      ret.add(StrictStandardScoringObserver
+      ret.add(EAScoringObserver
           .createBootstrapOutputter(bootstrapSeed, numBootstrapSamples));
     }
     return ret.build();

@@ -1,28 +1,17 @@
 package com.bbn.kbp.events2014.scorer.observers;
 
-import com.bbn.kbp.events2014.AssessedResponse;
-import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.scorer.AnswerKeyEquivalenceClasses;
-import com.bbn.kbp.events2014.scorer.SystemOutputEquivalenceClasses;
+import com.bbn.kbp.events2014.EventArgScoringAlignment;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * An abstract base class for scoring observers. The key method here is {@code
- * answerSourceObserver}. When the scorer examines the system output for a document and compares it
- * to the answer key, it will request from the scoring observer an answer source observer whose
- * methods will be called for various sorts of events.  The default implementation is always a
- * no-op. Scoring observers should return an {@code KBPAnswerSourceObserver} object which override
- * the methods for those events they wish to act on. Please see the currently implemented scorers as
- * examples.
+ * Created by rgabbard on 3/31/15.
  */
-public abstract class KBPScoringObserver<Answerable> {
-
+public abstract class KBPScoringObserver<EquivClassType> {
   private final String name;
 
   protected KBPScoringObserver() {
@@ -33,13 +22,6 @@ public abstract class KBPScoringObserver<Answerable> {
     this.name = checkNotNull(name);
     checkArgument(!name.isEmpty());
   }
-
-  /**
-   * Returns the object whose methods will be called for document-level events.
-   */
-  public abstract KBPAnswerSourceObserver answerSourceObserver(
-      final SystemOutputEquivalenceClasses<Answerable> systemOutputSource,
-      final AnswerKeyEquivalenceClasses<Answerable> answerKeyAnswerSource);
 
   public final String name() {
     return name;
@@ -66,124 +48,8 @@ public abstract class KBPScoringObserver<Answerable> {
 
   }
 
-  /**
-   * Override the methods of this document to act on scoring events.
-   */
-  public abstract class KBPAnswerSourceObserver {
+  public abstract void observeDocument(EventArgScoringAlignment<EquivClassType> scoringAlignment,
+      File perDocLogDir)
+      throws IOException;
 
-    private final SystemOutputEquivalenceClasses<Answerable> systemOutputSource;
-    private final AnswerKeyEquivalenceClasses<Answerable> answerKeyAnswerSource;
-
-    public final AnswerKeyEquivalenceClasses<Answerable> answerKeyAnswerSource() {
-      return answerKeyAnswerSource;
-    }
-
-    public final SystemOutputEquivalenceClasses<Answerable> systemOutputAnswerSource() {
-      return systemOutputSource;
-    }
-
-    /**
-     * Called once at the beginning of a document.
-     */
-    public void start() {
-      // pass
-    }
-
-    /**
-     * Called once at the end of a document.
-     */
-    public void end() {
-      // pass
-    }
-
-    /**
-     * Called once at the beginning of processing each "answerable" (e.g. {@code
-     * TypeRoleFillerRealis} tuple).
-     */
-    public void startAnswerable(final Answerable answerable) {
-      // pass
-    }
-
-    /**
-     * Called once at the end of processing of each "answerable" (e.g. {@code TypeRoleFillerRealis}
-     * tuple).
-     */
-    public void endAnswerable(final Answerable answerable) {
-      // pass
-    }
-
-    /**
-     * Called when the selected system response for an annotator is unannotated.
-     */
-    public void unannotatedSelectedResponse(final Answerable answerable, final Response response,
-        Set<AssessedResponse> assessedResponses) {
-      // pass
-    }
-
-    /**
-     * Flexible method called for every answerable, giving all system responses and all annotations.
-     * Typically users should override more specific methods if possible.
-     */
-    public void observe(final Answerable answerable, final Set<Response> responses,
-        final Set<AssessedResponse> annotations) {
-      // pass
-    }
-
-    /**
-     * Called when there are system responses for an answerable, but no annotated responses
-     */
-    public void responsesOnlyNonEmpty(final Answerable answerable,
-        final Set<Response> annotatedResponses) {
-      // pass
-    }
-
-    /**
-     * Called when there are annotated responses for an answerable, but no system responses
-     */
-    public void annotationsOnlyNonEmpty(final Answerable answerable,
-        final Set<AssessedResponse> annotatedResponses) {
-      // pass
-    }
-
-    /**
-     * Called when the selected system response is annotated.
-     */
-    public void annotatedSelectedResponse(final Answerable answerable, final Response response,
-        final AssessedResponse annotatedResponse, final Set<AssessedResponse> allAssessments) {
-      // pass
-    }
-
-    /**
-     * Get the system output for this document.
-     */
-    protected final SystemOutputEquivalenceClasses<Answerable> systemOutput() {
-      return systemOutputSource;
-    }
-
-    /**
-     * Get the answer key for this document.
-     */
-    protected final AnswerKeyEquivalenceClasses<Answerable> answerKey() {
-      return answerKeyAnswerSource;
-    }
-
-    public void writeDocumentOutput(final File directory) throws IOException {
-            /*checkNotNull(directory);
-                        final String docHTML = documentOut.toString();
-			globalOut.append(docHTML);
-			if (!docHTML.isEmpty()) {
-				final String docid = systemOutputSource.systemOutput().docId().toString();
-				final File output = new File(directory, docid+".html");
-				Files.asCharSink(output, Charsets.UTF_8).write(writeHTML(docid, docHTML));
-			}*/
-    }
-
-    public KBPAnswerSourceObserver(final SystemOutputEquivalenceClasses<Answerable> systemOutputSource,
-        final AnswerKeyEquivalenceClasses<Answerable> answerKeyAnswerSource) {
-      this.systemOutputSource = checkNotNull(systemOutputSource);
-      this.answerKeyAnswerSource = checkNotNull(answerKeyAnswerSource);
-      checkArgument(systemOutputSource.systemOutput().docId()
-          == answerKeyAnswerSource.answerKey().docId());
-    }
-  }
 }
