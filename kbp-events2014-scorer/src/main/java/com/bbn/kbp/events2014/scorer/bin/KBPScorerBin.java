@@ -159,6 +159,7 @@ public final class KBPScorerBin {
     final Set<Symbol> documentsToScore;
     if (params.isPresent("documentsToScore")) {
       documentsToScore = loadDocumentsToScore(params);
+
     } else {
       documentsToScore = union(systemOutputStore.docIDs(), goldAnswerStore.docIDs());
     }
