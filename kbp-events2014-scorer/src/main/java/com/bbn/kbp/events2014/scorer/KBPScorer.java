@@ -2,6 +2,7 @@ package com.bbn.kbp.events2014.scorer;
 
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AssessedResponse;
+import com.bbn.kbp.events2014.EventArgScoringAlignment;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.io.AnnotationStore;
@@ -86,6 +87,11 @@ public final class KBPScorer {
 
       final Function<Response, TypeRoleFillerRealis> equivalenceClassFunction =
           TypeRoleFillerRealis.extractFromSystemResponse(preprocessorResult.normalizer());
+
+      final StandardScoringAligner<TypeRoleFillerRealis> scoringAligner =
+          StandardScoringAligner.forEquivalenceClassFunction(equivalenceClassFunction);
+      final EventArgScoringAlignment<TypeRoleFillerRealis> scoringAlignment =
+          scoringAligner.align(preprocessorResult.answerKey(), preprocessorResult.systemOutput());
 
       final SystemOutputEquivalenceClasses<TypeRoleFillerRealis> systemOutputEquivalenceClasses =
           SystemOutputEquivalenceClasses.forAnswerable(preprocessorResult.systemOutput(),
