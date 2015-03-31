@@ -112,7 +112,8 @@ final class StandardScoringAligner<EquivClassType> implements ScoringAligner<Equ
     }
 
     return EventArgScoringAlignment
-        .create(systemOutput.docId(), truePositives.build(), falsePositives.build(),
+        .create(systemOutput.docId(), systemOutput, answerKey, truePositives.build(),
+            falsePositives.build(),
             falseNegatives.build(), unassessed.build(), equivClassToAnswerKeyResponses,
             equivClassToSystemResponses);
   }

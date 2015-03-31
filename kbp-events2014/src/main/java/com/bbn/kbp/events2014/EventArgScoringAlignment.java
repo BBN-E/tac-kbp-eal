@@ -2,14 +2,21 @@ package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.symbols.Symbol;
 
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
+
+import java.util.Collection;
+import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class EventArgScoringAlignment<EquivClassType> {
   private final Symbol docID;
+  private final SystemOutput systemOutput;
+  private final AnswerKey answerKey;
   private final ImmutableSet<EquivClassType> truePositiveECs;
   private final ImmutableSet<EquivClassType> falsePositiveECs;
   private final ImmutableSet<EquivClassType> falseNegativeECs;
@@ -18,6 +25,8 @@ public final class EventArgScoringAlignment<EquivClassType> {
   private final ImmutableSetMultimap<EquivClassType, Response> ecsToSystem;
 
   private EventArgScoringAlignment(final Symbol docID,
+      final SystemOutput systemOutput,
+      final AnswerKey answerKey,
       final Iterable<EquivClassType> truePositiveECs,
       final Iterable<EquivClassType> falsePositiveECs,
       final Iterable<EquivClassType> falseNegativeECs,
@@ -25,6 +34,8 @@ public final class EventArgScoringAlignment<EquivClassType> {
       final Multimap<EquivClassType, AssessedResponse> ecsToAnswerKey,
       final Multimap<EquivClassType, Response> ecsToSystem) {
     this.docID = checkNotNull(docID);
+    this.systemOutput = checkNotNull(systemOutput);
+    this.answerKey = checkNotNull(answerKey);
     this.truePositiveECs = ImmutableSet.copyOf(truePositiveECs);
     this.falsePositiveECs = ImmutableSet.copyOf(falsePositiveECs);
     this.falseNegativeECs = ImmutableSet.copyOf(falseNegativeECs);
@@ -34,15 +45,17 @@ public final class EventArgScoringAlignment<EquivClassType> {
   }
 
   public static <EquivClassType> EventArgScoringAlignment<EquivClassType> create(final Symbol docID,
+      final SystemOutput systemOutput,
+      final AnswerKey answerKey,
       final Iterable<EquivClassType> truePositiveECs,
       final Iterable<EquivClassType> falsePositiveECs,
       final Iterable<EquivClassType> falseNegativeECs,
       final Iterable<EquivClassType> unassessed,
       final Multimap<EquivClassType, AssessedResponse> ecsToAnswerKey,
       final Multimap<EquivClassType, Response> ecsToSystem) {
-    return new EventArgScoringAlignment<EquivClassType>(docID, truePositiveECs, falsePositiveECs,
-        falseNegativeECs,
-        unassessed, ecsToAnswerKey, ecsToSystem);
+    return new EventArgScoringAlignment<EquivClassType>(docID, systemOutput, answerKey,
+        truePositiveECs,
+        falsePositiveECs, falseNegativeECs, unassessed, ecsToAnswerKey, ecsToSystem);
   }
 
   public Symbol docID() {
@@ -71,5 +84,33 @@ public final class EventArgScoringAlignment<EquivClassType> {
 
   public ImmutableSet<EquivClassType> unassessed() {
     return unassessed;
+  }
+
+  public SystemOutput systemOutput() {
+    return systemOutput;
+  }
+
+  public AnswerKey answerKey() {
+    return answerKey;
+  }
+
+  /**
+   * Note this will not include system equivalence classes whose representative responses were
+   * unassessed.
+   */
+  public ImmutableMap<EquivClassType, AssessedResponse> systemEquivClassToAssessedRepresentativeResponses() {
+    final ImmutableMap.Builder<EquivClassType, AssessedResponse> ret = ImmutableMap.builder();
+
+    for (final Map.Entry<EquivClassType, Collection<Response>> systemTRFR : equivalenceClassesToSystemResponses()
+        .asMap().entrySet()) {
+      final Response representativeResponse = systemOutput()
+          .selectFromMultipleSystemResponses(systemTRFR.getValue()).get();
+      final Optional<AssessedResponse> optAssessedRepResponse =
+          answerKey().assess(representativeResponse);
+      if (optAssessedRepResponse.isPresent()) {
+        ret.put(systemTRFR.getKey(), optAssessedRepResponse.get());
+      }
+    }
+    return ret.build();
   }
 }
