@@ -33,6 +33,10 @@ public final class ExpandFromRealis implements Function<AnswerKey, AnswerKey> {
 
   }
 
+  private ExpandFromRealis create() {
+    return new ExpandFromRealis();
+  }
+
   @Override
   public AnswerKey apply(AnswerKey input) {
     final Set<Response> existingResponses = Sets.newHashSet(input.allResponses());
