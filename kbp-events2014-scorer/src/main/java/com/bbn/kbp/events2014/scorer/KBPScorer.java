@@ -84,14 +84,6 @@ public final class KBPScorer {
       final EventArgScoringAlignment<TypeRoleFillerRealis> scoringAlignment =
           scoringAligner.align(preprocessorResult.answerKey(), preprocessorResult.systemOutput());
 
-      final SystemOutputEquivalenceClasses<TypeRoleFillerRealis> systemOutputEquivalenceClasses =
-          SystemOutputEquivalenceClasses.forAnswerable(preprocessorResult.systemOutput(),
-              equivalenceClassFunction);
-
-      final AnswerKeyEquivalenceClasses<TypeRoleFillerRealis> answerKeyEquivalenceClasses =
-          AnswerKeyEquivalenceClasses.forAnswerable(
-              preprocessorResult.answerKey(), equivalenceClassFunction);
-
       for (final KBPScoringObserver<TypeRoleFillerRealis> scoringObserver : scoringObservers) {
         final File docLogDir = new File(scorerToOutputDir.get(scoringObserver), docid.toString());
         docLogDir.mkdirs();
