@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Ordering;
 
+import java.util.Arrays;
 import java.util.Iterator;
 
 /**
@@ -24,6 +25,10 @@ public final class ResponseSet implements Comparable<ResponseSet>, Iterable<Resp
 
   public static ResponseSet from(Iterable<Response> responses) {
     return new ResponseSet(responses);
+  }
+
+  public static ResponseSet from(Response... responses) {
+    return from(Arrays.asList(responses));
   }
 
   public ImmutableSet<Response> asSet() {

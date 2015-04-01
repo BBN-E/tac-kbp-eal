@@ -1,118 +1,100 @@
 package com.bbn.kbp.events2014.scorer;
 
+import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.AssessedResponse;
+import com.bbn.kbp.events2014.CharOffsetSpan;
+import com.bbn.kbp.events2014.CorefAnnotation;
+import com.bbn.kbp.events2014.KBPRealis;
+import com.bbn.kbp.events2014.KBPString;
+import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.ResponseAssessment;
+import com.bbn.kbp.events2014.ResponseLinking;
+import com.bbn.kbp.events2014.ResponseSet;
 import com.bbn.kbp.events2014.SystemOutput;
+
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import junit.framework.TestCase;
 
 import org.junit.Test;
 
-import java.io.IOException;
+import java.util.Random;
 
 public class ScorerTest extends TestCase {
 
-  private SystemOutput gold;
-  private SystemOutput predicted;
-  private AnswerKey completelyAnnotated;
+  private static final Symbol DOC = Symbol.from("DOC");
+  private static final Symbol CONFLICT = Symbol.from("Conflict.Attack");
+  private static final Symbol VICTIM = Symbol.from("Victim");
 
-  @Override
-  public void setUp() throws IOException {
-                /*gold = AssessmentSpecFormats.argumentSourceFrom(asCharSource(
-			getResource(ScorerTest.class, "/AFP_ENG_20030304.0250.sgm.gold.ldc.txt"),
-			Charsets.UTF_8)).get();
+  private static KBPString kbpString(String s) {
+    return KBPString.from(s, 0, 1);
+  }
 
-		predicted = AssessmentSpecFormats.argumentSourceFrom(asCharSource(
-			getResource(ScorerTest.class, "/AFP_ENG_20030304.0250.sgm.predicted.ldc.txt"),
-			Charsets.UTF_8)).get();
+  private static Response dummyResponseOfType(Symbol type, Symbol role, String cas,
+      KBPRealis realis) {
+    return Response.createFrom(DOC, type, role, kbpString(cas),
+        CharOffsetSpan.fromOffsetsOnly(0, 1),
+        ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(
+            CharOffsetSpan.fromOffsetsOnly(0, 1)),
+        realis);
+  }
 
-		completelyAnnotated = AssessmentSpecFormats.annotationSourceFrom((asCharSource(
-			getResource(ScorerTest.class, "/AFP_ENG_20030304.0250.sgm.annotated.ldc.txt"),
-			Charsets.UTF_8))).get();*/
+  private static CorefAnnotation allSingletonsCoref(Iterable<Response> responses) {
+    final Random rng = new Random(0);
+    final CorefAnnotation.Builder corefBuilder = CorefAnnotation.strictBuilder(DOC);
+    for (final Response response : responses) {
+      corefBuilder.putInNewRandomCluster(response.canonicalArgument(), rng);
+    }
+    return corefBuilder.build();
+  }
+
+  private static SystemOutput systemOutputFromResponses(Iterable<Response> responses) {
+    final ImmutableSet.Builder<Scored<Response>> scoredResponses = ImmutableSet.builder();
+    for (final Response response : responses) {
+      scoredResponses.add(Scored.from(response, 1.0));
+    }
+    return SystemOutput.from(DOC, scoredResponses.build());
   }
 
   @Test
-  public void testCompleteAnnotationScoring() {
-		/*final AnswerableExtractorAligner<AllFields, KBPOutputArgument, KBPAnnotatedArgument> aligner = AnswerableExtractorAligner.forAnswerExtractors(
-			KBPScorer.ExtractAllFieldsFromSystemResponse, KBPScorer.ExtractAllFieldsFromAnnotation);
+  public void sampleTest() {
+    final Response x = dummyResponseOfType(CONFLICT, VICTIM, "x", KBPRealis.Actual);
+    final Response y = dummyResponseOfType(CONFLICT, VICTIM, "y", KBPRealis.Actual);
+    final Response z = dummyResponseOfType(CONFLICT, VICTIM, "z", KBPRealis.Actual);
+    final Response a = dummyResponseOfType(CONFLICT, VICTIM, "a", KBPRealis.Actual);
 
-		final AnswerAlignment<AllFields, KBPOutputArgument, KBPAnnotatedArgument> alignment =
-				aligner.align(predicted, completelyAnnotated);
+    final SystemOutput systemOutput = systemOutputFromResponses(ImmutableSet.of(x, y, z));
+    final CorefAnnotation coref = allSingletonsCoref(ImmutableSet.of(x, y, z, a));
+    final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(
+        ImmutableSet.of(x, y, a), ImmutableSet.of(z), coref);
 
-		KBPScorer.scoreComplete(alignment);*/
+    final ResponseLinking systemResponseLinking = ResponseLinking.from(systemOutput.docId(),
+        ImmutableSet.of(ResponseSet.from(x, y, z)), ImmutableSet.<Response>of());
+    final ResponseLinking goldResponseLinking = ResponseLinking.from(answerKey.docId(),
+        ImmutableSet.of(ResponseSet.from(a, y, a)), ImmutableSet.<Response>of());
+
+    // expected EA score is FOO
+    // expected linking score is BAR
   }
 
-  private static final Symbol PRESENT = Symbol.from("PRESENT");
-  private static final Symbol ABSENT = Symbol.from("ABSENT");
-  private static final Symbol CORRECT = Symbol.from("CORRECT");
-  private static final Symbol INCORRECT = Symbol.from("INCORRECT");
+  private AnswerKey makeAnswerKeyFromCorrectAndIncorrect(final ImmutableSet<Response> correct,
+      final ImmutableSet<Response> incorrect, final CorefAnnotation coref) {
+    final ImmutableSet.Builder<AssessedResponse> correctAssessedResponses = ImmutableSet.builder();
+    for (final Response correctResponse : correct) {
+      correctAssessedResponses.add(
+          AssessedResponse.assessCorrectly(correctResponse, ResponseAssessment.MentionType.NAME));
+    }
+    final ImmutableSet.Builder<AssessedResponse> incorrectAssessedResponses =
+        ImmutableSet.builder();
+    for (final Response incorrectResponse : incorrect) {
+      incorrectAssessedResponses
+          .add(AssessedResponse.assessWithIncorrectEventType(incorrectResponse));
+    }
+    return AnswerKey.from(DOC, Sets.union(correctAssessedResponses.build(),
+        incorrectAssessedResponses.build()), ImmutableSet.<Response>of(), coref);
+  }
 
-/*	@Test
-	public void testIncompleteOnComplete() {
-		final AnswerableExtractorAligner<AllFields, KBPOutputArgument, KBPAnnotatedArgument> aligner = AnswerableExtractorAligner.forAnswerExtractors(
-			KBPScorer.ExtractAllFieldsFromSystemResponse, KBPScorer.ExtractAllFieldsFromAnnotation);
-
-		final AnswerAlignment<AllFields, KBPOutputArgument, KBPAnnotatedArgument> alignment =
-				aligner.align(predicted, completelyAnnotated);
-
-		final CollectNeedingAnnotationFromIncompleteAnnotation<AllFields, KBPOutputArgument, KBPAnnotatedArgument> needingAnnotation =
-			new CollectNeedingAnnotationFromIncompleteAnnotation<AllFields, KBPOutputArgument, KBPAnnotatedArgument>();
-		final BuildConfusionMatrix<AllFields, KBPOutputArgument, KBPAnnotatedArgument> confusionMatrixBuilder =
-			BuildConfusionMatrix.<AllFields, KBPOutputArgument, KBPAnnotatedArgument>forAnswerFunctions(KBPScorer.IsPresent, KBPScorer.ScoreByRoleJustified);
-
-		for (final AlignedAnswers<AllFields, KBPOutputArgument, KBPAnnotatedArgument> alignedAnswer
-				: alignment.alignmentsForAnswerables())
-		{
-			needingAnnotation.observe(alignedAnswer);
-			confusionMatrixBuilder.observe(alignedAnswer);
-		}
-
-		assertEquals(0, needingAnnotation.buildResult().size());
-		final ProvenancedConfusionMatrix<AlignedAnswers<AllFields, KBPOutputArgument, KBPAnnotatedArgument>> confusionMatrix =
-			confusionMatrixBuilder.buildConfusionMatrix();
-		final List<AlignedAnswers<AllFields, KBPOutputArgument, KBPAnnotatedArgument>> present_correct = confusionMatrix.cell(PRESENT, CORRECT);
-		final List<AlignedAnswers<AllFields, KBPOutputArgument, KBPAnnotatedArgument>> absent_correct = confusionMatrix.cell(ABSENT, CORRECT);
-		final List<AlignedAnswers<AllFields, KBPOutputArgument, KBPAnnotatedArgument>> present_incorrect = confusionMatrix.cell(PRESENT, INCORRECT);
-
-		assertEquals(1, present_incorrect.size());
-		assertEquals(6, present_correct.size());
-		assertEquals(13, absent_correct.size());
-	}
-
-	@Test
-	public void testIncompleteOnCompleteWithRedundancy() {
-		final RedundancyInfo<AllFields> accountForRedundancy = RedundancyInfo.createFromKBPRedundancyAnnotations(completelyAnnotated,
-			KBPScorer.ExtractAllFieldsFromAnnotation);
-		final Function<KBPOutputArgument,AllFields> scoringFunction = accountForRedundancy.accountForRedundancy(KBPScorer.ExtractAllFieldsFromSystemResponse);
-		final Function<KBPAnnotatedArgument,AllFields> scoringFunctionAnn = accountForRedundancy.accountForRedundancy(KBPScorer.ExtractAllFieldsFromAnnotation);
-
-		final AnswerableExtractorAligner<AllFields, KBPOutputArgument, KBPAnnotatedArgument> aligner = AnswerableExtractorAligner.forAnswerExtractors(
-			scoringFunction, scoringFunctionAnn);
-
-		final AnswerAlignment<AllFields, KBPOutputArgument, KBPAnnotatedArgument> alignment =
-				aligner.align(predicted, completelyAnnotated);
-
-		final CollectNeedingAnnotationFromIncompleteAnnotation<AllFields, KBPOutputArgument, KBPAnnotatedArgument> needingAnnotation =
-			new CollectNeedingAnnotationFromIncompleteAnnotation<AllFields, KBPOutputArgument, KBPAnnotatedArgument>();
-		final BuildConfusionMatrix<AllFields, KBPOutputArgument, KBPAnnotatedArgument> confusionMatrixBuilder =
-			BuildConfusionMatrix.<AllFields, KBPOutputArgument, KBPAnnotatedArgument>forAnswerFunctions(KBPScorer.IsPresent, KBPScorer.ScoreByRoleJustified);
-
-		for (final AlignedAnswers<AllFields, KBPOutputArgument, KBPAnnotatedArgument> alignedAnswer
-				: alignment.alignmentsForAnswerables())
-		{
-			needingAnnotation.observe(alignedAnswer);
-			confusionMatrixBuilder.observe(alignedAnswer);
-		}
-
-		assertEquals(0, needingAnnotation.buildResult().size());
-		final ProvenancedConfusionMatrix<AlignedAnswers<AllFields, KBPOutputArgument, KBPAnnotatedArgument>> confusionMatrix =
-			confusionMatrixBuilder.buildConfusionMatrix();
-		final List<AlignedAnswers<AllFields, KBPOutputArgument, KBPAnnotatedArgument>> present_correct = confusionMatrix.cell(PRESENT, CORRECT);
-		final List<AlignedAnswers<AllFields, KBPOutputArgument, KBPAnnotatedArgument>> absent_correct = confusionMatrix.cell(ABSENT, CORRECT);
-		final List<AlignedAnswers<AllFields, KBPOutputArgument, KBPAnnotatedArgument>> present_incorrect = confusionMatrix.cell(PRESENT, INCORRECT);
-
-		assertEquals(1, present_incorrect.size());
-		assertEquals(6, present_correct.size());
-		assertEquals(11, absent_correct.size());
-	}*/
 }
