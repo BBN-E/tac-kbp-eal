@@ -1,7 +1,6 @@
 package com.bbn.kbp.events2014.scorer;
 
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.EventArgScoringAlignment;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
@@ -19,14 +18,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.bbn.kbp.events2014.AssessedResponse.IsCorrectUpToInexactJustifications;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.Iterables.any;
 import static com.google.common.collect.Sets.union;
 
 /**
@@ -127,34 +123,5 @@ public final class KBPScorer {
 
     return ret.build();
   }
-
-
-  private static final Symbol PRESENT = Symbol.from("PRESENT");
-  private static final Symbol ABSENT = Symbol.from("ABSENT");
-
-
-  public static final Function<Collection<Response>, Symbol> IsPresent =
-      new Function<Collection<Response>, Symbol>() {
-        @Override
-        public Symbol apply(final Collection<Response> args) {
-          return args.isEmpty() ? ABSENT : PRESENT;
-        }
-      };
-
-  public static final Function<Collection<AssessedResponse>, Symbol> AnyAnswerCorrect =
-      new Function<Collection<AssessedResponse>, Symbol>() {
-        @Override
-        public Symbol apply(final Collection<AssessedResponse> args) {
-          return any(args, AssessedResponse.IsCompletelyCorrect) ? PRESENT : ABSENT;
-        }
-      };
-
-  public static final Function<Collection<AssessedResponse>, Symbol> AnyAnswerSemanticallyCorrect =
-      new Function<Collection<AssessedResponse>, Symbol>() {
-        @Override
-        public Symbol apply(final Collection<AssessedResponse> args) {
-          return any(args, IsCorrectUpToInexactJustifications) ? PRESENT : ABSENT;
-        }
-      };
 
 }
