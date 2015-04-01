@@ -8,6 +8,9 @@ import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -18,6 +21,7 @@ public final class EventArgumentLinking {
   private final Symbol docID;
   private final ImmutableSet<TypeRoleFillerRealisSet> coreffedArgSets;
   private final ImmutableSet<TypeRoleFillerRealis> incomplete;
+  private static Logger log = LoggerFactory.getLogger(EventArgumentLinking.class);
 
   private EventArgumentLinking(Symbol docID, Iterable<TypeRoleFillerRealisSet> coreffedArgSets,
       Iterable<TypeRoleFillerRealis> incomplete) {
@@ -73,6 +77,8 @@ public final class EventArgumentLinking {
     final Function<Response, TypeRoleFillerRealis> ToEquivalenceClass =
         TypeRoleFillerRealis.extractFromSystemResponse(
             answerKey.corefAnnotation().strictCASNormalizerFunction());
+
+    log.info("creating minimal linking for {} responses", answerKey.annotatedResponses().size());
 
     return EventArgumentLinking.create(answerKey.docId(),
         ImmutableSet.<TypeRoleFillerRealisSet>of(),
