@@ -109,10 +109,13 @@ public final class KBPScorerBin {
     checkArgument(
         params.isPresent(SYSTEM_OUTPUT_PARAM) != params.isPresent(SYSTEM_OUTPUTS_DIR_PARAM),
         "Exactly one of systemOutput and systemOutputsDir must be specified");
+    final AssessmentSpecFormats.Format systemFileFormat =
+        params.getEnum("systemFormat", AssessmentSpecFormats.Format.class);
+
     if (params.isPresent(SYSTEM_OUTPUT_PARAM)) {
-      scoreSingleSystemOutputStore(goldAnswerStore, scorer, params);
+      scoreSingleSystemOutputStore(goldAnswerStore, scorer, params, systemFileFormat);
     } else if (params.isPresent("systemOutputsDir")) {
-      scoreMultipleSystemOutputStores(goldAnswerStore, scorer, params);
+      scoreMultipleSystemOutputStores(goldAnswerStore, scorer, params, systemFileFormat);
     } else {
       throw new RuntimeException("Can't happen");
     }
@@ -121,15 +124,14 @@ public final class KBPScorerBin {
   // this and the single output store version can't be easily refactored together because
   // of their differing behavior wrt the list of documents to score
   private static void scoreMultipleSystemOutputStores(AnnotationStore goldAnswerStore,
-      KBPScorer scorer, Parameters params) throws IOException {
+      KBPScorer scorer, Parameters params, final AssessmentSpecFormats.Format fileFormat)
+      throws IOException {
     final File systemOutputsDir = params.getExistingDirectory("systemOutputsDir");
     final File scoringOutputRoot = params.getCreatableDirectory("scoringOutputRoot");
 
     log.info("Scoring all subdirectories of {}", systemOutputsDir);
 
     final Set<Symbol> documentsToScore = loadDocumentsToScore(params);
-    final AssessmentSpecFormats.Format fileFormat =
-        params.getEnum("systemFormat", AssessmentSpecFormats.Format.class);
 
     for (File subDir : systemOutputsDir.listFiles()) {
       if (subDir.isDirectory()) {
@@ -144,17 +146,15 @@ public final class KBPScorerBin {
   }
 
   private static void scoreSingleSystemOutputStore(AnnotationStore goldAnswerStore,
-      KBPScorer scorer, Parameters params) throws IOException {
+      KBPScorer scorer, Parameters params, final AssessmentSpecFormats.Format systemFormat)
+      throws IOException {
     final File systemOutputDir = params.getExistingDirectory(SYSTEM_OUTPUT_PARAM);
-    final AssessmentSpecFormats.Format systemFormat =
-        params.getEnum("systemFormat", AssessmentSpecFormats.Format.class);
     log.info("Scoring single system output {}", systemOutputDir);
     final SystemOutputStore systemOutputStore =
         AssessmentSpecFormats.openSystemOutputStore(systemOutputDir, systemFormat);
     final Set<Symbol> documentsToScore;
     if (params.isPresent("documentsToScore")) {
       documentsToScore = loadDocumentsToScore(params);
-
     } else {
       documentsToScore = union(systemOutputStore.docIDs(), goldAnswerStore.docIDs());
     }
