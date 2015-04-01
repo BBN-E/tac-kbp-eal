@@ -33,7 +33,7 @@ public final class ExpandFromRealis implements Function<AnswerKey, AnswerKey> {
 
   }
 
-  private ExpandFromRealis create() {
+  public ExpandFromRealis create() {
     return new ExpandFromRealis();
   }
 
