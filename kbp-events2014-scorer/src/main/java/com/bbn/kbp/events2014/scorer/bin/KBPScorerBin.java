@@ -27,14 +27,15 @@ import java.util.List;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.collect.Sets.union;
 
 public final class KBPScorerBin {
-
   private static final Logger log = LoggerFactory.getLogger(KBPScorerBin.class);
 
-  private KBPScorerBin() {
-    throw new UnsupportedOperationException();
+  private final ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers;
+
+  /* package-private */ KBPScorerBin(
+      final Iterable<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers) {
+    this.corpusObservers = ImmutableList.copyOf(corpusObservers);
   }
 
   private static void usage() {
@@ -58,19 +59,77 @@ public final class KBPScorerBin {
     System.exit(1);
   }
 
-  private static ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> getCorpusObservers(
-      Parameters params) {
-    final List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers = Lists.newArrayList();
+  public static final String SYSTEM_OUTPUT_PARAM = "systemOutput";
+  public static final String SYSTEM_OUTPUTS_DIR_PARAM = "systemOutputsDir";
 
-    if (params.getBoolean("annotationComplete")) {
-      corpusObservers.add(ExitOnUnannotatedAnswerKey.create());
+  public void runOnParameters(Parameters params) throws IOException {
+    log.info(params.dump());
+
+    final KBPScorer scorer = KBPScorer.create(PreprocessorKBP2014.fromParameters(params),
+        corpusObservers);
+    final AnnotationStore goldAnswerStore = AssessmentSpecFormats.openAnnotationStore(params
+            .getExistingDirectory("answerKey"),
+        params.getEnum("goldFileFormat", AssessmentSpecFormats.Format.class));
+
+    checkArgument(
+        params.isPresent(SYSTEM_OUTPUT_PARAM) != params.isPresent(SYSTEM_OUTPUTS_DIR_PARAM),
+        "Exactly one of systemOutput and systemOutputsDir must be specified");
+    final AssessmentSpecFormats.Format systemFileFormat =
+        params.getEnum("systemFormat", AssessmentSpecFormats.Format.class);
+
+    final ImmutableSet<Symbol> docsToScore = loadDocumentsToScore(params);
+
+    if (params.isPresent(SYSTEM_OUTPUT_PARAM)) {
+      scoreSingleSystemOutputStore(goldAnswerStore, scorer, params, systemFileFormat, docsToScore);
+    } else if (params.isPresent("systemOutputsDir")) {
+      scoreMultipleSystemOutputStores(goldAnswerStore, scorer, params, systemFileFormat,
+          docsToScore);
+    } else {
+      throw new RuntimeException("Can't happen");
     }
+  }
 
-    final HTMLErrorRecorder dummyRecorder = NullHTMLErrorRecorder.getInstance();
-    final ImmutableList<EAScoringObserver.Outputter> outputters = getOutputters(params);
-    corpusObservers.add(EAScoringObserver.standardScorer(dummyRecorder, outputters));
+  // this and the single output store version can't be easily refactored together because
+  // of their differing behavior wrt the list of documents to score
+  private void scoreMultipleSystemOutputStores(AnnotationStore goldAnswerStore,
+      KBPScorer scorer, Parameters params, final AssessmentSpecFormats.Format fileFormat,
+      final Set<Symbol> docsToScore)
+      throws IOException {
+    final File systemOutputsDir = params.getExistingDirectory("systemOutputsDir");
+    final File scoringOutputRoot = params.getCreatableDirectory("scoringOutputRoot");
 
-    return ImmutableList.copyOf(corpusObservers);
+    log.info("Scoring all subdirectories of {}", systemOutputsDir);
+
+    for (File subDir : systemOutputsDir.listFiles()) {
+      if (subDir.isDirectory()) {
+        final SystemOutputStore systemOutputStore =
+            AssessmentSpecFormats.openSystemOutputStore(subDir, fileFormat);
+        final File outputDir = new File(scoringOutputRoot, subDir.getName());
+
+        outputDir.mkdirs();
+        scorer.run(systemOutputStore, goldAnswerStore, docsToScore, outputDir);
+      }
+    }
+  }
+
+  private void scoreSingleSystemOutputStore(AnnotationStore goldAnswerStore,
+      KBPScorer scorer, Parameters params, final AssessmentSpecFormats.Format systemFormat,
+      final Set<Symbol> docsToScore)
+      throws IOException {
+    final File systemOutputDir = params.getExistingDirectory(SYSTEM_OUTPUT_PARAM);
+    log.info("Scoring single system output {}", systemOutputDir);
+    final SystemOutputStore systemOutputStore =
+        AssessmentSpecFormats.openSystemOutputStore(systemOutputDir, systemFormat);
+
+    scorer.run(systemOutputStore, goldAnswerStore, docsToScore,
+        params.getCreatableDirectory("scoringOutput"));
+  }
+
+  private static ImmutableSet<Symbol> loadDocumentsToScore(Parameters params) throws IOException {
+    final File docsToScoreList = params.getExistingFile("documentsToScore");
+    final ImmutableSet<Symbol> ret = ImmutableSet.copyOf(FileUtils.loadSymbolList(docsToScoreList));
+    log.info("Scoring over {} documents specified in {}", ret.size(), docsToScoreList);
+    return ret;
   }
 
   private static final String NUM_BOOTSTRAP_SAMPLES = "numBootstrapSamples";
@@ -90,83 +149,32 @@ public final class KBPScorerBin {
     return ret.build();
   }
 
-  public static final String SYSTEM_OUTPUT_PARAM = "systemOutput";
-  public static final String SYSTEM_OUTPUTS_DIR_PARAM = "systemOutputsDir";
+  // Below is configuration related to the standard public version of the scorer
+
+  private static ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> getCorpusObservers(
+      Parameters params) {
+    final List<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers = Lists.newArrayList();
+
+    if (params.getBoolean("annotationComplete")) {
+      corpusObservers.add(ExitOnUnannotatedAnswerKey.create());
+    }
+
+    final HTMLErrorRecorder dummyRecorder = NullHTMLErrorRecorder.getInstance();
+    final ImmutableList<EAScoringObserver.Outputter> outputters = getOutputters(params);
+    corpusObservers.add(EAScoringObserver.standardScorer(dummyRecorder, outputters));
+
+    return ImmutableList.copyOf(corpusObservers);
+  }
 
   public static void main(final String[] argv) throws IOException {
     if (argv.length != 1) {
       usage();
     }
     final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
-    log.info(params.dump());
+    final ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers =
+        getCorpusObservers(params);
 
-    final KBPScorer scorer = KBPScorer.create(PreprocessorKBP2014.fromParameters(params),
-        getCorpusObservers(params));
-    final AnnotationStore goldAnswerStore = AssessmentSpecFormats.openAnnotationStore(params
-        .getExistingDirectory("answerKey"),
-        params.getEnum("goldFileFormat", AssessmentSpecFormats.Format.class));
-
-    checkArgument(
-        params.isPresent(SYSTEM_OUTPUT_PARAM) != params.isPresent(SYSTEM_OUTPUTS_DIR_PARAM),
-        "Exactly one of systemOutput and systemOutputsDir must be specified");
-    final AssessmentSpecFormats.Format systemFileFormat =
-        params.getEnum("systemFormat", AssessmentSpecFormats.Format.class);
-
-    if (params.isPresent(SYSTEM_OUTPUT_PARAM)) {
-      scoreSingleSystemOutputStore(goldAnswerStore, scorer, params, systemFileFormat);
-    } else if (params.isPresent("systemOutputsDir")) {
-      scoreMultipleSystemOutputStores(goldAnswerStore, scorer, params, systemFileFormat);
-    } else {
-      throw new RuntimeException("Can't happen");
-    }
+    final KBPScorerBin scorerBin = new KBPScorerBin(corpusObservers);
+    scorerBin.runOnParameters(params);
   }
-
-  // this and the single output store version can't be easily refactored together because
-  // of their differing behavior wrt the list of documents to score
-  private static void scoreMultipleSystemOutputStores(AnnotationStore goldAnswerStore,
-      KBPScorer scorer, Parameters params, final AssessmentSpecFormats.Format fileFormat)
-      throws IOException {
-    final File systemOutputsDir = params.getExistingDirectory("systemOutputsDir");
-    final File scoringOutputRoot = params.getCreatableDirectory("scoringOutputRoot");
-
-    log.info("Scoring all subdirectories of {}", systemOutputsDir);
-
-    final Set<Symbol> documentsToScore = loadDocumentsToScore(params);
-
-    for (File subDir : systemOutputsDir.listFiles()) {
-      if (subDir.isDirectory()) {
-        final SystemOutputStore systemOutputStore =
-            AssessmentSpecFormats.openSystemOutputStore(subDir, fileFormat);
-        final File outputDir = new File(scoringOutputRoot, subDir.getName());
-
-        outputDir.mkdirs();
-        scorer.run(systemOutputStore, goldAnswerStore, documentsToScore, outputDir);
-      }
-    }
-  }
-
-  private static void scoreSingleSystemOutputStore(AnnotationStore goldAnswerStore,
-      KBPScorer scorer, Parameters params, final AssessmentSpecFormats.Format systemFormat)
-      throws IOException {
-    final File systemOutputDir = params.getExistingDirectory(SYSTEM_OUTPUT_PARAM);
-    log.info("Scoring single system output {}", systemOutputDir);
-    final SystemOutputStore systemOutputStore =
-        AssessmentSpecFormats.openSystemOutputStore(systemOutputDir, systemFormat);
-    final Set<Symbol> documentsToScore;
-    if (params.isPresent("documentsToScore")) {
-      documentsToScore = loadDocumentsToScore(params);
-    } else {
-      documentsToScore = union(systemOutputStore.docIDs(), goldAnswerStore.docIDs());
-    }
-
-    scorer.run(systemOutputStore, goldAnswerStore, documentsToScore, params.getCreatableDirectory("scoringOutput"));
-  }
-
-  private static ImmutableSet<Symbol> loadDocumentsToScore(Parameters params) throws IOException {
-    final File docsToScoreList = params.getExistingFile("documentsToScore");
-    final ImmutableSet<Symbol> ret = ImmutableSet.copyOf(FileUtils.loadSymbolList(docsToScoreList));
-    log.info("Scoring over {} documents specified in {}", ret.size(), docsToScoreList);
-    return ret;
-  }
-
 }
