@@ -166,6 +166,11 @@
                             </jvmSettings>
                         </program>
 
+			<program>
+			    <mainClass>com.bbn.kbp.events2014.bin.ExploreEALScorer</mainClass>
+			    <name>exploreEalScorer</name>
+			</program>
+
                     </programs>
                 </configuration>
             </plugin>
