@@ -17,13 +17,13 @@ final class ExactMatchEventArgumentLinkingWithIncompletes  extends ExactMatchEve
   ExactMatchEventArgumentLinkingWithIncompletes() {
     super();
   }
-  public EventArgumentLinking addNewResponsesAsIncompletesFrom(EventArgumentLinking eventArgumentLinking, AnswerKey answerKey) {
+  private EventArgumentLinking addNewResponsesAsIncompletesFrom(EventArgumentLinking eventArgumentLinking, AnswerKey answerKey) {
     EventArgumentLinking minimalLinking = EventArgumentLinking.createMinimalLinkingFrom(answerKey);
     ImmutableSet<TypeRoleFillerRealis> allLinked = ImmutableSet
-        .copyOf(Iterables.concat(minimalLinking.linkedAsSet()));
+        .copyOf(Iterables.concat(eventArgumentLinking.linkedAsSet()));
     ImmutableSet<TypeRoleFillerRealis> minimalUnlinked = Sets
         .difference(minimalLinking.incomplete(), allLinked).immutableCopy();
-    ImmutableSet<TypeRoleFillerRealis> allUnlinked = Sets.union(minimalUnlinked, minimalLinking.incomplete()).immutableCopy();
+    ImmutableSet<TypeRoleFillerRealis> allUnlinked = Sets.union(minimalUnlinked, eventArgumentLinking.incomplete()).immutableCopy();
     return EventArgumentLinking.create(eventArgumentLinking.docID(), eventArgumentLinking.linkedAsSet(), allUnlinked);
   }
   @Override
