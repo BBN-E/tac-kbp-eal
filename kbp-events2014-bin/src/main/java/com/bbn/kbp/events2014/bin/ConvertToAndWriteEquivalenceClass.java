@@ -15,7 +15,8 @@ import com.bbn.kbp.events2014.io.EventArgumentEquivalenceSpecFormats;
 import com.bbn.kbp.events2014.io.EventArgumentEquivalenceStore;
 import com.bbn.kbp.events2014.io.LinkingSpecFormats;
 import com.bbn.kbp.events2014.io.LinkingStore;
-import com.bbn.kbp.events2014.linking.ExactMatchEventArgumentLinkingAligner;
+import com.bbn.kbp.events2014.linking.EventArgumentLinkingAligner;
+import com.bbn.kbp.events2014.linking.EventArgumentLinkingAligners;
 import com.bbn.kbp.events2014.linking.LinkingUtils;
 
 import com.google.common.base.Optional;
@@ -73,8 +74,8 @@ public final class ConvertToAndWriteEquivalenceClass {
       // if linkingStoreIsGold=true, then it is produced as a result of assessment
       // if false, then it is produced by system
       final boolean linkingStoreIsGold = params.getBoolean("linkingStoreIsGold");
-      final ExactMatchEventArgumentLinkingAligner aligner =
-          ExactMatchEventArgumentLinkingAligner.create();
+      final EventArgumentLinkingAligner aligner =
+          EventArgumentLinkingAligners.getExactMatchEventArgumentLinkingAligner();
       final AnswerKey.Filter answerKeyFilter;
       if (linkingStoreIsGold) {
         answerKeyFilter = LinkingUtils.linkableResponseFilter2015ForGold();

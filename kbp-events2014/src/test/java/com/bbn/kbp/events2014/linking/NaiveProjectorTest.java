@@ -68,7 +68,8 @@ public class NaiveProjectorTest {
                 dummyTRFR(docID, sourceCoref.normalizeStrictly(H))))),
         ImmutableSet.<TypeRoleFillerRealis>of());
 
-    final ResponseLinking sourceResponseLinking = ExactMatchEventArgumentLinkingAligner.create()
+    final ResponseLinking sourceResponseLinking =
+        EventArgumentLinkingAligners.getExactMatchEventArgumentLinkingAligner()
         .alignToResponseLinking(sourceArgumentLinking, minimalAnswerKeyFor(sourceCoref));
 
     // target coref clusters. 1={A,B}, 2={C}, 3={d,e,f,g}, 4={h,i}, 5={K}
@@ -104,7 +105,8 @@ public class NaiveProjectorTest {
         ImmutableSet.of(dummyTRFR(docID, targetCoref.normalizeStrictly(K))));
 
     final AnswerKey targetAnswerKey = minimalAnswerKeyFor(targetCoref);
-    final ResponseLinking referenceResponseLinking = ExactMatchEventArgumentLinkingAligner.create()
+    final ResponseLinking referenceResponseLinking =
+        EventArgumentLinkingAligners.getExactMatchEventArgumentLinkingAligner()
         .alignToResponseLinking(referenceArgumentLinking, targetAnswerKey);
 
     final NaiveResponseLinkingProjector projector = NaiveResponseLinkingProjector.create();

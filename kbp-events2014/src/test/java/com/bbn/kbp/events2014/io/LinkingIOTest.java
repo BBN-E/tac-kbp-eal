@@ -6,7 +6,7 @@ import com.bbn.kbp.events2014.EventArgumentLinking;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.linking.EventArgumentLinkingAligner;
-import com.bbn.kbp.events2014.linking.ExactMatchEventArgumentLinkingAligner;
+import com.bbn.kbp.events2014.linking.EventArgumentLinkingAligners;
 import com.bbn.kbp.events2014.linking.LinkingUtils;
 
 import com.google.common.base.Optional;
@@ -27,7 +27,7 @@ public class LinkingIOTest {
       ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other);
 
   private static final EventArgumentLinkingAligner linkingAligner =
-      ExactMatchEventArgumentLinkingAligner.create();
+      EventArgumentLinkingAligners.getExactMatchEventArgumentLinkingAligner();
 
   @Test
   public void testRoundtrip()

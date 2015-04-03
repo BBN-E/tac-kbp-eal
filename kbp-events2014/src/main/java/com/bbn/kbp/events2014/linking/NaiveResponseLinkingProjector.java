@@ -113,7 +113,7 @@ public final class NaiveResponseLinkingProjector {
     final EventArgumentLinking projectedEventArgumentLinking = EventArgumentLinking.create(
         targetAnswerKey.docId(), projectedSets, projectedIncompletesNotFoundElsewhere);
 
-    return ExactMatchEventArgumentLinkingAligner.create().alignToResponseLinking(
+    return EventArgumentLinkingAligners.getExactMatchEventArgumentLinkingAligner().alignToResponseLinking(
         projectedEventArgumentLinking, targetAnswerKey);
   }
 

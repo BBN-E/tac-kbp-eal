@@ -6,7 +6,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
 import org.slf4j.Logger;
@@ -88,11 +87,4 @@ public final class EventArgumentLinking {
             .transform(ToEquivalenceClass)));
   }
 
-  public EventArgumentLinking addNewResponsesAsIncompletesFrom(AnswerKey answerKey) {
-    EventArgumentLinking minimalLinking = createMinimalLinkingFrom(answerKey);
-    ImmutableSet<TypeRoleFillerRealis> allLinked = ImmutableSet.copyOf(Iterables.concat(coreffedArgSets));
-    ImmutableSet<TypeRoleFillerRealis> minimalUnlinked = Sets.difference(minimalLinking.incomplete(), allLinked).immutableCopy();
-    ImmutableSet<TypeRoleFillerRealis> allUnlinked = Sets.union(minimalUnlinked, incomplete).immutableCopy();
-    return create(this.docID, this.coreffedArgSets, allUnlinked);
-  }
 }

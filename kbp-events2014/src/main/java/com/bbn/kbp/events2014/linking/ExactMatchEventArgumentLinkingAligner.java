@@ -19,16 +19,9 @@ import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-public final class ExactMatchEventArgumentLinkingAligner implements EventArgumentLinkingAligner {
+class ExactMatchEventArgumentLinkingAligner implements EventArgumentLinkingAligner {
 
-  private ExactMatchEventArgumentLinkingAligner() {
-  }
-
-  /**
-   * Creates an aligner.
-   */
-  public static ExactMatchEventArgumentLinkingAligner create() {
-    return new ExactMatchEventArgumentLinkingAligner();
+  public ExactMatchEventArgumentLinkingAligner() {
   }
 
   /**
