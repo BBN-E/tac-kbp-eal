@@ -82,11 +82,14 @@ public class ScorerTest {
 
     assertEquals(0.1, 0.1, 0.0001); // dummy
 
-    //final SystemExamples systemExamples = SystemExamples.create();
-    //singletonTest(systemExamples);
-    //oneGroupTest(systemExamples);
-    //test1(systemExamples);
-    //test2(systemExamples);
+    final SystemExamples systemExamples = SystemExamples.create();
+    singletonTest(systemExamples);
+    oneGroupTest(systemExamples);
+    test1(systemExamples);
+    test2(systemExamples);
+    test3(systemExamples);
+    test4(systemExamples);
+    testGeneric(systemExamples);
   }
 
   private AnswerKey makeAnswerKeyFromCorrectAndIncorrect(final ImmutableSet<Response> correct,
@@ -295,6 +298,93 @@ public class ScorerTest {
     final ResponseLinking l13 = linkings.get("l13");
   }
 
+  /*
+      key = { {a,b,c} {d,e} {f} }
+      l14 EA=4/9 ; EAL: TP=2 FP=1 LS=4/3 final=0.2569
+      l15 EA=0.6 ; EAL: TP=3 FP=1 LS=1 final=0.3125
+      l16 EA=0.6 ; EAL: TP=3 FP=1 LS=4/3 final=0.3403
+      l17 EA=0 ; EAL: TP=0 FP=3 LS=0 final=0
+      l18 EA=2/3 ; EAL: TP=3 FP=0 LS=1 final=0.3333
+   */
+  private void test3(final SystemExamples systemExamples) {
+    final ImmutableMap<String, Response> responses = systemExamples.getResponses();
+    final ImmutableMap<String, ResponseLinking> linkings = systemExamples.getLinkings();
+
+    final Response a = responses.get("a");
+    final Response b = responses.get("b");
+    final Response c = responses.get("c");
+    final Response d = responses.get("d");
+    final Response e = responses.get("e");
+    final Response f = responses.get("f");
+    final Response g = responses.get("g");
+    final Response h = responses.get("h");
+    final Response i = responses.get("i");
+
+    final CorefAnnotation coref = allSingletonsCoref(ImmutableSet.of(a,b,c,d,e,f,g,h,i));
+    final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(ImmutableSet.of(a,b,c,d,e,f), ImmutableSet.<Response>of(), coref);
+
+    final ResponseLinking goldResponseLinking = ResponseLinking.from(answerKey.docId(),
+        ImmutableSet.of(ResponseSet.from(a,b,c),ResponseSet.from(d,e),ResponseSet.from(f)),
+        ImmutableSet.<Response>of());
+
+    final ResponseLinking l14 = linkings.get("l14");
+    final ResponseLinking l15 = linkings.get("l15");    // overlink { {a,b,d} {g} }
+    final ResponseLinking l16 = linkings.get("l16");    // underlink { {a,b} {c} {g} }
+    final ResponseLinking l17 = linkings.get("l17");    // no correct { {g} {h} {i} }, also test clipping EAE score to max 0
+    final ResponseLinking l18 = linkings.get("l18");    // duplicate system responses { {d,e} {d,e,a} }
+
+  }
+  
+  /*
+      key = { {a,b,c} {c,e} {c} }
+      l19 EA=0.4 ; EAL: TP=1 FP=0 LS=0 final=0.125
+      l20 EA=1 ; EAL: TP=4 FP=0 LS=2.6 final=0.825
+   */
+  private void test4(final SystemExamples systemExamples) {
+    final ImmutableMap<String, Response> responses = systemExamples.getResponses();
+    final ImmutableMap<String, ResponseLinking> linkings = systemExamples.getLinkings();
+
+    final Response a = responses.get("a");
+    final Response b = responses.get("b");
+    final Response c = responses.get("c");    
+    final Response e = responses.get("e");
+    
+
+    final CorefAnnotation coref = allSingletonsCoref(ImmutableSet.of(a,b,c,e));
+    final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(ImmutableSet.of(a,b,c,e), ImmutableSet.<Response>of(), coref);
+
+    final ResponseLinking goldResponseLinking = ResponseLinking.from(answerKey.docId(),
+        ImmutableSet.of(ResponseSet.from(a,b,c),ResponseSet.from(c,e),ResponseSet.from(c)),
+        ImmutableSet.<Response>of());
+
+    final ResponseLinking l19 = linkings.get("l19");
+    final ResponseLinking l20 = linkings.get("l20");
+  }
+
+  /*
+      key = { {b,c} {c,d} {d,e} }
+      l21 EA=0.75 ; EAL: TP=3 FP=0 LS=7/6 final=0.5208
+   */
+  private void testGeneric(final SystemExamples systemExamples) {
+    final ImmutableMap<String, Response> responses = systemExamples.getResponses();
+    final ImmutableMap<String, ResponseLinking> linkings = systemExamples.getLinkings();
+    
+    final Response b = responses.get("b");
+    final Response c = responses.get("c");    
+    final Response d = responses.get("d");
+    final Response e = responses.get("e");
+    final Response aGeneric = responses.get("aGeneric");
+
+    final CorefAnnotation coref = allSingletonsCoref(ImmutableSet.of(b,c,d,e,aGeneric));
+    final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(ImmutableSet.of(b,c,d,e), ImmutableSet.<Response>of(), coref);
+
+    final ResponseLinking goldResponseLinking = ResponseLinking.from(answerKey.docId(),
+        ImmutableSet.of(ResponseSet.from(b,c),ResponseSet.from(c,d),ResponseSet.from(d,e)),
+        ImmutableSet.<Response>of());
+
+    final ResponseLinking l21 = linkings.get("l21");    // { {aGeneric,b,c,e} }
+  }
+  
   private static class SystemExamples {
     final ImmutableMap<String, Response> responses;
     final ImmutableMap<String, ResponseLinking> linkings;
@@ -329,6 +419,10 @@ public class ScorerTest {
       final Response d = dummyResponseOfType(CONFLICT, VICTIM, "d", KBPRealis.Actual);
       final Response e = dummyResponseOfType(CONFLICT, VICTIM, "e", KBPRealis.Actual);
       final Response f = dummyResponseOfType(CONFLICT, VICTIM, "f", KBPRealis.Actual);
+      final Response g = dummyResponseOfType(CONFLICT, VICTIM, "g", KBPRealis.Actual);
+      final Response h = dummyResponseOfType(CONFLICT, VICTIM, "h", KBPRealis.Actual);
+      final Response i = dummyResponseOfType(CONFLICT, VICTIM, "i", KBPRealis.Actual);
+      final Response aGeneric = dummyResponseOfType(CONFLICT, VICTIM, "a", KBPRealis.Generic);
 
       ret.put("a", a);
       ret.put("b", b);
@@ -336,6 +430,10 @@ public class ScorerTest {
       ret.put("d", d);
       ret.put("e", e);
       ret.put("f", f);
+      ret.put("g", g);
+      ret.put("h", h);
+      ret.put("i", i);
+      ret.put("aGeneric", aGeneric);
 
       return ret.build();
     }
@@ -358,6 +456,17 @@ public class ScorerTest {
 
       l12 = { {a} {b} {c} {d} {e,f} }
       l13 = { {a} {b} {c} {d} {e} {f} }
+      
+      l14 = { {a,b} {g} }
+      l15 = { {a,b,d} {g} }
+      l16 = { {a,b} {c} {g} }
+      l17 = { {g} {h} {i} }
+      l18 = { {d,e} {d,e,a} }       // duplicate system response
+      
+      l19 = { {c} }
+      l20 = { {a,b,c,e} }
+      
+      l21 = { {aGeneric,b,c,e} }    // test if the scorer will remove aGeneric prior to scoring
      */
     private static ImmutableMap<String, ResponseLinking> createLinkings(final ImmutableMap<String, Response> responses) {
       final ImmutableMap.Builder<String, ResponseLinking> ret = ImmutableMap.builder();
@@ -368,6 +477,10 @@ public class ScorerTest {
       final Response d = responses.get("d");
       final Response e = responses.get("e");
       final Response f = responses.get("f");
+      final Response g = responses.get("g");
+      final Response h = responses.get("h");
+      final Response i = responses.get("i");
+      final Response aGeneric = responses.get("aGeneric");
 
       final SystemOutput o1 = systemOutputFromResponses(ImmutableSet.of(a));
       final ResponseLinking l1 = ResponseLinking.from(o1.docId(),
@@ -447,7 +560,61 @@ public class ScorerTest {
           ImmutableSet.<Response>of());
       ret.put("l13", l13);
 
+      //////////////////
+      
+      final SystemOutput o14 = systemOutputFromResponses(ImmutableSet.of(a,b,g));
+      final ResponseLinking l14 = ResponseLinking.from(o14.docId(),
+          ImmutableSet.of(ResponseSet.from(a,b),ResponseSet.from(g)),
+          ImmutableSet.<Response>of());
+      ret.put("l14", l14);
+      
+      final SystemOutput o15 = systemOutputFromResponses(ImmutableSet.of(a,b,d,g));
+      final ResponseLinking l15 = ResponseLinking.from(o15.docId(),
+          ImmutableSet.of(ResponseSet.from(a,b,d),ResponseSet.from(g)),
+          ImmutableSet.<Response>of());
+      ret.put("l15", l15);
+      
+      final SystemOutput o16 = systemOutputFromResponses(ImmutableSet.of(a,b,c,g));
+      final ResponseLinking l16 = ResponseLinking.from(o16.docId(),
+          ImmutableSet.of(ResponseSet.from(a,b),ResponseSet.from(c),ResponseSet.from(g)),
+          ImmutableSet.<Response>of());
+      ret.put("l16", l16);
+      
+      final SystemOutput o17 = systemOutputFromResponses(ImmutableSet.of(g,h,i));
+      final ResponseLinking l17 = ResponseLinking.from(o17.docId(),
+          ImmutableSet.of(ResponseSet.from(g),ResponseSet.from(h),ResponseSet.from(i)),
+          ImmutableSet.<Response>of());
+      ret.put("l17", l17);
 
+      final SystemOutput o18 = systemOutputFromResponses(ImmutableSet.of(d,e,a));
+      final ResponseLinking l18 = ResponseLinking.from(o18.docId(),
+          ImmutableSet.of(ResponseSet.from(d,e),ResponseSet.from(d,e,a)),
+          ImmutableSet.<Response>of());
+      ret.put("l18", l18);
+      
+      ////////////////////
+      
+      final SystemOutput o19 = systemOutputFromResponses(ImmutableSet.of(c));
+      final ResponseLinking l19 = ResponseLinking.from(o19.docId(),
+          ImmutableSet.of(ResponseSet.from(c)),
+          ImmutableSet.<Response>of());
+      ret.put("l19", l19);
+      
+      final SystemOutput o20 = systemOutputFromResponses(ImmutableSet.of(a,b,c,e));
+      final ResponseLinking l20 = ResponseLinking.from(o20.docId(),
+          ImmutableSet.of(ResponseSet.from(a,b,c,e)),
+          ImmutableSet.<Response>of());
+      ret.put("l20", l20);
+      
+      ////////////////////
+      
+      final SystemOutput o21 = systemOutputFromResponses(ImmutableSet.of(aGeneric,b,c,e));
+      final ResponseLinking l21 = ResponseLinking.from(o21.docId(),
+          ImmutableSet.of(ResponseSet.from(aGeneric,b,c,e)),
+          ImmutableSet.<Response>of());
+      ret.put("l21", l21);
+      
+      
       return ret.build();
     }
 
