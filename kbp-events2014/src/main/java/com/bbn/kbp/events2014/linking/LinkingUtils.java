@@ -8,10 +8,10 @@ public final class LinkingUtils {
     throw new UnsupportedOperationException();
   }
 
-  public static final LinkableResponseFilter2015ForGold linkableResponseFilter2015ForGold =
+  private static final LinkableResponseFilter2015ForGold linkableResponseFilter2015ForGold =
       new LinkableResponseFilter2015ForGold();
 
-  public static final LinkableResponseFilter2015ForSystem linkableResponseFilter2015ForSystem =
+  private static final LinkableResponseFilter2015ForSystem linkableResponseFilter2015ForSystem =
       new LinkableResponseFilter2015ForSystem();
 
   public static AnswerKey.Filter linkableResponseFilter2015ForGold() {
