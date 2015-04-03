@@ -9,6 +9,8 @@ import com.google.common.collect.Ordering;
 import java.util.Arrays;
 import java.util.Iterator;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 /**
  * Represents a set of responses.  The default comparison method is to do a lexicographical sort of
  * the unique IDs of the (sorted) responses.
@@ -20,6 +22,7 @@ public final class ResponseSet implements Comparable<ResponseSet>, Iterable<Resp
 
   private ResponseSet(Iterable<Response> responses) {
     this.responses = ImmutableSortedSet.copyOf(Response.byUniqueIdOrdering(), responses);
+    checkArgument(!this.responses.isEmpty());
     this.cachedHashCode = computeHashCode();
   }
 
