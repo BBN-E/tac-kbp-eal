@@ -6,7 +6,11 @@ import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
@@ -18,6 +22,7 @@ public final class EventArgumentLinking {
   private final Symbol docID;
   private final ImmutableSet<TypeRoleFillerRealisSet> coreffedArgSets;
   private final ImmutableSet<TypeRoleFillerRealis> incomplete;
+  private static Logger log = LoggerFactory.getLogger(EventArgumentLinking.class);
 
   private EventArgumentLinking(Symbol docID, Iterable<TypeRoleFillerRealisSet> coreffedArgSets,
       Iterable<TypeRoleFillerRealis> incomplete) {
@@ -74,10 +79,20 @@ public final class EventArgumentLinking {
         TypeRoleFillerRealis.extractFromSystemResponse(
             answerKey.corefAnnotation().strictCASNormalizerFunction());
 
+    log.info("creating minimal linking for {} responses", answerKey.annotatedResponses().size());
+
     return EventArgumentLinking.create(answerKey.docId(),
         ImmutableSet.<TypeRoleFillerRealisSet>of(),
         ImmutableSet.copyOf(FluentIterable.from(answerKey.annotatedResponses())
             .transform(AssessedResponse.Response)
             .transform(ToEquivalenceClass)));
+  }
+
+  public EventArgumentLinking addNewResponsesAsIncompletesFrom(AnswerKey answerKey) {
+    EventArgumentLinking minimalLinking = createMinimalLinkingFrom(answerKey);
+    ImmutableSet<TypeRoleFillerRealis> allLinked = ImmutableSet.copyOf(Iterables.concat(coreffedArgSets));
+    ImmutableSet<TypeRoleFillerRealis> minimalUnlinked = Sets.difference(minimalLinking.incomplete(), allLinked).immutableCopy();
+    ImmutableSet<TypeRoleFillerRealis> allUnlinked = Sets.union(minimalUnlinked, incomplete).immutableCopy();
+    return create(this.docID, this.coreffedArgSets, allUnlinked);
   }
 }
