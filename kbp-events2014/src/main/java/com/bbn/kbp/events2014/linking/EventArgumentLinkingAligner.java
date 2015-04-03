@@ -11,8 +11,15 @@ import com.bbn.kbp.events2014.ResponseLinking;
  */
 public interface EventArgumentLinkingAligner {
 
+  /**
+   *
+   * @param responseLinking
+   * @param corefAnnotation
+   * @return
+   * @throws {@link com.bbn.kbp.events2014.linking.EventArgumentLinkingAligner.InconsistentLinkingException}
+   */
   EventArgumentLinking align(ResponseLinking responseLinking,
-      AnswerKey corefAnnotation) throws InconsistentLinkingException;
+      AnswerKey corefAnnotation);
 
   ResponseLinking alignToResponseLinking(EventArgumentLinking eventArgumentLinking,
       AnswerKey answerKey);

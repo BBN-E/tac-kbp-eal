@@ -38,7 +38,7 @@ public final class ExactMatchEventArgumentLinkingAligner implements EventArgumen
    * java.lang.IllegalArgumentException} will be thrown.
    */
   public EventArgumentLinking align(ResponseLinking responseLinking,
-      AnswerKey answerKey) throws InconsistentLinkingException {
+      AnswerKey answerKey)  {
     checkArgument(answerKey.docId() == responseLinking.docID());
     assertLinkingSubsetOfAnswerKey(responseLinking, answerKey);
 
