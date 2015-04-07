@@ -29,12 +29,12 @@ import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-public final class KBPScorerBin {
-  private static final Logger log = LoggerFactory.getLogger(KBPScorerBin.class);
+public final class KBP2014ScorerBin {
+  private static final Logger log = LoggerFactory.getLogger(KBP2014ScorerBin.class);
 
   private final ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers;
 
-  /* package-private */ KBPScorerBin(
+  /* package-private */ KBP2014ScorerBin(
       final Iterable<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers) {
     this.corpusObservers = ImmutableList.copyOf(corpusObservers);
   }
@@ -69,7 +69,7 @@ public final class KBPScorerBin {
     final EventArgumentScorer
         innerScorer = EventArgumentScorer.create(PreprocessorKBP2014.fromParameters(params),
         corpusObservers);
-    final EventArgumentScorerBin scorer = new EventArgumentScorerBin(innerScorer, null);
+    final EventArgumentScorerBin scorer = new EventArgumentScorerBin(innerScorer, corpusObservers);
     final AnnotationStore goldAnswerStore = AssessmentSpecFormats.openAnnotationStore(params
             .getExistingDirectory("answerKey"),
         params.getEnum("goldFileFormat", AssessmentSpecFormats.Format.class));
@@ -177,7 +177,7 @@ public final class KBPScorerBin {
     final ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers =
         getCorpusObservers(params);
 
-    final KBPScorerBin scorerBin = new KBPScorerBin(corpusObservers);
+    final KBP2014ScorerBin scorerBin = new KBP2014ScorerBin(corpusObservers);
     scorerBin.runOnParameters(params);
   }
 }
