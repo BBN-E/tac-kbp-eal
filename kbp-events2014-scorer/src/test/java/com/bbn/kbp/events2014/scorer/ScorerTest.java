@@ -389,7 +389,7 @@ public class ScorerTest {
       linking_ABD_G EA=0.6 ; EAL: TP=3 FP=1 LS=1 final=0.3125
       linking_AB_C_G EA=0.6 ; EAL: TP=3 FP=1 LS=4/3 final=0.3403
       linking_G_H_I EA=0 ; EAL: TP=0 FP=3 LS=0 final=0
-      linking_DE_DEA EA=2/3 ; EAL: TP=3 FP=0 LS=1 final=0.3333
+      linking_DE_DEA EA=2/3 ; EAL: TP=3 FP=0 LS=4/3 final=0.3333
    */
   @Test
   public void test3() {
@@ -402,33 +402,51 @@ public class ScorerTest {
         ImmutableSet.<Response>of());
 
     //final ResponseLinking l14 = this.linking_AB_G;
-    final ResponseLinking l15 = this.linking_ABD_G;    // overlink { {a,b,d} {g} }
+    //final ResponseLinking l15 = this.linking_ABD_G;    // overlink { {a,b,d} {g} }
     final EALScorer2015Style.Result score_ABD_G =
         scorer.score(answerKey, goldResponseLinking, this.output_ABDG, this.linking_ABD_G);
     assertEquals(2.75, score_ABD_G.unscaledArgumentScore(), .001);
     assertEquals(1.0, score_ABD_G.unscaledLinkingScore(), .001);
+    // for each key item:
+    // for item 'a', keyNeighbors=(b,c) sysNeighbors=(b,d), hence R=1/2 P=1/2, F=1/2
+    // for item 'b', keyNeighbors=(a,c) sysNeighbors=(a,d), hence R=1/2 P=1/2, F=1/2
+    // for item 'd', keyNeighbors=(e) sysNeighbors=(a,b), hence R=0 P=0 F=0
+    // key items c, e, f do not appear in system, hence no contribution to linkingSumF1
+    // Therefore, 1/2 + 1/2 + 0 = 1.0 unscaledLinkingScore
     assertEquals(0.3125, score_ABD_G.scaledScore(), .001);
     
-    final ResponseLinking l16 = this.linking_AB_C_G;    // underlink { {a,b} {c} {g} }
+    //final ResponseLinking l16 = this.linking_AB_C_G;    // underlink { {a,b} {c} {g} }
     final EALScorer2015Style.Result score_AB_C_G =
         scorer.score(answerKey, goldResponseLinking, this.output_ABCG, this.linking_AB_C_G);
     assertEquals(2.75, score_AB_C_G.unscaledArgumentScore(), .001);
     assertEquals(4.0/3, score_AB_C_G.unscaledLinkingScore(), .001);
+    // for each key item:
+    // for item 'a', keyNeighbors=(b,c) sysNeighbors=(b), hence R=1/2 P=1, F=2/3
+    // for item 'b', keyNeighbors=(a,c) sysNeighbors=(a), hence R=1/2 P=1, F=2/3
+    // for item 'c', keyNeighbors=(a,b) sysNeighbors=(), hence F=0
+    // items d,e,f do not appear in system
+    // Therefore, 2/3 + 2/3 = 4/3 unscaledLinkingScore
     assertEquals(0.3403, score_AB_C_G.scaledScore(), .001);
     
-    final ResponseLinking l17 = this.linking_G_H_I;    // no correct { {g} {h} {i} }, also test clipping EAE score to max 0
+    //final ResponseLinking l17 = this.linking_G_H_I;    // no correct { {g} {h} {i} }, also test clipping EAE score to max 0
     final EALScorer2015Style.Result score_G_H_I =
         scorer.score(answerKey, goldResponseLinking, this.output_GHI, this.linking_G_H_I);
-    assertEquals(0, score_G_H_I.unscaledArgumentScore(), .001);
+    assertEquals(-0.75, score_G_H_I.unscaledArgumentScore(), .001);
     assertEquals(0, score_G_H_I.unscaledLinkingScore(), .001);
-    assertEquals(0, score_G_H_I.scaledScore(), .001);
+    assertEquals(-0.0625, score_G_H_I.scaledScore(), .001);
     
-    final ResponseLinking l18 = this.linking_DE_DEA;    // duplicate system responses { {d,e} {d,e,a} }
+    //final ResponseLinking l18 = this.linking_DE_DEA;    // duplicate system responses { {d,e} {d,e,a} }
     final EALScorer2015Style.Result score_DE_DEA =
         scorer.score(answerKey, goldResponseLinking, this.output_DEA, this.linking_DE_DEA);
     assertEquals(3.0, score_DE_DEA.unscaledArgumentScore(), .001);
-    assertEquals(1.0, score_DE_DEA.unscaledLinkingScore(), .001);
-    assertEquals(0.3333, score_DE_DEA.scaledScore(), .001);
+    assertEquals(4.0/3, score_DE_DEA.unscaledLinkingScore(), .001);
+    // for each key item:
+    // for item 'a', keyNeighbors=(b,c) sysNeighbors=(d,e), F=0
+    // for item 'd', keyNeighbors=(e) sysNeighbors=(a,e), R=1 P=1/2, F=2/3
+    // for item 'e', keyNeighbors=(d) sysNeighbors=(a,d), R=1 P=1/2, F=2/3
+    // items b,c,f do not appear in system
+    // Therefore, 0 + 2/3 + 2/3 = 4/3 unscaledLinkingScore
+    assertEquals(13.0/36, score_DE_DEA.scaledScore(), .001);
   }
 
   /*
