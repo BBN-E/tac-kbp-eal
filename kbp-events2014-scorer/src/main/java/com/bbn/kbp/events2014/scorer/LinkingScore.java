@@ -1,8 +1,8 @@
 package com.bbn.kbp.events2014.scorer;
 
-import com.bbn.bue.common.evaluation.FMeasureInfo;
-
-import com.google.common.base.Objects;
+import com.bbn.kbp.events2014.EventArgumentLinking;
+import com.bbn.kbp.events2014.ResponseLinking;
+import com.bbn.kbp.linking.ExplicitFMeasureInfo;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -11,48 +11,52 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public final class LinkingScore {
 
-  private final FMeasureInfo fMeasureInfo;
+  private final ExplicitFMeasureInfo scores;
+  private final ResponseLinking referenceResponseLinking;
+  private final ResponseLinking referenceSystemLinking;
+  private final EventArgumentLinking referenceArgumentLinking;
+  private final EventArgumentLinking systemArgumentLinking;
 
-  public LinkingScore(final FMeasureInfo fMeasureInfo) {
-    this.fMeasureInfo = checkNotNull(fMeasureInfo);
+  private LinkingScore(final ResponseLinking referenceResponseLinking,
+      final EventArgumentLinking referenceArgumentLinking,
+      final ResponseLinking referenceSystemLinking,
+      final EventArgumentLinking systemArgumentLinking,
+      final ExplicitFMeasureInfo scores) {
+    this.referenceArgumentLinking = checkNotNull(referenceArgumentLinking);
+    this.scores = checkNotNull(scores);
+    this.referenceResponseLinking = checkNotNull(referenceResponseLinking);
+    this.referenceSystemLinking = checkNotNull(referenceSystemLinking);
+    this.systemArgumentLinking = checkNotNull(systemArgumentLinking);
   }
 
-  public static LinkingScore fromFMeasureInfo(final FMeasureInfo score) {
-    return null;
+  public EventArgumentLinking referenceArgumentLinking() {
+    return referenceArgumentLinking;
   }
 
   public double precision() {
-    return fMeasureInfo.precision();
+    return scores.precision();
   }
 
   public double recall() {
-    return fMeasureInfo.recall();
+    return scores.recall();
   }
 
   public double F1() {
-    return fMeasureInfo.recall();
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hashCode(fMeasureInfo);
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
-    final LinkingScore other = (LinkingScore) obj;
-    return Objects.equal(this.fMeasureInfo, other.fMeasureInfo);
+    return scores.f1();
   }
 
   @Override
   public String toString() {
     return String.format("LinkingScore[%.2f/%.2f/%.2f]",
         100 * precision(), 100 * recall(), 100 * F1());
+  }
+
+  public static LinkingScore from(final ResponseLinking referenceResponseLinking,
+      final EventArgumentLinking referenceArgumentLinking,
+      final ResponseLinking systemLinking,
+      final EventArgumentLinking systemArgumentLinking,
+      final ExplicitFMeasureInfo scores) {
+    return new LinkingScore(referenceResponseLinking, referenceArgumentLinking, systemLinking,
+        systemArgumentLinking, scores);
   }
 }

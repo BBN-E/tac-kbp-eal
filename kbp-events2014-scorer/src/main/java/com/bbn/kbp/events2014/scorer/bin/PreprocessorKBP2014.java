@@ -12,7 +12,6 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import java.io.IOException;
 import java.util.List;
 
 /**
@@ -41,10 +40,13 @@ public final class PreprocessorKBP2014 implements Preprocessor {
     return new PreprocessorKBP2014(answerKeyTransformations, systemOutputTransformations);
   }
 
-  @Override
-  public Result preprocess(SystemOutput systemOutput, AnswerKey answerKey)
-      throws IOException {
+  public static Preprocessor createKeepingRealis() {
+    return new PreprocessorKBP2014(ImmutableList.<Function<AnswerKey, AnswerKey>>of(),
+        ImmutableList.<Function<SystemOutput, SystemOutput>>of());
+  }
 
+  @Override
+  public Result preprocess(SystemOutput systemOutput, AnswerKey answerKey)  {
     for (Function<AnswerKey, AnswerKey> answerKeyTransformation : answerKeyTransformations) {
       answerKey = answerKeyTransformation.apply(answerKey);
     }

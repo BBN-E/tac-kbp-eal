@@ -2,14 +2,11 @@ package com.bbn.kbp.events2014.scorer;
 
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.EventArgScoringAlignment;
-import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
-import com.bbn.kbp.events2014.scorer.bin.Preprocessor;
 import com.bbn.kbp.events2014.scorer.observers.KBPScoringObserver;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -22,44 +19,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.Sets.union;
+public class EventArgumentScorerBin {
+  private static final Logger log = LoggerFactory.getLogger(EventArgumentScorerBin.class);
 
-/**
- * A scorer for the KBP event argument-attachment task.
- *
- * @author rgabbard
- */
-public final class KBPScorer {
-
-  private static final Logger log = LoggerFactory.getLogger(KBPScorer.class);
-  private final Preprocessor preprocessor;
+  private final EventArgumentScorer eventArgumentScorer;
   private final ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers;
 
-  private KBPScorer(Preprocessor preprocessor,
-      final Iterable<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers) {
-    this.preprocessor = checkNotNull(preprocessor);
-    this.scoringObservers = ImmutableList.copyOf(scoringObservers);
+  public EventArgumentScorerBin(final EventArgumentScorer eventArgumentScorer,
+      final ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers) {
+    this.eventArgumentScorer = eventArgumentScorer;
+    this.scoringObservers = scoringObservers;
   }
 
-  public static KBPScorer create(Preprocessor preprocessor,
-      Iterable<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers) {
-    return new KBPScorer(preprocessor, scoringObservers);
-  }
-
-  /**
-   * Runs the scorer over all documents found in either the system output store or gold annotation
-   * store.
-   */
-  public void run(SystemOutputStore systemOutputStore, AnnotationStore goldAnswerStore,
-      File baseOutputDir) throws IOException {
-    run(systemOutputStore, goldAnswerStore,
-        union(systemOutputStore.docIDs(), goldAnswerStore.docIDs()), baseOutputDir);
-  }
-
-  /**
-   * Runs the scorer over the specified documents.
-   */
   public void run(final SystemOutputStore systemAnswerStore, final AnnotationStore goldAnswerStore,
       final Set<Symbol> documentsToScore, final File baseOutputDir)
       throws IOException {
@@ -73,16 +44,8 @@ public final class KBPScorer {
     for (final Symbol docid : documentsToScore) {
       log.info("Scoring document: {}", docid);
 
-      final Preprocessor.Result preprocessorResult = preprocessor.preprocess(
-          systemAnswerStore.readOrEmpty(docid), goldAnswerStore.readOrEmpty(docid));
-
-      final Function<Response, TypeRoleFillerRealis> equivalenceClassFunction =
-          TypeRoleFillerRealis.extractFromSystemResponse(preprocessorResult.normalizer());
-
-      final StandardScoringAligner<TypeRoleFillerRealis> scoringAligner =
-          StandardScoringAligner.forEquivalenceClassFunction(equivalenceClassFunction);
-      final EventArgScoringAlignment<TypeRoleFillerRealis> scoringAlignment =
-          scoringAligner.align(preprocessorResult.answerKey(), preprocessorResult.systemOutput());
+      final EventArgScoringAlignment<TypeRoleFillerRealis> scoringAlignment = eventArgumentScorer
+          .score(goldAnswerStore.readOrEmpty(docid), systemAnswerStore.readOrEmpty(docid));
 
       for (final KBPScoringObserver<TypeRoleFillerRealis> scoringObserver : scoringObservers) {
         final File docLogDir = new File(scorerToOutputDir.get(scoringObserver), docid.toString());
@@ -115,5 +78,4 @@ public final class KBPScorer {
 
     return ret.build();
   }
-
 }

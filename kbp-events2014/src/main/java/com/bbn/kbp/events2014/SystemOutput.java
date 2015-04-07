@@ -208,4 +208,16 @@ public final class SystemOutput {
     return Objects.toStringHelper(this).add("docID", docId).add("scoredResponses",
         scoredResponses()).toString();
   }
+
+  /**
+   * For testing
+   */
+  public static SystemOutput createWithConstantScore(final Symbol docID,
+      final ImmutableSet<Response> responses, final double score) {
+    final ImmutableMap.Builder<Response, Double> scores = ImmutableMap.builder();
+    for (final Response response : responses) {
+      scores.put(response, score);
+    }
+    return new SystemOutput(docID, responses, scores.build());
+  }
 }

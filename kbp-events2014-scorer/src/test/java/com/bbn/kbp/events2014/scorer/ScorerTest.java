@@ -13,8 +13,8 @@ import com.bbn.kbp.events2014.ResponseAssessment;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
 import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.linking.EALScorer2015Style;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
@@ -26,13 +26,127 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 
 public class ScorerTest {
+  final EALScorer2015Style scorer = EALScorer2015Style.create();
 
-  SystemExamples systemExamples = null;
+  final Response a = dummyResponseOfType(CONFLICT, VICTIM, "a", KBPRealis.Actual);
+  final Response b = dummyResponseOfType(CONFLICT, VICTIM, "b", KBPRealis.Actual);
+  final Response c = dummyResponseOfType(CONFLICT, VICTIM, "c", KBPRealis.Actual);
+  final Response d = dummyResponseOfType(CONFLICT, VICTIM, "d", KBPRealis.Actual);
+  final Response e = dummyResponseOfType(CONFLICT, VICTIM, "e", KBPRealis.Actual);
+  final Response f = dummyResponseOfType(CONFLICT, VICTIM, "f", KBPRealis.Actual);
+  final Response g = dummyResponseOfType(CONFLICT, VICTIM, "g", KBPRealis.Actual);
+  final Response h = dummyResponseOfType(CONFLICT, VICTIM, "h", KBPRealis.Actual);
+  final Response i = dummyResponseOfType(CONFLICT, VICTIM, "i", KBPRealis.Actual);
+  final Response aGeneric = dummyResponseOfType(CONFLICT, VICTIM, "a", KBPRealis.Generic);
+
+  final SystemOutput output_A = systemOutputFromResponses(ImmutableSet.of(a));
+  final ResponseLinking linking_A = ResponseLinking.from(output_A.docId(),
+      ImmutableSet.of(ResponseSet.from(a)),
+      ImmutableSet.<Response>of());
+
+  final SystemOutput output_AB = systemOutputFromResponses(ImmutableSet.of(a, b));
+  final ResponseLinking linking_A_B = ResponseLinking.from(output_AB.docId(),
+      ImmutableSet.of(ResponseSet.from(a), ResponseSet.from(b)),
+      ImmutableSet.<Response>of());
+
+  final SystemOutput output_ABC = systemOutputFromResponses(ImmutableSet.of(a, b, c));
+  final ResponseLinking linking_A_B_C = ResponseLinking.from(output_ABC.docId(),
+      ImmutableSet.of(ResponseSet.from(a), ResponseSet.from(b), ResponseSet.from(c)),
+      ImmutableSet.<Response>of());
+
+  final SystemOutput output_ABCD = systemOutputFromResponses(ImmutableSet.of(a, b, c, d));
+  final ResponseLinking linking_A_B_C_D = ResponseLinking.from(output_ABCD.docId(),
+      ImmutableSet
+          .of(ResponseSet.from(a), ResponseSet.from(b), ResponseSet.from(c), ResponseSet.from(d)),
+      ImmutableSet.<Response>of());
+
+  final ResponseLinking linking_AB = ResponseLinking.from(output_AB.docId(),
+      ImmutableSet.of(ResponseSet.from(a,b)),
+      ImmutableSet.<Response>of());
+
+  final ResponseLinking linking_ABC = ResponseLinking.from(output_ABC.docId(),
+      ImmutableSet.of(ResponseSet.from(a,b,c)),
+      ImmutableSet.<Response>of());
+
+  final ResponseLinking linking_AB_CD = ResponseLinking.from(output_ABCD.docId(),
+      ImmutableSet.of(ResponseSet.from(a,b),ResponseSet.from(c,d)),
+      ImmutableSet.<Response>of());
+
+  final ResponseLinking linking_ABCD = ResponseLinking.from(output_ABCD.docId(),
+      ImmutableSet.of(ResponseSet.from(a,b,c,d)),
+      ImmutableSet.<Response>of());
+
+  final ResponseLinking linking_AC_BD = ResponseLinking.from(output_ABCD.docId(),
+      ImmutableSet.of(ResponseSet.from(a,c),ResponseSet.from(b,d)),
+      ImmutableSet.<Response>of());
+
+  final SystemOutput output_ABCDEF = systemOutputFromResponses(ImmutableSet.of(a, b, c, d, e, f));
+  final ResponseLinking linking_ABCD_E_F = ResponseLinking.from(output_ABCDEF.docId(),
+      ImmutableSet.of(ResponseSet.from(a, b, c, d), ResponseSet.from(e), ResponseSet.from(f)),
+      ImmutableSet.<Response>of());
+
+  final ResponseLinking linking_ABCD_EF = ResponseLinking.from(output_ABCDEF.docId(),
+      ImmutableSet.of(ResponseSet.from(a,b,c,d),ResponseSet.from(e,f)),
+      ImmutableSet.<Response>of());
+
+  final ResponseLinking linking_A_B_C_D_EF = ResponseLinking.from(output_ABCDEF.docId(),
+      ImmutableSet.of(ResponseSet.from(a),ResponseSet.from(b),ResponseSet.from(c),ResponseSet.from(d),ResponseSet.from(e,f)),
+      ImmutableSet.<Response>of());
+
+  final ResponseLinking linking_A_B_C_D_E_F = ResponseLinking.from(output_ABCDEF.docId(),
+      ImmutableSet.of(ResponseSet.from(a),ResponseSet.from(b),ResponseSet.from(c),ResponseSet.from(d),ResponseSet.from(e),ResponseSet.from(f)),
+      ImmutableSet.<Response>of());
+
+  final SystemOutput output_ABG = systemOutputFromResponses(ImmutableSet.of(a, b, g));
+  final ResponseLinking linking_AB_G = ResponseLinking.from(output_ABG.docId(),
+      ImmutableSet.of(ResponseSet.from(a, b), ResponseSet.from(g)),
+      ImmutableSet.<Response>of());
+
+  final SystemOutput output_ABDG = systemOutputFromResponses(ImmutableSet.of(a, b, d, g));
+  final ResponseLinking linking_ABD_G = ResponseLinking.from(output_ABDG.docId(),
+      ImmutableSet.of(ResponseSet.from(a,b,d),ResponseSet.from(g)),
+      ImmutableSet.<Response>of());
+
+  final SystemOutput output_ABCG = systemOutputFromResponses(ImmutableSet.of(a,b,c,g));
+  final ResponseLinking linking_AB_C_G = ResponseLinking.from(output_ABCG.docId(),
+      ImmutableSet.of(ResponseSet.from(a,b),ResponseSet.from(c),ResponseSet.from(g)),
+      ImmutableSet.<Response>of());
+
+  final SystemOutput output_GHI = systemOutputFromResponses(ImmutableSet.of(g,h,i));
+  final ResponseLinking linking_G_H_I = ResponseLinking.from(output_GHI.docId(),
+      ImmutableSet.of(ResponseSet.from(g),ResponseSet.from(h),ResponseSet.from(i)),
+      ImmutableSet.<Response>of());
+
+  final SystemOutput output_DEA = systemOutputFromResponses(ImmutableSet.of(d,e,a));
+  final ResponseLinking linking_DE_DEA = ResponseLinking.from(output_DEA.docId(),
+      ImmutableSet.of(ResponseSet.from(d,e),ResponseSet.from(d,e,a)),
+      ImmutableSet.<Response>of());
+
+  ////////////////////
+
+  final SystemOutput output_C = systemOutputFromResponses(ImmutableSet.of(c));
+  final ResponseLinking linking_C = ResponseLinking.from(output_C.docId(),
+      ImmutableSet.of(ResponseSet.from(c)),
+      ImmutableSet.<Response>of());
+
+  final SystemOutput output_ABCE = systemOutputFromResponses(ImmutableSet.of(a,b,c,e));
+  final ResponseLinking linking_ABCE = ResponseLinking.from(output_ABCE.docId(),
+      ImmutableSet.of(ResponseSet.from(a,b,c,e)),
+      ImmutableSet.<Response>of());
+
+  ////////////////////
+
+  final SystemOutput output_AGeneric_BCE = systemOutputFromResponses(ImmutableSet.of(aGeneric,b,c,e));
+  final ResponseLinking linking_AGenericBCE = ResponseLinking.from(output_AGeneric_BCE.docId(),
+      ImmutableSet.of(ResponseSet.from(aGeneric,b,c,e)),
+      ImmutableSet.<Response>of());
+
 
   @Before
   public void setUp() {
-    systemExamples = SystemExamples.create();
+
   }
+
 
   // tests
 
@@ -53,88 +167,74 @@ public class ScorerTest {
     final ResponseLinking goldResponseLinking = ResponseLinking.from(answerKey.docId(),
         ImmutableSet.of(ResponseSet.from(x, y, a)), ImmutableSet.<Response>of());
 
-    // expected EA score is FOO
-    // expected linking score is BAR
+    final EALScorer2015Style.Result score =
+        scorer.score(answerKey, goldResponseLinking, systemOutput, systemResponseLinking);
 
-    assertEquals(0.1, 0.1, 0.0001); // dummy
+    assertEquals(1.75, score.unscaledArgumentScore(), .001);
+    assertEquals(4.0/3, score.unscaledLinkingScore(), .001);
+    assertEquals(37.0/72.0, score.scaledScore(), .001);
   }
 
 
   /*
       key = { {a} {b} {c} {d} }
-      l1 EA=0.4 ; EAL: TP=1 FP=0 LS=1 final=0.25
+      linking_A EA=0.4 ; EAL: TP=1 FP=0 LS=1 final=0.25
       l2 EA=0.67 ; EAL: TP=2 FP=0 LS=2 final=0.5
-      l3 EA=0.86 ; EAL: TP=3 FP=0 LS=3 final=0.75
-      l4 EA=1.0 ; EAL: TP=4 FP=0 LS=4 final=1
-      l5 EA=0.67 ; EAL: TP=2 FP=0 LS=0 final=0.25
-      l6 EA=0.86 ; EAL: TP=3 FP=0 LS=0 final=0.375
-      l7 EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
-      l8 EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
-      l9 EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
-      l10 EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
-      l11 EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
-      l12 EA=0.8 ; EAL: TP=4 FP=2 LS=4 final=0.9375
-      l13 EA=0.8 ; EAL: TP=4 FP=2 LS=4 final=0.9375
+      linking_A_B_C EA=0.86 ; EAL: TP=3 FP=0 LS=3 final=0.75
+      linking_A_B_C_D EA=1.0 ; EAL: TP=4 FP=0 LS=4 final=1
+      linking_AB EA=0.67 ; EAL: TP=2 FP=0 LS=0 final=0.25
+      linking_ABC EA=0.86 ; EAL: TP=3 FP=0 LS=0 final=0.375
+      linking_AB_CD EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
+      linking_ABCD EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
+      linking_AC_BD EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
+      linking_ABCD_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
+      linking_ABCD_EF EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
+      linking_A_B_C_D_EF EA=0.8 ; EAL: TP=4 FP=2 LS=4 final=0.9375
+      linking_A_B_C_D_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=4 final=0.9375
   */
   @Test
   public void singletonTest() {
-    final ImmutableMap<String, Response> responses = systemExamples.getResponses();
-    final ImmutableMap<String, ResponseLinking> linkings = systemExamples.getLinkings();
-
-    final Response a = responses.get("a");
-    final Response b = responses.get("b");
-    final Response c = responses.get("c");
-    final Response d = responses.get("d");
-
-    final CorefAnnotation coref = allSingletonsCoref(ImmutableSet.of(a,b,c,d));
-    final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(ImmutableSet.of(a,b,c,d), ImmutableSet.<Response>of(), coref);
+    final CorefAnnotation coref = allSingletonsCoref(ImmutableSet.of(a, b, c, d));
+    final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(ImmutableSet.of(a, b, c, d),
+        ImmutableSet.<Response>of(), coref);
 
     final ResponseLinking goldResponseLinking = ResponseLinking.from(answerKey.docId(),
         ImmutableSet.of(ResponseSet.from(a),ResponseSet.from(b),ResponseSet.from(c),ResponseSet.from(d)),
         ImmutableSet.<Response>of());
 
-
-    final ResponseLinking l1 = linkings.get("l1");
-    final ResponseLinking l2 = linkings.get("l2");
-    final ResponseLinking l3 = linkings.get("l3");
-    final ResponseLinking l4 = linkings.get("l4");
-    final ResponseLinking l5 = linkings.get("l5");
-    final ResponseLinking l6 = linkings.get("l6");
-    final ResponseLinking l7 = linkings.get("l7");
-    final ResponseLinking l8 = linkings.get("l8");
-    final ResponseLinking l9 = linkings.get("l9");
-    final ResponseLinking l10 = linkings.get("l10");
-    final ResponseLinking l11 = linkings.get("l11");
-    final ResponseLinking l12 = linkings.get("l12");
-    final ResponseLinking l13 = linkings.get("l13");
+    final ResponseLinking l1 = this.linking_A;
+    final ResponseLinking l2 = this.linking_A_B;
+    final ResponseLinking l3 = this.linking_A_B_C;
+    final ResponseLinking l4 = this.linking_A_B_C_D;
+    final ResponseLinking l5 = this.linking_AB;
+    final ResponseLinking l6 = this.linking_ABC;
+    final ResponseLinking l7 = this.linking_AB_CD;
+    final ResponseLinking l8 = this.linking_ABCD;
+    final ResponseLinking l9 = this.linking_AC_BD;
+    final ResponseLinking l10 = this.linking_ABCD_E_F;
+    final ResponseLinking l11 = this.linking_ABCD_EF;
+    final ResponseLinking l12 = this.linking_A_B_C_D_EF;
+    final ResponseLinking l13 = this.linking_A_B_C_D_E_F;
   }
 
   /*
       key = { {a,b,c,d} }
-      l1 EA=0.4 ; EAL: TP=1 FP=0 LS=0 final=0.125
+      linking_A EA=0.4 ; EAL: TP=1 FP=0 LS=0 final=0.125
       l2 EA=0.67 ; EAL: TP=2 FP=0 LS=0 final=0.25
-      l3 EA=0.86 ; EAL: TP=3 FP=0 LS=0 final=0.375
-      l4 EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
-      l5 EA=0.67 ; EAL: TP=2 FP=0 LS=1 final=0.375
-      l6 EA=0.86 ; EAL: TP=3 FP=0 LS=2.4 final=0.675
-      l7 EA=1.0 ; EAL: TP=4 FP=0 LS=2 final=0.75
-      l8 EA=1.0 ; EAL: TP=4 FP=0 LS=4 final=1
-      l9 EA=1.0 ; EAL: TP=4 FP=0 LS=2 final=0.75
-      l10 EA=0.8 ; EAL: TP=4 FP=2 LS=4 final=0.9375
-      l11 EA=0.8 ; EAL: TP=4 FP=2 LS=4 final=0.9375
-      l12 EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
-      l13 EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
+      linking_A_B_C EA=0.86 ; EAL: TP=3 FP=0 LS=0 final=0.375
+      linking_A_B_C_D EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
+      linking_AB EA=0.67 ; EAL: TP=2 FP=0 LS=1 final=0.375
+      linking_ABC EA=0.86 ; EAL: TP=3 FP=0 LS=2.4 final=0.675
+      linking_AB_CD EA=1.0 ; EAL: TP=4 FP=0 LS=2 final=0.75
+      linking_ABCD EA=1.0 ; EAL: TP=4 FP=0 LS=4 final=1
+      linking_AC_BD EA=1.0 ; EAL: TP=4 FP=0 LS=2 final=0.75
+      linking_ABCD_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=4 final=0.9375
+      linking_ABCD_EF EA=0.8 ; EAL: TP=4 FP=2 LS=4 final=0.9375
+      linking_A_B_C_D_EF EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
+      linking_A_B_C_D_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
    */
   @Test
   public void oneGroupTest() {
-    final ImmutableMap<String, Response> responses = systemExamples.getResponses();
-    final ImmutableMap<String, ResponseLinking> linkings = systemExamples.getLinkings();
-
-    final Response a = responses.get("a");
-    final Response b = responses.get("b");
-    final Response c = responses.get("c");
-    final Response d = responses.get("d");
-
     final CorefAnnotation coref = allSingletonsCoref(ImmutableSet.of(a,b,c,d));
     final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(ImmutableSet.of(a,b,c,d), ImmutableSet.<Response>of(), coref);
 
@@ -142,96 +242,88 @@ public class ScorerTest {
         ImmutableSet.of(ResponseSet.from(a,b,c,d)),
         ImmutableSet.<Response>of());
 
-    final ResponseLinking l1 = linkings.get("l1");
-    final ResponseLinking l2 = linkings.get("l2");
-    final ResponseLinking l3 = linkings.get("l3");
-    final ResponseLinking l4 = linkings.get("l4");
-    final ResponseLinking l5 = linkings.get("l5");
-    final ResponseLinking l6 = linkings.get("l6");
-    final ResponseLinking l7 = linkings.get("l7");
-    final ResponseLinking l8 = linkings.get("l8");
-    final ResponseLinking l9 = linkings.get("l9");
-    final ResponseLinking l10 = linkings.get("l10");
-    final ResponseLinking l11 = linkings.get("l11");
-    final ResponseLinking l12 = linkings.get("l12");
-    final ResponseLinking l13 = linkings.get("l13");
+    final ResponseLinking l1 = this.linking_A;
+    final ResponseLinking l2 = this.linking_A_B;
+    final ResponseLinking l3 = this.linking_A_B_C;
+    final ResponseLinking l4 = this.linking_A_B_C_D;
+    final ResponseLinking l5 = this.linking_AB;
+    final ResponseLinking l6 = this.linking_ABC;
+    final ResponseLinking l7 = this.linking_AB_CD;
+    final ResponseLinking l8 = this.linking_ABCD;
+    final ResponseLinking l9 = this.linking_AC_BD;
+    final ResponseLinking l10 = this.linking_ABCD_E_F;
+    final ResponseLinking l11 = this.linking_ABCD_EF;
+    final ResponseLinking l12 = this.linking_A_B_C_D_EF;
+    final ResponseLinking l13 = this.linking_A_B_C_D_E_F;
   }
 
   /*
       key = { {a,b} {c,d} }
-      l1 EA=0.4 ; EAL: TP=1 FP=0 LS=0 final=0.125
+      linking_A EA=0.4 ; EAL: TP=1 FP=0 LS=0 final=0.125
       l2 EA=0.67 ; EAL: TP=2 FP=0 LS=0 final=0.25
-      l3 EA=0.86 ; EAL: TP=3 FP=0 LS=0 final=0.375
-      l4 EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
-      l5 EA=0.67 ; EAL: TP=2 FP=0 LS=2 final=0.5
-      l6 EA=0.86 ; EAL: TP=3 FP=0 LS=4/3 final=0.5417
-      l7 EA=1.0 ; EAL: TP=4 FP=0 LS=4 final=1
-      l8 EA=1.0 ; EAL: TP=4 FP=0 LS=2 final=0.75
-      l9 EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
-      l10 EA=0.8 ; EAL: TP=4 FP=2 LS=2 final=0.6875
-      l11 EA=0.8 ; EAL: TP=4 FP=2 LS=2 final=0.6875
-      l12 EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
-      l13 EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
+      linking_A_B_C EA=0.86 ; EAL: TP=3 FP=0 LS=0 final=0.375
+      linking_A_B_C_D EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
+      linking_AB EA=0.67 ; EAL: TP=2 FP=0 LS=2 final=0.5
+      linking_ABC EA=0.86 ; EAL: TP=3 FP=0 LS=4/3 final=0.5417
+      linking_AB_CD EA=1.0 ; EAL: TP=4 FP=0 LS=4 final=1
+      linking_ABCD EA=1.0 ; EAL: TP=4 FP=0 LS=2 final=0.75
+      linking_AC_BD EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
+      linking_ABCD_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=2 final=0.6875
+      linking_ABCD_EF EA=0.8 ; EAL: TP=4 FP=2 LS=2 final=0.6875
+      linking_A_B_C_D_EF EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
+      linking_A_B_C_D_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
    */
   @Test
   public void test1() {
-    final ImmutableMap<String, Response> responses = systemExamples.getResponses();
-    final ImmutableMap<String, ResponseLinking> linkings = systemExamples.getLinkings();
-
-    final Response a = responses.get("a");
-    final Response b = responses.get("b");
-    final Response c = responses.get("c");
-    final Response d = responses.get("d");
-
     final CorefAnnotation coref = allSingletonsCoref(ImmutableSet.of(a, b, c, d));
     final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(ImmutableSet.of(a, b, c, d),
         ImmutableSet.<Response>of(), coref);
 
     final ResponseLinking goldResponseLinking = ResponseLinking.from(answerKey.docId(),
-        ImmutableSet.of(ResponseSet.from(a,b),ResponseSet.from(c,d)),
+        ImmutableSet.of(ResponseSet.from(a, b), ResponseSet.from(c, d)),
         ImmutableSet.<Response>of());
 
-    final ResponseLinking l1 = linkings.get("l1");
-    final ResponseLinking l2 = linkings.get("l2");
-    final ResponseLinking l3 = linkings.get("l3");
-    final ResponseLinking l4 = linkings.get("l4");
-    final ResponseLinking l5 = linkings.get("l5");
-    final ResponseLinking l6 = linkings.get("l6");
-    final ResponseLinking l7 = linkings.get("l7");
-    final ResponseLinking l8 = linkings.get("l8");
-    final ResponseLinking l9 = linkings.get("l9");
-    final ResponseLinking l10 = linkings.get("l10");
-    final ResponseLinking l11 = linkings.get("l11");
-    final ResponseLinking l12 = linkings.get("l12");
-    final ResponseLinking l13 = linkings.get("l13");
+    final ResponseLinking l1 = this.linking_A;
+    final EALScorer2015Style.Result l1Score =
+        scorer.score(answerKey, goldResponseLinking, systemOutputFrom(l1), linking_A);
+    assertEquals(0.4, l1Score.scaledArgumentScore(), .001);
+
+    final ResponseLinking l2 = this.linking_A_B;
+    final ResponseLinking l3 = this.linking_A_B_C;
+    final ResponseLinking l4 = this.linking_A_B_C_D;
+    final ResponseLinking l5 = this.linking_AB;
+    final ResponseLinking l6 = this.linking_ABC;
+    final ResponseLinking l7 = this.linking_AB_CD;
+    final ResponseLinking l8 = this.linking_ABCD;
+    final ResponseLinking l9 = this.linking_AC_BD;
+    final ResponseLinking l10 = this.linking_ABCD_E_F;
+    final ResponseLinking l11 = this.linking_ABCD_EF;
+    final ResponseLinking l12 = this.linking_A_B_C_D_EF;
+    final ResponseLinking l13 = this.linking_A_B_C_D_E_F;
+  }
+
+  private SystemOutput systemOutputFrom(final ResponseLinking linking) {
+    return SystemOutput.createWithConstantScore(linking.docID(), linking.allResponses(), 1.0);
   }
 
   /*
       key = { {a,b,c} {d} }
       l1 EA=0.4 ; EAL: TP=1 FP=0 LS=0 final=0.125
       l2 EA=0.67 ; EAL: TP=2 FP=0 LS=0 final=0.25
-      l3 EA=0.86 ; EAL: TP=3 FP=0 LS=0 final=0.375
-      l4 EA=1.0 ; EAL: TP=4 FP=0 LS=1 final=0.625
-      l5 EA=0.67 ; EAL: TP=2 FP=0 LS=4/3 final=0.4167
-      l6 EA=0.86 ; EAL: TP=3 FP=0 LS=3 final=0.75
-      l7 EA=1.0 ; EAL: TP=4 FP=0 LS=4/3 final=0.6667
-      l8 EA=1.0 ; EAL: TP=4 FP=0 LS=2.4 final=0.8
-      l9 EA=1.0 ; EAL: TP=4 FP=0 LS=4/3 final=0.6667
-      l10 EA=0.8 ; EAL: TP=4 FP=2 LS=2.4 final=0.7375
-      l11 EA=0.8 ; EAL: TP=4 FP=2 LS=2.4 final=0.7375
-      l12 EA=0.8 ; EAL: TP=4 FP=2 LS=1 final=0.5625
-      l13 EA=0.8 ; EAL: TP=4 FP=2 LS=1 final=0.5625
+      linking_A_B_C EA=0.86 ; EAL: TP=3 FP=0 LS=0 final=0.375
+      linking_A_B_C_D EA=1.0 ; EAL: TP=4 FP=0 LS=1 final=0.625
+      linking_AB EA=0.67 ; EAL: TP=2 FP=0 LS=4/3 final=0.4167
+      linking_ABC EA=0.86 ; EAL: TP=3 FP=0 LS=3 final=0.75
+      linking_AB_CD EA=1.0 ; EAL: TP=4 FP=0 LS=4/3 final=0.6667
+      linking_ABCD EA=1.0 ; EAL: TP=4 FP=0 LS=2.4 final=0.8
+      linking_AC_BD EA=1.0 ; EAL: TP=4 FP=0 LS=4/3 final=0.6667
+      linking_ABCD_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=2.4 final=0.7375
+      linking_ABCD_EF EA=0.8 ; EAL: TP=4 FP=2 LS=2.4 final=0.7375
+      linking_A_B_C_D_EF EA=0.8 ; EAL: TP=4 FP=2 LS=1 final=0.5625
+      linking_A_B_C_D_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=1 final=0.5625
    */
   @Test
   public void test2() {
-    final ImmutableMap<String, Response> responses = systemExamples.getResponses();
-    final ImmutableMap<String, ResponseLinking> linkings = systemExamples.getLinkings();
-
-    final Response a = responses.get("a");
-    final Response b = responses.get("b");
-    final Response c = responses.get("c");
-    final Response d = responses.get("d");
-
     final CorefAnnotation coref = allSingletonsCoref(ImmutableSet.of(a,b,c,d));
     final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(ImmutableSet.of(a,b,c,d), ImmutableSet.<Response>of(), coref);
 
@@ -239,44 +331,31 @@ public class ScorerTest {
         ImmutableSet.of(ResponseSet.from(a,b,c),ResponseSet.from(d)),
         ImmutableSet.<Response>of());
 
-    final ResponseLinking l1 = linkings.get("l1");
-    final ResponseLinking l2 = linkings.get("l2");
-    final ResponseLinking l3 = linkings.get("l3");
-    final ResponseLinking l4 = linkings.get("l4");
-    final ResponseLinking l5 = linkings.get("l5");
-    final ResponseLinking l6 = linkings.get("l6");
-    final ResponseLinking l7 = linkings.get("l7");
-    final ResponseLinking l8 = linkings.get("l8");
-    final ResponseLinking l9 = linkings.get("l9");
-    final ResponseLinking l10 = linkings.get("l10");
-    final ResponseLinking l11 = linkings.get("l11");
-    final ResponseLinking l12 = linkings.get("l12");
-    final ResponseLinking l13 = linkings.get("l13");
+    final ResponseLinking l1 = this.linking_A;
+    final ResponseLinking l2 = this.linking_A_B;
+    final ResponseLinking l3 = this.linking_A_B_C;
+    final ResponseLinking l4 = this.linking_A_B_C_D;
+    final ResponseLinking l5 = this.linking_AB;
+    final ResponseLinking l6 = this.linking_ABC;
+    final ResponseLinking l7 = this.linking_AB_CD;
+    final ResponseLinking l8 = this.linking_ABCD;
+    final ResponseLinking l9 = this.linking_AC_BD;
+    final ResponseLinking l10 = this.linking_ABCD_E_F;
+    final ResponseLinking l11 = this.linking_ABCD_EF;
+    final ResponseLinking l12 = this.linking_A_B_C_D_EF;
+    final ResponseLinking l13 = this.linking_A_B_C_D_E_F;
   }
 
   /*
       key = { {a,b,c} {d,e} {f} }
-      l14 EA=4/9 ; EAL: TP=2 FP=1 LS=4/3 final=0.2569
-      l15 EA=0.6 ; EAL: TP=3 FP=1 LS=1 final=0.3125
-      l16 EA=0.6 ; EAL: TP=3 FP=1 LS=4/3 final=0.3403
-      l17 EA=0 ; EAL: TP=0 FP=3 LS=0 final=0
-      l18 EA=2/3 ; EAL: TP=3 FP=0 LS=1 final=0.3333
+      linking_AB_G EA=4/9 ; EAL: TP=2 FP=1 LS=4/3 final=0.2569
+      linking_ABD_G EA=0.6 ; EAL: TP=3 FP=1 LS=1 final=0.3125
+      linking_AB_C_G EA=0.6 ; EAL: TP=3 FP=1 LS=4/3 final=0.3403
+      linking_G_H_I EA=0 ; EAL: TP=0 FP=3 LS=0 final=0
+      linking_DE_DEA EA=2/3 ; EAL: TP=3 FP=0 LS=1 final=0.3333
    */
   @Test
   public void test3() {
-    final ImmutableMap<String, Response> responses = systemExamples.getResponses();
-    final ImmutableMap<String, ResponseLinking> linkings = systemExamples.getLinkings();
-
-    final Response a = responses.get("a");
-    final Response b = responses.get("b");
-    final Response c = responses.get("c");
-    final Response d = responses.get("d");
-    final Response e = responses.get("e");
-    final Response f = responses.get("f");
-    final Response g = responses.get("g");
-    final Response h = responses.get("h");
-    final Response i = responses.get("i");
-
     final CorefAnnotation coref = allSingletonsCoref(ImmutableSet.of(a, b, c, d, e, f, g, h, i));
     final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(
         ImmutableSet.of(a, b, c, d, e, f), ImmutableSet.<Response>of(), coref);
@@ -285,30 +364,21 @@ public class ScorerTest {
         ImmutableSet.of(ResponseSet.from(a, b, c), ResponseSet.from(d, e), ResponseSet.from(f)),
         ImmutableSet.<Response>of());
 
-    final ResponseLinking l14 = linkings.get("l14");
-    final ResponseLinking l15 = linkings.get("l15");    // overlink { {a,b,d} {g} }
-    final ResponseLinking l16 = linkings.get("l16");    // underlink { {a,b} {c} {g} }
-    final ResponseLinking l17 = linkings.get("l17");    // no correct { {g} {h} {i} }, also test clipping EAE score to max 0
-    final ResponseLinking l18 = linkings.get("l18");    // duplicate system responses { {d,e} {d,e,a} }
+    final ResponseLinking l14 = this.linking_AB_G;
+    final ResponseLinking l15 = this.linking_ABD_G;    // overlink { {a,b,d} {g} }
+    final ResponseLinking l16 = this.linking_AB_C_G;    // underlink { {a,b} {c} {g} }
+    final ResponseLinking l17 = this.linking_G_H_I;    // no correct { {g} {h} {i} }, also test clipping EAE score to max 0
+    final ResponseLinking l18 = this.linking_DE_DEA;    // duplicate system responses { {d,e} {d,e,a} }
 
   }
 
   /*
       key = { {a,b,c} {c,e} {c} }
-      l19 EA=0.4 ; EAL: TP=1 FP=0 LS=0 final=0.125
-      l20 EA=1 ; EAL: TP=4 FP=0 LS=2.6 final=0.825
+      linking_C EA=0.4 ; EAL: TP=1 FP=0 LS=0 final=0.125
+      linking_ABCE EA=1 ; EAL: TP=4 FP=0 LS=2.6 final=0.825
    */
   @Test
   public void test4() {
-    final ImmutableMap<String, Response> responses = systemExamples.getResponses();
-    final ImmutableMap<String, ResponseLinking> linkings = systemExamples.getLinkings();
-
-    final Response a = responses.get("a");
-    final Response b = responses.get("b");
-    final Response c = responses.get("c");
-    final Response e = responses.get("e");
-
-
     final CorefAnnotation coref = allSingletonsCoref(ImmutableSet.of(a,b,c,e));
     final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(ImmutableSet.of(a,b,c,e), ImmutableSet.<Response>of(), coref);
 
@@ -316,25 +386,16 @@ public class ScorerTest {
         ImmutableSet.of(ResponseSet.from(a,b,c),ResponseSet.from(c,e),ResponseSet.from(c)),
         ImmutableSet.<Response>of());
 
-    final ResponseLinking l19 = linkings.get("l19");
-    final ResponseLinking l20 = linkings.get("l20");
+    final ResponseLinking l19 = this.linking_C;
+    final ResponseLinking l20 = this.linking_ABCE;
   }
 
   /*
       key = { {b,c} {c,d} {d,e} }
-      l21 EA=0.75 ; EAL: TP=3 FP=0 LS=7/6 final=0.5208
+      linking_AGenericBCE EA=0.75 ; EAL: TP=3 FP=0 LS=7/6 final=0.5208
    */
   @Test
   public void testGeneric() {
-    final ImmutableMap<String, Response> responses = systemExamples.getResponses();
-    final ImmutableMap<String, ResponseLinking> linkings = systemExamples.getLinkings();
-
-    final Response b = responses.get("b");
-    final Response c = responses.get("c");
-    final Response d = responses.get("d");
-    final Response e = responses.get("e");
-    final Response aGeneric = responses.get("aGeneric");
-
     final CorefAnnotation coref = allSingletonsCoref(ImmutableSet.of(b,c,d,e,aGeneric));
     final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(ImmutableSet.of(b,c,d,e), ImmutableSet.<Response>of(), coref);
 
@@ -342,7 +403,7 @@ public class ScorerTest {
         ImmutableSet.of(ResponseSet.from(b,c),ResponseSet.from(c,d),ResponseSet.from(d,e)),
         ImmutableSet.<Response>of());
 
-    final ResponseLinking l21 = linkings.get("l21");    // { {aGeneric,b,c,e} }
+    final ResponseLinking l21 = this.linking_AGenericBCE;    // { {aGeneric,b,c,e} }
   }
 
   // utility methods
@@ -398,242 +459,6 @@ public class ScorerTest {
       scoredResponses.add(Scored.from(response, 1.0));
     }
     return SystemOutput.from(DOC, scoredResponses.build());
-  }
-
-
-  private static class SystemExamples {
-    final ImmutableMap<String, Response> responses;
-    final ImmutableMap<String, ResponseLinking> linkings;
-
-    public static SystemExamples create() {
-      final ImmutableMap<String, Response> responses = createResponses();
-      final ImmutableMap<String, ResponseLinking> linkings = createLinkings(responses);
-
-      return new SystemExamples(responses, linkings);
-    }
-
-    private SystemExamples(final ImmutableMap<String, Response> responses,
-        final ImmutableMap<String, ResponseLinking> linkings) {
-      this.responses = responses;
-      this.linkings = linkings;
-    }
-
-    public ImmutableMap<String, Response> getResponses() {
-      return responses;
-    }
-
-    public ImmutableMap<String, ResponseLinking> getLinkings() {
-      return linkings;
-    }
-
-    private static ImmutableMap<String, Response> createResponses() {
-      final ImmutableMap.Builder<String, Response> ret = ImmutableMap.builder();
-
-      final Response a = dummyResponseOfType(CONFLICT, VICTIM, "a", KBPRealis.Actual);
-      final Response b = dummyResponseOfType(CONFLICT, VICTIM, "b", KBPRealis.Actual);
-      final Response c = dummyResponseOfType(CONFLICT, VICTIM, "c", KBPRealis.Actual);
-      final Response d = dummyResponseOfType(CONFLICT, VICTIM, "d", KBPRealis.Actual);
-      final Response e = dummyResponseOfType(CONFLICT, VICTIM, "e", KBPRealis.Actual);
-      final Response f = dummyResponseOfType(CONFLICT, VICTIM, "f", KBPRealis.Actual);
-      final Response g = dummyResponseOfType(CONFLICT, VICTIM, "g", KBPRealis.Actual);
-      final Response h = dummyResponseOfType(CONFLICT, VICTIM, "h", KBPRealis.Actual);
-      final Response i = dummyResponseOfType(CONFLICT, VICTIM, "i", KBPRealis.Actual);
-      final Response aGeneric = dummyResponseOfType(CONFLICT, VICTIM, "a", KBPRealis.Generic);
-
-      ret.put("a", a);
-      ret.put("b", b);
-      ret.put("c", c);
-      ret.put("d", d);
-      ret.put("e", e);
-      ret.put("f", f);
-      ret.put("g", g);
-      ret.put("h", h);
-      ret.put("i", i);
-      ret.put("aGeneric", aGeneric);
-
-      return ret.build();
-    }
-
-    /*
-      System linkings:
-      l1 = { {a} }
-      l2 = { {a} {b} }
-      l3 = { {a} {b} {c} }
-      l4 = { {a} {b} {c} {d} }
-
-      l5 = { {a,b} }
-      l6 = { {a,b,c} }
-      l7 = { {a,b} {c,d} }
-      l8 = { {a,b,c,d} }
-      l9 = { {a,c} {b,d} }
-
-      l10 = { {a,b,c,d} {e} {f} }
-      l11 = { {a,b,c,d} {e,f} }
-
-      l12 = { {a} {b} {c} {d} {e,f} }
-      l13 = { {a} {b} {c} {d} {e} {f} }
-
-      l14 = { {a,b} {g} }
-      l15 = { {a,b,d} {g} }
-      l16 = { {a,b} {c} {g} }
-      l17 = { {g} {h} {i} }
-      l18 = { {d,e} {d,e,a} }       // duplicate system response
-
-      l19 = { {c} }
-      l20 = { {a,b,c,e} }
-
-      l21 = { {aGeneric,b,c,e} }    // test if the scorer will remove aGeneric prior to scoring
-     */
-    private static ImmutableMap<String, ResponseLinking> createLinkings(final ImmutableMap<String, Response> responses) {
-      final ImmutableMap.Builder<String, ResponseLinking> ret = ImmutableMap.builder();
-
-      final Response a = responses.get("a");
-      final Response b = responses.get("b");
-      final Response c = responses.get("c");
-      final Response d = responses.get("d");
-      final Response e = responses.get("e");
-      final Response f = responses.get("f");
-      final Response g = responses.get("g");
-      final Response h = responses.get("h");
-      final Response i = responses.get("i");
-      final Response aGeneric = responses.get("aGeneric");
-
-      final SystemOutput o1 = systemOutputFromResponses(ImmutableSet.of(a));
-      final ResponseLinking l1 = ResponseLinking.from(o1.docId(),
-          ImmutableSet.of(ResponseSet.from(a)),
-          ImmutableSet.<Response>of());
-      ret.put("l1", l1);
-
-      final SystemOutput o2 = systemOutputFromResponses(ImmutableSet.of(a,b));
-      final ResponseLinking l2 = ResponseLinking.from(o2.docId(),
-          ImmutableSet.of(ResponseSet.from(a),ResponseSet.from(b)),
-          ImmutableSet.<Response>of());
-      ret.put("l2", l2);
-
-      final SystemOutput o3 = systemOutputFromResponses(ImmutableSet.of(a,b,c));
-      final ResponseLinking l3 = ResponseLinking.from(o3.docId(),
-          ImmutableSet.of(ResponseSet.from(a),ResponseSet.from(b),ResponseSet.from(c)),
-          ImmutableSet.<Response>of());
-      ret.put("l3", l3);
-
-      final SystemOutput o4 = systemOutputFromResponses(ImmutableSet.of(a,b,c,d));
-      final ResponseLinking l4 = ResponseLinking.from(o4.docId(),
-          ImmutableSet.of(ResponseSet.from(a),ResponseSet.from(b),ResponseSet.from(c),ResponseSet.from(d)),
-          ImmutableSet.<Response>of());
-      ret.put("l4", l4);
-
-      final SystemOutput o5 = systemOutputFromResponses(ImmutableSet.of(a,b));
-      final ResponseLinking l5 = ResponseLinking.from(o5.docId(),
-          ImmutableSet.of(ResponseSet.from(a,b)),
-          ImmutableSet.<Response>of());
-      ret.put("l5", l5);
-
-      final SystemOutput o6 = systemOutputFromResponses(ImmutableSet.of(a,b,c));
-      final ResponseLinking l6 = ResponseLinking.from(o6.docId(),
-          ImmutableSet.of(ResponseSet.from(a,b,c)),
-          ImmutableSet.<Response>of());
-      ret.put("l6", l6);
-
-      final SystemOutput o7 = systemOutputFromResponses(ImmutableSet.of(a,b,c,d));
-      final ResponseLinking l7 = ResponseLinking.from(o7.docId(),
-          ImmutableSet.of(ResponseSet.from(a,b),ResponseSet.from(c,d)),
-          ImmutableSet.<Response>of());
-      ret.put("l7", l7);
-
-      final SystemOutput o8 = systemOutputFromResponses(ImmutableSet.of(a,b,c,d));
-      final ResponseLinking l8 = ResponseLinking.from(o8.docId(),
-          ImmutableSet.of(ResponseSet.from(a,b,c,d)),
-          ImmutableSet.<Response>of());
-      ret.put("l8", l8);
-
-      final SystemOutput o9 = systemOutputFromResponses(ImmutableSet.of(a,b,c,d));
-      final ResponseLinking l9 = ResponseLinking.from(o9.docId(),
-          ImmutableSet.of(ResponseSet.from(a,c),ResponseSet.from(b,d)),
-          ImmutableSet.<Response>of());
-      ret.put("l9", l9);
-
-      final SystemOutput o10 = systemOutputFromResponses(ImmutableSet.of(a,b,c,d,e,f));
-      final ResponseLinking l10 = ResponseLinking.from(o10.docId(),
-          ImmutableSet.of(ResponseSet.from(a,b,c,d),ResponseSet.from(e),ResponseSet.from(f)),
-          ImmutableSet.<Response>of());
-      ret.put("l10", l10);
-
-      final SystemOutput o11 = systemOutputFromResponses(ImmutableSet.of(a,b,c,d,e,f));
-      final ResponseLinking l11 = ResponseLinking.from(o11.docId(),
-          ImmutableSet.of(ResponseSet.from(a,b,c,d),ResponseSet.from(e,f)),
-          ImmutableSet.<Response>of());
-      ret.put("l11", l11);
-
-      final SystemOutput o12 = systemOutputFromResponses(ImmutableSet.of(a,b,c,d,e,f));
-      final ResponseLinking l12 = ResponseLinking.from(o12.docId(),
-          ImmutableSet.of(ResponseSet.from(a),ResponseSet.from(b),ResponseSet.from(c),ResponseSet.from(d),ResponseSet.from(e,f)),
-          ImmutableSet.<Response>of());
-      ret.put("l12", l12);
-
-      final SystemOutput o13 = systemOutputFromResponses(ImmutableSet.of(a,b,c,d,e,f));
-      final ResponseLinking l13 = ResponseLinking.from(o13.docId(),
-          ImmutableSet.of(ResponseSet.from(a),ResponseSet.from(b),ResponseSet.from(c),ResponseSet.from(d),ResponseSet.from(e),ResponseSet.from(f)),
-          ImmutableSet.<Response>of());
-      ret.put("l13", l13);
-
-      //////////////////
-
-      final SystemOutput o14 = systemOutputFromResponses(ImmutableSet.of(a,b,g));
-      final ResponseLinking l14 = ResponseLinking.from(o14.docId(),
-          ImmutableSet.of(ResponseSet.from(a,b),ResponseSet.from(g)),
-          ImmutableSet.<Response>of());
-      ret.put("l14", l14);
-
-      final SystemOutput o15 = systemOutputFromResponses(ImmutableSet.of(a,b,d,g));
-      final ResponseLinking l15 = ResponseLinking.from(o15.docId(),
-          ImmutableSet.of(ResponseSet.from(a,b,d),ResponseSet.from(g)),
-          ImmutableSet.<Response>of());
-      ret.put("l15", l15);
-
-      final SystemOutput o16 = systemOutputFromResponses(ImmutableSet.of(a,b,c,g));
-      final ResponseLinking l16 = ResponseLinking.from(o16.docId(),
-          ImmutableSet.of(ResponseSet.from(a,b),ResponseSet.from(c),ResponseSet.from(g)),
-          ImmutableSet.<Response>of());
-      ret.put("l16", l16);
-
-      final SystemOutput o17 = systemOutputFromResponses(ImmutableSet.of(g,h,i));
-      final ResponseLinking l17 = ResponseLinking.from(o17.docId(),
-          ImmutableSet.of(ResponseSet.from(g),ResponseSet.from(h),ResponseSet.from(i)),
-          ImmutableSet.<Response>of());
-      ret.put("l17", l17);
-
-      final SystemOutput o18 = systemOutputFromResponses(ImmutableSet.of(d,e,a));
-      final ResponseLinking l18 = ResponseLinking.from(o18.docId(),
-          ImmutableSet.of(ResponseSet.from(d,e),ResponseSet.from(d,e,a)),
-          ImmutableSet.<Response>of());
-      ret.put("l18", l18);
-
-      ////////////////////
-
-      final SystemOutput o19 = systemOutputFromResponses(ImmutableSet.of(c));
-      final ResponseLinking l19 = ResponseLinking.from(o19.docId(),
-          ImmutableSet.of(ResponseSet.from(c)),
-          ImmutableSet.<Response>of());
-      ret.put("l19", l19);
-
-      final SystemOutput o20 = systemOutputFromResponses(ImmutableSet.of(a,b,c,e));
-      final ResponseLinking l20 = ResponseLinking.from(o20.docId(),
-          ImmutableSet.of(ResponseSet.from(a,b,c,e)),
-          ImmutableSet.<Response>of());
-      ret.put("l20", l20);
-
-      ////////////////////
-
-      final SystemOutput o21 = systemOutputFromResponses(ImmutableSet.of(aGeneric,b,c,e));
-      final ResponseLinking l21 = ResponseLinking.from(o21.docId(),
-          ImmutableSet.of(ResponseSet.from(aGeneric,b,c,e)),
-          ImmutableSet.<Response>of());
-      ret.put("l21", l21);
-
-      return ret.build();
-    }
-
-
   }
 
 
