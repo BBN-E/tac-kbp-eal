@@ -38,7 +38,7 @@ public class ScorerTest {
   final Response h = dummyResponseOfType(CONFLICT, VICTIM, "h", KBPRealis.Actual);
   final Response i = dummyResponseOfType(CONFLICT, VICTIM, "i", KBPRealis.Actual);
   final Response aGeneric = dummyResponseOfType(CONFLICT, VICTIM, "a", KBPRealis.Generic);
-
+  /*
   final SystemOutput output_A = systemOutputFromResponses(ImmutableSet.of(a));
   final ResponseLinking linking_A = ResponseLinking.from(output_A.docId(),
       ImmutableSet.of(ResponseSet.from(a)),
@@ -53,13 +53,12 @@ public class ScorerTest {
   final ResponseLinking linking_A_B_C = ResponseLinking.from(output_ABC.docId(),
       ImmutableSet.of(ResponseSet.from(a), ResponseSet.from(b), ResponseSet.from(c)),
       ImmutableSet.<Response>of());
-
+  */
   final SystemOutput output_ABCD = systemOutputFromResponses(ImmutableSet.of(a, b, c, d));
   final ResponseLinking linking_A_B_C_D = ResponseLinking.from(output_ABCD.docId(),
-      ImmutableSet
-          .of(ResponseSet.from(a), ResponseSet.from(b), ResponseSet.from(c), ResponseSet.from(d)),
+      ImmutableSet.of(ResponseSet.from(a), ResponseSet.from(b), ResponseSet.from(c), ResponseSet.from(d)),
       ImmutableSet.<Response>of());
-
+  /*
   final ResponseLinking linking_AB = ResponseLinking.from(output_AB.docId(),
       ImmutableSet.of(ResponseSet.from(a,b)),
       ImmutableSet.<Response>of());
@@ -67,7 +66,7 @@ public class ScorerTest {
   final ResponseLinking linking_ABC = ResponseLinking.from(output_ABC.docId(),
       ImmutableSet.of(ResponseSet.from(a,b,c)),
       ImmutableSet.<Response>of());
-
+  */
   final ResponseLinking linking_AB_CD = ResponseLinking.from(output_ABCD.docId(),
       ImmutableSet.of(ResponseSet.from(a,b),ResponseSet.from(c,d)),
       ImmutableSet.<Response>of());
@@ -79,7 +78,7 @@ public class ScorerTest {
   final ResponseLinking linking_AC_BD = ResponseLinking.from(output_ABCD.docId(),
       ImmutableSet.of(ResponseSet.from(a,c),ResponseSet.from(b,d)),
       ImmutableSet.<Response>of());
-
+  /*
   final SystemOutput output_ABCDEF = systemOutputFromResponses(ImmutableSet.of(a, b, c, d, e, f));
   final ResponseLinking linking_ABCD_E_F = ResponseLinking.from(output_ABCDEF.docId(),
       ImmutableSet.of(ResponseSet.from(a, b, c, d), ResponseSet.from(e), ResponseSet.from(f)),
@@ -101,7 +100,7 @@ public class ScorerTest {
   final ResponseLinking linking_AB_G = ResponseLinking.from(output_ABG.docId(),
       ImmutableSet.of(ResponseSet.from(a, b), ResponseSet.from(g)),
       ImmutableSet.<Response>of());
-
+  */
   final SystemOutput output_ABDG = systemOutputFromResponses(ImmutableSet.of(a, b, d, g));
   final ResponseLinking linking_ABD_G = ResponseLinking.from(output_ABDG.docId(),
       ImmutableSet.of(ResponseSet.from(a,b,d),ResponseSet.from(g)),
@@ -128,12 +127,12 @@ public class ScorerTest {
   final ResponseLinking linking_C = ResponseLinking.from(output_C.docId(),
       ImmutableSet.of(ResponseSet.from(c)),
       ImmutableSet.<Response>of());
-
+  /*
   final SystemOutput output_ABCE = systemOutputFromResponses(ImmutableSet.of(a,b,c,e));
   final ResponseLinking linking_ABCE = ResponseLinking.from(output_ABCE.docId(),
       ImmutableSet.of(ResponseSet.from(a,b,c,e)),
       ImmutableSet.<Response>of());
-
+  */
   ////////////////////
 
   final SystemOutput output_AGeneric_BCE = systemOutputFromResponses(ImmutableSet.of(aGeneric,b,c,e));
@@ -178,19 +177,19 @@ public class ScorerTest {
 
   /*
       key = { {a} {b} {c} {d} }
-      linking_A EA=0.4 ; EAL: TP=1 FP=0 LS=1 final=0.25
-      l2 EA=0.67 ; EAL: TP=2 FP=0 LS=2 final=0.5
-      linking_A_B_C EA=0.86 ; EAL: TP=3 FP=0 LS=3 final=0.75
+      //linking_A EA=0.4 ; EAL: TP=1 FP=0 LS=1 final=0.25
+      //linking_A_B EA=0.67 ; EAL: TP=2 FP=0 LS=2 final=0.5
+      //linking_A_B_C EA=0.86 ; EAL: TP=3 FP=0 LS=3 final=0.75
       linking_A_B_C_D EA=1.0 ; EAL: TP=4 FP=0 LS=4 final=1
-      linking_AB EA=0.67 ; EAL: TP=2 FP=0 LS=0 final=0.25
-      linking_ABC EA=0.86 ; EAL: TP=3 FP=0 LS=0 final=0.375
-      linking_AB_CD EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
+      //linking_AB EA=0.67 ; EAL: TP=2 FP=0 LS=0 final=0.25
+      //linking_ABC EA=0.86 ; EAL: TP=3 FP=0 LS=0 final=0.375
+      //linking_AB_CD EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
       linking_ABCD EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
-      linking_AC_BD EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
-      linking_ABCD_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
-      linking_ABCD_EF EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
-      linking_A_B_C_D_EF EA=0.8 ; EAL: TP=4 FP=2 LS=4 final=0.9375
-      linking_A_B_C_D_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=4 final=0.9375
+      //linking_AC_BD EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
+      //linking_ABCD_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
+      //linking_ABCD_EF EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
+      //linking_A_B_C_D_EF EA=0.8 ; EAL: TP=4 FP=2 LS=4 final=0.9375
+      //linking_A_B_C_D_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=4 final=0.9375
   */
   @Test
   public void singletonTest() {
@@ -202,36 +201,50 @@ public class ScorerTest {
         ImmutableSet.of(ResponseSet.from(a),ResponseSet.from(b),ResponseSet.from(c),ResponseSet.from(d)),
         ImmutableSet.<Response>of());
 
-    final ResponseLinking l1 = this.linking_A;
-    final ResponseLinking l2 = this.linking_A_B;
-    final ResponseLinking l3 = this.linking_A_B_C;
-    final ResponseLinking l4 = this.linking_A_B_C_D;
-    final ResponseLinking l5 = this.linking_AB;
-    final ResponseLinking l6 = this.linking_ABC;
-    final ResponseLinking l7 = this.linking_AB_CD;
-    final ResponseLinking l8 = this.linking_ABCD;
-    final ResponseLinking l9 = this.linking_AC_BD;
-    final ResponseLinking l10 = this.linking_ABCD_E_F;
-    final ResponseLinking l11 = this.linking_ABCD_EF;
-    final ResponseLinking l12 = this.linking_A_B_C_D_EF;
-    final ResponseLinking l13 = this.linking_A_B_C_D_E_F;
+    //final ResponseLinking l1 = this.linking_A;
+    //final ResponseLinking l2 = this.linking_A_B;
+    //final ResponseLinking l3 = this.linking_A_B_C;
+    
+    //final ResponseLinking l4 = this.linking_A_B_C_D;
+    final EALScorer2015Style.Result score_A_B_C_D =
+        scorer.score(answerKey, goldResponseLinking, this.output_ABCD, this.linking_A_B_C_D); // singleton key, singleton system
+    assertEquals(4.0, score_A_B_C_D.unscaledArgumentScore(), .001);
+    assertEquals(4.0, score_A_B_C_D.unscaledLinkingScore(), .001);
+    assertEquals(1.0, score_A_B_C_D.scaledScore(), .001);
+    
+    //final ResponseLinking l5 = this.linking_AB;
+    //final ResponseLinking l6 = this.linking_ABC;
+    //final ResponseLinking l7 = this.linking_AB_CD;
+    
+    //final ResponseLinking l8 = this.linking_ABCD;
+    final EALScorer2015Style.Result score_ABCD =
+        scorer.score(answerKey, goldResponseLinking, this.output_ABCD, this.linking_ABCD); // singleton key, group system
+    assertEquals(4.0, score_ABCD.unscaledArgumentScore(), .001);
+    assertEquals(0, score_ABCD.unscaledLinkingScore(), .001);
+    assertEquals(0.5, score_ABCD.scaledScore(), .001);
+    
+    //final ResponseLinking l9 = this.linking_AC_BD;
+    //final ResponseLinking l10 = this.linking_ABCD_E_F;
+    //final ResponseLinking l11 = this.linking_ABCD_EF;
+    //final ResponseLinking l12 = this.linking_A_B_C_D_EF;
+    //final ResponseLinking l13 = this.linking_A_B_C_D_E_F;
   }
 
   /*
       key = { {a,b,c,d} }
-      linking_A EA=0.4 ; EAL: TP=1 FP=0 LS=0 final=0.125
-      l2 EA=0.67 ; EAL: TP=2 FP=0 LS=0 final=0.25
-      linking_A_B_C EA=0.86 ; EAL: TP=3 FP=0 LS=0 final=0.375
+      //linking_A EA=0.4 ; EAL: TP=1 FP=0 LS=0 final=0.125
+      //l2 EA=0.67 ; EAL: TP=2 FP=0 LS=0 final=0.25
+      //linking_A_B_C EA=0.86 ; EAL: TP=3 FP=0 LS=0 final=0.375
       linking_A_B_C_D EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
-      linking_AB EA=0.67 ; EAL: TP=2 FP=0 LS=1 final=0.375
-      linking_ABC EA=0.86 ; EAL: TP=3 FP=0 LS=2.4 final=0.675
-      linking_AB_CD EA=1.0 ; EAL: TP=4 FP=0 LS=2 final=0.75
+      //linking_AB EA=0.67 ; EAL: TP=2 FP=0 LS=1 final=0.375
+      //linking_ABC EA=0.86 ; EAL: TP=3 FP=0 LS=2.4 final=0.675
+      //linking_AB_CD EA=1.0 ; EAL: TP=4 FP=0 LS=2 final=0.75
       linking_ABCD EA=1.0 ; EAL: TP=4 FP=0 LS=4 final=1
-      linking_AC_BD EA=1.0 ; EAL: TP=4 FP=0 LS=2 final=0.75
-      linking_ABCD_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=4 final=0.9375
-      linking_ABCD_EF EA=0.8 ; EAL: TP=4 FP=2 LS=4 final=0.9375
-      linking_A_B_C_D_EF EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
-      linking_A_B_C_D_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
+      //linking_AC_BD EA=1.0 ; EAL: TP=4 FP=0 LS=2 final=0.75
+      //linking_ABCD_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=4 final=0.9375
+      //linking_ABCD_EF EA=0.8 ; EAL: TP=4 FP=2 LS=4 final=0.9375
+      //linking_A_B_C_D_EF EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
+      //linking_A_B_C_D_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
    */
   @Test
   public void oneGroupTest() {
@@ -242,36 +255,50 @@ public class ScorerTest {
         ImmutableSet.of(ResponseSet.from(a,b,c,d)),
         ImmutableSet.<Response>of());
 
-    final ResponseLinking l1 = this.linking_A;
-    final ResponseLinking l2 = this.linking_A_B;
-    final ResponseLinking l3 = this.linking_A_B_C;
-    final ResponseLinking l4 = this.linking_A_B_C_D;
-    final ResponseLinking l5 = this.linking_AB;
-    final ResponseLinking l6 = this.linking_ABC;
-    final ResponseLinking l7 = this.linking_AB_CD;
-    final ResponseLinking l8 = this.linking_ABCD;
-    final ResponseLinking l9 = this.linking_AC_BD;
-    final ResponseLinking l10 = this.linking_ABCD_E_F;
-    final ResponseLinking l11 = this.linking_ABCD_EF;
-    final ResponseLinking l12 = this.linking_A_B_C_D_EF;
-    final ResponseLinking l13 = this.linking_A_B_C_D_E_F;
+    //final ResponseLinking l1 = this.linking_A;
+    //final ResponseLinking l2 = this.linking_A_B;
+    //final ResponseLinking l3 = this.linking_A_B_C;
+    
+    //final ResponseLinking l4 = this.linking_A_B_C_D;
+    final EALScorer2015Style.Result score_A_B_C_D =
+        scorer.score(answerKey, goldResponseLinking, this.output_ABCD, this.linking_A_B_C_D); // group key, singleton system
+    assertEquals(4.0, score_A_B_C_D.unscaledArgumentScore(), .001);
+    assertEquals(0, score_A_B_C_D.unscaledLinkingScore(), .001);
+    assertEquals(0.5, score_A_B_C_D.scaledScore(), .001);
+    
+    //final ResponseLinking l5 = this.linking_AB;
+    //final ResponseLinking l6 = this.linking_ABC;
+    //final ResponseLinking l7 = this.linking_AB_CD;
+    
+    //final ResponseLinking l8 = this.linking_ABCD;
+    final EALScorer2015Style.Result score_ABCD =
+        scorer.score(answerKey, goldResponseLinking, this.output_ABCD, this.linking_ABCD); // group key, group system
+    assertEquals(4.0, score_ABCD.unscaledArgumentScore(), .001);
+    assertEquals(4.0, score_ABCD.unscaledLinkingScore(), .001);
+    assertEquals(1.0, score_ABCD.scaledScore(), .001);
+    
+    //final ResponseLinking l9 = this.linking_AC_BD;
+    //final ResponseLinking l10 = this.linking_ABCD_E_F;
+    //final ResponseLinking l11 = this.linking_ABCD_EF;
+    //final ResponseLinking l12 = this.linking_A_B_C_D_EF;
+    //final ResponseLinking l13 = this.linking_A_B_C_D_E_F;
   }
 
   /*
       key = { {a,b} {c,d} }
-      linking_A EA=0.4 ; EAL: TP=1 FP=0 LS=0 final=0.125
-      l2 EA=0.67 ; EAL: TP=2 FP=0 LS=0 final=0.25
-      linking_A_B_C EA=0.86 ; EAL: TP=3 FP=0 LS=0 final=0.375
-      linking_A_B_C_D EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
-      linking_AB EA=0.67 ; EAL: TP=2 FP=0 LS=2 final=0.5
-      linking_ABC EA=0.86 ; EAL: TP=3 FP=0 LS=4/3 final=0.5417
+      //linking_A EA=0.4 ; EAL: TP=1 FP=0 LS=0 final=0.125
+      //l2 EA=0.67 ; EAL: TP=2 FP=0 LS=0 final=0.25
+      //linking_A_B_C EA=0.86 ; EAL: TP=3 FP=0 LS=0 final=0.375
+      //linking_A_B_C_D EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
+      //linking_AB EA=0.67 ; EAL: TP=2 FP=0 LS=2 final=0.5
+      //linking_ABC EA=0.86 ; EAL: TP=3 FP=0 LS=4/3 final=0.5417
       linking_AB_CD EA=1.0 ; EAL: TP=4 FP=0 LS=4 final=1
-      linking_ABCD EA=1.0 ; EAL: TP=4 FP=0 LS=2 final=0.75
+      //linking_ABCD EA=1.0 ; EAL: TP=4 FP=0 LS=2 final=0.75
       linking_AC_BD EA=1.0 ; EAL: TP=4 FP=0 LS=0 final=0.5
-      linking_ABCD_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=2 final=0.6875
-      linking_ABCD_EF EA=0.8 ; EAL: TP=4 FP=2 LS=2 final=0.6875
-      linking_A_B_C_D_EF EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
-      linking_A_B_C_D_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
+      //linking_ABCD_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=2 final=0.6875
+      //linking_ABCD_EF EA=0.8 ; EAL: TP=4 FP=2 LS=2 final=0.6875
+      //linking_A_B_C_D_EF EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
+      //linking_A_B_C_D_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=0 final=0.4375
    */
   @Test
   public void test1() {
@@ -283,23 +310,33 @@ public class ScorerTest {
         ImmutableSet.of(ResponseSet.from(a, b), ResponseSet.from(c, d)),
         ImmutableSet.<Response>of());
 
-    final ResponseLinking l1 = this.linking_A;
-    final EALScorer2015Style.Result l1Score =
-        scorer.score(answerKey, goldResponseLinking, systemOutputFrom(l1), linking_A);
-    assertEquals(0.4, l1Score.scaledArgumentScore(), .001);
-
-    final ResponseLinking l2 = this.linking_A_B;
-    final ResponseLinking l3 = this.linking_A_B_C;
-    final ResponseLinking l4 = this.linking_A_B_C_D;
-    final ResponseLinking l5 = this.linking_AB;
-    final ResponseLinking l6 = this.linking_ABC;
-    final ResponseLinking l7 = this.linking_AB_CD;
-    final ResponseLinking l8 = this.linking_ABCD;
-    final ResponseLinking l9 = this.linking_AC_BD;
-    final ResponseLinking l10 = this.linking_ABCD_E_F;
-    final ResponseLinking l11 = this.linking_ABCD_EF;
-    final ResponseLinking l12 = this.linking_A_B_C_D_EF;
-    final ResponseLinking l13 = this.linking_A_B_C_D_E_F;
+    //final ResponseLinking l1 = this.linking_A;
+    //final ResponseLinking l2 = this.linking_A_B;
+    //final ResponseLinking l3 = this.linking_A_B_C;
+    //final ResponseLinking l4 = this.linking_A_B_C_D;
+    //final ResponseLinking l5 = this.linking_AB;
+    //final ResponseLinking l6 = this.linking_ABC;
+    
+    //final ResponseLinking l7 = this.linking_AB_CD;
+    final EALScorer2015Style.Result score_AB_CD =
+        scorer.score(answerKey, goldResponseLinking, this.output_ABCD, this.linking_AB_CD); // tuples all correct, and clustering all correct
+    assertEquals(4.0, score_AB_CD.unscaledArgumentScore(), .001);
+    assertEquals(4.0, score_AB_CD.unscaledLinkingScore(), .001);
+    assertEquals(1.0, score_AB_CD.scaledScore(), .001);
+    
+    //final ResponseLinking l8 = this.linking_ABCD;
+    
+    //final ResponseLinking l9 = this.linking_AC_BD;
+    final EALScorer2015Style.Result score_AC_BD =
+        scorer.score(answerKey, goldResponseLinking, this.output_ABCD, this.linking_AC_BD); // tuples all correct, but clustering wrong
+    assertEquals(4.0, score_AC_BD.unscaledArgumentScore(), .001);
+    assertEquals(0, score_AC_BD.unscaledLinkingScore(), .001);
+    assertEquals(0.5, score_AC_BD.scaledScore(), .001);
+    
+    //final ResponseLinking l10 = this.linking_ABCD_E_F;
+    //final ResponseLinking l11 = this.linking_ABCD_EF;
+    //final ResponseLinking l12 = this.linking_A_B_C_D_EF;
+    //final ResponseLinking l13 = this.linking_A_B_C_D_E_F;
   }
 
   private SystemOutput systemOutputFrom(final ResponseLinking linking) {
@@ -321,7 +358,6 @@ public class ScorerTest {
       linking_ABCD_EF EA=0.8 ; EAL: TP=4 FP=2 LS=2.4 final=0.7375
       linking_A_B_C_D_EF EA=0.8 ; EAL: TP=4 FP=2 LS=1 final=0.5625
       linking_A_B_C_D_E_F EA=0.8 ; EAL: TP=4 FP=2 LS=1 final=0.5625
-   */
   @Test
   public void test2() {
     final CorefAnnotation coref = allSingletonsCoref(ImmutableSet.of(a,b,c,d));
@@ -345,10 +381,11 @@ public class ScorerTest {
     final ResponseLinking l12 = this.linking_A_B_C_D_EF;
     final ResponseLinking l13 = this.linking_A_B_C_D_E_F;
   }
-
+  */
+  
   /*
       key = { {a,b,c} {d,e} {f} }
-      linking_AB_G EA=4/9 ; EAL: TP=2 FP=1 LS=4/3 final=0.2569
+      //linking_AB_G EA=4/9 ; EAL: TP=2 FP=1 LS=4/3 final=0.2569
       linking_ABD_G EA=0.6 ; EAL: TP=3 FP=1 LS=1 final=0.3125
       linking_AB_C_G EA=0.6 ; EAL: TP=3 FP=1 LS=4/3 final=0.3403
       linking_G_H_I EA=0 ; EAL: TP=0 FP=3 LS=0 final=0
@@ -364,30 +401,59 @@ public class ScorerTest {
         ImmutableSet.of(ResponseSet.from(a, b, c), ResponseSet.from(d, e), ResponseSet.from(f)),
         ImmutableSet.<Response>of());
 
-    final ResponseLinking l14 = this.linking_AB_G;
+    //final ResponseLinking l14 = this.linking_AB_G;
     final ResponseLinking l15 = this.linking_ABD_G;    // overlink { {a,b,d} {g} }
+    final EALScorer2015Style.Result score_ABD_G =
+        scorer.score(answerKey, goldResponseLinking, this.output_ABDG, this.linking_ABD_G);
+    assertEquals(2.75, score_ABD_G.unscaledArgumentScore(), .001);
+    assertEquals(1.0, score_ABD_G.unscaledLinkingScore(), .001);
+    assertEquals(0.3125, score_ABD_G.scaledScore(), .001);
+    
     final ResponseLinking l16 = this.linking_AB_C_G;    // underlink { {a,b} {c} {g} }
+    final EALScorer2015Style.Result score_AB_C_G =
+        scorer.score(answerKey, goldResponseLinking, this.output_ABCG, this.linking_AB_C_G);
+    assertEquals(2.75, score_AB_C_G.unscaledArgumentScore(), .001);
+    assertEquals(4.0/3, score_AB_C_G.unscaledLinkingScore(), .001);
+    assertEquals(0.3403, score_AB_C_G.scaledScore(), .001);
+    
     final ResponseLinking l17 = this.linking_G_H_I;    // no correct { {g} {h} {i} }, also test clipping EAE score to max 0
+    final EALScorer2015Style.Result score_G_H_I =
+        scorer.score(answerKey, goldResponseLinking, this.output_GHI, this.linking_G_H_I);
+    assertEquals(0, score_G_H_I.unscaledArgumentScore(), .001);
+    assertEquals(0, score_G_H_I.unscaledLinkingScore(), .001);
+    assertEquals(0, score_G_H_I.scaledScore(), .001);
+    
     final ResponseLinking l18 = this.linking_DE_DEA;    // duplicate system responses { {d,e} {d,e,a} }
-
+    final EALScorer2015Style.Result score_DE_DEA =
+        scorer.score(answerKey, goldResponseLinking, this.output_DEA, this.linking_DE_DEA);
+    assertEquals(3.0, score_DE_DEA.unscaledArgumentScore(), .001);
+    assertEquals(1.0, score_DE_DEA.unscaledLinkingScore(), .001);
+    assertEquals(0.3333, score_DE_DEA.scaledScore(), .001);
   }
 
   /*
       key = { {a,b,c} {c,e} {c} }
       linking_C EA=0.4 ; EAL: TP=1 FP=0 LS=0 final=0.125
-      linking_ABCE EA=1 ; EAL: TP=4 FP=0 LS=2.6 final=0.825
+      //linking_ABCE EA=1 ; EAL: TP=4 FP=0 LS=2.6 final=0.825
    */
   @Test
   public void test4() {
     final CorefAnnotation coref = allSingletonsCoref(ImmutableSet.of(a,b,c,e));
     final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(ImmutableSet.of(a,b,c,e), ImmutableSet.<Response>of(), coref);
 
+    // c is involved in multiple clusters
     final ResponseLinking goldResponseLinking = ResponseLinking.from(answerKey.docId(),
         ImmutableSet.of(ResponseSet.from(a,b,c),ResponseSet.from(c,e),ResponseSet.from(c)),
         ImmutableSet.<Response>of());
 
-    final ResponseLinking l19 = this.linking_C;
-    final ResponseLinking l20 = this.linking_ABCE;
+    final ResponseLinking l19 = this.linking_C;     // although C is duplicated in key, but TP should just be 1
+    final EALScorer2015Style.Result score_C =
+        scorer.score(answerKey, goldResponseLinking, this.output_C, this.linking_C);
+    assertEquals(1.0, score_C.unscaledArgumentScore(), .001);
+    assertEquals(0, score_C.unscaledLinkingScore(), .001);
+    assertEquals(0.125, score_C.scaledScore(), .001);
+    
+    //final ResponseLinking l20 = this.linking_ABCE;  // system gets all EA tuples correct
   }
 
   /*
@@ -403,7 +469,12 @@ public class ScorerTest {
         ImmutableSet.of(ResponseSet.from(b,c),ResponseSet.from(c,d),ResponseSet.from(d,e)),
         ImmutableSet.<Response>of());
 
-    final ResponseLinking l21 = this.linking_AGenericBCE;    // { {aGeneric,b,c,e} }
+    final ResponseLinking l21 = this.linking_AGenericBCE;    // { {aGeneric,b,c,e} } , aGeneric should be removed/ignored? by scorer
+    final EALScorer2015Style.Result score_AGenericBCE =
+        scorer.score(answerKey, goldResponseLinking, this.output_AGeneric_BCE, this.linking_AGenericBCE);
+    assertEquals(3.0, score_AGenericBCE.unscaledArgumentScore(), .001);
+    assertEquals(7.0/6, score_AGenericBCE.unscaledLinkingScore(), .001);
+    assertEquals(0.5208, score_AGenericBCE.scaledScore(), .001);
   }
 
   // utility methods
