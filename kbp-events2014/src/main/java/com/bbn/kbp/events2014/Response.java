@@ -37,8 +37,11 @@ public final class Response {
       final Set<CharOffsetSpan> predicateJustifications,
       final KBPRealis realis) {
     this.docid = checkNotNull(docid);
+    checkArgument(!docid.asString().isEmpty(), "Document ID may not be empty for a response");
     this.type = checkNotNull(type);
+    checkArgument(!type.asString().isEmpty(), "Event type may not be empty for a response");
     this.role = checkNotNull(role);
+    checkArgument(!role.asString().isEmpty(), "Argument role may not be empty for a response");
     this.realis = checkNotNull(realis);
     this.canonicalArgumentString = checkNotNull(canonicalArgumentString);
     this.baseFiller = checkNotNull(baseFiller);
