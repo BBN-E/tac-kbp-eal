@@ -51,7 +51,7 @@ public final class ApplyLinkingStrategy {
         AssessmentSpecFormats.openSystemOutputStore(argumentSystemStoreDir, AssessmentSpecFormats.Format.KBP2015);
     final ImmutableSet<Symbol> docIDs = argumentSystemStore.docIDs();
 
-    final File linkingSystemStoreDir = params.getExistingDirectory("linkingSystemStore");
+    final File linkingSystemStoreDir = params.getEmptyDirectory("linkingSystemStore");
     final LinkingStore linkingSystemStore = LinkingSpecFormats.openOrCreateLinkingStore(linkingSystemStoreDir);
 
     // default to SameEventTypeLinker for now. We could parameterize this in future when there's multiple strategies.
