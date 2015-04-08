@@ -1,7 +1,6 @@
 package com.bbn.kbp.events2014.linking;
 
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
@@ -14,12 +13,17 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collection;
 
 import static com.google.common.base.Predicates.compose;
 import static com.google.common.base.Predicates.in;
 
 public final class SameEventTypeLinker implements LinkingStrategy {
+
+  private static final Logger log = LoggerFactory.getLogger(SameEventTypeLinker.class);
 
   private final ImmutableSet<KBPRealis> realisesWhichMustBeAligned;
 
@@ -32,7 +36,7 @@ public final class SameEventTypeLinker implements LinkingStrategy {
   }
 
   @Override
-  public ResponseLinking linkResponses(final SystemOutput systemOutput, final AnswerKey answerKey) {
+  public ResponseLinking linkResponses(final SystemOutput systemOutput) {
     final Symbol docId = systemOutput.docId();
 
     final Predicate<Response> HasRelevantRealis =
@@ -40,17 +44,8 @@ public final class SameEventTypeLinker implements LinkingStrategy {
     final ImmutableSet<Response> systemResponsesAlignedRealis =
         FluentIterable.from(systemOutput.responses()).filter(HasRelevantRealis).toSet();
 
-    // sanity check: retain only system responses in answer pool (if answer pool is aggregated from all systems' responses, then this should trivially be true
-    final ImmutableSet<String> allAnswerResponseIDs =
-        FluentIterable.from(answerKey.allResponses()).transform(Response.uniqueIdFunction())
-            .toSet();
-    final Predicate<Response> HasIdInPool =
-        compose(in(allAnswerResponseIDs), Response.uniqueIdFunction());
-    final ImmutableSet<Response> systemResponsesInAnswerPool =
-        FluentIterable.from(systemResponsesAlignedRealis).filter(HasIdInPool).toSet();
-
     final Multimap<Symbol, Response> responsesByEventType =
-        Multimaps.index(systemResponsesInAnswerPool, Response.typeFunction());
+        Multimaps.index(systemResponsesAlignedRealis, Response.typeFunction());
 
     final ImmutableSet.Builder<ResponseSet> ret = ImmutableSet.builder();
 
@@ -60,5 +55,4 @@ public final class SameEventTypeLinker implements LinkingStrategy {
 
     return ResponseLinking.from(docId, ret.build(), ImmutableSet.<Response>of());
   }
-
 }
