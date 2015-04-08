@@ -150,7 +150,8 @@ public final class KBP2015Scorer {
           @Override
           public String apply(final EALScorer2015Style.Result input) {
             return String.format("%20s\t%10.2f\t%10.2f\t%10.2f", input.docID(),
-                input.scaledArgumentScore(), input.scaledLinkingScore(), input.scaledScore());
+                100.0 * input.scaledArgumentScore(), 100.0 * input.scaledLinkingScore(),
+                100.0 * input.scaledScore());
           }
         })));
 
@@ -171,9 +172,9 @@ public final class KBP2015Scorer {
     double aggregateScore = (1.0-documentScorer.lambda())*aggregateArgScore + documentScorer.lambda()*aggregateLinkScore;
 
     Files.asCharSink(new File(outputDir, "aggregateScore.txt"), Charsets.UTF_8).write(
-        String.format("%30s:%4.2f\n", "Aggregate argument score", aggregateArgScore) +
-        String.format("%30s:%4.2f\n", "Aggregate linking score", aggregateLinkScore) +
-        String.format("%30s:%4.2f\n", "Overall score", aggregateScore));
+        String.format("%30s:%8.2f\n", "Aggregate argument score", 100.0 * aggregateArgScore) +
+            String.format("%30s:%8.2f\n", "Aggregate linking score", 100.0 * aggregateLinkScore) +
+            String.format("%30s:%8.2f\n", "Overall score", 100.0 * aggregateScore));
 
   }
 
