@@ -395,7 +395,7 @@ public class ScorerTest {
   public void test3() {
     final CorefAnnotation coref = allSingletonsCoref(ImmutableSet.of(a, b, c, d, e, f, g, h, i));
     final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(
-        ImmutableSet.of(a, b, c, d, e, f), ImmutableSet.<Response>of(g), coref);
+        ImmutableSet.of(a, b, c, d, e, f), ImmutableSet.<Response>of(g, h, i), coref);
 
     final ResponseLinking goldResponseLinking = ResponseLinking.from(answerKey.docId(),
         ImmutableSet.of(ResponseSet.from(a, b, c), ResponseSet.from(d, e), ResponseSet.from(f)),
@@ -406,13 +406,13 @@ public class ScorerTest {
     final EALScorer2015Style.Result score_ABD_G =
         scorer.score(answerKey, goldResponseLinking, this.output_ABDG, this.linking_ABD_G);
     assertEquals(2.75, score_ABD_G.unscaledArgumentScore(), .001);
-    assertEquals(1.0, score_ABD_G.unscaledLinkingScore(), .001);
     // for each key item:
     // for item 'a', keyNeighbors=(b,c) sysNeighbors=(b,d), hence R=1/2 P=1/2, F=1/2
     // for item 'b', keyNeighbors=(a,c) sysNeighbors=(a,d), hence R=1/2 P=1/2, F=1/2
     // for item 'd', keyNeighbors=(e) sysNeighbors=(a,b), hence R=0 P=0 F=0
     // key items c, e, f do not appear in system, hence no contribution to linkingSumF1
     // Therefore, 1/2 + 1/2 + 0 = 1.0 unscaledLinkingScore
+    assertEquals(1.0, score_ABD_G.unscaledLinkingScore(), .001);
     assertEquals(0.3125, score_ABD_G.scaledScore(), .001);
 
     final EALScorer2015Style.Result score_AB_C_G =
@@ -427,16 +427,14 @@ public class ScorerTest {
     // Therefore, 2/3 + 2/3 = 4/3 unscaledLinkingScore
     assertEquals(0.3403, score_AB_C_G.scaledScore(), .001);
 
-    final ResponseLinking l17 = this.linking_G_H_I;    // no correct { {g} {h} {i} }, also test clipping EAE score to max 0
-
     final EALScorer2015Style.Result score_G_H_I =
         scorer.score(answerKey, goldResponseLinking, this.output_GHI, this.linking_G_H_I);
     assertEquals(-0.75, score_G_H_I.unscaledArgumentScore(), .001);
     assertEquals(0, score_G_H_I.unscaledLinkingScore(), .001);
 
-    assertEquals(0, score_G_H_I.scaledScore(), .001);
+    assertEquals(-.0625, score_G_H_I.scaledScore(), .001);
 
-    final ResponseLinking l18 = this.linking_DE_DEA;    // duplicate system responses { {d,e} {d,e,a} }
+    // duplicate system responses { {d,e} {d,e,a} }
     final EALScorer2015Style.Result score_DE_DEA =
         scorer.score(answerKey, goldResponseLinking, this.output_DEA, this.linking_DE_DEA);
     assertEquals(3.0, score_DE_DEA.unscaledArgumentScore(), .001);
