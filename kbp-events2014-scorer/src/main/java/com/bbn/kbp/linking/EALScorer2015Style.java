@@ -36,7 +36,6 @@ import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Predicates.compose;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.in;
@@ -186,8 +185,12 @@ public final class EALScorer2015Style {
     final EventArgumentLinking filteredReferenceArgumentLinking = referenceArgumentLinking
         .filteredCopy(in(linkableEquivalenceClasses));
 
-    checkState(referenceArgumentLinking.equals(filteredReferenceArgumentLinking), "Filtering the "
-        + "reference linking should have no effect");
+    if (!referenceArgumentLinking.equals(filteredReferenceArgumentLinking)) {
+      throw new RuntimeException(
+          "Filtering the reference linking should have had no effect, but it deleted " +
+              Sets.difference(referenceArgumentLinking.allLinkedEquivalenceClasses(),
+                  filteredReferenceArgumentLinking.allLinkedEquivalenceClasses()));
+    }
 
     final EventArgumentLinking filteredSystemArgumentLinking = systemArgumentLinking
         .filteredCopy(in(linkableEquivalenceClasses));
