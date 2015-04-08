@@ -218,6 +218,9 @@ class LinkF1 {
         CollectionUtils.makeSetElementsToContainersMultimap(gold);
 
     final ImmutableSet<T> keyItems = ImmutableSet.copyOf(concat(gold));
+    final ImmutableSet<T> predictedItems = ImmutableSet.copyOf(concat(predicted));
+    checkArgument(keyItems.containsAll(predictedItems),
+        "Predicted linking has items the gold linking lacks");
     if (keyItems.isEmpty()) {
       if (predictedItemToGroup.isEmpty()) {
         return new ExplicitFMeasureInfo(1.0, 1.0, 1.0);
@@ -248,14 +251,22 @@ class LinkF1 {
         linkPrecisionSum += fMeasureCounts.precision();
         linkRecallSum += fMeasureCounts.recall();
       } else {
-        // arguments which are correctly linked to nothing (singletons)
-        // count as having perfect links
-        linkF1Sum += 1.0;
-        linkPrecisionSum += 1.0;
-        linkRecallSum += 1.0;
+        final boolean appearsInPredicted = predictedItems.contains(keyItem);
+        if (appearsInPredicted) {
+          // arguments which are correctly linked to nothing (singletons)
+          // count as having perfect links
+          linkF1Sum += 1.0;
+          linkPrecisionSum += 1.0;
+          linkRecallSum += 1.0;
+        }
+        // if an item is missing in the predicted linking, no credit is given
+        // F1 is treated as zero for this element
       }
     }
-    return new ExplicitFMeasureInfo(linkPrecisionSum/keyItems.size(),
+    // note we divide linkPrecisionSum by the number of predicted items,
+    // but the others by the number of gold items. This is because missing items
+    // hurt recall but not precision
+    return new ExplicitFMeasureInfo(linkPrecisionSum / predictedItems.size(),
         linkRecallSum/keyItems.size(), linkF1Sum/keyItems.size());
   }
 
