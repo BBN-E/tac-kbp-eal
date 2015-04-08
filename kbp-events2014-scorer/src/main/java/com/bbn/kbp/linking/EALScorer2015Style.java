@@ -3,6 +3,7 @@ package com.bbn.kbp.linking;
 import com.bbn.bue.common.annotations.MoveToBUECommon;
 import com.bbn.bue.common.collections.CollectionUtils;
 import com.bbn.bue.common.evaluation.FMeasureCounts;
+import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.EventArgScoringAlignment;
 import com.bbn.kbp.events2014.EventArgumentLinking;
@@ -67,6 +68,10 @@ public final class EALScorer2015Style {
     return new EALScorer2015Style(PreprocessorKBP2014.createKeepingRealis(), 0.25, 0.5);
   }
 
+  public double lambda() {
+    return lambda;
+  }
+
   public final class Result {
     private final EventArgScoringAlignment<TypeRoleFillerRealis> argScoringAlignment;
     private final LinkingScore linkingScore;
@@ -79,9 +84,7 @@ public final class EALScorer2015Style {
     }
 
     public double scaledArgumentScore() {
-      final int numGoldArgumentECs = Sets.union(argScoringAlignment.truePositiveEquivalenceClasses(),
-          argScoringAlignment.falseNegativeEquivalenceClasses()).size();
-      return unscaledArgumentScore() / numGoldArgumentECs;
+      return unscaledArgumentScore() / argumentNormalizer();
     }
 
     public double unscaledArgumentScore() {
@@ -91,7 +94,7 @@ public final class EALScorer2015Style {
     }
 
     public double unscaledLinkingScore() {
-      return linkingScore.F1()*linkingScore.referenceArgumentLinking().allLinkedEquivalenceClasses().size();
+      return linkingScore.F1()*linkingNormalizer();
     }
 
     public double scaledLinkingScore() {
@@ -110,6 +113,19 @@ public final class EALScorer2015Style {
       return linkingScore;
     }
 
+    public Symbol docID() {
+      return argScoringAlignment.docID();
+    }
+
+    public double argumentNormalizer() {
+      return Sets.union(
+          argScoringAlignment.truePositiveEquivalenceClasses(),
+          argScoringAlignment.falseNegativeEquivalenceClasses()).size();
+    }
+
+    public double linkingNormalizer() {
+      return linkingScore.referenceArgumentLinking().allLinkedEquivalenceClasses().size();
+    }
   }
 
   private static final Predicate<TypeRoleFillerRealis> REALIS_IS_NOT_GENERIC =
