@@ -3,9 +3,14 @@ package com.bbn.kbp.events2014;
 import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Predicate;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Sets;
+
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -86,5 +91,18 @@ public class ResponseLinking {
         .add("docID", docId)
         .add("responseSets", responseSets)
         .add("incomplete", incompleteResponses).toString();
+  }
+
+  public ResponseLinking copyWithFilteredResponses(final Predicate<Response> toKeepCondition) {
+    final Set<Response> newIncompletes = Sets.filter(incompleteResponses, toKeepCondition);
+    final ImmutableSet.Builder<ResponseSet> newResponseSets = ImmutableSet.builder();
+    for (final ResponseSet responseSet : responseSets) {
+      final ImmutableSet<Response> okResponses = FluentIterable.from(responseSet.asSet())
+          .filter(toKeepCondition).toSet();
+      if (!okResponses.isEmpty()) {
+        newResponseSets.add(ResponseSet.from(okResponses));
+      }
+    }
+    return ResponseLinking.from(docId, newResponseSets.build(), newIncompletes);
   }
 }

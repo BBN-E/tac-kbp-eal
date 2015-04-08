@@ -19,9 +19,13 @@ import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-class ExactMatchEventArgumentLinkingAligner implements EventArgumentLinkingAligner {
+public class ExactMatchEventArgumentLinkingAligner implements EventArgumentLinkingAligner {
 
   public ExactMatchEventArgumentLinkingAligner() {
+  }
+
+  public static ExactMatchEventArgumentLinkingAligner create() {
+    return new ExactMatchEventArgumentLinkingAligner();
   }
 
   /**
@@ -31,7 +35,7 @@ class ExactMatchEventArgumentLinkingAligner implements EventArgumentLinkingAlign
    * java.lang.IllegalArgumentException} will be thrown.
    */
   public EventArgumentLinking align(ResponseLinking responseLinking,
-      AnswerKey answerKey) throws InconsistentLinkingException {
+      AnswerKey answerKey)  {
     checkArgument(answerKey.docId() == responseLinking.docID());
     assertLinkingSubsetOfAnswerKey(responseLinking, answerKey);
 

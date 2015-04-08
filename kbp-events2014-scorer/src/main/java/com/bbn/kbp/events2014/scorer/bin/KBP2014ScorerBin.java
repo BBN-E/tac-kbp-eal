@@ -7,7 +7,8 @@ import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
-import com.bbn.kbp.events2014.scorer.KBPScorer;
+import com.bbn.kbp.events2014.scorer.EventArgumentScorer;
+import com.bbn.kbp.events2014.scorer.EventArgumentScorerBin;
 import com.bbn.kbp.events2014.scorer.observers.EAScoringObserver;
 import com.bbn.kbp.events2014.scorer.observers.ExitOnUnannotatedAnswerKey;
 import com.bbn.kbp.events2014.scorer.observers.KBPScoringObserver;
@@ -28,12 +29,12 @@ import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-public final class KBPScorerBin {
-  private static final Logger log = LoggerFactory.getLogger(KBPScorerBin.class);
+public final class KBP2014ScorerBin {
+  private static final Logger log = LoggerFactory.getLogger(KBP2014ScorerBin.class);
 
   private final ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers;
 
-  /* package-private */ KBPScorerBin(
+  /* package-private */ KBP2014ScorerBin(
       final Iterable<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers) {
     this.corpusObservers = ImmutableList.copyOf(corpusObservers);
   }
@@ -65,8 +66,10 @@ public final class KBPScorerBin {
   public void runOnParameters(Parameters params) throws IOException {
     log.info(params.dump());
 
-    final KBPScorer scorer = KBPScorer.create(PreprocessorKBP2014.fromParameters(params),
+    final EventArgumentScorer
+        innerScorer = EventArgumentScorer.create(PreprocessorKBP2014.fromParameters(params),
         corpusObservers);
+    final EventArgumentScorerBin scorer = new EventArgumentScorerBin(innerScorer, corpusObservers);
     final AnnotationStore goldAnswerStore = AssessmentSpecFormats.openAnnotationStore(params
             .getExistingDirectory("answerKey"),
         params.getEnum("goldFileFormat", AssessmentSpecFormats.Format.class));
@@ -92,7 +95,7 @@ public final class KBPScorerBin {
   // this and the single output store version can't be easily refactored together because
   // of their differing behavior wrt the list of documents to score
   private void scoreMultipleSystemOutputStores(AnnotationStore goldAnswerStore,
-      KBPScorer scorer, Parameters params, final AssessmentSpecFormats.Format fileFormat,
+      EventArgumentScorerBin scorer, Parameters params, final AssessmentSpecFormats.Format fileFormat,
       final Set<Symbol> docsToScore)
       throws IOException {
     final File systemOutputsDir = params.getExistingDirectory("systemOutputsDir");
@@ -113,7 +116,7 @@ public final class KBPScorerBin {
   }
 
   private void scoreSingleSystemOutputStore(AnnotationStore goldAnswerStore,
-      KBPScorer scorer, Parameters params, final AssessmentSpecFormats.Format systemFormat,
+      EventArgumentScorerBin scorer, Parameters params, final AssessmentSpecFormats.Format systemFormat,
       final Set<Symbol> docsToScore)
       throws IOException {
     final File systemOutputDir = params.getExistingDirectory(SYSTEM_OUTPUT_PARAM);
@@ -174,7 +177,7 @@ public final class KBPScorerBin {
     final ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> corpusObservers =
         getCorpusObservers(params);
 
-    final KBPScorerBin scorerBin = new KBPScorerBin(corpusObservers);
+    final KBP2014ScorerBin scorerBin = new KBP2014ScorerBin(corpusObservers);
     scorerBin.runOnParameters(params);
   }
 }

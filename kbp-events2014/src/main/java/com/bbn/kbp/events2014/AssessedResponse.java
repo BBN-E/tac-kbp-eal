@@ -160,4 +160,29 @@ public class AssessedResponse {
     return com.bbn.kbp.events2014.Response.byUniqueIdOrdering().onResultOf(
         AssessedResponse.Response);
   }
+
+
+  /**
+   * Creates an {@code AssessedResponse} which assesses the provided response as completely correct
+   * and marks it with the given mention type. This is useful for tests and not much else.
+   */
+  public static AssessedResponse assessCorrectly(Response r,
+      ResponseAssessment.MentionType mentionType) {
+    return AssessedResponse.from(r, ResponseAssessment.create(Optional.of(FieldAssessment.CORRECT),
+        Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.CORRECT),
+        Optional.of(r.realis()), Optional.of(FieldAssessment.CORRECT),
+        Optional.of(mentionType)));
+  }
+
+  /**
+   * Assesse the provided {@link Response} with an incorrect event type. This is only for use in
+   * tests.
+   */
+  public static AssessedResponse assessWithIncorrectEventType(final Response response) {
+    return AssessedResponse.from(response, ResponseAssessment.create(Optional.of(
+            FieldAssessment.INCORRECT),
+        Optional.<FieldAssessment>absent(), Optional.<FieldAssessment>absent(),
+        Optional.<KBPRealis>absent(), Optional.<FieldAssessment>absent(),
+        Optional.<ResponseAssessment.MentionType>absent()));
+  }
 }

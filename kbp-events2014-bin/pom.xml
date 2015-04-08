@@ -25,7 +25,7 @@
                 <configuration>
                     <programs>
                         <program>
-                            <mainClass>com.bbn.kbp.events2014.scorer.bin.KBPScorerBin</mainClass>
+                            <mainClass>com.bbn.kbp.events2014.scorer.bin.KBP2014ScorerBin</mainClass>
                             <name>kbpScorer</name>
                             <jvmSettings>
                                 <maxMemorySize>4G</maxMemorySize>
@@ -213,6 +213,7 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.0.13</version>
+            <optional>true</optional>
         </dependency>
 
         <dependency>

@@ -4,8 +4,10 @@ import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
+import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
 import org.slf4j.Logger;
@@ -19,14 +21,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public final class EventArgumentLinking {
 
   private final Symbol docID;
-  private final ImmutableSet<TypeRoleFillerRealisSet> coreffedArgSets;
+  private final ImmutableSet<TypeRoleFillerRealisSet> eventFrames;
   private final ImmutableSet<TypeRoleFillerRealis> incomplete;
   private static Logger log = LoggerFactory.getLogger(EventArgumentLinking.class);
 
   private EventArgumentLinking(Symbol docID, Iterable<TypeRoleFillerRealisSet> coreffedArgSets,
       Iterable<TypeRoleFillerRealis> incomplete) {
     this.docID = checkNotNull(docID);
-    this.coreffedArgSets = ImmutableSet.copyOf(coreffedArgSets);
+    this.eventFrames = ImmutableSet.copyOf(coreffedArgSets);
     this.incomplete = ImmutableSet.copyOf(incomplete);
     for (final TypeRoleFillerRealisSet trfrSet : coreffedArgSets) {
       final Set<TypeRoleFillerRealis> intersection =
@@ -47,7 +49,7 @@ public final class EventArgumentLinking {
   }
 
   public ImmutableSet<TypeRoleFillerRealisSet> linkedAsSet() {
-    return coreffedArgSets;
+    return eventFrames;
   }
 
   public ImmutableSet<TypeRoleFillerRealis> incomplete() {
@@ -56,7 +58,7 @@ public final class EventArgumentLinking {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(docID, coreffedArgSets, incomplete);
+    return Objects.hashCode(docID, eventFrames, incomplete);
   }
 
   @Override
@@ -69,7 +71,7 @@ public final class EventArgumentLinking {
     }
     final EventArgumentLinking other = (EventArgumentLinking) obj;
     return Objects.equal(this.docID, other.docID) && Objects
-        .equal(this.coreffedArgSets, other.coreffedArgSets)
+        .equal(this.eventFrames, other.eventFrames)
         && Objects.equal(this.incomplete, other.incomplete);
   }
 
@@ -87,4 +89,38 @@ public final class EventArgumentLinking {
             .transform(ToEquivalenceClass)));
   }
 
+  public EventArgumentLinking addNewResponsesAsIncompletesFrom(AnswerKey answerKey) {
+    EventArgumentLinking minimalLinking = createMinimalLinkingFrom(answerKey);
+    ImmutableSet<TypeRoleFillerRealis> allLinked = ImmutableSet.copyOf(Iterables.concat(eventFrames));
+    ImmutableSet<TypeRoleFillerRealis> minimalUnlinked = Sets.difference(minimalLinking.incomplete(), allLinked).immutableCopy();
+    ImmutableSet<TypeRoleFillerRealis> allUnlinked = Sets.union(minimalUnlinked, incomplete).immutableCopy();
+    return create(this.docID, this.eventFrames, allUnlinked);
+  }
+
+  public EventArgumentLinking filteredCopy(final Predicate<TypeRoleFillerRealis> toKeepPredicate) {
+    final ImmutableSet.Builder<TypeRoleFillerRealisSet> newEventFrames = ImmutableSet.builder();
+
+    for (final TypeRoleFillerRealisSet eventFrame : eventFrames) {
+      final Set<TypeRoleFillerRealis> filteredElements = FluentIterable.from(eventFrame.asSet())
+          .filter(toKeepPredicate).toSet();
+      if (!filteredElements.isEmpty()) {
+        newEventFrames.add(TypeRoleFillerRealisSet.create(filteredElements));
+      }
+    }
+
+    return new EventArgumentLinking(docID(), newEventFrames.build(),
+        Iterables.filter(incomplete, toKeepPredicate));
+  }
+
+  public ImmutableSet<Set<TypeRoleFillerRealis>> linkedAsSetOfSets() {
+    final ImmutableSet.Builder<Set<TypeRoleFillerRealis>> ret = ImmutableSet.builder();
+    for (final TypeRoleFillerRealisSet eventFrame : linkedAsSet()) {
+      ret.add(eventFrame.asSet());
+    }
+    return ret.build();
+  }
+
+  public Set<TypeRoleFillerRealis> allLinkedEquivalenceClasses() {
+    return ImmutableSet.copyOf(Iterables.concat(eventFrames));
+  }
 }

@@ -6,8 +6,6 @@ import com.bbn.kbp.events2014.SystemOutput;
 
 import com.google.common.base.Function;
 
-import java.io.IOException;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
@@ -16,7 +14,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public interface Preprocessor {
   public Preprocessor.Result preprocess(final SystemOutput systemOutput,
-      final AnswerKey answerKey) throws IOException;
+      final AnswerKey answerKey);
 
   public class Result {
     private final AnswerKey answerKey;
