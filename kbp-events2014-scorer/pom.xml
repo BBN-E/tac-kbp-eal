@@ -33,6 +33,11 @@
                                     <extraArgument>-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=1044</extraArgument>
                                 </extraArguments> -->
                             </jvmSettings>
+                            </program>
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.scorer.bin.KBP2015Scorer
+                            </mainClass>
+                            <name>KBP2015Scorer</name>
                         </program>
                     </programs>
                 </configuration>
@@ -83,6 +88,13 @@
             <groupId>com.carrotsearch</groupId>
             <artifactId>hppc</artifactId>
             <version>0.6.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.0.13</version>
+            <optional>true</optional>
         </dependency>
 
     </dependencies>
