@@ -112,7 +112,7 @@ public final class KBP2015Scorer {
     }
   }
 
-  private EALScorer2015Style documentScorer;
+  private EALScorer2015Style documentScorer = EALScorer2015Style.create();
 
   private void score(final AnnotationStore goldAnswerStore,
       final LinkingStore referenceLinkingStore, final SystemOutputStore systemOutputStore,
@@ -122,22 +122,26 @@ public final class KBP2015Scorer {
     final List<EALScorer2015Style.Result> perDocResults = Lists.newArrayList();
 
     for (final Symbol docID : docsToScore) {
-      final AnswerKey argumentKey = goldAnswerStore.read(docID);
-      final SystemOutput systemOutput = systemOutputStore.readOrEmpty(docID);
+      try {
+        final AnswerKey argumentKey = goldAnswerStore.read(docID);
+        final SystemOutput systemOutput = systemOutputStore.readOrEmpty(docID);
 
-      final Optional<ResponseLinking> referenceLinking = referenceLinkingStore.read(argumentKey);
-      final Optional<ResponseLinking> systemLinking = systemLinkingStore.read(systemOutput);
+        final Optional<ResponseLinking> referenceLinking = referenceLinkingStore.read(argumentKey);
+        final Optional<ResponseLinking> systemLinking = systemLinkingStore.read(systemOutput);
 
-      if (!referenceLinking.isPresent()) {
-        throw new RuntimeException("Reference linking missing for " + docID);
+        if (!referenceLinking.isPresent()) {
+          throw new RuntimeException("Reference linking missing for " + docID);
+        }
+
+        if (!systemLinking.isPresent()) {
+          throw new RuntimeException("System linking missing for " + docID);
+        }
+
+        perDocResults.add(documentScorer
+            .score(argumentKey, referenceLinking.get(), systemOutput, systemLinking.get()));
+      } catch (Exception e) {
+        throw new RuntimeException("Exception while processing " + docID, e);
       }
-
-      if (!systemLinking.isPresent()) {
-        throw new RuntimeException("System linking missing for " + docID);
-      }
-
-      perDocResults.add(documentScorer
-          .score(argumentKey, referenceLinking.get(), systemOutput, systemLinking.get()));
     }
 
     final File perDocOutput = new File(outputDir, "scoresByDocument.txt");
