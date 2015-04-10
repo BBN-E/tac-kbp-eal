@@ -20,6 +20,7 @@ Build steps:
 and do `mvn install` from its root.  
 * Do `mvn install` from the root of this repository.
 * do `chmod +x kbp-events2014-bin/target/appassembler/bin/*` (you only need to do this the first time)
+* do `chmod +x kbp-events2014-scorer/target/appassembler/bin/*` (you only need to do this the first time)
 
 ## Using
 ### System Output Stores and Annotation Stores
@@ -39,7 +40,7 @@ of these files is described in the task specification linked to above.
 ### Evaluation Workflow
 
 The following workflow will be used during the evaluation.  All executables referenced below may be found in 
-`kbp-events2014-bin/target/appassembler/bin`.
+either `kbp-events2014-bin/target/appassembler/bin` or `kbp-events-2014-scorer/target/appassembler/bin`.
 
 * a 'quote filter' to remove material with CAS and BF offsets in quoted regions
 will be built from the original text of the data set.
