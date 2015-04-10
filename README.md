@@ -112,6 +112,12 @@ Parameters:
 * `documentsToScore`: a file listing the IDs of the documents to be scored, one per line
 * either `systemOutput` or `systemOutputsDir`.  If `systemOutput`, the value must be a path to the system output to be scored.  This path must have an `arguments` and a `linking` subdirectory containing a system output store and a linking store, respectively.  If `systemOutputsDir`, the path must contain sub-directories representing the outputs of multiple systems.  Each such sub-directory must have the format described above for `systemOutput`.
 
+## Baseline linking
+We provide a baseline implementation of event argument linking for those who wish to try out the 2015 scorer but have not yet developed their own algorithm.  This baseline implementation simply links together all arguments of the same event type in a document.  To run this, use `ApplyLinkingStrategy`.
+
+Parameters:
+* `argumentSystemStore`: the system's argument output
+* `linkingSystemStore`: the path to write the baseline linking to
 
 ## Questions
 ### How can I use the `Response`, etc. in my system's code?
