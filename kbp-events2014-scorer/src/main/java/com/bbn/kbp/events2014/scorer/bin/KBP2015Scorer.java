@@ -66,6 +66,10 @@ public final class KBP2015Scorer {
   }
 
   private static void trueMain(String[] argv) throws IOException {
+    if (argv.length != 1) {
+      usage();
+      System.exit(1);
+    }
     final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
     final KBP2015Scorer scorer = new KBP2015Scorer();
 
