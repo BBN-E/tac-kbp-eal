@@ -20,6 +20,7 @@ Build steps:
 and do `mvn install` from its root.  
 * Do `mvn install` from the root of this repository.
 * do `chmod +x kbp-events2014-bin/target/appassembler/bin/*` (you only need to do this the first time)
+* do `chmod +x kbp-events2014-scorer/target/appassembler/bin/*` (you only need to do this the first time)
 
 ## Using
 ### System Output Stores and Annotation Stores
@@ -39,7 +40,7 @@ of these files is described in the task specification linked to above.
 ### Evaluation Workflow
 
 The following workflow will be used during the evaluation.  All executables referenced below may be found in 
-`kbp-events2014-bin/target/appassembler/bin`.
+either `kbp-events2014-bin/target/appassembler/bin` or `kbp-events-2014-scorer/target/appassembler/bin`.
 
 * a 'quote filter' to remove material with CAS and BF offsets in quoted regions
 will be built from the original text of the data set.
@@ -111,6 +112,12 @@ Parameters:
 * `documentsToScore`: a file listing the IDs of the documents to be scored, one per line
 * either `systemOutput` or `systemOutputsDir`.  If `systemOutput`, the value must be a path to the system output to be scored.  This path must have an `arguments` and a `linking` subdirectory containing a system output store and a linking store, respectively.  If `systemOutputsDir`, the path must contain sub-directories representing the outputs of multiple systems.  Each such sub-directory must have the format described above for `systemOutput`.
 
+## Baseline linking
+We provide a baseline implementation of event argument linking for those who wish to try out the 2015 scorer but have not yet developed their own algorithm.  This baseline implementation simply links together all arguments of the same event type in a document.  To run this, use `ApplyLinkingStrategy`.
+
+Parameters:
+* `argumentSystemStore`: the system's argument output
+* `linkingSystemStore`: the path to write the baseline linking to
 
 ## Questions
 ### How can I use the `Response`, etc. in my system's code?
