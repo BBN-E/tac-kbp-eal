@@ -16,8 +16,6 @@ Requirements:
 * [Maven](http://maven.apache.org/)
 
 Build steps:
-* Check out the [`bue-common-open`](https://github.com/rgabbard-bbn/bue-common-open) repository
-and do `mvn install` from its root.  
 * Do `mvn install` from the root of this repository.
 * do `chmod +x kbp-events2014-bin/target/appassembler/bin/*` (you only need to do this the first time)
 * do `chmod +x kbp-events2014-scorer/target/appassembler/bin/*` (you only need to do this the first time)
