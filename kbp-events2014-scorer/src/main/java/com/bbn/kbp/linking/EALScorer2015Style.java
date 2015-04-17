@@ -185,12 +185,15 @@ public final class EALScorer2015Style {
     final EventArgumentLinking filteredReferenceArgumentLinking = referenceArgumentLinking
         .filteredCopy(in(linkableEquivalenceClasses));
 
-    if (!referenceArgumentLinking.equals(filteredReferenceArgumentLinking)) {
+    // We disable this check because the scorer may have done additional filtering
+    // that was not in place in the assessment tool (e.g. remove Life.Injures for correct
+    //Life.Dies).
+    /*if (!referenceArgumentLinking.equals(filteredReferenceArgumentLinking)) {
       throw new RuntimeException(
           "Filtering the reference linking should have had no effect, but it deleted " +
               Sets.difference(referenceArgumentLinking.allLinkedEquivalenceClasses(),
                   filteredReferenceArgumentLinking.allLinkedEquivalenceClasses()));
-    }
+    }*/
 
     final EventArgumentLinking filteredSystemArgumentLinking = systemArgumentLinking
         .filteredCopy(in(linkableEquivalenceClasses));
