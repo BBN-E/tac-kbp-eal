@@ -151,12 +151,12 @@ public final class KBP2015Scorer {
 
     final File perDocOutput = new File(outputDir, "scoresByDocument.txt");
     Files.asCharSink(perDocOutput, Charsets.UTF_8).write(
-        String.format("%20s\t%10s\t%10s\t%10s\n", "Document", "Arg", "Link", "Combined") +
+        String.format("%40s\t%10s\t%10s\t%10s\n", "Document", "Arg", "Link", "Combined") +
         Joiner.on("\n").join(
         Lists.transform(perDocResults, new Function<EALScorer2015Style.Result, String>() {
           @Override
           public String apply(final EALScorer2015Style.Result input) {
-            return String.format("%20s\t%10.2f\t%10.2f\t%10.2f", input.docID(),
+            return String.format("%40s\t%10.2f\t%10.2f\t%10.2f", input.docID(),
                 100.0 * input.scaledArgumentScore(), 100.0 * input.scaledLinkingScore(),
                 100.0 * input.scaledScore());
           }
