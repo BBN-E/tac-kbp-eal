@@ -83,6 +83,7 @@ public final class KBP2015Scorer {
         params.isPresent(SYSTEM_OUTPUT_PARAM) != params.isPresent(SYSTEM_OUTPUTS_DIR_PARAM),
         "Exactly one of systemOutput and systemOutputsDir must be specified");
     if (params.isPresent(SYSTEM_OUTPUT_PARAM)) {
+      final File scoringOutputDir = params.getCreatableDirectory("scoringOutputDir");
       final File systemOutputDir = params.getExistingDirectory(SYSTEM_OUTPUT_PARAM);
       log.info("Scoring single system output {}", systemOutputDir);
       final SystemOutputStore systemOutputStore =
@@ -92,7 +93,7 @@ public final class KBP2015Scorer {
           LinkingSpecFormats.openOrCreateLinkingStore(new File(systemOutputDir, "linking"));
 
       scorer.score(goldAnswerStore, referenceLinkingStore, systemOutputStore, systemLinkingStore,
-          docsToScore, systemOutputDir);
+          docsToScore, scoringOutputDir);
     } else {
       final File systemOutputsDir = params.getExistingDirectory("systemOutputsDir");
       final File scoringOutputRoot = params.getCreatableDirectory("scoringOutputRoot");
