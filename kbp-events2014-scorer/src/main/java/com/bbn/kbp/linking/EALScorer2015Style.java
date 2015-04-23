@@ -239,6 +239,9 @@ class LinkF1 {
         log.info("Key is empty but predicted is not; returning score of 0");
         return new ExplicitFMeasureInfo(0.0, 0.0, 0.0);
       }
+    } else if (predictedItems.isEmpty()) {
+      log.info("Predicted is empty but key is not; returning score of 0");
+      return new ExplicitFMeasureInfo(0.0, 0.0, 0.0);
     }
 
     for (final T keyItem : keyItems) {
@@ -263,8 +266,9 @@ class LinkF1 {
         linkPrecisionSum += fMeasureCounts.precision();
         linkRecallSum += fMeasureCounts.recall();
 
-        log.info("For key cluster {} and predicted cluster {}, cluster f-measure is {}",
-            fMeasureCounts.F1());
+        log.info(
+            "For {}, gold neighbors are {} and predicted neighbors ar e{}, item f-measure is {}",
+            keyItem, goldNeighbors, predictedNeighbors, fMeasureCounts.F1());
       } else {
         final boolean appearsInPredicted = predictedItems.contains(keyItem);
         if (appearsInPredicted) {
@@ -275,7 +279,8 @@ class LinkF1 {
           linkRecallSum += 1.0;
           log.info("{} is a singleton in both key and predicted. Score of 1.0", keyItem);
         } else {
-          log.info("{} is a singleton in key but does not appear in predicted. Score of 0.0");
+          log.info("{} is a singleton in key but does not appear in predicted. Score of 0.0",
+              keyItem);
         }
         // if an item is missing in the predicted linking, no credit is given
         // F1 is treated as zero for this element
@@ -284,8 +289,11 @@ class LinkF1 {
     // note we divide linkPrecisionSum by the number of predicted items,
     // but the others by the number of gold items. This is because missing items
     // hurt recall but not precision
-    return new ExplicitFMeasureInfo(linkPrecisionSum / predictedItems.size(),
-        linkRecallSum/keyItems.size(), linkF1Sum/keyItems.size());
+    final ExplicitFMeasureInfo explicitFMeasureInfo =
+        new ExplicitFMeasureInfo(linkPrecisionSum / predictedItems.size(),
+            linkRecallSum / keyItems.size(), linkF1Sum / keyItems.size());
+    log.info("Final document linking score: {}", explicitFMeasureInfo);
+    return explicitFMeasureInfo;
   }
 
   @MoveToBUECommon
