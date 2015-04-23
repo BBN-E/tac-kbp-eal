@@ -253,37 +253,46 @@ class LinkF1 {
           concat(goldItemToGroup.get(keyItem)),
           keyItem));
 
-      final boolean predictedAndGoldAreSingleton = predictedNeighbors.isEmpty() && goldNeighbors.isEmpty();
+      if (predictedItems.contains(keyItem)) {
+        final boolean predictedIsSingleton = predictedNeighbors.isEmpty();
+        final boolean goldIsSingleton = goldNeighbors.isEmpty();
 
-      if (!predictedAndGoldAreSingleton) {
-        int truePositiveLinks = Sets.intersection(predictedNeighbors, goldNeighbors).size();
-        int falsePositiveLinks = Sets.difference(predictedNeighbors, goldNeighbors).size();
-        int falseNegativeLinks = Sets.difference(goldNeighbors, predictedNeighbors).size();
+        if (!(predictedIsSingleton && goldIsSingleton)) {
+          int truePositiveLinks = Sets.intersection(predictedNeighbors, goldNeighbors).size();
+          int falsePositiveLinks = Sets.difference(predictedNeighbors, goldNeighbors).size();
+          int falseNegativeLinks = Sets.difference(goldNeighbors, predictedNeighbors).size();
 
-        final FMeasureCounts fMeasureCounts =
-            FMeasureCounts.from(truePositiveLinks, falsePositiveLinks, falseNegativeLinks);
-        linkF1Sum += fMeasureCounts.F1();
-        linkPrecisionSum += fMeasureCounts.precision();
-        linkRecallSum += fMeasureCounts.recall();
+          final FMeasureCounts fMeasureCounts =
+              FMeasureCounts.from(truePositiveLinks, falsePositiveLinks, falseNegativeLinks);
+          linkF1Sum += fMeasureCounts.F1();
+          linkPrecisionSum += fMeasureCounts.precision();
+          linkRecallSum += fMeasureCounts.recall();
 
-        log.info(
-            "For {}, gold neighbors are {} and predicted neighbors are {}, item f-measure is {}",
-            keyItem, goldNeighbors, predictedNeighbors, fMeasureCounts.F1());
-      } else {
-        final boolean appearsInPredicted = predictedItems.contains(keyItem);
-        if (appearsInPredicted) {
-          // arguments which are correctly linked to nothing (singletons)
-          // count as having perfect links
-          linkF1Sum += 1.0;
-          linkPrecisionSum += 1.0;
-          linkRecallSum += 1.0;
-          log.info("{} is a singleton in both key and predicted. Score of 1.0", keyItem);
+          if (predictedIsSingleton) {
+            log.info(
+                "For {}, gold neighbors are {} but predicted is singleton. Item f-measure is {}",
+                keyItem, goldNeighbors, fMeasureCounts.F1());
+          } else {
+            log.info(
+                "For {}, gold neighbors are {} and predicted neighbors are {}. Item f-measure is {}",
+                keyItem, goldNeighbors, predictedNeighbors, fMeasureCounts.F1());
+          }
         } else {
-          log.info("{} is a singleton in key but does not appear in predicted. Score of 0.0",
-              keyItem);
+          final boolean appearsInPredicted = predictedItems.contains(keyItem);
+          if (appearsInPredicted) {
+            // arguments which are correctly linked to nothing (singletons)
+            // count as having perfect links
+            linkF1Sum += 1.0;
+            linkPrecisionSum += 1.0;
+            linkRecallSum += 1.0;
+            log.info("{} is a singleton in both key and predicted. Score of 1.0", keyItem);
+          } else {
+            log.info("{} is a singleton in key but does not appear in predicted. Score of 0.0",
+                keyItem);
+          }
         }
-        // if an item is missing in the predicted linking, no credit is given
-        // F1 is treated as zero for this element
+      } else {
+        log.info("{} is present only in the gold linking. Item F-measure is 0.0", keyItem);
       }
     }
     // note we divide linkPrecisionSum by the number of predicted items,
