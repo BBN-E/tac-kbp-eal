@@ -103,7 +103,7 @@ public final class KBP2015Scorer {
       for (File subDir : systemOutputsDir.listFiles()) {
         try {
           if (subDir.isDirectory()) {
-            log.info("Scoring {}", subDir);
+            log.info("Scoring system {}", subDir);
             final File outputDir = new File(scoringOutputRoot, subDir.getName());
             outputDir.mkdirs();
             final SystemOutputStore systemOutputStore = getSystemOutputStore(params, subDir);

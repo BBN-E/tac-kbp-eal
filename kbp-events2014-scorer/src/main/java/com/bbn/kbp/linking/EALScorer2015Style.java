@@ -162,6 +162,7 @@ public final class EALScorer2015Style {
 
   public LinkingScore scoreLinking(AnswerKey answerKey, Set<TypeRoleFillerRealis> linkableEquivalenceClasses,
       ResponseLinking referenceLinking, ResponseLinking systemLinking) {
+    log.info("Scoring linking for {}", answerKey.docId());
     checkArgument(answerKey.docId() == systemLinking.docID(), "System output has doc ID %s " +
         "but answer key has doc ID %s", systemLinking.docID(), answerKey.docId());
     checkArgument(answerKey.docId() == referenceLinking.docID(),
@@ -205,6 +206,9 @@ public final class EALScorer2015Style {
 }
 
 class LinkF1 {
+
+  private static final Logger log = LoggerFactory.getLogger(LinkF1.class);
+
   private LinkF1() {
   }
 
@@ -229,8 +233,10 @@ class LinkF1 {
         "Predicted linking has items the gold linking lacks: %s", Sets.difference(predictedItems, keyItems));
     if (keyItems.isEmpty()) {
       if (predictedItemToGroup.isEmpty()) {
+        log.info("Key and predicted are empty; returning score of 1");
         return new ExplicitFMeasureInfo(1.0, 1.0, 1.0);
       } else {
+        log.info("Key is empty but predicted is not; returning score of 0");
         return new ExplicitFMeasureInfo(0.0, 0.0, 0.0);
       }
     }
@@ -256,6 +262,9 @@ class LinkF1 {
         linkF1Sum += fMeasureCounts.F1();
         linkPrecisionSum += fMeasureCounts.precision();
         linkRecallSum += fMeasureCounts.recall();
+
+        log.info("For key cluster {} and predicted cluster {}, cluster f-measure is {}",
+            fMeasureCounts.F1());
       } else {
         final boolean appearsInPredicted = predictedItems.contains(keyItem);
         if (appearsInPredicted) {
@@ -264,6 +273,9 @@ class LinkF1 {
           linkF1Sum += 1.0;
           linkPrecisionSum += 1.0;
           linkRecallSum += 1.0;
+          log.info("{} is a singleton in both key and predicted. Score of 1.0", keyItem);
+        } else {
+          log.info("{} is a singleton in key but does not appear in predicted. Score of 0.0");
         }
         // if an item is missing in the predicted linking, no credit is given
         // F1 is treated as zero for this element
