@@ -133,7 +133,7 @@ public final class KBP2015Scorer {
     for (final Symbol docID : docsToScore) {
       try {
         final AnswerKey argumentKey = goldAnswerStore.read(docID);
-        final SystemOutput systemOutput = systemOutputStore.read(docID);
+        final SystemOutput systemOutput = systemOutputStore.readOrEmpty(docID);
 
         final Optional<ResponseLinking> referenceLinking = referenceLinkingStore.read(argumentKey);
         final Optional<ResponseLinking> systemLinking = systemLinkingStore.read(systemOutput);
