@@ -226,7 +226,7 @@ class LinkF1 {
     final ImmutableSet<T> keyItems = ImmutableSet.copyOf(concat(gold));
     final ImmutableSet<T> predictedItems = ImmutableSet.copyOf(concat(predicted));
     checkArgument(keyItems.containsAll(predictedItems),
-        "Predicted linking has items the gold linking lacks");
+        "Predicted linking has items the gold linking lacks: %s", Sets.difference(predictedItems, keyItems));
     if (keyItems.isEmpty()) {
       if (predictedItemToGroup.isEmpty()) {
         return new ExplicitFMeasureInfo(1.0, 1.0, 1.0);
