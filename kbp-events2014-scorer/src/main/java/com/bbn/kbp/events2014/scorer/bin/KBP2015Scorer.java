@@ -101,15 +101,21 @@ public final class KBP2015Scorer {
       log.info("Scoring all subdirectories of {}", systemOutputsDir);
 
       for (File subDir : systemOutputsDir.listFiles()) {
-        if (subDir.isDirectory()) {
-          log.info("Scoring {}", subDir);
-          final File outputDir = new File(scoringOutputRoot, subDir.getName());
-          outputDir.mkdirs();
-          final SystemOutputStore systemOutputStore = getSystemOutputStore(params, subDir);
-          final LinkingStore systemLinkingStore = getLinkingStore(params, subDir, systemOutputStore);
+        try {
+          if (subDir.isDirectory()) {
+            log.info("Scoring {}", subDir);
+            final File outputDir = new File(scoringOutputRoot, subDir.getName());
+            outputDir.mkdirs();
+            final SystemOutputStore systemOutputStore = getSystemOutputStore(params, subDir);
+            final LinkingStore systemLinkingStore =
+                getLinkingStore(params, subDir, systemOutputStore);
 
-          scorer.score(goldAnswerStore, referenceLinkingStore, systemOutputStore, systemLinkingStore,
-              docsToScore, outputDir);
+            scorer.score(goldAnswerStore, referenceLinkingStore, systemOutputStore,
+                systemLinkingStore,
+                docsToScore, outputDir);
+          }
+        } catch (Exception e) {
+          throw new RuntimeException("Exception while processing " + subDir, e);
         }
       }
     }
