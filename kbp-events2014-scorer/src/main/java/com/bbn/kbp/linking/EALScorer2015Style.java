@@ -267,7 +267,7 @@ class LinkF1 {
         linkRecallSum += fMeasureCounts.recall();
 
         log.info(
-            "For {}, gold neighbors are {} and predicted neighbors ar e{}, item f-measure is {}",
+            "For {}, gold neighbors are {} and predicted neighbors are {}, item f-measure is {}",
             keyItem, goldNeighbors, predictedNeighbors, fMeasureCounts.F1());
       } else {
         final boolean appearsInPredicted = predictedItems.contains(keyItem);
