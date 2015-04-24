@@ -28,6 +28,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
@@ -205,10 +206,13 @@ public final class AssessmentSpecFormats {
       }
 
       final ImmutableList.Builder<Scored<Response>> ret = ImmutableList.builder();
+      final ImmutableMap.Builder<Response, String> responseToMetadata = new ImmutableMap.Builder<Response, String>();
 
       int lineNo = 0;
+      String lastLine = SystemOutput.DEFAULT_METADATA;
       for (final String line : Files.asCharSource(f, UTF_8).readLines()) {
         ++lineNo;
+        lastLine = line;
         if (line.isEmpty() || line.startsWith("#")) {
           continue;
         }
@@ -217,7 +221,16 @@ public final class AssessmentSpecFormats {
           // we ignore the first field because input system IDs are currently not preserved
           try {
             final double confidence = Double.parseDouble(parts.get(10));
-            ret.add(Scored.from(parseArgumentFields(parts.subList(1, parts.size())), confidence));
+            final Response response = parseArgumentFields(parts.subList(1, parts.size()));
+            final String metadata;
+            if(lastLine.charAt(0) == SystemOutput.METADATA_MARKER) {
+              metadata = lastLine;
+            } else {
+              metadata = SystemOutput.DEFAULT_METADATA;
+            }
+
+            ret.add(Scored.from(response, confidence));
+            responseToMetadata.put(response, metadata);
           } catch (IndexOutOfBoundsException iobe) {
             throw new RuntimeException(
                 String.format("Expected 11 tab-separated columns, but got %d", parts.size()), iobe);
@@ -228,7 +241,7 @@ public final class AssessmentSpecFormats {
         }
       }
 
-      return SystemOutput.from(docid, ret.build());
+      return SystemOutput.from(docid, ret.build(), responseToMetadata.build());
     }
 
     @Override
@@ -248,6 +261,10 @@ public final class AssessmentSpecFormats {
 
       try {
         for (final Response response : format.responseOrdering().sortedCopy(output.responses())) {
+          final String metadata = output.metadata(response);
+          if(metadata.equals(SystemOutput.DEFAULT_METADATA)) {
+            out.print(metadata + "\n");
+          }
           //out.print(response.responseID());
           out.print(format.identifierField(response));
           out.print("\t");
@@ -275,7 +292,8 @@ public final class AssessmentSpecFormats {
       if (docIDs().contains(docid)) {
         return read(docid);
       } else {
-        return SystemOutput.from(docid, ImmutableList.<Scored<Response>>of());
+        return SystemOutput.from(docid, ImmutableList.<Scored<Response>>of(),
+            ImmutableMap.<Response, String>of());
       }
     }
   }
