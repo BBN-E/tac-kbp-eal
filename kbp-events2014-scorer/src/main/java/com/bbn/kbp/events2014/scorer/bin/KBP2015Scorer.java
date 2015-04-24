@@ -4,6 +4,7 @@ import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.io.AnnotationStore;
@@ -11,6 +12,7 @@ import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.io.LinkingSpecFormats;
 import com.bbn.kbp.events2014.io.LinkingStore;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.events2014.linking.SameEventTypeLinker;
 import com.bbn.kbp.linking.EALScorer2015Style;
 
 import com.google.common.base.Charsets;
@@ -83,16 +85,15 @@ public final class KBP2015Scorer {
         params.isPresent(SYSTEM_OUTPUT_PARAM) != params.isPresent(SYSTEM_OUTPUTS_DIR_PARAM),
         "Exactly one of systemOutput and systemOutputsDir must be specified");
     if (params.isPresent(SYSTEM_OUTPUT_PARAM)) {
+      final File scoringOutputDir = params.getCreatableDirectory("scoringOutputDir");
       final File systemOutputDir = params.getExistingDirectory(SYSTEM_OUTPUT_PARAM);
       log.info("Scoring single system output {}", systemOutputDir);
-      final SystemOutputStore systemOutputStore =
-          AssessmentSpecFormats.openSystemOutputStore(new File(systemOutputDir, "arguments"),
-              AssessmentSpecFormats.Format.KBP2015);
+      final SystemOutputStore systemOutputStore = getSystemOutputStore(params, systemOutputDir);
       final LinkingStore systemLinkingStore =
-          LinkingSpecFormats.openOrCreateLinkingStore(new File(systemOutputDir, "linking"));
+          getLinkingStore(params, systemOutputDir, systemOutputStore);
 
       scorer.score(goldAnswerStore, referenceLinkingStore, systemOutputStore, systemLinkingStore,
-          docsToScore, systemOutputDir);
+          docsToScore, scoringOutputDir);
     } else {
       final File systemOutputsDir = params.getExistingDirectory("systemOutputsDir");
       final File scoringOutputRoot = params.getCreatableDirectory("scoringOutputRoot");
@@ -100,17 +101,21 @@ public final class KBP2015Scorer {
       log.info("Scoring all subdirectories of {}", systemOutputsDir);
 
       for (File subDir : systemOutputsDir.listFiles()) {
-        if (subDir.isDirectory()) {
-          log.info("Scoring {}", subDir);
-          final File outputDir = new File(scoringOutputRoot, subDir.getName());
-          outputDir.mkdirs();
-          final SystemOutputStore systemOutputStore =
-              AssessmentSpecFormats.openSystemOutputStore(new File(subDir, "arguments"),
-                  AssessmentSpecFormats.Format.KBP2015);
-          final LinkingStore systemLinkingStore = LinkingSpecFormats.openOrCreateLinkingStore(
-              new File(subDir, "linking"));
-          scorer.score(goldAnswerStore, referenceLinkingStore, systemOutputStore, systemLinkingStore,
-              docsToScore, outputDir);
+        try {
+          if (subDir.isDirectory()) {
+            log.info("Scoring system {}", subDir);
+            final File outputDir = new File(scoringOutputRoot, subDir.getName());
+            outputDir.mkdirs();
+            final SystemOutputStore systemOutputStore = getSystemOutputStore(params, subDir);
+            final LinkingStore systemLinkingStore =
+                getLinkingStore(params, subDir, systemOutputStore);
+
+            scorer.score(goldAnswerStore, referenceLinkingStore, systemOutputStore,
+                systemLinkingStore,
+                docsToScore, outputDir);
+          }
+        } catch (Exception e) {
+          throw new RuntimeException("Exception while processing " + subDir, e);
         }
       }
     }
@@ -150,12 +155,12 @@ public final class KBP2015Scorer {
 
     final File perDocOutput = new File(outputDir, "scoresByDocument.txt");
     Files.asCharSink(perDocOutput, Charsets.UTF_8).write(
-        String.format("%20s\t%10s\t%10s\t%10s\n", "Document", "Arg", "Link", "Combined") +
+        String.format("%40s\t%10s\t%10s\t%10s\n", "Document", "Arg", "Link", "Combined") +
         Joiner.on("\n").join(
         Lists.transform(perDocResults, new Function<EALScorer2015Style.Result, String>() {
           @Override
           public String apply(final EALScorer2015Style.Result input) {
-            return String.format("%20s\t%10.2f\t%10.2f\t%10.2f", input.docID(),
+            return String.format("%40s\t%10.2f\t%10.2f\t%10.2f", input.docID(),
                 100.0 * input.scaledArgumentScore(), 100.0 * input.scaledLinkingScore(),
                 100.0 * input.scaledScore());
           }
@@ -193,6 +198,42 @@ public final class KBP2015Scorer {
     final ImmutableSet<Symbol> ret = ImmutableSet.copyOf(FileUtils.loadSymbolList(docsToScoreList));
     log.info("Scoring over {} documents specified in {}", ret.size(), docsToScoreList);
     return ret;
+  }
+
+  // the three methods below are a hack where the user can provide only a KBP-2014 style argument store
+  // and still use this scorer by having a default linking strategy applied
+
+
+  private static LinkingStore getLinkingStore(final Parameters params, final File systemOutputDir,
+      final SystemOutputStore systemOutputStore) {
+    final LinkingStore systemLinkingStore;
+    if (useDefaultLinkingHack(params)) {
+      systemLinkingStore = SameEventTypeLinker.create(
+          ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other)).wrap(systemOutputStore);
+    } else {
+      systemLinkingStore = LinkingSpecFormats
+          .openOrCreateLinkingStore(new File(systemOutputDir, "linking"));
+    }
+    return systemLinkingStore;
+  }
+
+  private static SystemOutputStore getSystemOutputStore(final Parameters params,
+      final File systemOutputDir) {
+    final SystemOutputStore systemOutputStore;
+    if (useDefaultLinkingHack(params)) {
+      systemOutputStore =
+          AssessmentSpecFormats
+              .openSystemOutputStore(systemOutputDir, AssessmentSpecFormats.Format.KBP2015);
+    } else {
+      systemOutputStore =
+          AssessmentSpecFormats.openSystemOutputStore(new File(systemOutputDir, "arguments"),
+              AssessmentSpecFormats.Format.KBP2015);
+    }
+    return systemOutputStore;
+  }
+
+  private static boolean useDefaultLinkingHack(final Parameters params) {
+    return params.isPresent("createDefaultLinking") && params.getBoolean("createDefaultLinking");
   }
 
 }

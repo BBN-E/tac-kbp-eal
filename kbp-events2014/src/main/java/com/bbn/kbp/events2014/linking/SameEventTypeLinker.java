@@ -21,7 +21,7 @@ import java.util.Collection;
 import static com.google.common.base.Predicates.compose;
 import static com.google.common.base.Predicates.in;
 
-public final class SameEventTypeLinker implements LinkingStrategy {
+public final class SameEventTypeLinker extends AbstractLinkingStrategy implements LinkingStrategy {
 
   private static final Logger log = LoggerFactory.getLogger(SameEventTypeLinker.class);
 

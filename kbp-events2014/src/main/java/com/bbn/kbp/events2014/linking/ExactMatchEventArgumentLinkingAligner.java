@@ -37,7 +37,11 @@ public class ExactMatchEventArgumentLinkingAligner implements EventArgumentLinki
   public EventArgumentLinking align(ResponseLinking responseLinking,
       AnswerKey answerKey)  {
     checkArgument(answerKey.docId() == responseLinking.docID());
-    assertLinkingSubsetOfAnswerKey(responseLinking, answerKey);
+
+    // assertLinkingSubsetOfAnswerKey(responseLinking, answerKey);
+    // the above assertion was too strong - the system response linking could
+    // validly include responses which were not included in the answerKey because
+    // there was a higher scoring system response in the same equivalence class
 
     final ImmutableMultimap<TypeRoleFillerRealis, Response> canonicalToResponses =
         Multimaps.index(responseLinking.allResponses(),

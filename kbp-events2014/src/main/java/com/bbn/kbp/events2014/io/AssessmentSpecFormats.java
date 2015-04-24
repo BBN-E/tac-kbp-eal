@@ -198,11 +198,7 @@ public final class AssessmentSpecFormats {
 
     @Override
     public SystemOutput read(final Symbol docid) throws IOException {
-      final File f = new File(directory, docid.toString());
-      if (!f.exists()) {
-        throw new FileNotFoundException(
-            String.format("File %s for doc ID %s not found", f.getAbsolutePath(), docid));
-      }
+      final File f = bareOrWithSuffix(directory, docid.asString(), ACCEPTABLE_SUFFIXES);
 
       final ImmutableList.Builder<Scored<Response>> ret = ImmutableList.builder();
 
@@ -431,7 +427,9 @@ public final class AssessmentSpecFormats {
       final ImmutableList.Builder<Response> unannotated = ImmutableList.builder();
       final CorefAnnotation.Builder corefBuilder = assessmentCreator.corefBuilder(docid);
 
-      final CharSource source = Files.asCharSource(new File(directory, docid.toString()), UTF_8);
+      final File f = bareOrWithSuffix(directory, docid.asString(), ACCEPTABLE_SUFFIXES);
+
+      final CharSource source = Files.asCharSource(f, UTF_8);
       for (final String line : source.readLines()) {
         try {
           if (line.isEmpty() || line.startsWith("#")) {
@@ -604,5 +602,37 @@ public final class AssessmentSpecFormats {
     return spans;
   }
 
+  private static final ImmutableSet<String> ACCEPTABLE_SUFFIXES = ImmutableSet.of("tab", "tsv");
 
+  public static File bareOrWithSuffix(final File directory, final String filename,
+      ImmutableSet<String> suffixes)
+      throws FileNotFoundException {
+    final List<File> attempts = Lists.newArrayList();
+    final List<File> successfulAttempts = Lists.newArrayList();
+
+    final File bareAttempt = new File(directory, filename);
+    attempts.add(bareAttempt);
+    if (bareAttempt.isFile()) {
+      successfulAttempts.add(bareAttempt);
+    }
+
+    for (final String suffix : suffixes) {
+      final File attempt = new File(directory, filename + "." + suffix);
+      attempts.add(attempt);
+
+      if (attempt.isFile()) {
+        successfulAttempts.add(attempt);
+      }
+    }
+
+    if (!successfulAttempts.isEmpty()) {
+      if (successfulAttempts.size() == 1) {
+        return attempts.get(0);
+      } else {
+        throw new FileNotFoundException("Multiple alternative files exist: " + successfulAttempts);
+      }
+    } else {
+      throw new FileNotFoundException("None of " + attempts + " exist");
+    }
+  }
 }

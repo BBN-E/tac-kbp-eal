@@ -4,6 +4,8 @@ import com.bbn.bue.common.annotations.MoveToBUECommon;
 
 import com.google.common.annotations.Beta;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 @MoveToBUECommon
 @Beta
 public final class ExplicitFMeasureInfo  {
@@ -13,8 +15,11 @@ public final class ExplicitFMeasureInfo  {
 
   public ExplicitFMeasureInfo(final double precision, final double recall, final double F1) {
     this.F1 = F1;
+    checkArgument(F1 >= 0.0);
     this.precision = precision;
+    checkArgument(precision >= 0.0);
     this.recall = recall;
+    checkArgument(recall >= 0.0);
   }
 
   public double f1() {
@@ -27,5 +32,10 @@ public final class ExplicitFMeasureInfo  {
 
   public double recall() {
     return recall;
+  }
+
+  @Override
+  public String toString() {
+    return String.format("P/R/F %.2f/%.2f/%.2f", precision(), recall(), f1());
   }
 }

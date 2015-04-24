@@ -20,6 +20,7 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -88,12 +89,16 @@ public final class LinkingSpecFormats {
 
     private static final Splitter ON_TABS = Splitter.on('\t').trimResults().omitEmptyStrings();
 
+    private static final ImmutableSet<String> ACCEPTABLE_SUFFIXES = ImmutableSet.of("linking");
     public Optional<ResponseLinking> read(Symbol docID, Set<Response> responses)
         throws IOException {
       checkNotClosed();
 
-      final File f = new File(directory, docID.toString());
-      if (!f.exists()) {
+      final File f;
+      try {
+        f = AssessmentSpecFormats.bareOrWithSuffix(directory, docID.toString(),
+            ACCEPTABLE_SUFFIXES);
+      } catch (FileNotFoundException ioe) {
         return Optional.absent();
       }
 

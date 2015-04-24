@@ -162,6 +162,7 @@ public final class EALScorer2015Style {
 
   public LinkingScore scoreLinking(AnswerKey answerKey, Set<TypeRoleFillerRealis> linkableEquivalenceClasses,
       ResponseLinking referenceLinking, ResponseLinking systemLinking) {
+    log.info("Scoring linking for {}", answerKey.docId());
     checkArgument(answerKey.docId() == systemLinking.docID(), "System output has doc ID %s " +
         "but answer key has doc ID %s", systemLinking.docID(), answerKey.docId());
     checkArgument(answerKey.docId() == referenceLinking.docID(),
@@ -185,12 +186,15 @@ public final class EALScorer2015Style {
     final EventArgumentLinking filteredReferenceArgumentLinking = referenceArgumentLinking
         .filteredCopy(in(linkableEquivalenceClasses));
 
-    if (!referenceArgumentLinking.equals(filteredReferenceArgumentLinking)) {
+    // We disable this check because the scorer may have done additional filtering
+    // that was not in place in the assessment tool (e.g. remove Life.Injures for correct
+    //Life.Dies).
+    /*if (!referenceArgumentLinking.equals(filteredReferenceArgumentLinking)) {
       throw new RuntimeException(
           "Filtering the reference linking should have had no effect, but it deleted " +
               Sets.difference(referenceArgumentLinking.allLinkedEquivalenceClasses(),
                   filteredReferenceArgumentLinking.allLinkedEquivalenceClasses()));
-    }
+    }*/
 
     final EventArgumentLinking filteredSystemArgumentLinking = systemArgumentLinking
         .filteredCopy(in(linkableEquivalenceClasses));
@@ -202,6 +206,9 @@ public final class EALScorer2015Style {
 }
 
 class LinkF1 {
+
+  private static final Logger log = LoggerFactory.getLogger(LinkF1.class);
+
   private LinkF1() {
   }
 
@@ -223,13 +230,18 @@ class LinkF1 {
     final ImmutableSet<T> keyItems = ImmutableSet.copyOf(concat(gold));
     final ImmutableSet<T> predictedItems = ImmutableSet.copyOf(concat(predicted));
     checkArgument(keyItems.containsAll(predictedItems),
-        "Predicted linking has items the gold linking lacks");
+        "Predicted linking has items the gold linking lacks: %s", Sets.difference(predictedItems, keyItems));
     if (keyItems.isEmpty()) {
       if (predictedItemToGroup.isEmpty()) {
+        log.info("Key and predicted are empty; returning score of 1");
         return new ExplicitFMeasureInfo(1.0, 1.0, 1.0);
       } else {
+        log.info("Key is empty but predicted is not; returning score of 0");
         return new ExplicitFMeasureInfo(0.0, 0.0, 0.0);
       }
+    } else if (predictedItems.isEmpty()) {
+      log.info("Predicted is empty but key is not; returning score of 0");
+      return new ExplicitFMeasureInfo(0.0, 0.0, 0.0);
     }
 
     for (final T keyItem : keyItems) {
@@ -241,36 +253,56 @@ class LinkF1 {
           concat(goldItemToGroup.get(keyItem)),
           keyItem));
 
-      final boolean predictedAndGoldAreSingleton = predictedNeighbors.isEmpty() && goldNeighbors.isEmpty();
+      if (predictedItems.contains(keyItem)) {
+        final boolean predictedIsSingleton = predictedNeighbors.isEmpty();
+        final boolean goldIsSingleton = goldNeighbors.isEmpty();
 
-      if (!predictedAndGoldAreSingleton) {
-        int truePositiveLinks = Sets.intersection(predictedNeighbors, goldNeighbors).size();
-        int falsePositiveLinks = Sets.difference(predictedNeighbors, goldNeighbors).size();
-        int falseNegativeLinks = Sets.difference(goldNeighbors, predictedNeighbors).size();
+        if (!(predictedIsSingleton && goldIsSingleton)) {
+          int truePositiveLinks = Sets.intersection(predictedNeighbors, goldNeighbors).size();
+          int falsePositiveLinks = Sets.difference(predictedNeighbors, goldNeighbors).size();
+          int falseNegativeLinks = Sets.difference(goldNeighbors, predictedNeighbors).size();
 
-        final FMeasureCounts fMeasureCounts =
-            FMeasureCounts.from(truePositiveLinks, falsePositiveLinks, falseNegativeLinks);
-        linkF1Sum += fMeasureCounts.F1();
-        linkPrecisionSum += fMeasureCounts.precision();
-        linkRecallSum += fMeasureCounts.recall();
-      } else {
-        final boolean appearsInPredicted = predictedItems.contains(keyItem);
-        if (appearsInPredicted) {
-          // arguments which are correctly linked to nothing (singletons)
-          // count as having perfect links
-          linkF1Sum += 1.0;
-          linkPrecisionSum += 1.0;
-          linkRecallSum += 1.0;
+          final FMeasureCounts fMeasureCounts =
+              FMeasureCounts.from(truePositiveLinks, falsePositiveLinks, falseNegativeLinks);
+          linkF1Sum += fMeasureCounts.F1();
+          linkPrecisionSum += fMeasureCounts.precision();
+          linkRecallSum += fMeasureCounts.recall();
+
+          if (predictedIsSingleton) {
+            log.info(
+                "For {}, gold neighbors are {} but predicted is singleton. Item f-measure is {}",
+                keyItem, goldNeighbors, fMeasureCounts.F1());
+          } else {
+            log.info(
+                "For {}, gold neighbors are {} and predicted neighbors are {}. Item f-measure is {}",
+                keyItem, goldNeighbors, predictedNeighbors, fMeasureCounts.F1());
+          }
+        } else {
+          final boolean appearsInPredicted = predictedItems.contains(keyItem);
+          if (appearsInPredicted) {
+            // arguments which are correctly linked to nothing (singletons)
+            // count as having perfect links
+            linkF1Sum += 1.0;
+            linkPrecisionSum += 1.0;
+            linkRecallSum += 1.0;
+            log.info("{} is a singleton in both key and predicted. Score of 1.0", keyItem);
+          } else {
+            log.info("{} is a singleton in key but does not appear in predicted. Score of 0.0",
+                keyItem);
+          }
         }
-        // if an item is missing in the predicted linking, no credit is given
-        // F1 is treated as zero for this element
+      } else {
+        log.info("{} is present only in the gold linking. Item F-measure is 0.0", keyItem);
       }
     }
     // note we divide linkPrecisionSum by the number of predicted items,
     // but the others by the number of gold items. This is because missing items
     // hurt recall but not precision
-    return new ExplicitFMeasureInfo(linkPrecisionSum / predictedItems.size(),
-        linkRecallSum/keyItems.size(), linkF1Sum/keyItems.size());
+    final ExplicitFMeasureInfo explicitFMeasureInfo =
+        new ExplicitFMeasureInfo(linkPrecisionSum / predictedItems.size(),
+            linkRecallSum / keyItems.size(), linkF1Sum / keyItems.size());
+    log.info("Final document linking score: {}", explicitFMeasureInfo);
+    return explicitFMeasureInfo;
   }
 
   @MoveToBUECommon
