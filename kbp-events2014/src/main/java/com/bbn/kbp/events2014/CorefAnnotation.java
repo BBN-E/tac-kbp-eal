@@ -85,6 +85,10 @@ public final class CorefAnnotation {
     return CASesToIDs.keySet();
   }
 
+  public ImmutableMap<KBPString, Integer> CASesToIDs() {
+    return CASesToIDs;
+  }
+
   public ImmutableSet<KBPString> unannotatedCASes() {
     return unannotated;
   }
