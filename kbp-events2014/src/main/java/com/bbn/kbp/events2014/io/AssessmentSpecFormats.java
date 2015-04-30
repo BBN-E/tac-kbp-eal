@@ -208,8 +208,8 @@ public final class AssessmentSpecFormats {
       String lastLine = SystemOutput.DEFAULT_METADATA;
       for (final String line : Files.asCharSource(f, UTF_8).readLines()) {
         ++lineNo;
-        lastLine = line.trim();
         if (line.isEmpty() || line.startsWith("#")) {
+          lastLine = line.trim();
           continue;
         }
         final List<String> parts = ImmutableList.copyOf(OnTabs.split(line));
@@ -218,16 +218,14 @@ public final class AssessmentSpecFormats {
           try {
             final double confidence = Double.parseDouble(parts.get(10));
             final Response response = parseArgumentFields(parts.subList(1, parts.size()));
-            final String metadata;
             // do not require a # to be put in the metadata beforehand
-            if(lastLine.charAt(0) == SystemOutput.METADATA_MARKER && lastLine.length() > 1) {
-              metadata = lastLine.substring(1);
-            } else {
-              metadata = SystemOutput.DEFAULT_METADATA;
+            if(lastLine.length() > 0 && lastLine.charAt(0) == SystemOutput.METADATA_MARKER && lastLine.length() > 1) {
+              final String metadata = lastLine.substring(1);
+              responseToMetadata.put(response, metadata);
             }
 
             ret.add(Scored.from(response, confidence));
-            responseToMetadata.put(response, metadata);
+            lastLine = line;
           } catch (IndexOutOfBoundsException iobe) {
             throw new RuntimeException(
                 String.format("Expected 11 tab-separated columns, but got %d", parts.size()), iobe);
