@@ -9,18 +9,16 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Range;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 import static com.bbn.bue.common.collections.IterableUtils.allEqual;
@@ -36,12 +34,16 @@ import static com.google.common.collect.Iterables.transform;
  */
 public final class SystemOutput {
 
+  public static String DEFAULT_METADATA = "";
+  public static Character METADATA_MARKER = '#';
+
   private final Symbol docId;
   private final ImmutableSet<Response> responses;
   private final ImmutableMap<Response, Double> confidences;
+  private final ImmutableMap<Response, String> metadata;
 
   private SystemOutput(final Symbol docId, final Iterable<Response> responses,
-      final Map<Response, Double> confidences) {
+      final Map<Response, Double> confidences, final Map<Response, String> metadata) {
     this.docId = checkNotNull(docId);
     this.responses = ImmutableSet.copyOf(responses);
     for (final Response response : responses) {
@@ -52,6 +54,7 @@ public final class SystemOutput {
     this.confidences = ImmutableMap.copyOf(confidences);
     checkArgument(all(confidences.values(), Range.closed(0.0, 1.0)),
         "System output %s contains confidences outside [0.0,1.0]", docId);
+    this.metadata = ImmutableMap.copyOf(metadata);
   }
 
   /**
@@ -109,6 +112,17 @@ public final class SystemOutput {
     return Scored.from(response, confidence(response));
   }
 
+  public String metadata(final Response response) {
+    checkNotNull(response);
+    final String ret = metadata.get(response);
+    if (ret != null) {
+      return ret;
+    } else {
+      // backwards compatible choice for non-existent metadata
+      return DEFAULT_METADATA;
+    }
+  }
+
   /**
    * Implements the selection strategy to use when the system provides the same response with
    * multiple justifications.  From the provided responses, it prefers the response with the highest
@@ -127,10 +141,14 @@ public final class SystemOutput {
     return Optional.of(Collections.max(args, ByConfidenceThenOld2014ID));
   }
 
+  public static SystemOutput from(final Symbol docId, final Iterable<Scored<Response>> scoredResponses) {
+    return from(docId, scoredResponses, ImmutableMap.<Response, String>of());
+  }
+
   public static SystemOutput from(final Symbol docId,
-      final Iterable<Scored<Response>> scoredResponses) {
+      final Iterable<Scored<Response>> scoredResponses, Map<Response, String> metadata) {
     return new SystemOutput(docId, transform(scoredResponses, Scoreds.<Response>itemsOnly()),
-        Scoreds.asMapKeepingHigestScore(scoredResponses));
+        Scoreds.asMapKeepingHigestScore(scoredResponses), metadata);
   }
 
   private final Ordering<Response> ByConfidenceThenOld2014ID = new Ordering<Response>() {
@@ -163,25 +181,38 @@ public final class SystemOutput {
     checkArgument(!isEmpty(systemOutputs), "Cannot take union of zero system outputs");
     checkArgument(allEqual(transform(systemOutputs, DocID)),
         "Cannot take the union of system outputs with different docids");
-    final Multimap<Response, Double> responseToScore = HashMultimap.create();
+    final Map<Response, Double> responseToScore = new HashMap<Response, Double>();
+    final Map<Response, Scored<Response>> scoredResponses =
+        new HashMap<Response, Scored<Response>>();
+    final Map<Response, String> responseToMetadata = new HashMap<Response, String>();
     for (final SystemOutput output : systemOutputs) {
       for (final Scored<Response> scoredResponse : output.scoredResponses()) {
-        responseToScore.put(scoredResponse.item(), scoredResponse.score());
+        final Double score = responseToScore.get(scoredResponse.item());
+        if (score == null || score < scoredResponse.score()) {
+          responseToScore.put(scoredResponse.item(), scoredResponse.score());
+          responseToMetadata.put(scoredResponse.item(), output.metadata(scoredResponse.item()));
+          scoredResponses.put(scoredResponse.item(), scoredResponse);
+        }
       }
     }
-    final List<Scored<Response>> responsesWithBestScores = Lists.newArrayList();
-    for (final Map.Entry<Response, Collection<Double>> forResponse : responseToScore.asMap()
-        .entrySet()) {
-      // keep the best score for each response
-      responsesWithBestScores.add(
-          Scored.from(forResponse.getKey(), Collections.max(forResponse.getValue())));
-    }
-    // getFirst safe because of checkArgument above
-    return SystemOutput.from(getFirst(systemOutputs, null).docId(), responsesWithBestScores);
+
+    return SystemOutput
+        .from(getFirst(systemOutputs, null).docId(), scoredResponses.values(), responseToMetadata);
   }
 
   public SystemOutput copyWithFilteredResponses(Predicate<Scored<Response>> predicate) {
-    return SystemOutput.from(docId(), Iterables.filter(scoredResponses(), predicate));
+    final Iterable<Scored<Response>> scoredResponses =
+        Iterables.filter(scoredResponses(), predicate);
+    final ImmutableSet<Response> responses = ImmutableSet.copyOf(
+        transform(scoredResponses, Scoreds.<Response>itemsOnly()));
+    final Predicate<Response> retainedResponse = new Predicate<Response>() {
+      @Override
+      public boolean apply(final Response input) {
+        return responses.contains(input);
+      }
+    };
+    // retain only the responses and metadata that this predicate filters
+    return SystemOutput.from(docId(), scoredResponses, Maps.filterKeys(metadata, retainedResponse));
   }
 
 
@@ -218,6 +249,6 @@ public final class SystemOutput {
     for (final Response response : responses) {
       scores.put(response, score);
     }
-    return new SystemOutput(docID, responses, scores.build());
+    return new SystemOutput(docID, responses, scores.build(), ImmutableMap.<Response, String>of());
   }
 }

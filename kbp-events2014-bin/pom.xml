@@ -38,6 +38,11 @@
                         </program>
 
                         <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.ChangeDocIDToMatchFile</mainClass>
+                            <name>changeDocIDToMatchFile</name>
+                        </program>
+
+                        <program>
                             <mainClass>com.bbn.kbp.events2014.transformers.MergeAssessmentStores
                             </mainClass>
                             <name>mergeAssessmentStores</name>
