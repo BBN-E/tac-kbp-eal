@@ -212,7 +212,7 @@ public final class AssessmentSpecFormats {
       String lastLine = SystemOutput.DEFAULT_METADATA;
       for (final String line : Files.asCharSource(f, UTF_8).readLines()) {
         ++lineNo;
-        lastLine = line;
+        lastLine = line.trim();
         if (line.isEmpty() || line.startsWith("#")) {
           continue;
         }
@@ -223,8 +223,9 @@ public final class AssessmentSpecFormats {
             final double confidence = Double.parseDouble(parts.get(10));
             final Response response = parseArgumentFields(parts.subList(1, parts.size()));
             final String metadata;
-            if(lastLine.charAt(0) == SystemOutput.METADATA_MARKER) {
-              metadata = lastLine;
+            // do not require a # to be put in the metadata beforehand
+            if(lastLine.charAt(0) == SystemOutput.METADATA_MARKER && lastLine.length() > 1) {
+              metadata = lastLine.substring(1);
             } else {
               metadata = SystemOutput.DEFAULT_METADATA;
             }
@@ -262,8 +263,8 @@ public final class AssessmentSpecFormats {
       try {
         for (final Response response : format.responseOrdering().sortedCopy(output.responses())) {
           final String metadata = output.metadata(response);
-          if(metadata.equals(SystemOutput.DEFAULT_METADATA)) {
-            out.print(metadata + "\n");
+          if(!metadata.equals(SystemOutput.DEFAULT_METADATA)) {
+            out.print(SystemOutput.METADATA_MARKER + metadata + "\n");
           }
           //out.print(response.responseID());
           out.print(format.identifierField(response));

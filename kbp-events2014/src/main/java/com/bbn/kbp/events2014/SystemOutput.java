@@ -34,7 +34,7 @@ import static com.google.common.collect.Iterables.transform;
  */
 public final class SystemOutput {
 
-  public static String DEFAULT_METADATA = "#";
+  public static String DEFAULT_METADATA = "";
   public static Character METADATA_MARKER = '#';
 
   private final Symbol docId;
