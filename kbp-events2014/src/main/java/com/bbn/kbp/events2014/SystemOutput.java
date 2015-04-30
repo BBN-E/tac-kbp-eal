@@ -1,5 +1,6 @@
 package com.bbn.kbp.events2014;
 
+import com.bbn.bue.common.collections.MapUtils;
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.scoring.Scoreds;
 import com.bbn.bue.common.symbols.Symbol;
@@ -8,6 +9,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -146,9 +148,16 @@ public final class SystemOutput {
   }
 
   public static SystemOutput from(final Symbol docId,
-      final Iterable<Scored<Response>> scoredResponses, Map<Response, String> metadata) {
-    return new SystemOutput(docId, transform(scoredResponses, Scoreds.<Response>itemsOnly()),
-        Scoreds.asMapKeepingHigestScore(scoredResponses), metadata);
+      final Iterable<Scored<Response>> scoredResponses, final Map<Response, String> metadata) {
+    return new SystemOutput(docId, transform(scoredResponses, Scoreds.<Response>itemsOnly()), Scoreds.asMapKeepingHigestScore(scoredResponses), metadata);
+  }
+
+  public static SystemOutput createFromScoredAndMetadata(final Symbol docId,
+      final Iterable<Scored<Response>> scoredResponses, final Map<Scored<Response>, String> metadata) {
+    final Map<Response, Double> scores = Scoreds.asMapKeepingHigestScore(scoredResponses);
+    final Iterable<Scored<Response>> highest = transform(scores.entrySet(), Scoreds.<Response>mapEntryToDoubleToScored());
+    final Map<Response, String> responseToMetadata = MapUtils.copyWithKeysTransformedByInjection(Maps.filterKeys(metadata, Predicates.in(ImmutableSet.copyOf(highest))), Scoreds.<Response>itemsOnly());
+    return new SystemOutput(docId, scores.keySet(), scores, responseToMetadata);
   }
 
   private final Ordering<Response> ByConfidenceThenOld2014ID = new Ordering<Response>() {
