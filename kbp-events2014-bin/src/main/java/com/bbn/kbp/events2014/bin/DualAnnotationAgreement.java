@@ -83,7 +83,7 @@ public final class DualAnnotationAgreement {
      */
     NA_BOTH;
 
-    public static ImmutableSet<AgreementState> NON_APPLICABLE_STATES =
+    public static final ImmutableSet<AgreementState> NON_APPLICABLE_STATES =
         ImmutableSet.of(NA_LEFT, NA_RIGHT, NA_BOTH);
   }
 
