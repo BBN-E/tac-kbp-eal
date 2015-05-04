@@ -128,15 +128,17 @@ public final class DualAnnotationAgreement {
       final Map<Response, AssessedResponse> rightAnnotationsIndexed = Maps.uniqueIndex(
           rightAnnotation.annotatedResponses(), AssessedResponse.Response);
 
-      if (leftAnnotationsIndexed.keySet().equals(rightAnnotationsIndexed.keySet())) {
-        for (final Response response : leftAnnotationsIndexed.keySet()) {
-          // get will succeed by above checks
-          agreementRecorder.recordAgreement(leftAnnotation.assessment(response).get(),
-              rightAnnotation.assessment(response).get());
-        }
-      } else {
+      if (!leftAnnotationsIndexed.keySet().equals(rightAnnotationsIndexed.keySet())) {
         reportResponseMismatch(docID, leftAnnotationsIndexed.keySet(),
             rightAnnotationsIndexed.keySet());
+      }
+
+      final Sets.SetView<Response> responsesInBoth = Sets.intersection(leftAnnotationsIndexed.keySet(),
+          rightAnnotationsIndexed.keySet());
+      for (final Response response : responsesInBoth) {
+        // get will succeed by above checks
+        agreementRecorder.recordAgreement(leftAnnotation.assessment(response).get(),
+            rightAnnotation.assessment(response).get());
       }
 
       corefRecorder.observe(leftAnnotation.corefAnnotation(), rightAnnotation.corefAnnotation());
@@ -350,9 +352,9 @@ public final class DualAnnotationAgreement {
     final Set<String> rightOnly =
         FluentIterable.from(Sets.difference(rightAnnotationsIndexed, leftAnnotationsIndexed))
             .transform(Response.uniqueIdFunction()).toSet();
-    throw new RuntimeException(
-        "For document " + docID + ", sets of assessed responses do not match. "
-            + "In left only: " + leftOnly + "; in right only: " + rightOnly);
+    log.warn("For document " + docID + ", sets of assessed responses do not match. "
+            + "In left only: " + leftOnly + "; in right only: " + rightOnly + ". If this is just due to "
+        + "realis expansion this is OK; otherwise not.");
   }
 
   public static void main(String[] argv) {

@@ -77,6 +77,12 @@
                         </program>
 
                         <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.DualAnnotationAgreement</mainClass>
+                            <name>dualAgreeement</name>
+                        </program>
+
+
+                        <program>
                             <mainClass>com.bbn.kbp.events2014.bin.ValidateSystemOutput</mainClass>
                             <name>validateSystemOutput</name>
                             <jvmSettings>
