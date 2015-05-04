@@ -60,7 +60,7 @@ public final class ChangeDocIDToMatchFile {
     Iterable<AssessedResponse> annotatedArgs = Iterables.transform(input.annotatedResponses(),
         fixAssessedResponseDocID(docID));
     Iterable<Response> unannotatedArgs = Iterables.transform(input.unannotatedResponses(), fixResponseDocID(docID));
-    return AnswerKey.from(docID, annotatedArgs, unannotatedArgs, corefAnnotation);
+    return AnswerKey.from(docID, annotatedArgs, unannotatedArgs, fixedCorefAnnotation);
   }
 
   private static Function<AssessedResponse, AssessedResponse> fixAssessedResponseDocID(final Symbol docID) {
