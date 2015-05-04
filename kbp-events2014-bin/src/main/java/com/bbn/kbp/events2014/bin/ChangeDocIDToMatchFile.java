@@ -53,7 +53,7 @@ public final class ChangeDocIDToMatchFile {
     log.info("Converted {} documents", inStore.docIDs().size());
   }
 
-  private static AnswerKey convertAnswerKeyDocID(Symbol docID, AnswerKey input) {
+  public static AnswerKey convertAnswerKeyDocID(Symbol docID, AnswerKey input) {
     CorefAnnotation corefAnnotation = input.corefAnnotation();
     CorefAnnotation fixedCorefAnnotation = CorefAnnotation.create(docID,
         corefAnnotation.CASesToIDs(), corefAnnotation.unannotatedCASes());
