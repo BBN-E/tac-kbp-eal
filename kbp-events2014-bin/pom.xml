@@ -43,6 +43,12 @@
                         </program>
 
                         <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.SplitAnnStoreBySuffixes
+                            </mainClass>
+                            <name>splitAnnStoreBySuffixes</name>
+                        </program>
+
+                        <program>
                             <mainClass>com.bbn.kbp.events2014.transformers.MergeAssessmentStores
                             </mainClass>
                             <name>mergeAssessmentStores</name>
@@ -69,6 +75,12 @@
                                 <maxMemorySize>1g</maxMemorySize>
                             </jvmSettings>
                         </program>
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.DualAnnotationAgreement</mainClass>
+                            <name>dualAgreeement</name>
+                        </program>
+
 
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.ValidateSystemOutput</mainClass>
@@ -197,7 +209,7 @@
                   </configuration>
                 </execution>
               </executions>
-            </plugin>             
+            </plugin>
         </plugins>
     </build>
     <dependencies>
