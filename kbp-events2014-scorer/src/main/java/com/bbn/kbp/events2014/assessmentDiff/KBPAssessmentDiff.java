@@ -6,6 +6,7 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.AssessedResponse;
+import com.bbn.kbp.events2014.FieldAssessment;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
 import com.bbn.kbp.events2014.assessmentDiff.diffLoggers.BasicDiffLogger;
@@ -79,7 +80,8 @@ public final class KBPAssessmentDiff {
         Files.asCharSink(new File(outputDirectory, "coverage.txt"), Charsets.UTF_8));
 
     final AssessmentOverlapObserver overlapObserver = new AssessmentOverlapObserver();
-    final Map<String, AssessmentPairObserver> observers = createObservers(outputDirectory);
+    final Map<String, AssessmentPairObserver> observers = createObservers(outputDirectory,
+        params.getBoolean("inexactAsCorrect"));
 
     //final DiffLogger diffLogger = new BasicDiffLogger();
 
@@ -169,14 +171,23 @@ public final class KBPAssessmentDiff {
     return baselineResponses;
   }
 
-  private static Map<String, AssessmentPairObserver> createObservers(File outputDirectory) {
+  private static Map<String, AssessmentPairObserver> createObservers(File outputDirectory,
+      boolean inexactAsCorrect) {
     return ImmutableMap.<String, AssessmentPairObserver>builder()
-        .put("aet", new AETObserver())
-        .put("aer", new AERObserver())
-        .put("baseFiller", new BaseFillerObserver())
-        .put("CAS", new CASObserver())
+        .put("aet", new AETObserver(inexactAsCorrect))
+        .put("aer", new AERObserver(inexactAsCorrect))
+        .put("baseFiller", new BaseFillerObserver(inexactAsCorrect))
+        .put("CAS", new CASObserver(inexactAsCorrect))
         .put("realis", new RealisObserver())
         .put("mentionType", new MentionTypeObserver()).build();
+  }
+
+  public static Symbol acceptableSym(FieldAssessment fieldAssessment) {
+    if (fieldAssessment.isAcceptable()) {
+      return Symbol.from("CORRECT");
+    } else {
+      return Symbol.from("INCORRECT");
+    }
   }
 
   private static void logCoverage(String leftName, Set<Symbol> leftDocIds, String rightName,
