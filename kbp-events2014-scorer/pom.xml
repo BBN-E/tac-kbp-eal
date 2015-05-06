@@ -42,7 +42,7 @@
                     </programs>
                 </configuration>
             </plugin>
-            <plugin>
+            <!--<plugin>
               <groupId>org.codehaus.mojo</groupId>
               <artifactId>exec-maven-plugin</artifactId>
               <version>1.3.2</version>
@@ -62,7 +62,7 @@
                   </configuration>
                 </execution>
               </executions>
-            </plugin>
+            </plugin>-->
         </plugins>
     </build>
     <dependencies>
