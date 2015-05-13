@@ -114,6 +114,10 @@ public final class SystemOutput {
     return Scored.from(response, confidence(response));
   }
 
+  public ImmutableMap<Response, String> allMetadata() {
+    return metadata;
+  }
+
   public String metadata(final Response response) {
     checkNotNull(response);
     final String ret = metadata.get(response);
@@ -143,20 +147,42 @@ public final class SystemOutput {
     return Optional.of(Collections.max(args, ByConfidenceThenOld2014ID));
   }
 
-  public static SystemOutput from(final Symbol docId, final Iterable<Scored<Response>> scoredResponses) {
+  public static SystemOutput createWithoutMetadata(final Symbol docId,
+      final Iterable<Scored<Response>> scoredResponses) {
     return from(docId, scoredResponses, ImmutableMap.<Response, String>of());
   }
 
+  /**
+   * Deprecated due to the addition of metadata tracking - older Functions which filtered responses
+   * and constructed new SystemOutputs are now broken for analystics use because they do not
+   * preserve metadata use @see SystemOutput#createWithoutMetadata
+   */
+  @Deprecated
+  public static SystemOutput from(final Symbol docId,
+      final Iterable<Scored<Response>> scoredResponses) {
+    return from(docId, scoredResponses, ImmutableMap.<Response, String>of());
+  }
+
+  /**
+   * retains only metadata pertaining to responses for which we have a score.
+   */
   public static SystemOutput from(final Symbol docId,
       final Iterable<Scored<Response>> scoredResponses, final Map<Response, String> metadata) {
-    return new SystemOutput(docId, transform(scoredResponses, Scoreds.<Response>itemsOnly()), Scoreds.asMapKeepingHigestScore(scoredResponses), metadata);
+    ImmutableSet<Response> responses =
+        ImmutableSet.copyOf(transform(scoredResponses, Scoreds.<Response>itemsOnly()));
+    return new SystemOutput(docId, responses, Scoreds.asMapKeepingHigestScore(scoredResponses),
+        Maps.filterKeys(metadata, Predicates.in(responses)));
   }
 
   public static SystemOutput createFromScoredAndMetadata(final Symbol docId,
-      final Iterable<Scored<Response>> scoredResponses, final Map<Scored<Response>, String> metadata) {
+      final Iterable<Scored<Response>> scoredResponses,
+      final Map<Scored<Response>, String> metadata) {
     final Map<Response, Double> scores = Scoreds.asMapKeepingHigestScore(scoredResponses);
-    final Iterable<Scored<Response>> highest = transform(scores.entrySet(), Scoreds.<Response>mapEntryToDoubleToScored());
-    final Map<Response, String> responseToMetadata = MapUtils.copyWithKeysTransformedByInjection(Maps.filterKeys(metadata, Predicates.in(ImmutableSet.copyOf(highest))), Scoreds.<Response>itemsOnly());
+    final Iterable<Scored<Response>> highest =
+        transform(scores.entrySet(), Scoreds.<Response>mapEntryToDoubleToScored());
+    final Map<Response, String> responseToMetadata = MapUtils.copyWithKeysTransformedByInjection(
+        Maps.filterKeys(metadata, Predicates.in(ImmutableSet.copyOf(highest))),
+        Scoreds.<Response>itemsOnly());
     return new SystemOutput(docId, scores.keySet(), scores, responseToMetadata);
   }
 
@@ -186,6 +212,10 @@ public final class SystemOutput {
         }
       };
 
+  /**
+   * keeps the metadata associated with the highest score for a given Response, e.g. in the case of
+   * multiple derivations
+   */
   public static SystemOutput unionKeepingMaximumScore(Iterable<SystemOutput> systemOutputs) {
     checkArgument(!isEmpty(systemOutputs), "Cannot take union of zero system outputs");
     checkArgument(allEqual(transform(systemOutputs, DocID)),
@@ -214,12 +244,7 @@ public final class SystemOutput {
         Iterables.filter(scoredResponses(), predicate);
     final ImmutableSet<Response> responses = ImmutableSet.copyOf(
         transform(scoredResponses, Scoreds.<Response>itemsOnly()));
-    final Predicate<Response> retainedResponse = new Predicate<Response>() {
-      @Override
-      public boolean apply(final Response input) {
-        return responses.contains(input);
-      }
-    };
+    final Predicate<Response> retainedResponse = Predicates.in(responses);
     // retain only the responses and metadata that this predicate filters
     return SystemOutput.from(docId(), scoredResponses, Maps.filterKeys(metadata, retainedResponse));
   }

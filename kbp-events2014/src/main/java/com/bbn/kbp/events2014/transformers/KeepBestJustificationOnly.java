@@ -63,7 +63,7 @@ public final class KeepBestJustificationOnly implements Function<SystemOutput, S
         "For document {}, after keeping only selected justifications, went from {} to {} responses",
         input.docId(), input.size(), filteredResponses.size());
 
-    return SystemOutput.from(input.docId(), filteredResponses);
+    return SystemOutput.from(input.docId(), filteredResponses, input.allMetadata());
   }
 
   private KeepBestJustificationOnly(Function<KBPString, KBPString> CASNormalizer) {

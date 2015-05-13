@@ -20,7 +20,7 @@ public final class ProbableInferenceCases implements Function<SystemOutput, Syst
       }
     }
 
-    return SystemOutput.from(input.docId(), possibleInferenceCases.build());
+    return SystemOutput.from(input.docId(), possibleInferenceCases.build(), input.allMetadata());
   }
 
   /**
