@@ -53,14 +53,14 @@ public final class ChangeDocIDToMatchFile {
     log.info("Converted {} documents", inStore.docIDs().size());
   }
 
-  private static AnswerKey convertAnswerKeyDocID(Symbol docID, AnswerKey input) {
+  public static AnswerKey convertAnswerKeyDocID(Symbol docID, AnswerKey input) {
     CorefAnnotation corefAnnotation = input.corefAnnotation();
     CorefAnnotation fixedCorefAnnotation = CorefAnnotation.create(docID,
         corefAnnotation.CASesToIDs(), corefAnnotation.unannotatedCASes());
     Iterable<AssessedResponse> annotatedArgs = Iterables.transform(input.annotatedResponses(),
         fixAssessedResponseDocID(docID));
     Iterable<Response> unannotatedArgs = Iterables.transform(input.unannotatedResponses(), fixResponseDocID(docID));
-    return AnswerKey.from(docID, annotatedArgs, unannotatedArgs, corefAnnotation);
+    return AnswerKey.from(docID, annotatedArgs, unannotatedArgs, fixedCorefAnnotation);
   }
 
   private static Function<AssessedResponse, AssessedResponse> fixAssessedResponseDocID(final Symbol docID) {
