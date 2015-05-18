@@ -291,6 +291,11 @@ public final class AssessmentSpecFormats {
             ImmutableMap.<Response, String>of());
       }
     }
+
+    @Override
+    public String toString() {
+      return "SystemOutputStore <-- " + directory;
+    }
   }
 
   private static void addArgumentParts(final Response arg, final List<String> parts,
