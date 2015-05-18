@@ -118,6 +118,11 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
     return breakdowns.build();
   }
 
+  @Override
+  public void startCorpus() {
+    documentResults.clear();
+    ;
+  }
 
   /**
    * Write the final scoring output to a directory.
