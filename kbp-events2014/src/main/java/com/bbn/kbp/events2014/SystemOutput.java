@@ -278,7 +278,7 @@ public final class SystemOutput {
    * For testing
    */
   public static SystemOutput createWithConstantScore(final Symbol docID,
-      final ImmutableSet<Response> responses, final double score) {
+      final Iterable<Response> responses, final double score) {
     final ImmutableMap.Builder<Response, Double> scores = ImmutableMap.builder();
     for (final Response response : responses) {
       scores.put(response, score);
