@@ -28,7 +28,7 @@ public final class PreprocessorKBP2014 implements Preprocessor {
     this.systemOutputTransformations = ImmutableList.copyOf(systemOutputTransformations);
   }
 
-  public static PreprocessorKBP2014 fromParameters(Parameters params) {
+  public static Preprocessor fromParameters(Parameters params) {
     final List<Function<AnswerKey, AnswerKey>> answerKeyTransformations = Lists.newArrayList();
     final List<Function<SystemOutput, SystemOutput>> systemOutputTransformations = Lists.newArrayList();
 
@@ -37,7 +37,13 @@ public final class PreprocessorKBP2014 implements Preprocessor {
       systemOutputTransformations.add(MakeAllRealisActual.forSystemOutput());
     }
 
-    return new PreprocessorKBP2014(answerKeyTransformations, systemOutputTransformations);
+    final Preprocessor basePreprocessor =
+        new PreprocessorKBP2014(answerKeyTransformations, systemOutputTransformations);
+    if (params.getBoolean("attmeptToNeutralizeCoref")) {
+      return CorefNeutralizingPreprocessor.createWrappingPreprocessor(basePreprocessor);
+    } else {
+      return basePreprocessor;
+    }
   }
 
   public static Preprocessor createKeepingRealis() {
