@@ -39,7 +39,7 @@ public final class PreprocessorKBP2014 implements Preprocessor {
 
     final Preprocessor basePreprocessor =
         new PreprocessorKBP2014(answerKeyTransformations, systemOutputTransformations);
-    if (params.getBoolean("attmeptToNeutralizeCoref")) {
+    if (params.getBoolean("attemptToNeutralizeCoref")) {
       return CorefNeutralizingPreprocessor.createWrappingPreprocessor(basePreprocessor);
     } else {
       return basePreprocessor;
