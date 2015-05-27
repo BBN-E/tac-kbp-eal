@@ -10,7 +10,6 @@ import com.bbn.kbp.events2014.SystemOutput;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -107,7 +106,7 @@ public final class CorefNeutralizingPreprocessor implements Preprocessor {
 
     for (final AssessedResponse annResponse : wrappedResult.answerKey().annotatedResponses()) {
       if (annResponse.response().realis() != KBPRealis.Actual ||
-          annResponse.assessment().realis() != Optional.of(KBPRealis.Actual)) {
+          annResponse.assessment().realis().get() != KBPRealis.Actual) {
         throw new RuntimeException(
             "CorefNeutralizingProcessor is only intended to be used in conjunction with neutralizing realis");
       }
