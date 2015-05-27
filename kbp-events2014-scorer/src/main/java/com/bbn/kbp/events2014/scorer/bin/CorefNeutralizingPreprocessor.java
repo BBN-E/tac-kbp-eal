@@ -15,6 +15,9 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimaps;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collection;
 import java.util.List;
 
@@ -27,7 +30,14 @@ import static com.google.common.collect.Iterables.filter;
  */
 public final class CorefNeutralizingPreprocessor implements Preprocessor {
 
-  final Preprocessor wrappedPreprocessor;
+  private static final Logger log = LoggerFactory.getLogger(CorefNeutralizingPreprocessor.class);
+
+  private final Preprocessor wrappedPreprocessor;
+
+  private int passedThrough = 0;
+  private int swappedCASForSameBF = 0;
+  private int swappedCASDifferentBF = 0;
+  private int deleted = 0;
 
   private CorefNeutralizingPreprocessor(
       final Preprocessor wrappedPreprocessor) {
@@ -53,11 +63,11 @@ public final class CorefNeutralizingPreprocessor implements Preprocessor {
             Functions.compose(TypeRoleBaseFiller, AssessedResponse.Response));
     final ImmutableMultimap<String, AssessedResponse> answerKeyByTypeRole =
         Multimaps.index(filter(answerKey.annotatedResponses(),
-            AssessedResponse.IsCorrectUpToInexactJustifications),
+                AssessedResponse.IsCorrectUpToInexactJustifications),
             Functions.compose(TypeRole, AssessedResponse.Response));
 
     final List<Response> newResponses = Lists.newArrayList();
-    final List<AssessedResponse> additionalAssessedResponses = Lists.newArrayList();
+    //final List<AssessedResponse> additionalAssessedResponses = Lists.newArrayList();
     for (final Response response : wrappedResult.systemOutput().responses()) {
       final AssessedResponse assessedResponse = wrappedResult.answerKey().assess(response).get();
       if (FieldAssessment.isAcceptable(assessedResponse.assessment().baseFillerCorrect()) &&
@@ -72,20 +82,24 @@ public final class CorefNeutralizingPreprocessor implements Preprocessor {
           // of the answer key
           newResponses
               .add(Iterables.getFirst(correctPoolResponsesSharingSameTypeRoleBF, null).response());
+          ++swappedCASForSameBF;
         } else {
           final Collection<AssessedResponse> correctPoolResponsesSharingSameTypeRole =
               answerKeyByTypeRole.get(TypeRole.apply(response));
           if (!correctPoolResponsesSharingSameTypeRole.isEmpty()) {
             newResponses
                 .add(Iterables.getFirst(correctPoolResponsesSharingSameTypeRole, null).response());
+            ++swappedCASDifferentBF;
           } else {
             // do nothing, drop the response if we can't find anything to map it to
+            ++deleted;
           }
         }
       } else {
         // this is not a coref error - either it is right or it is wrong for a another
         // reason, so we just copy it over
         newResponses.add(response);
+        ++passedThrough;
       }
     }
 
@@ -95,6 +109,14 @@ public final class CorefNeutralizingPreprocessor implements Preprocessor {
     return new Preprocessor.Result(corefNeutralizedSystemOutput, wrappedResult.answerKey(),
         wrappedResult.normalizer());
   }
+
+  public void logStats() {
+    wrappedPreprocessor.logStats();
+    log.info("Coref neutralizer pass {} through, swapped CAS while keeping BF for {},"
+            + "swapped CAS and BF for {}, and deleted {}", passedThrough, swappedCASForSameBF,
+        swappedCASDifferentBF, deleted);
+  }
+
 
   private void assertRealisIsNeutralized(final Result wrappedResult) {
     for (final Response response : wrappedResult.systemOutput().responses()) {

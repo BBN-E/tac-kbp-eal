@@ -91,6 +91,8 @@ public final class KBP2014ScorerBin {
     } else {
       throw new RuntimeException("Can't happen");
     }
+
+    innerScorer.logStats();
   }
 
   // this and the single output store version can't be easily refactored together because

@@ -11,4 +11,8 @@ public final class PreprocessorKBP2015 implements Preprocessor {
       final AnswerKey answerKey) {
     return null;
   }
+
+  public void logStats() {
+
+  }
 }

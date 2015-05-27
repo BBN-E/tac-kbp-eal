@@ -90,4 +90,8 @@ public final class PreprocessorKBP2014 implements Preprocessor {
     return result;
   }
 
+  public void logStats() {
+
+  }
+
 }
