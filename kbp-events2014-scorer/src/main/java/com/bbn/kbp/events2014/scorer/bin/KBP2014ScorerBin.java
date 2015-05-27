@@ -66,6 +66,7 @@ public final class KBP2014ScorerBin {
   public void runOnParameters(Parameters params) throws IOException {
     log.info(params.dump());
 
+    log.info("Creating event argument scorer..");
     final EventArgumentScorer
         innerScorer = EventArgumentScorer.create(PreprocessorKBP2014.fromParameters(params),
         corpusObservers);
