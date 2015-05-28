@@ -1,7 +1,6 @@
 package com.bbn.kbp.events2014.bin;
 
 import com.bbn.bue.common.StringUtils;
-import com.bbn.bue.common.annotations.MoveToBUECommon;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.math.MathUtils;
 import com.bbn.bue.common.parameters.Parameters;
@@ -12,12 +11,10 @@ import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Functions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
 import com.google.common.io.Files;
@@ -195,17 +192,7 @@ public final class SelectForDualAnnotation {
     for (final Symbol docID : targetDocIDs) {
       sizes.add(annotationStore.readOrEmpty(docID).allResponses().size());
     }
-    return MathUtils.median(sizes).get();
-  }
-
-  @MoveToBUECommon
-  private static double median(List<Integer> sizes) {
-    final ImmutableList<Integer> sorted = Ordering.natural().immutableSortedCopy(sizes);
-    if (sorted.size() % 2 == 0) {
-      return 0.5 * (sorted.get(sorted.size() / 2) + sorted.get(sorted.size() / 2 - 1));
-    } else {
-      return sorted.get(sorted.size() / 2);
-    }
+    return MathUtils.medianOfIntegers(sizes).get();
   }
 
   private static Symbol selectClosestTo(Collection<Symbol> docIDs,
