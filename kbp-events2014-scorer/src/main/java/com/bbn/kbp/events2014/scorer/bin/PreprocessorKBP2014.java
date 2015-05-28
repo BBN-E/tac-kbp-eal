@@ -12,12 +12,18 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.List;
 
 /**
  * Created by jdeyoung on 3/23/15.
  */
 public final class PreprocessorKBP2014 implements Preprocessor {
+
+  private static final Logger log = LoggerFactory.getLogger(PreprocessorKBP2014.class);
+
   private final ImmutableList<Function<AnswerKey, AnswerKey>> answerKeyTransformations;
   private final ImmutableList<Function<SystemOutput, SystemOutput>> systemOutputTransformations;
 
@@ -40,6 +46,7 @@ public final class PreprocessorKBP2014 implements Preprocessor {
     final Preprocessor basePreprocessor =
         new PreprocessorKBP2014(answerKeyTransformations, systemOutputTransformations);
     if (params.getBoolean("attemptToNeutralizeCoref")) {
+      log.info("Attempting to neutralize coref");
       return CorefNeutralizingPreprocessor.createWrappingPreprocessor(basePreprocessor);
     } else {
       return basePreprocessor;
