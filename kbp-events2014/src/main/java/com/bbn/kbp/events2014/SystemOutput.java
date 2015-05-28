@@ -280,7 +280,7 @@ public final class SystemOutput {
   public static SystemOutput createWithConstantScore(final Symbol docID,
       final Iterable<Response> responses, final double score) {
     final ImmutableMap.Builder<Response, Double> scores = ImmutableMap.builder();
-    for (final Response response : responses) {
+    for (final Response response : ImmutableSet.copyOf(responses)) {
       scores.put(response, score);
     }
     return new SystemOutput(docID, responses, scores.build(), ImmutableMap.<Response, String>of());
