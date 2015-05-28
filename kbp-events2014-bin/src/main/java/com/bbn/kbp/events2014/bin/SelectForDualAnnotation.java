@@ -3,6 +3,7 @@ package com.bbn.kbp.events2014.bin;
 import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.annotations.MoveToBUECommon;
 import com.bbn.bue.common.files.FileUtils;
+import com.bbn.bue.common.math.MathUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.Response;
@@ -194,7 +195,7 @@ public final class SelectForDualAnnotation {
     for (final Symbol docID : targetDocIDs) {
       sizes.add(annotationStore.readOrEmpty(docID).allResponses().size());
     }
-    return median(sizes);
+    return MathUtils.median(sizes).get();
   }
 
   @MoveToBUECommon
