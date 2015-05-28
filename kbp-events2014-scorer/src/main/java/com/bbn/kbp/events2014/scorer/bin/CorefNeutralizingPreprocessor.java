@@ -128,7 +128,8 @@ public final class CorefNeutralizingPreprocessor implements Preprocessor {
 
     for (final AssessedResponse annResponse : wrappedResult.answerKey().annotatedResponses()) {
       if (annResponse.response().realis() != KBPRealis.Actual ||
-          annResponse.assessment().realis().get() != KBPRealis.Actual) {
+          (annResponse.assessment().realis().isPresent()
+               && annResponse.assessment().realis().get() != KBPRealis.Actual)) {
         throw new RuntimeException(
             "CorefNeutralizingProcessor is only intended to be used in conjunction with neutralizing realis");
       }
