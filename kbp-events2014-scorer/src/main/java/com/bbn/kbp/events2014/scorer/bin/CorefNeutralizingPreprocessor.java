@@ -55,6 +55,13 @@ public final class CorefNeutralizingPreprocessor implements Preprocessor {
     final Preprocessor.Result wrappedResult = wrappedPreprocessor.preprocess(systemOutput,
         answerKey);
 
+    return processWrappedResult(wrappedResult);
+  }
+
+  private Result processWrappedResult(final Result wrappedResult) {
+    final SystemOutput systemOutput = wrappedResult.systemOutput();
+    final AnswerKey answerKey = wrappedResult.answerKey();
+
     assertRealisIsNeutralized(wrappedResult);
 
     final ImmutableMultimap<String, AssessedResponse> answerKeyByTypeRoleBaseFiller =
@@ -106,7 +113,7 @@ public final class CorefNeutralizingPreprocessor implements Preprocessor {
     final SystemOutput corefNeutralizedSystemOutput =
         SystemOutput.createWithConstantScore(systemOutput.docId(),
             newResponses, 1.0);
-    return new Preprocessor.Result(corefNeutralizedSystemOutput, wrappedResult.answerKey(),
+    return new Result(corefNeutralizedSystemOutput, wrappedResult.answerKey(),
         wrappedResult.normalizer());
   }
 
