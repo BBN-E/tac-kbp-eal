@@ -17,11 +17,14 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Range;
+import com.google.common.collect.Sets;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
 
 import static com.bbn.bue.common.collections.IterableUtils.allEqual;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -249,7 +252,6 @@ public final class SystemOutput {
     return SystemOutput.from(docId(), scoredResponses, Maps.filterKeys(metadata, retainedResponse));
   }
 
-
   @Override
   public int hashCode() {
     return Objects.hashCode(docId, responses, confidences);
@@ -284,5 +286,54 @@ public final class SystemOutput {
       scores.put(response, score);
     }
     return new SystemOutput(docID, responses, scores.build(), ImmutableMap.<Response, String>of());
+  }
+
+  public Builder modifiedCopyBuilder() {
+    return new Builder(docId(), Sets.newHashSet(responses), Maps.newHashMap(confidences),
+        Maps.newHashMap(metadata));
+  }
+
+  public static final class Builder {
+
+    private final Symbol docId;
+    private final Set<Response> responses;
+    private final Map<Response, Double> confidences;
+    private final Map<Response, String> metadata;
+
+    private Builder(final Symbol docId, final Set<Response> responses,
+        final Map<Response, Double> confidences,
+        final Map<Response, String> metadata) {
+      this.confidences = confidences;
+      this.docId = docId;
+      this.responses = responses;
+      this.metadata = metadata;
+    }
+
+    /**
+     * Replaces {@code oldResponse} with {@code newResponse}. {@code oldResponse} must have been
+     * previously added or a {@link NoSuchElementException} will be thrown.  If {@code newResponse}
+     * is already present the only effect will be to remove {@code oldResponse}. Otherwise, {@code
+     * newResponse} will inherit {@code oldResponse}'s score and metadata.
+     */
+    public void replaceResponseKeepingScoreAndMetadata(Response oldResponse, Response newResponse) {
+      if (!responses.contains(oldResponse)) {
+        throw new NoSuchElementException("Cannot replace response " + oldResponse
+            + " because it is not present");
+      }
+
+      final double scoreToKeep = confidences.get(oldResponse);
+      final String metadataToKeep = metadata.get(oldResponse);
+
+      responses.remove(oldResponse);
+
+      if (!responses.contains(newResponse)) {
+        confidences.put(newResponse, scoreToKeep);
+        metadata.put(newResponse, metadataToKeep);
+      }
+    }
+
+    public SystemOutput build() {
+      return new SystemOutput(docId, responses, confidences, metadata);
+    }
   }
 }
