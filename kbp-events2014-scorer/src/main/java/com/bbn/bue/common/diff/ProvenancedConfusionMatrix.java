@@ -156,18 +156,20 @@ public final class ProvenancedConfusionMatrix<CellFiller> {
     final List<Symbol> sortedColumns = labelOrdering.sortedCopy(table.columnKeySet());
     for (final Symbol rowLabel : labelOrdering.sortedCopy(table.rowKeySet())) {
       for (final Symbol colLabel : sortedColumns) {
-        sb.append(String.format(" =============== %s / %s ==============\n", rowLabel, colLabel));
-        final Iterable<CellFiller> orderedFillers;
-        if (fillerOrdering.isPresent()) {
-          orderedFillers = fillerOrdering.get().sortedCopy(table.get(rowLabel, colLabel));
-        } else {
-          orderedFillers = table.get(rowLabel, colLabel);
-        }
+        if (table.contains(rowLabel, colLabel)) {
+          sb.append(String.format(" =============== %s / %s ==============\n", rowLabel, colLabel));
+          final Iterable<CellFiller> orderedFillers;
+          if (fillerOrdering.isPresent()) {
+            orderedFillers = fillerOrdering.get().sortedCopy(table.get(rowLabel, colLabel));
+          } else {
+            orderedFillers = table.get(rowLabel, colLabel);
+          }
 
-        for (final CellFiller filler : orderedFillers) {
-          sb.append("\n\t").append(filler.toString());
+          for (final CellFiller filler : orderedFillers) {
+            sb.append("\n\t").append(filler.toString());
+          }
+          sb.append("\n");
         }
-        sb.append("\n");
       }
     }
 
