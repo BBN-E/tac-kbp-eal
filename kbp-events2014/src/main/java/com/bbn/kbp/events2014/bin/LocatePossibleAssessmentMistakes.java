@@ -5,6 +5,7 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.AssessedResponse;
+import com.bbn.kbp.events2014.KBPTIMEXExpression;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
@@ -60,6 +61,12 @@ public final class LocatePossibleAssessmentMistakes {
         AssessmentSpecFormats.createAnnotationStore(conjunctsDir, fileFormat);
     filterTo(annStore, new ConjunctsFilter(), conjunctStore);
 
+    final File temporalDir = new File(outputDir, "temporals");
+    log.info("Writing temporal errors to {}", temporalDir);
+    final AnnotationStore temporalStore =
+        AssessmentSpecFormats.createAnnotationStore(temporalDir, fileFormat);
+    filterTo(annStore, new TemporalFilter(), temporalStore);
+
     annStore.close();
     conjunctStore.close();
   }
@@ -92,6 +99,34 @@ public final class LocatePossibleAssessmentMistakes {
           for (final String spaceSepToken : casTokens) {
             if (CONJUNCTS.contains(spaceSepToken)) {
               return true;
+            }
+          }
+          return false;
+        }
+      };
+    }
+
+    @Override
+    public Predicate<Response> unassessedFilter() {
+      return Predicates.alwaysFalse();
+    }
+  }
+
+  private static final class TemporalFilter implements AnswerKey.Filter {
+
+    @Override
+    public Predicate<AssessedResponse> assessedFilter() {
+      return new Predicate<AssessedResponse>() {
+        @Override
+        public boolean apply(final AssessedResponse input) {
+          if (input.isCorrectUpToInexactJustifications()) {
+            if (input.response().isTemporal()) {
+              try {
+                final KBPTIMEXExpression time =
+                    KBPTIMEXExpression.parseTIMEX(input.response().canonicalArgument().string());
+              } catch (KBPTIMEXExpression.KBPTIMEXException te) {
+                return true;
+              }
             }
           }
           return false;
