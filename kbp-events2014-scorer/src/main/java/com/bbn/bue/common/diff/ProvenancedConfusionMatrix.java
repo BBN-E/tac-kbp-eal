@@ -150,7 +150,7 @@ public final class ProvenancedConfusionMatrix<CellFiller> {
     return builder.build();
   }
 
-  private String prettyPrint(Ordering<Symbol> labelOrdering, Optional<Ordering<CellFiller>> fillerOrdering) {
+  private String prettyPrint(Ordering<Symbol> labelOrdering, Optional<? extends Ordering<? super CellFiller>> fillerOrdering) {
     final StringBuilder sb = new StringBuilder();
 
     final List<Symbol> sortedColumns = labelOrdering.sortedCopy(table.columnKeySet());
@@ -178,6 +178,10 @@ public final class ProvenancedConfusionMatrix<CellFiller> {
 
   public String prettyPrint() {
     return prettyPrint(SymbolUtils.byStringOrdering(), Optional.<Ordering<CellFiller>>absent());
+  }
+
+  public String prettyPrintWithFillerOrdering(Ordering<? super CellFiller> cellFillerOrdering) {
+    return prettyPrint(SymbolUtils.byStringOrdering(), Optional.of(cellFillerOrdering));
   }
 
 
