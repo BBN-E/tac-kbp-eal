@@ -5,6 +5,7 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.AssessedResponse;
+import com.bbn.kbp.events2014.FieldAssessment;
 import com.bbn.kbp.events2014.KBPTIMEXExpression;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.io.AnnotationStore;
@@ -55,11 +56,10 @@ public final class LocatePossibleAssessmentMistakes {
         fileFormat);
     final File outputDir = params.getCreatableDirectory("outputDir");
 
-    final File conjunctsDir = new File(outputDir, "conjuncts");
-    log.info("Writing possibly conjoined CASes to {}", conjunctsDir);
-    final AnnotationStore conjunctStore =
-        AssessmentSpecFormats.createAnnotationStore(conjunctsDir, fileFormat);
-    filterTo(annStore, new ConjunctsFilter(), conjunctStore);
+    writeFiltered("conjuncts", new ConjunctsFilter(), fileFormat, annStore, outputDir);
+    writeFiltered("temporal", new TemporalFilter(), fileFormat, annStore, outputDir);
+    writeFiltered("inexactPlaces", new InexactPlaces(), fileFormat, annStore, outputDir);
+
 
     final File temporalDir = new File(outputDir, "temporals");
     log.info("Writing temporal errors to {}", temporalDir);
@@ -68,7 +68,18 @@ public final class LocatePossibleAssessmentMistakes {
     filterTo(annStore, new TemporalFilter(), temporalStore);
 
     annStore.close();
-    conjunctStore.close();
+  }
+
+  private static void writeFiltered(final String filterName,
+      final AnswerKey.Filter filter,
+      final AssessmentSpecFormats.Format fileFormat, final AnnotationStore annStore,
+      final File outputDir) throws IOException {
+    final File filteredDir = new File(outputDir, filterName);
+    log.info("Writing {} to {}", filterName, filteredDir);
+    final AnnotationStore outputStore =
+        AssessmentSpecFormats.createAnnotationStore(filteredDir, fileFormat);
+    filterTo(annStore, filter, outputStore);
+    outputStore.close();
   }
 
   private static void filterTo(AnnotationStore input, AnswerKey.Filter filter,
@@ -127,6 +138,30 @@ public final class LocatePossibleAssessmentMistakes {
               } catch (KBPTIMEXExpression.KBPTIMEXException te) {
                 return true;
               }
+            }
+          }
+          return false;
+        }
+      };
+    }
+
+    @Override
+    public Predicate<Response> unassessedFilter() {
+      return Predicates.alwaysFalse();
+    }
+  }
+
+  private static final class InexactPlaces implements AnswerKey.Filter {
+
+    @Override
+    public Predicate<AssessedResponse> assessedFilter() {
+      return new Predicate<AssessedResponse>() {
+        @Override
+        public boolean apply(final AssessedResponse input) {
+          if (input.isCorrectUpToInexactJustifications()) {
+            if (input.assessment().entityCorrectFiller().get().equals(FieldAssessment.INEXACT)
+                && input.response().role().asString().equals("Place")) {
+              return true;
             }
           }
           return false;
