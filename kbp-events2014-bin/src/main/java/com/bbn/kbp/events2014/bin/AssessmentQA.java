@@ -4,11 +4,15 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.AssessedResponse;
+import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
+import com.bbn.kbp.events2014.transformers.MakeAllRealisActual;
 
 import com.google.common.base.Function;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -25,6 +29,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * Created by jdeyoung on 6/1/15.
  */
@@ -38,12 +44,15 @@ public class AssessmentQA {
         AssessmentSpecFormats.openAnnotationStore(params.getExistingDirectory("annotationStore"),
             AssessmentSpecFormats.Format.KBP2015);
 
-    for(Symbol docID: store.docIDs()) {
+    for (Symbol docID : store.docIDs()) {
       log.info("processing document {}", docID.asString());
-      final AnswerKey answerKey = store.read(docID);
-      final HTMLRenderer htmlRenderer = new HTMLRenderer();
-      htmlRenderer.addResponses(overallOrdering.sortedCopy(Iterables.transform(
-          answerKey.annotatedResponses(), AssessedResponse.Response)));
+      final AnswerKey answerKey = MakeAllRealisActual.forAnswerKey().apply(store.read(docID));
+      final HTMLRenderer htmlRenderer = new HTMLRenderer(docID.asString());
+      htmlRenderer.setCorefAnnotation(answerKey.corefAnnotation());
+      htmlRenderer.addResponses(
+          overallOrdering.sortedCopy(FluentIterable.from(answerKey.annotatedResponses()).filter(
+              AssessedResponse.IsCorrectUpToInexactJustifications)
+              .transform(AssessedResponse.Response)));
       final File output = params.getCreatableDirectory("output");
       htmlRenderer.renderTo(
           Files.asCharSink(new File(output, docID.asString() + ".html"),
@@ -54,6 +63,9 @@ public class AssessmentQA {
   private static Ordering<Response> overallOrdering = Ordering.compound(ImmutableList
       .of(Response.byEvent(), Response.byRole(), Response.byFillerString(),
           Response.byCASSttring()));
+  private static Ordering<TypeRoleFillerRealis> trfrOrdering = Ordering.compound(ImmutableList.of(
+      TypeRoleFillerRealis.byType(), TypeRoleFillerRealis.byRole(), TypeRoleFillerRealis.byCAS(),
+      TypeRoleFillerRealis.byRealis()));
 
   public static void main(String... args) {
     try {
@@ -67,6 +79,12 @@ public class AssessmentQA {
   private final static class HTMLRenderer {
 
     final private Multimap<String, Response> typeToResponse = HashMultimap.create();
+    final private String docID;
+    private CorefAnnotation corefAnnotation;
+
+    private HTMLRenderer(final String docID) {
+      this.docID = docID;
+    }
 
     public static String bodyHeader() {
       return "<body>";
@@ -85,7 +103,11 @@ public class AssessmentQA {
     }
 
     public static String javascript() {
-      return "<script type=\"text/javascript\"></script>";
+      return "<script src=\"http://code.jquery.com/jquery-1.9.1.min.js\"></script>";
+    }
+
+    public void setCorefAnnotation(CorefAnnotation corefAnnotation) {
+      this.corefAnnotation = corefAnnotation;
     }
 
     public void addResponses(final Iterable<Response> responses) {
@@ -99,12 +121,46 @@ public class AssessmentQA {
     }
 
     public void renderTo(CharSink sink) throws IOException {
+      checkNotNull(corefAnnotation);
       final StringBuilder sb = new StringBuilder();
       sb.append(bodyHeader());
       sb.append(javascript());
       sb.append(htmlHeader());
+      sb.append("<h1>");
+      sb.append(docID);
+      sb.append("</h1>\n");
       for (final String type : Ordering.natural().sortedCopy(typeToResponse.keySet())) {
-        addSection(sb, type, typeToResponse.get(type));
+        final Multimap<TypeRoleFillerRealis, Response> trfrToResponse =
+            Multimaps.index(typeToResponse.get(type),
+                TypeRoleFillerRealis.extractFromSystemResponse(
+                    corefAnnotation.laxCASNormalizerFunction()));
+        sb.append("<div>\n");
+        sb.append("<h2>");
+        sb.append(type);
+        sb.append("</h2>\n");
+
+        sb.append("<ul>\n");
+        for (final TypeRoleFillerRealis trfr : trfrOrdering.sortedCopy(trfrToResponse.keySet())) {
+          sb.append("<li>\n");
+          sb.append("<div>\n");
+          sb.append("<h3>");
+          sb.append(String.format("%s-%s:%s - %s", trfr.type().asString(), trfr.role().asString(),
+              trfr.realis().name(), trfr.argumentCanonicalString().string()));
+          sb.append("</h3>\n");
+
+          addSection(sb, type, trfr, Iterables.transform(trfrToResponse.get(trfr),
+              new Function<Response, String>() {
+                @Override
+                public String apply(final Response r) {
+                  return String
+                      .format("%s: %s", r.realis().name(), r.canonicalArgument().string());
+                }
+              }));
+          sb.append("</div>\n");
+        }
+        sb.append("</ul>\n");
+        sb.append("</div>\n");
+        sb.append("</li>\n");
       }
       sb.append(htmlFooter());
       sb.append(bodyFooter());
@@ -112,19 +168,20 @@ public class AssessmentQA {
       sink.write(sb.toString());
     }
 
-    private void addSection(StringBuilder sb, String type, Iterable<Response> responses) {
+    private void addSection(final StringBuilder sb, final String type,
+        final TypeRoleFillerRealis trfr, final Iterable<String> responses) {
       sb.append("<div>");
-      sb.append("<h2>");
-      sb.append(type);
-      sb.append("</h3>");
-      sb.append("<ul class=\"list\">");
-      for (Response r : overallOrdering.sortedCopy(responses)) {
-        sb.append("<li>");
+      //sb.append("<h3>");
+      //sb.append(type);
+      //sb.append("</h3>");
+      sb.append("<ul>\n");
+      for (String r : responses) {
+        sb.append("<li>\n");
         sb.append(r.toString());
-        sb.append("</li>");
+        sb.append("</li>\n");
       }
-      sb.append("</ul>");
-      sb.append("</div>");
+      sb.append("</ul>\n");
+      sb.append("</div>\n");
     }
   }
 }
