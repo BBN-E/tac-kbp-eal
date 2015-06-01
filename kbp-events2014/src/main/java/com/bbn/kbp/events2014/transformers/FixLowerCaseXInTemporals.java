@@ -27,6 +27,7 @@ public final class FixLowerCaseXInTemporals {
     return new Function<SystemOutput, SystemOutput>() {
       @Override
       public SystemOutput apply(final SystemOutput input) {
+        log.info("Fixing lowercase Xes in temporal for {}", input.docId());
         final SystemOutput.Builder ret = input.modifiedCopyBuilder();
         for (final Response response : input.responses()) {
           final Optional<Response> fixedResponse = fixLowercaseXInTime(response);
@@ -48,13 +49,17 @@ public final class FixLowerCaseXInTemporals {
 
       @Override
       public AnswerKey apply(final AnswerKey input) {
+        log.info("Fixing lowercase Xes in temporal in answer key for {}", input.docId());
+
         final AnswerKey.Builder ret = input.modifiedCopyBuilder();
 
         for (final Response r : input.allResponses()) {
           final Optional<Response> fixedResponse = fixLowercaseXInTime(r);
-          log.info("Fixing bad time in answer key from {} to {}", r.canonicalArgument().string(),
-              fixedResponse.get().canonicalArgument().string());
-          ret.replaceAsssessedResponseMaintainingAssessment(r, fixedResponse.get(), rng);
+          if (fixedResponse.isPresent()) {
+            log.info("Fixing bad time in answer key from {} to {}", r.canonicalArgument().string(),
+                fixedResponse.get().canonicalArgument().string());
+            ret.replaceAsssessedResponseMaintainingAssessment(r, fixedResponse.get(), rng);
+          }
         }
 
         return ret.build();
