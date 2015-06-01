@@ -1,8 +1,10 @@
 package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.StringUtils;
+import com.bbn.bue.common.annotations.MoveToBUECommon;
 import com.bbn.bue.common.symbols.Symbol;
 
+import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
@@ -46,9 +48,11 @@ public final class AnswerKey {
       final Iterable<Response> unannotatedResponses, CorefAnnotation corefAnnotation) {
     this.docid = checkNotNull(docId);
     try {
-      this.annotatedArgs = Maps.uniqueIndex(annotatedArgs, AssessedResponse.Response);
+      this.annotatedArgs = DuplicateTolerantImmutableMapBuilder
+          .uniqueIndex(annotatedArgs, AssessedResponse.Response);
     } catch (IllegalArgumentException iae) {
-      throw new IllegalStateException("The same response is assessed multiple times differently");
+      throw new IllegalStateException("The same response is assessed multiple times differently",
+          iae);
     }
     this.unannotatedResponses = ImmutableSet.copyOf(unannotatedResponses);
     this.corefAnnotation = checkNotNull(corefAnnotation);
@@ -361,3 +365,47 @@ public final class AnswerKey {
     }
   }
 }
+
+/**
+ * A way of building immutable maps which allows duplicate identical entries.  Guava's standard
+ * {@link com.google.common.collect.ImmutableMap.Builder} will crash when a duplicate key is
+ * encountered, even if the value is the same.  This is often inconvenient.  This class allows
+ * duplicate entries but otherwise works like an {@link com.google.common.collect.ImmutableMap.Builder}.
+ *  Use this when you want to preserve the deterministic ordering properties of {@link
+ * ImmutableMap}. If you don't care, just us a {@link java.util.HashMap}.
+ */
+@MoveToBUECommon
+final class DuplicateTolerantImmutableMapBuilder<K, V> {
+
+  private final ImmutableMap.Builder<K, V> innerBuilder = ImmutableMap.builder();
+  private final Map<K, V> mappingsSeen = Maps.newHashMap();
+
+  public DuplicateTolerantImmutableMapBuilder put(K key, V value) {
+    checkNotNull(value);
+    final V currentValue = mappingsSeen.get(key);
+    if (currentValue != null) {
+      if (!value.equals(currentValue)) {
+        throw new IllegalArgumentException("Attempting to add entry mapping " + key + " to " + value
+            + " but it is already mapped to " + currentValue);
+      }
+    } else {
+      mappingsSeen.put(key, value);
+      innerBuilder.put(key, value);
+    }
+    return this;
+  }
+
+  public ImmutableMap<K, V> build() {
+    return innerBuilder.build();
+  }
+
+  public static <K, V> ImmutableMap<K, V> uniqueIndex(Iterable<V> values,
+      Function<? super V, K> keyFunction) {
+    final DuplicateTolerantImmutableMapBuilder ret = new DuplicateTolerantImmutableMapBuilder();
+    for (final V val : values) {
+      ret.put(keyFunction.apply(val), val);
+    }
+    return ret.build();
+  }
+}
+
