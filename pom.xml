@@ -155,6 +155,9 @@
                         <phase>deploy</phase>
                         <goals>
                             <goal>deploy</goal>
+            <configuration>
+                <altDeploymentRepository>nexus::default::http://e-nexus-01.bbn.com:8081/nexus/content/repositories/releases/</altDeploymentRepository>
+            </configuration>
                         </goals>
                     </execution>
                 </executions>
