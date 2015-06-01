@@ -15,11 +15,11 @@ import java.util.Random;
 /**
  * Created by rgabbard on 5/29/15.
  */
-public final class FixLowerCaseXInTemporals {
+public final class FixLowercaseXInTemporals {
 
-  private static final Logger log = LoggerFactory.getLogger(FixLowerCaseXInTemporals.class);
+  private static final Logger log = LoggerFactory.getLogger(FixLowercaseXInTemporals.class);
 
-  private FixLowerCaseXInTemporals() {
+  private FixLowercaseXInTemporals() {
     throw new UnsupportedOperationException();
   }
 
