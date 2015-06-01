@@ -223,6 +223,21 @@
         </dependencies>
     </dependencyManagement>
 
+<distributionManagement>
+    <snapshotRepository>
+      <uniqueVersion>false</uniqueVersion>
+      <id>nexus</id>
+      <name>BBN internal repository (snapshots)</name>
+      <url>http://e-nexus-01.bbn.com:8081/nexus/content/repositories/snapshots/</url>
+    </snapshotRepository>
+    <repository>
+      <uniqueVersion>false</uniqueVersion>
+      <id>nexus</id>
+      <name>BBN internal repository (releases)</name>
+      <url>http://e-nexus-01.bbn.com:8081/nexus/content/repositories/releases/</url>
+    </repository>
+  </distributionManagement>
+
 
     <scm>
         <developerConnection>scm:git:ssh://d225/d4m/ears/git/kbp-2014-event-arguments.git</developerConnection>
