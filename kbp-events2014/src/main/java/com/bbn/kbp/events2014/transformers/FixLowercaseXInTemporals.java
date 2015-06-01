@@ -27,7 +27,6 @@ public final class FixLowercaseXInTemporals {
     return new Function<SystemOutput, SystemOutput>() {
       @Override
       public SystemOutput apply(final SystemOutput input) {
-        log.info("Fixing lowercase Xes in temporal for {}", input.docId());
         final SystemOutput.Builder ret = input.modifiedCopyBuilder();
         for (final Response response : input.responses()) {
           final Optional<Response> fixedResponse = fixLowercaseXInTime(response);
@@ -49,8 +48,6 @@ public final class FixLowercaseXInTemporals {
 
       @Override
       public AnswerKey apply(final AnswerKey input) {
-        log.info("Fixing lowercase Xes in temporal in answer key for {}", input.docId());
-
         final AnswerKey.Builder ret = input.modifiedCopyBuilder();
 
         for (final Response r : input.allResponses()) {
@@ -71,7 +68,7 @@ public final class FixLowercaseXInTemporals {
     if (response.isTemporal()) {
       final String originalString = response.canonicalArgument().string();
       if (originalString.contains("x")) {
-        final String fixedString = originalString.replaceAll("x", "X");
+        final String fixedString = originalString.replaceAll("xx", "XX");
         return Optional.of(response.copyWithSwappedCanonicalArgument(
             response.canonicalArgument().copyWithString(fixedString)));
       }
