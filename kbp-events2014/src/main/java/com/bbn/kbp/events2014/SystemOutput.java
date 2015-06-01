@@ -1,16 +1,19 @@
 package com.bbn.kbp.events2014;
 
+import com.bbn.bue.common.annotations.MoveToBUECommon;
 import com.bbn.bue.common.collections.MapUtils;
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.scoring.Scoreds;
 import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -40,8 +43,6 @@ import static com.google.common.collect.Iterables.transform;
 public final class SystemOutput {
 
   public static String DEFAULT_METADATA = "";
-  public static Character METADATA_MARKER = '#';
-
   private final Symbol docId;
   private final ImmutableSet<Response> responses;
   private final ImmutableMap<Response, Double> confidences;
@@ -60,6 +61,11 @@ public final class SystemOutput {
     checkArgument(all(confidences.values(), Range.closed(0.0, 1.0)),
         "System output %s contains confidences outside [0.0,1.0]", docId);
     this.metadata = ImmutableMap.copyOf(metadata);
+
+    checkArgument(metadata.keySet().containsAll(this.responses),
+        "Metadata is missing for some responses");
+    checkArgument(confidences.keySet().containsAll(this.responses),
+        "Confidences are missing for some responses");
   }
 
   /**
@@ -123,13 +129,7 @@ public final class SystemOutput {
 
   public String metadata(final Response response) {
     checkNotNull(response);
-    final String ret = metadata.get(response);
-    if (ret != null) {
-      return ret;
-    } else {
-      // backwards compatible choice for non-existent metadata
-      return DEFAULT_METADATA;
-    }
+    return metadata.get(response);
   }
 
   /**
@@ -152,7 +152,9 @@ public final class SystemOutput {
 
   public static SystemOutput createWithoutMetadata(final Symbol docId,
       final Iterable<Scored<Response>> scoredResponses) {
-    return from(docId, scoredResponses, ImmutableMap.<Response, String>of());
+    final Map<Response, String> emptyMetadata = Maps.asMap(FluentIterable.from(scoredResponses)
+        .transform(Scoreds.<Response>itemsOnly()).toSet(), Functions.constant(DEFAULT_METADATA));
+    return from(docId, scoredResponses, emptyMetadata);
   }
 
   /**
@@ -163,7 +165,7 @@ public final class SystemOutput {
   @Deprecated
   public static SystemOutput from(final Symbol docId,
       final Iterable<Scored<Response>> scoredResponses) {
-    return from(docId, scoredResponses, ImmutableMap.<Response, String>of());
+    return createWithoutMetadata(docId, scoredResponses);
   }
 
   /**
@@ -281,11 +283,19 @@ public final class SystemOutput {
    */
   public static SystemOutput createWithConstantScore(final Symbol docID,
       final Iterable<Response> responses, final double score) {
-    final ImmutableMap.Builder<Response, Double> scores = ImmutableMap.builder();
-    for (final Response response : ImmutableSet.copyOf(responses)) {
-      scores.put(response, score);
-    }
-    return new SystemOutput(docID, responses, scores.build(), ImmutableMap.<Response, String>of());
+    return createWithoutMetadata(docID,
+        Iterables.transform(responses, SystemOutput.<Response>withConstantScoreFunction(
+            score)));
+  }
+
+  @MoveToBUECommon
+  private static <T> Function<T, Scored<T>> withConstantScoreFunction(final double score) {
+    return new Function<T, Scored<T>>() {
+      @Override
+      public Scored<T> apply(final T input) {
+        return Scored.from(input, score);
+      }
+    };
   }
 
   public Builder modifiedCopyBuilder() {
