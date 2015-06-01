@@ -367,6 +367,18 @@ public final class AnswerKey {
       }
       return this;
     }
+
+    public Builder replaceAssessment(final Response response,
+        final ResponseAssessment newAssessment) {
+
+      if (annotatedArgs.containsKey(response)) {
+        annotatedArgs.put(response, AssessedResponse.from(response, newAssessment));
+      } else {
+        throw new IllegalArgumentException("Cannot replace assessment for response " + response +
+            " because it is not yet assessed");
+      }
+      return this;
+    }
   }
 }
 
