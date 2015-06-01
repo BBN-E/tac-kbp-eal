@@ -233,12 +233,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.bbn.bue</groupId>
-            <artifactId>common-core</artifactId>
-            <version>2.15.6-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <!-- <scope>test</scope> -->
@@ -263,12 +257,6 @@
             <groupId>org.codehaus.plexus</groupId>
             <artifactId>plexus-archiver</artifactId>
             <version>2.4.4</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.bbn.nlp</groupId>
-            <artifactId>nlp-core</artifactId>
-            <version>1.13.5</version>
         </dependency>
 
     </dependencies>
