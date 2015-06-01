@@ -346,8 +346,12 @@ public final class AnswerKey {
     }
 
     public AnswerKey build() {
+      final Set<KBPString> allCASes = FluentIterable.from(annotatedArgs.keySet())
+          .append(unannotatedResponses)
+          .transform(Response.CASFunction()).toSet();
+
       return new AnswerKey(docId, annotatedArgs.values(), unannotatedResponses,
-          corefAnnotation.build());
+          corefAnnotation.build().copyRemovingStringsNotIn(allCASes));
     }
 
     public Builder replaceAsssessedResponseMaintainingAssessment(final Response original,
