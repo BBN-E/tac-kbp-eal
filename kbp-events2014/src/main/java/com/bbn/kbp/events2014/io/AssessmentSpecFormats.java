@@ -69,6 +69,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public final class AssessmentSpecFormats {
 
   private static final Logger log = LoggerFactory.getLogger(AssessmentSpecFormats.class);
+  private static Character METADATA_MARKER = '#';
 
   private AssessmentSpecFormats() {
     throw new UnsupportedOperationException();
@@ -219,9 +220,12 @@ public final class AssessmentSpecFormats {
             final double confidence = Double.parseDouble(parts.get(10));
             final Response response = parseArgumentFields(parts.subList(1, parts.size()));
             // do not require a # to be put in the metadata beforehand
-            if(lastLine.length() > 0 && lastLine.charAt(0) == SystemOutput.METADATA_MARKER && lastLine.length() > 1) {
+            if (lastLine.length() > 0 && lastLine.charAt(0) == METADATA_MARKER
+                && lastLine.length() > 1) {
               final String metadata = lastLine.substring(1);
               responseToMetadata.put(response, metadata);
+            } else {
+              responseToMetadata.put(response, SystemOutput.DEFAULT_METADATA);
             }
 
             ret.add(Scored.from(response, confidence));
@@ -258,7 +262,7 @@ public final class AssessmentSpecFormats {
         for (final Response response : format.responseOrdering().sortedCopy(output.responses())) {
           final String metadata = output.metadata(response);
           if(!metadata.equals(SystemOutput.DEFAULT_METADATA)) {
-            out.print(SystemOutput.METADATA_MARKER + metadata + "\n");
+            out.print(METADATA_MARKER + metadata + "\n");
           }
           //out.print(response.responseID());
           out.print(format.identifierField(response));
