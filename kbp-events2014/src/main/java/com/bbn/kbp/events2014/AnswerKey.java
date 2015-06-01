@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -343,6 +344,20 @@ public final class AnswerKey {
     public AnswerKey build() {
       return new AnswerKey(docId, annotatedArgs.values(), unannotatedResponses,
           corefAnnotation.build());
+    }
+
+    public Builder replaceAsssessedResponseMaintainingAssessment(final Response original,
+        final Response replacement, final Random rng) {
+      if (annotatedArgs.keySet().contains(original)) {
+        final ResponseAssessment assessment = annotatedArgs.get(original).assessment();
+        annotatedArgs.remove(original);
+        annotatedArgs.put(replacement, AssessedResponse.from(replacement, assessment));
+        corefAnnotation.registerCAS(replacement.canonicalArgument(), rng);
+      } else {
+        throw new IllegalArgumentException("Cannot replace allegedly assessed response "
+            + original + " because it is not assessed");
+      }
+      return this;
     }
   }
 }
