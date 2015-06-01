@@ -68,7 +68,7 @@ public final class FixLowercaseXInTemporals {
     if (response.isTemporal()) {
       final String originalString = response.canonicalArgument().string();
       if (originalString.contains("x")) {
-        final String fixedString = originalString.replaceAll("x", "X");
+        final String fixedString = originalString.replaceAll("xx", "XX");
         return Optional.of(response.copyWithSwappedCanonicalArgument(
             response.canonicalArgument().copyWithString(fixedString)));
       }
