@@ -7,6 +7,7 @@ import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.transformers.DeleteInjureForCorrectDie;
 import com.bbn.kbp.events2014.transformers.FixLowercaseXInTemporals;
 import com.bbn.kbp.events2014.transformers.MakeAllRealisActual;
+import com.bbn.kbp.events2014.transformers.MakeBrokenTimesWrong;
 import com.bbn.kbp.events2014.transformers.OnlyMostSpecificTemporal;
 
 import com.google.common.base.Function;
@@ -47,10 +48,16 @@ public final class PreprocessorKBP2014 implements Preprocessor {
     // in the original TAC KBP 2014 evaluation the human submission from LDC had temporal values
     // used lowercase "x" instead of "X". These were not caught by the validator and became
     // recall errors for all other systems.  This transformation fixes this.  Note that
-    // adding these changes means the scores from the evaluation can no longer be replicated,
-    // but they were slightly wrong anyway.
+    // adding these changes means the scores from the evaluation can no longer be replicated with the current code,
+    // but they were slightly wrong anyway.  You can get the older behavior in release 2.2.0.
+
     answerKeyTransformations.add(FixLowercaseXInTemporals.forAnswerKey());
     systemOutputTransformations.add(FixLowercaseXInTemporals.forSystemOutput());
+
+    // in the original TAC KBP 2014 evaluation many invalid temporal responses were erroneously
+    // assessed as correct. This fixes that. To replicate the evaluation behavior, use release 2.2.0
+    // or older
+    answerKeyTransformations.add(MakeBrokenTimesWrong.forAnswerKey());
 
     final Preprocessor basePreprocessor =
         new PreprocessorKBP2014(answerKeyTransformations, systemOutputTransformations);
