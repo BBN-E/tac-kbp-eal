@@ -29,7 +29,7 @@ public final class MakeBrokenTimesWrong {
             final String cas = assessedResponse.response().canonicalArgument().string();
             try {
               KBPTIMEXExpression.parseTIMEX(cas);
-            } catch (IllegalArgumentException iae) {
+            } catch (KBPTIMEXExpression.KBPTIMEXException te) {
               log.info(
                   "Response with illegal temporal expression {} had correct CAS assessment. Changing it to incorrect.",
                   cas);
