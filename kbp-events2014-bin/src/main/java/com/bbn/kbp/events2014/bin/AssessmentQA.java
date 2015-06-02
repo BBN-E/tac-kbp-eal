@@ -1,5 +1,6 @@
 package com.bbn.kbp.events2014.bin;
 
+import com.bbn.bue.common.collections.MultimapUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
@@ -67,7 +68,8 @@ public class AssessmentQA {
       ImmutableList.of(new ConjunctionWarning(), new OverlapWarning());
 
 
-  private static Multimap<Response, Warning> generateWarnings(Iterable<Response> responses) {
+  private static ImmutableMultimap<Response, Warning> generateWarnings(
+      Iterable<Response> responses) {
     ImmutableMultimap.Builder<Warning, Response> warningResponseBuilder =
         ImmutableMultimap.builder();
     for (Warning w : warnings) {
@@ -149,7 +151,7 @@ public class AssessmentQA {
 
     @Override
     public String CSSStyleName() {
-      return "overlap";
+      return ".overlap";
     }
 
     @Override
@@ -213,7 +215,11 @@ public class AssessmentQA {
     }
 
     private static String htmlHeader() {
-      return "<html>";
+      return "<!doctype html>\n"
+          + "<html>\n"
+          + "<html>\n"
+          + "  <head>\n"
+          + "    <meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n";
     }
 
     private static String bodyFooter() {
@@ -254,22 +260,46 @@ public class AssessmentQA {
       return "</a>";
     }
 
+    private static int warningsDiv(final StringBuilder sb, final Iterable<Warning> warnings) {
+      int total = 0;
+      for (final Warning w : warnings) {
+        sb.append("<div style=");
+        sb.append(w.CSSStyleName());
+        sb.append("/>");
+        total += 1;
+      }
+      return total;
+    }
+
     public void renderTo(final CharSink sink, final AnswerKey answerKey,
-        final Multimap<Response, Warning> warnings)
+        final ImmutableMultimap<Response, Warning> warnings)
         throws IOException {
       final StringBuilder sb = new StringBuilder();
       sb.append(htmlHeader());
-      sb.append("<meta charset=\"UTF-8\">");
+      //sb.append("<meta charset=\"UTF-8\">");
       sb.append(javascript());
       sb.append(CSS());
       sb.append(bodyHeader());
+      sb.append("</head>");
+      sb.append("</head>");
       sb.append("<h1>");
       sb.append(docID);
       sb.append("</h1>\n");
 
-      final Multimap<TypeRoleFillerRealis, Response> trfrToReponses = Multimaps
+      final ImmutableMultimap<TypeRoleFillerRealis, Response> trfrToReponses = Multimaps
           .index(warnings.keySet(), TypeRoleFillerRealis
               .extractFromSystemResponse(answerKey.corefAnnotation().laxCASNormalizerFunction()));
+      final ImmutableMultimap<TypeRoleFillerRealis, Warning> trfrToWarning = MultimapUtils.deriveFromKeys(
+          trfrToReponses.keySet(), new Function<TypeRoleFillerRealis, Iterable<Warning>>() {
+            final Function<Response, Iterable<Warning>>
+                r2w = MultimapUtils.multiMapAsFunction(warnings);
+
+            @Override
+            public Iterable<Warning> apply(final TypeRoleFillerRealis input) {
+              return ImmutableSet.copyOf(
+                  Iterables.concat(Iterables.transform(trfrToReponses.get(input), r2w)));
+            }
+          });
       final Multimap<String, TypeRoleFillerRealis> typeToTRFR = Multimaps.index(
           trfrToReponses.keySet(), new Function<TypeRoleFillerRealis, String>() {
             @Override
@@ -277,8 +307,6 @@ public class AssessmentQA {
               return input.type().asString();
             }
           });
-      final ImmutableList<TypeRoleFillerRealis> orderedRealis =
-          ImmutableList.copyOf(trfrOrdering.sortedCopy(trfrToReponses.keySet()));
 
       for (final String type : Ordering.natural().sortedCopy(typeToTRFR.keySet())) {
         sb.append(href(type));
@@ -293,21 +321,26 @@ public class AssessmentQA {
         sb.append("<ul>\n");
 
         for (final TypeRoleFillerRealis trfr : trfrOrdering.sortedCopy(typeToTRFR.get(type))) {
-          final String trfrID = String.format("%s.%s", trfr.type().asString(), trfr.role().asString());
+          final String trfrID =
+              String.format("%s.%s", trfr.type().asString(), trfr.role().asString());
           sb.append("<li>\n");
+          //int totalWarnings = warningsDiv(sb, trfrToWarning.get(trfr));
           sb.append(String.format("<div id=\"%s\" style=\"display:inherit\" >", trfrID));
           sb.append("<h3>");
           sb.append(String.format("%s-%s:%s - %s", trfr.type().asString(), trfr.role().asString(),
               trfr.realis().name(), trfr.argumentCanonicalString().string()));
           sb.append("</h3>\n");
+          //sb.append(Strings.repeat("</div", totalWarnings));
 
-          addSection(sb, Iterables.transform(trfrToReponses.get(trfr), new Function<Response, String>() {
-              @Override
-              public String apply(final Response r) {
-                return String
-                    .format("%s: %s", r.realis().name(), r.canonicalArgument().string());
-              }
-            }));
+          addSection(sb,
+              Iterables.transform(overallOrdering.sortedCopy(trfrToReponses.get(trfr)),
+                  new Function<Response, String>() {
+                    @Override
+                    public String apply(final Response r) {
+                      return String
+                          .format("%s: %s", r.realis().name(), r.canonicalArgument().string());
+                    }
+                  }));
           sb.append("</div>\n");
           sb.append("</li>\n");
         }
