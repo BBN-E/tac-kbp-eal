@@ -4,7 +4,6 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.AssessedResponse;
-import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.io.AnnotationStore;
@@ -13,18 +12,13 @@ import com.bbn.kbp.events2014.transformers.MakeAllRealisActual;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
-import com.google.common.collect.FluentIterable;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
-import com.google.common.collect.Sets;
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
 
@@ -34,14 +28,9 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Created by jdeyoung on 6/1/15.
@@ -59,16 +48,12 @@ public class AssessmentQA {
     for (Symbol docID : store.docIDs()) {
       log.info("processing document {}", docID.asString());
       final AnswerKey answerKey = MakeAllRealisActual.forAnswerKey().apply(store.read(docID));
-      final DocumentRenderer htmlRenderer =
-          new DocumentRenderer(docID.asString(), answerKey.corefAnnotation());
-      htmlRenderer.addResponses(
-          overallOrdering.sortedCopy(FluentIterable.from(answerKey.annotatedResponses()).filter(
-              AssessedResponse.IsCorrectUpToInexactJustifications)
-              .transform(AssessedResponse.Response)));
+      final DocumentRenderer htmlRenderer = new DocumentRenderer(docID.asString());
       final File output = params.getCreatableDirectory("output");
       htmlRenderer.renderTo(
-          Files.asCharSink(new File(output, docID.asString() + ".html"),
-              Charset.defaultCharset()));
+          Files.asCharSink(new File(output, docID.asString() + ".html"), Charset.defaultCharset()),
+          answerKey, generateWarnings(
+              Iterables.transform(answerKey.annotatedResponses(), AssessedResponse.Response)));
     }
   }
 
@@ -78,6 +63,18 @@ public class AssessmentQA {
   private static Ordering<TypeRoleFillerRealis> trfrOrdering = Ordering.compound(ImmutableList.of(
       TypeRoleFillerRealis.byType(), TypeRoleFillerRealis.byRole(), TypeRoleFillerRealis.byCAS(),
       TypeRoleFillerRealis.byRealis()));
+  private final static List<Warning> warnings =
+      ImmutableList.of(new ConjunctionWarning(), new OverlapWarning());
+
+
+  private static Multimap<Response, Warning> generateWarnings(Iterable<Response> responses) {
+    ImmutableMultimap.Builder<Warning, Response> warningResponseBuilder =
+        ImmutableMultimap.builder();
+    for (Warning w : warnings) {
+      warningResponseBuilder.putAll(w, w.applyWarning(responses));
+    }
+    return warningResponseBuilder.build().inverse();
+  }
 
   public static void main(String... args) {
     try {
@@ -176,7 +173,7 @@ public class AssessmentQA {
     public Iterable<Response> applyWarning(final Iterable<Response> input) {
       ImmutableSet.Builder<Response> output = ImmutableSet.builder();
       for (Response a : input) {
-        if(a.canonicalArgument().string().trim().isEmpty()) {
+        if (a.canonicalArgument().string().trim().isEmpty()) {
           continue;
         }
         for (Response b : input) {
@@ -185,14 +182,14 @@ public class AssessmentQA {
           }
           // check for complete containment
           if (a.canonicalArgument().string().contains(b.canonicalArgument().string())) {
-            log.info("adding {} and {} by complete string containment", a, b);
+            //log.info("adding {} and {} by complete string containment", a, b);
             output.add(a);
             output.add(b);
           }
           // arbitrarily chosen magic constant
           if (diceScoreBySpace(a.canonicalArgument().string(), b.canonicalArgument().string())
               > 0.5) {
-            log.info("adding {} and {} by dice score", a, b);
+            //log.info("adding {} and {} by dice score", a, b);
             output.add(a);
             output.add(b);
           }
@@ -203,141 +200,12 @@ public class AssessmentQA {
   }
 
 
-  private final static class TRFRResponseSet {
-
-    final static private List<Warning> warnings =
-        ImmutableList.of(new ConjunctionWarning(), new OverlapWarning());
-
-    private final TypeRoleFillerRealis trfr;
-    private final Iterable<Response> responses;
-    private final Multimap<Warning, Response> warningResponseMultimap;
-
-    public TRFRResponseSet(final TypeRoleFillerRealis trfr, final Iterable<Response> responses,
-        final Multimap<Warning, Response> warningResponseMultimap) {
-      this.trfr = trfr;
-      this.responses = responses;
-      this.warningResponseMultimap = warningResponseMultimap;
-    }
-
-    public String toHTML() {
-      final StringBuilder sb = new StringBuilder();
-      final String trfrID = String.format("%s.%s", trfr.type().asString(), trfr.role().asString());
-      sb.append("<li>\n");
-      sb.append(String.format("<div id=\"%s\" style=\"display:inherit\" >", trfrID));
-      sb.append("<h3>");
-      sb.append(String.format("%s-%s:%s - %s", trfr.type().asString(), trfr.role().asString(),
-          trfr.realis().name(), trfr.argumentCanonicalString().string()));
-      sb.append("</h3>\n");
-
-      addSection(sb, Iterables.transform(responses,
-          new Function<Response, String>() {
-            @Override
-            public String apply(final Response r) {
-              return String
-                  .format("%s: %s", r.realis().name(), r.canonicalArgument().string());
-            }
-          }));
-      sb.append("</div>\n");
-      sb.append("</li>\n");
-      return sb.toString();
-    }
-
-    private void addSection(final StringBuilder sb, final Iterable<String> responses) {
-      sb.append("<ul>\n");
-      for (String r : responses) {
-        sb.append("<li>\n");
-        sb.append(r);
-        sb.append("</li>\n");
-      }
-      sb.append("</ul>\n");
-    }
-
-    @Override
-    public String toString() {
-      return "TRFRResponseSet{" +
-          "trfr=" + trfr +
-          ", responses=" + responses +
-          ", warningResponseMultimap=" + warningResponseMultimap +
-          '}';
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-
-      final TRFRResponseSet that = (TRFRResponseSet) o;
-
-      if (!trfr.equals(that.trfr)) {
-        return false;
-      }
-      if (!responses.equals(that.responses)) {
-        return false;
-      }
-      return warningResponseMultimap.equals(that.warningResponseMultimap);
-
-    }
-
-    @Override
-    public int hashCode() {
-      int result = trfr.hashCode();
-      result = 31 * result + responses.hashCode();
-      result = 31 * result + warningResponseMultimap.hashCode();
-      return result;
-    }
-
-    public static TRFRResponseSet create(final TypeRoleFillerRealis trfr,
-        final Iterable<Response> responses) {
-      ImmutableMultimap.Builder<Warning, Response> warningResponseBuilder =
-          ImmutableMultimap.builder();
-      for (Warning w : warnings) {
-        warningResponseBuilder.putAll(w, w.applyWarning(responses));
-      }
-      return new TRFRResponseSet(trfr, responses, warningResponseBuilder.build());
-    }
-
-    public static Iterable<TRFRResponseSet> createFromMultiMap(
-        final Multimap<TypeRoleFillerRealis, Response> trfrMap) {
-      ImmutableList.Builder<TRFRResponseSet> trfrResponseSetBuilder = ImmutableList.builder();
-      for (Map.Entry<TypeRoleFillerRealis, Collection<Response>> entry : trfrMap.asMap()
-          .entrySet()) {
-        trfrResponseSetBuilder.add(TRFRResponseSet.create(entry.getKey(), entry.getValue()));
-      }
-      return trfrResponseSetBuilder.build();
-    }
-
-    public static Function<TRFRResponseSet, TypeRoleFillerRealis> extractTRFR() {
-      return new Function<TRFRResponseSet, TypeRoleFillerRealis>() {
-        @Override
-        public TypeRoleFillerRealis apply(final TRFRResponseSet input) {
-          return input.trfr;
-        }
-      };
-    }
-
-    public static Function<TRFRResponseSet, Iterable<Warning>> getApplicableWarnings() {
-      return new Function<TRFRResponseSet, Iterable<Warning>>() {
-        @Override
-        public Iterable<Warning> apply(final TRFRResponseSet input) {
-          return input.warningResponseMultimap.keySet();
-        }
-      };
-    }
-  }
-
   private final static class DocumentRenderer {
 
-    final private Multimap<String, Response> typeToResponse = HashMultimap.create();
     final private String docID;
-    private CorefAnnotation corefAnnotation;
 
-    private DocumentRenderer(final String docID, final CorefAnnotation corefAnnotation) {
+    private DocumentRenderer(final String docID) {
       this.docID = docID;
-      this.corefAnnotation = corefAnnotation;
     }
 
     private static String bodyHeader() {
@@ -368,14 +236,14 @@ public class AssessmentQA {
           + "</script>";
     }
 
-    public void addResponses(final Iterable<Response> responses) {
-      typeToResponse.putAll(
-          Multimaps.index(responses, new Function<Response, String>() {
-            @Override
-            public String apply(final Response input) {
-              return input.type().asString();
-            }
-          }));
+    private static String CSS() {
+      final StringBuilder sb = new StringBuilder("<style>\n");
+      for (Warning w : warnings) {
+        sb.append(w.CSSForWarning());
+        sb.append("\n");
+      }
+      sb.append("</style>\n");
+      return sb.toString();
     }
 
     private static String href(final String id) {
@@ -386,30 +254,33 @@ public class AssessmentQA {
       return "</a>";
     }
 
-    public void renderTo(CharSink sink) throws IOException {
-      checkNotNull(corefAnnotation);
+    public void renderTo(final CharSink sink, final AnswerKey answerKey,
+        final Multimap<Response, Warning> warnings)
+        throws IOException {
       final StringBuilder sb = new StringBuilder();
       sb.append(htmlHeader());
       sb.append("<meta charset=\"UTF-8\">");
       sb.append(javascript());
+      sb.append(CSS());
       sb.append(bodyHeader());
       sb.append("<h1>");
       sb.append(docID);
       sb.append("</h1>\n");
-      for (final String type : Ordering.natural().sortedCopy(typeToResponse.keySet())) {
-        final Multimap<TypeRoleFillerRealis, Response> trfrToResponse =
-            Multimaps.index(typeToResponse.get(type),
-                TypeRoleFillerRealis.extractFromSystemResponse(
-                    corefAnnotation.laxCASNormalizerFunction()));
-        final Iterable<TRFRResponseSet> responseSets =
-            Sets.newHashSet(TRFRResponseSet.createFromMultiMap(trfrToResponse));
-        log.info("multimap: {}", trfrToResponse);
-        log.info("responsesSets: {}", responseSets);
-        final SortedMap<TypeRoleFillerRealis, TRFRResponseSet> sortedMap =
-            ImmutableSortedMap.copyOf(Maps.uniqueIndex(responseSets, TRFRResponseSet.extractTRFR()),
-                trfrOrdering);
-        final ImmutableSet<Warning> applicableWarnings = ImmutableSet.copyOf(Iterables.concat(
-            Maps.transformValues(sortedMap, TRFRResponseSet.getApplicableWarnings()).values()));
+
+      final Multimap<TypeRoleFillerRealis, Response> trfrToReponses = Multimaps
+          .index(warnings.keySet(), TypeRoleFillerRealis
+              .extractFromSystemResponse(answerKey.corefAnnotation().laxCASNormalizerFunction()));
+      final Multimap<String, TypeRoleFillerRealis> typeToTRFR = Multimaps.index(
+          trfrToReponses.keySet(), new Function<TypeRoleFillerRealis, String>() {
+            @Override
+            public String apply(final TypeRoleFillerRealis input) {
+              return input.type().asString();
+            }
+          });
+      final ImmutableList<TypeRoleFillerRealis> orderedRealis =
+          ImmutableList.copyOf(trfrOrdering.sortedCopy(trfrToReponses.keySet()));
+
+      for (final String type : Ordering.natural().sortedCopy(typeToTRFR.keySet())) {
         sb.append(href(type));
         sb.append("<h2>");
         sb.append(type);
@@ -420,8 +291,25 @@ public class AssessmentQA {
         sb.append("\" style=\"display:none\">\n");
 
         sb.append("<ul>\n");
-        for (final TypeRoleFillerRealis trfr : sortedMap.keySet()) {
-          sb.append(sortedMap.get(trfr).toHTML());
+
+        for (final TypeRoleFillerRealis trfr : trfrOrdering.sortedCopy(typeToTRFR.get(type))) {
+          final String trfrID = String.format("%s.%s", trfr.type().asString(), trfr.role().asString());
+          sb.append("<li>\n");
+          sb.append(String.format("<div id=\"%s\" style=\"display:inherit\" >", trfrID));
+          sb.append("<h3>");
+          sb.append(String.format("%s-%s:%s - %s", trfr.type().asString(), trfr.role().asString(),
+              trfr.realis().name(), trfr.argumentCanonicalString().string()));
+          sb.append("</h3>\n");
+
+          addSection(sb, Iterables.transform(trfrToReponses.get(trfr), new Function<Response, String>() {
+              @Override
+              public String apply(final Response r) {
+                return String
+                    .format("%s: %s", r.realis().name(), r.canonicalArgument().string());
+              }
+            }));
+          sb.append("</div>\n");
+          sb.append("</li>\n");
         }
         sb.append("</ul>\n");
         sb.append("</div>\n");
@@ -432,5 +320,16 @@ public class AssessmentQA {
 
       sink.write(sb.toString());
     }
+
+    private void addSection(final StringBuilder sb, final Iterable<String> responses) {
+      sb.append("<ul>\n");
+      for (String r : responses) {
+        sb.append("<li>\n");
+        sb.append(r);
+        sb.append("</li>\n");
+      }
+      sb.append("</ul>\n");
+    }
+
   }
 }
