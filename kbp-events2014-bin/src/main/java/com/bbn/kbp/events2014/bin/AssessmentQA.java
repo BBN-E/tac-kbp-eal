@@ -103,7 +103,15 @@ public class AssessmentQA {
     }
 
     public static String javascript() {
-      return "<script src=\"http://code.jquery.com/jquery-1.9.1.min.js\"></script>";
+      return "<script type=\"text/javascript\">" +
+          "function toggle(element) {\n "+
+          "\tvar e = document.getElementById(element); "
+          + "\nif(e.style.display == \"none\") { \n "
+          + "\te.style.display = \"block\"; \n}"
+          + "else {\n "
+          + "\te.style.display = \"none\";\n}"
+          + "}"
+          + "</script>";
     }
 
     public void setCorefAnnotation(CorefAnnotation corefAnnotation) {
@@ -120,12 +128,20 @@ public class AssessmentQA {
           }));
     }
 
+    private static String href(final String id) {
+      return String.format("<a href=\"javascript:toggle('%s')\">\n", id);
+    }
+
+    private static String closehref() {
+      return "</a>";
+    }
+
     public void renderTo(CharSink sink) throws IOException {
       checkNotNull(corefAnnotation);
       final StringBuilder sb = new StringBuilder();
-      sb.append(bodyHeader());
-      sb.append(javascript());
       sb.append(htmlHeader());
+      sb.append(javascript());
+      sb.append(bodyHeader());
       sb.append("<h1>");
       sb.append(docID);
       sb.append("</h1>\n");
@@ -134,21 +150,27 @@ public class AssessmentQA {
             Multimaps.index(typeToResponse.get(type),
                 TypeRoleFillerRealis.extractFromSystemResponse(
                     corefAnnotation.laxCASNormalizerFunction()));
-        sb.append("<div>\n");
+        sb.append(href(type));
         sb.append("<h2>");
         sb.append(type);
         sb.append("</h2>\n");
+        sb.append(closehref());
+        sb.append("<div id=\"");
+        sb.append(type);
+        sb.append("\" style=\"display:none\">\n");
+
 
         sb.append("<ul>\n");
         for (final TypeRoleFillerRealis trfr : trfrOrdering.sortedCopy(trfrToResponse.keySet())) {
+          final String trfrID = String.format("%s.%s", type, trfr.role().asString());
           sb.append("<li>\n");
-          sb.append("<div>\n");
+          sb.append(String.format("<div id=\"%s\" style=\"display:inherit\" >", trfrID));
           sb.append("<h3>");
           sb.append(String.format("%s-%s:%s - %s", trfr.type().asString(), trfr.role().asString(),
               trfr.realis().name(), trfr.argumentCanonicalString().string()));
           sb.append("</h3>\n");
 
-          addSection(sb, type, trfr, Iterables.transform(trfrToResponse.get(trfr),
+          addSection(sb, trfrID, Iterables.transform(trfrToResponse.get(trfr),
               new Function<Response, String>() {
                 @Override
                 public String apply(final Response r) {
@@ -157,31 +179,32 @@ public class AssessmentQA {
                 }
               }));
           sb.append("</div>\n");
+          sb.append("</li>\n");
         }
         sb.append("</ul>\n");
         sb.append("</div>\n");
         sb.append("</li>\n");
       }
-      sb.append(htmlFooter());
       sb.append(bodyFooter());
+      sb.append(htmlFooter());
+
 
       sink.write(sb.toString());
     }
 
-    private void addSection(final StringBuilder sb, final String type,
-        final TypeRoleFillerRealis trfr, final Iterable<String> responses) {
-      sb.append("<div>");
+    private void addSection(final StringBuilder sb, final String trfrID, final Iterable<String> responses) {
+      //sb.append(String.format("<div id=\"%s.responses\" style=\"display:inherit\">", trfrID));
       //sb.append("<h3>");
       //sb.append(type);
       //sb.append("</h3>");
       sb.append("<ul>\n");
       for (String r : responses) {
         sb.append("<li>\n");
-        sb.append(r.toString());
+        sb.append(r);
         sb.append("</li>\n");
       }
       sb.append("</ul>\n");
-      sb.append("</div>\n");
+      //sb.append("</div>\n");
     }
   }
 }
