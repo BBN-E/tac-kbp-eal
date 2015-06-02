@@ -47,7 +47,7 @@ public class AssessmentQA {
     for (Symbol docID : store.docIDs()) {
       log.info("processing document {}", docID.asString());
       final AnswerKey answerKey = MakeAllRealisActual.forAnswerKey().apply(store.read(docID));
-      final HTMLRenderer htmlRenderer = new HTMLRenderer(docID.asString());
+      final DocumentRenderer htmlRenderer = new DocumentRenderer(docID.asString());
       htmlRenderer.setCorefAnnotation(answerKey.corefAnnotation());
       htmlRenderer.addResponses(
           overallOrdering.sortedCopy(FluentIterable.from(answerKey.annotatedResponses()).filter(
@@ -76,33 +76,33 @@ public class AssessmentQA {
     }
   }
 
-  private final static class HTMLRenderer {
+  private final static class DocumentRenderer {
 
     final private Multimap<String, Response> typeToResponse = HashMultimap.create();
     final private String docID;
     private CorefAnnotation corefAnnotation;
 
-    private HTMLRenderer(final String docID) {
+    private DocumentRenderer(final String docID) {
       this.docID = docID;
     }
 
-    public static String bodyHeader() {
+    private static String bodyHeader() {
       return "<body>";
     }
 
-    public static String htmlHeader() {
+    private static String htmlHeader() {
       return "<html>";
     }
 
-    public static String bodyFooter() {
+    private static String bodyFooter() {
       return "</body>";
     }
 
-    public static String htmlFooter() {
+    private static String htmlFooter() {
       return "</html>";
     }
 
-    public static String javascript() {
+    private static String javascript() {
       return "<script type=\"text/javascript\">" +
           "function toggle(element) {\n "+
           "\tvar e = document.getElementById(element); "
@@ -140,6 +140,7 @@ public class AssessmentQA {
       checkNotNull(corefAnnotation);
       final StringBuilder sb = new StringBuilder();
       sb.append(htmlHeader());
+      sb.append("<meta charset=\"UTF-8\">");
       sb.append(javascript());
       sb.append(bodyHeader());
       sb.append("<h1>");
@@ -187,7 +188,6 @@ public class AssessmentQA {
       }
       sb.append(bodyFooter());
       sb.append(htmlFooter());
-
 
       sink.write(sb.toString());
     }
