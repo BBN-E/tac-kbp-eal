@@ -402,15 +402,21 @@ public class AssessmentQA {
         sb.append("<div id=\"");
         sb.append(type);
         sb.append("\" style=\"display:none\">\n");
-        sb.append("<ul>\n");
+        //sb.append("<ul>\n");
 
         for (final TypeRoleFillerRealis trfr : trfrOrdering.sortedCopy(typeToTRFR.get(type))) {
           log.info("serializing trfr {}", trfr);
           final String trfrID =
               String.format("%s.%s", trfr.type().asString(), trfr.role().asString());
-          sb.append("<li>\n");
-          sb.append(String.format("<div id=\"%s\" style=\"display:inherit\" >", trfrID));
+         // sb.append("<li>\n");
           int totalWarnings = warningsDiv(sb, trfrToWarning.get(trfr));
+          sb.append(href(trfr.uniqueIdentifier()));
+          sb.append(String.format("<h3>%s</h3>", trfrID));
+          sb.append(closehref());
+          sb.append(Strings.repeat("</div>", totalWarnings));
+
+          sb.append(String.format("<div id=\"%s\" style=\"display:none\" >", trfr.uniqueIdentifier()));
+          totalWarnings = warningsDiv(sb, trfrToWarning.get(trfr));
           sb.append("<h3>");
           sb.append(String.format("%s-%s:%s - %s", trfr.type().asString(), trfr.role().asString(),
               trfr.realis().name(), trfr.argumentCanonicalString().string()));
@@ -420,10 +426,10 @@ public class AssessmentQA {
           addSection(sb, overallOrdering.sortedCopy(trfrToAllResponses.get(trfr)), warnings);
           sb.append("</div>\n");
 
-          sb.append("</li>\n");
+          //sb.append("</li>\n");
 
         }
-        sb.append("</ul>\n");
+        //sb.append("</ul>\n");
         sb.append("</div>\n");
         sb.append("</li>\n");
       }
