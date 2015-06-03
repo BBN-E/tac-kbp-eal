@@ -54,6 +54,7 @@ public class AssessmentQA {
       final AnswerKey answerKey = MakeAllRealisActual.forAnswerKey().apply(store.read(docID));
       final DocumentRenderer htmlRenderer = new DocumentRenderer(docID.asString());
       final File output = params.getCreatableDirectory("output");
+      log.info("serializing {}" , docID.asString());
       htmlRenderer.renderTo(
           Files.asCharSink(new File(output, docID.asString() + ".html"), Charset.defaultCharset()),
           answerKey, generateWarnings(answerKey));
@@ -99,17 +100,27 @@ public class AssessmentQA {
         + "border-width: 2px;\n"
         + "border-style: solid;\n"
         + "visibility: inherit;\n"
-        + "font-weight: bold\n"
+        + "font-weight: bold;\n"
         + "}\n"),
     CONJUNCTION("conjunction", ".conjunction {\n"
         + "box-sizing: border-box;\n"
         + "margin: 2px;\n"
-        + "border-color: blue;\n"
-        + "background-color: blue;\n"
+        + "border-color: green;\n"
+        + "background-color: green;\n"
         + "border-width: 2px;\n"
         + "border-style: solid;\n"
         + "visibility: inherit;\n"
-        + "font-weight: bold\n"
+        + "font-weight: bold;\n"
+        + "}\n"),
+    DUMMY("dummy", ".dummy {\n"
+        + "box-sizing: border-box;\n"
+        + "margin: 2px;\n"
+        + "border-color: inherit;\n"
+        + "background-color: inherit;\n"
+        + "border-width: 0px;\n"
+        + "border-style: solid;\n"
+        + "visibility: inherit;\n"
+        + "font-weight: bold;\n"
         + "}\n");
     final String CSSClassName;
     final String CSS;
@@ -125,6 +136,24 @@ public class AssessmentQA {
     SetMultimap<Response, Warning> applyWarning(final AnswerKey answerKey);
 
     Warning warning();
+  }
+
+  private static final class DummyWarningRule implements WarningRule {
+
+    @Override
+    public SetMultimap<Response, Warning> applyWarning(final AnswerKey answerKey) {
+      ImmutableSetMultimap.Builder<Response, Warning> warnings = ImmutableSetMultimap.builder();
+      for (Response r : Iterables.transform(answerKey.annotatedResponses(),
+          AssessedResponse.Response)) {
+        warnings.put(r, warning());
+      }
+      return warnings.build();
+    }
+
+    @Override
+    public Warning warning() {
+      return Warning.DUMMY;
+    }
   }
 
   private static abstract class TRFRWarning implements WarningRule {
@@ -369,33 +398,28 @@ public class AssessmentQA {
         sb.append(type);
         sb.append("</h2>\n");
         sb.append(closehref());
+        sb.append(Strings.repeat("</div>", typeWarningsCount));
         sb.append("<div id=\"");
         sb.append(type);
         sb.append("\" style=\"display:none\">\n");
-        sb.append(Strings.repeat("</div>", typeWarningsCount));
         sb.append("<ul>\n");
 
         for (final TypeRoleFillerRealis trfr : trfrOrdering.sortedCopy(typeToTRFR.get(type))) {
-          int totalWarnings = warningsDiv(sb, trfrToWarning.get(trfr));
+          log.info("serializing trfr {}", trfr);
           final String trfrID =
               String.format("%s.%s", trfr.type().asString(), trfr.role().asString());
           sb.append("<li>\n");
           sb.append(String.format("<div id=\"%s\" style=\"display:inherit\" >", trfrID));
+          int totalWarnings = warningsDiv(sb, trfrToWarning.get(trfr));
           sb.append("<h3>");
           sb.append(String.format("%s-%s:%s - %s", trfr.type().asString(), trfr.role().asString(),
               trfr.realis().name(), trfr.argumentCanonicalString().string()));
           sb.append("</h3>\n");
-          addSection(sb,
-              Iterables.transform(overallOrdering.sortedCopy(trfrToErrorfulReponses.get(trfr)),
-                  new Function<Response, String>() {
-                    @Override
-                    public String apply(final Response r) {
-                      return String
-                          .format("%s: %s", r.realis().name(), r.canonicalArgument().string());
-                    }
-                  }));
-          sb.append("</div>\n");
           sb.append(Strings.repeat("</div>", totalWarnings));
+
+          addSection(sb, overallOrdering.sortedCopy(trfrToAllResponses.get(trfr)), warnings);
+          sb.append("</div>\n");
+
           sb.append("</li>\n");
 
         }
@@ -409,14 +433,36 @@ public class AssessmentQA {
       sink.write(sb.toString());
     }
 
-    private void addSection(final StringBuilder sb, final Iterable<String> responses) {
+    private static final Function<Response, String> responseToString() {
+      return new Function<Response, String>() {
+        @Override
+        public String apply(final Response r) {
+          return String.format("%s: %s", r.realis().name(), r.canonicalArgument().string());
+        }
+      };
+    }
+
+    private void addSection(final StringBuilder sb, final Iterable<Response> responses,
+        final ImmutableMultimap<Response, Warning> warnings) {
       sb.append("<ul>\n");
-      for (String r : responses) {
+      int with_warning = 0;
+      int without_warning = 0;
+      for (Response r : responses) {
         sb.append("<li>\n");
-        sb.append(r);
+        if (warnings.containsKey(r)) {
+          int totalWarnings = warningsDiv(sb, warnings.get(r));
+          sb.append(responseToString().apply(r));
+          sb.append(Strings.repeat("</div>", totalWarnings));
+          with_warning++;
+        } else {
+          sb.append(responseToString().apply(r));
+          without_warning++;
+        }
+
         sb.append("</li>\n");
       }
       sb.append("</ul>\n");
+      log.info("saved responses with {} and without {} warnings", with_warning, without_warning);
     }
 
   }
