@@ -12,15 +12,18 @@ import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.transformers.MakeAllRealisActual;
 
 import com.google.common.base.Function;
-import com.google.common.base.Predicate;
+import com.google.common.base.Functions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Sets;
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
 
@@ -30,7 +33,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -54,8 +56,7 @@ public class AssessmentQA {
       final File output = params.getCreatableDirectory("output");
       htmlRenderer.renderTo(
           Files.asCharSink(new File(output, docID.asString() + ".html"), Charset.defaultCharset()),
-          answerKey, generateWarnings(
-              Iterables.transform(answerKey.annotatedResponses(), AssessedResponse.Response)));
+          answerKey, generateWarnings(answerKey));
     }
   }
 
@@ -65,18 +66,19 @@ public class AssessmentQA {
   private static Ordering<TypeRoleFillerRealis> trfrOrdering = Ordering.compound(ImmutableList.of(
       TypeRoleFillerRealis.byType(), TypeRoleFillerRealis.byRole(), TypeRoleFillerRealis.byCAS(),
       TypeRoleFillerRealis.byRealis()));
-  private final static List<Warning> warnings =
-      ImmutableList.of(new ConjunctionWarning(), new OverlapWarning());
+  private final static List<WarningRule> warnings =
+      ImmutableList.of(ConjunctionWarningRule.create(), OverlapWarningRule.create());
 
 
   private static ImmutableMultimap<Response, Warning> generateWarnings(
-      Iterable<Response> responses) {
-    ImmutableMultimap.Builder<Warning, Response> warningResponseBuilder =
+      AnswerKey answerKey) {
+    ImmutableMultimap.Builder<Response, Warning> warningResponseBuilder =
         ImmutableMultimap.builder();
-    for (Warning w : warnings) {
-      warningResponseBuilder.putAll(w, w.applyWarning(responses));
+    for (WarningRule w : warnings) {
+      Multimap<Response, Warning> warnings = w.applyWarning(answerKey);
+      warningResponseBuilder.putAll(warnings);
     }
-    return warningResponseBuilder.build().inverse();
+    return warningResponseBuilder.build();
   }
 
   public static void main(String... args) {
@@ -88,118 +90,149 @@ public class AssessmentQA {
     }
   }
 
-  private interface Warning {
+  private enum Warning {
+    OVERLAP("overlap", ".overlap {\n"
+        + "color: red;\n"
+        + "margin-left: 14px;\n"
+        + "visibility: inherit;\n"
+        + "}\n"),
+    CONJUNCTION("conjunction", ".conjunction {\n"
+        + "color: red;\n"
+        + "margin-left: 14px;\n"
+        + "visibility: inherit;\n"
+        + "}\n");
+    final String CSSClassName;
+    final String CSS;
 
-    String CSSStyleName();
-
-    String CSSForWarning();
-
-    Iterable<Response> applyWarning(final Iterable<Response> input);
-  }
-
-  private static abstract class ContainsStringWarning implements Warning, Predicate<Response> {
-
-    private final Set<String> verboten;
-
-    public ContainsStringWarning(final Set<String> verboten) {
-      this.verboten = verboten;
-    }
-
-    @Override
-    public Iterable<Response> applyWarning(final Iterable<Response> input) {
-      return Iterables.filter(input, this);
-    }
-
-    @Override
-    public boolean apply(final Response input) {
-      Set<String> inputParts =
-          ImmutableSet.copyOf(input.canonicalArgument().string().trim().toLowerCase().split(
-              "\\s+"));
-      inputParts.retainAll(verboten);
-      return inputParts.size() > 0;
-    }
-
-  }
-
-  private final static class ConjunctionWarning extends ContainsStringWarning {
-
-    final static ImmutableSet<String> conjunctions = ImmutableSet.of("and", "or");
-
-    public ConjunctionWarning() {
-      super(conjunctions);
-    }
-
-    public static ConjunctionWarning create() {
-      return new ConjunctionWarning();
-    }
-
-    @Override
-    public String CSSStyleName() {
-      return "conjunction";
-    }
-
-    @Override
-    public String CSSForWarning() {
-      return "." + CSSStyleName() + " {\n"
-          + "color: red;\n"
-          + "margin-left: 14px;\n"
-          + "visibility: inherit;\n"
-          + "}\n";
+    Warning(final String cssClassName, final String css) {
+      CSSClassName = cssClassName;
+      CSS = css;
     }
   }
 
-  private final static class OverlapWarning implements Warning {
+  private interface WarningRule {
+
+    SetMultimap<Response, Warning> applyWarning(final AnswerKey answerKey);
+
+    Warning warning();
+  }
+
+  private static abstract class TRFRWarning implements WarningRule {
+
+    protected Multimap<TypeRoleFillerRealis, Response> extractTRFRs(final AnswerKey answerKey) {
+      return Multimaps.index(
+          Iterables.transform(answerKey.annotatedResponses(), AssessedResponse.Response),
+          TypeRoleFillerRealis
+              .extractFromSystemResponse(answerKey.corefAnnotation().laxCASNormalizerFunction()));
+    }
+  }
+
+  private static class OverlapWarningRule extends TRFRWarning {
 
     @Override
-    public String CSSStyleName() {
-      return "overlap";
-    }
-
-    @Override
-    public String CSSForWarning() {
-      return "." + CSSStyleName() + " {\n"
-          + "color: blue;\n"
-          + "margin-left: 12px;\n"
-          + "visibility: inherit;\n"
-          + "}\n";
-    }
-
-    // see http://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient
-    private double diceScoreBySpace(String one, String two) {
-      Set<String> oneParts = ImmutableSet.copyOf(one.split("\\s+"));
-      Set<String> twoParts = ImmutableSet.copyOf(two.split("\\s+"));
-      Set<String> overlap = new HashSet<String>(oneParts);
-      overlap.retainAll(twoParts);
-      return 2 * overlap.size() / ((double) oneParts.size() + twoParts.size());
-    }
-
-    @Override
-    public Iterable<Response> applyWarning(final Iterable<Response> input) {
-      ImmutableSet.Builder<Response> output = ImmutableSet.builder();
-      for (Response a : input) {
-        if (a.canonicalArgument().string().trim().isEmpty()) {
+    public ImmutableSetMultimap<Response, Warning> applyWarning(final AnswerKey answerKey) {
+      final Multimap<TypeRoleFillerRealis, Response> trfrToResponse = extractTRFRs(answerKey);
+      final ImmutableSetMultimap.Builder<Response, Warning> warnings =
+          ImmutableSetMultimap.builder();
+      for (List<TypeRoleFillerRealis> pair : Sets
+          .cartesianProduct(ImmutableList.of(trfrToResponse.keySet(), trfrToResponse.keySet()))) {
+        TypeRoleFillerRealis fst = pair.get(0);
+        TypeRoleFillerRealis snd = pair.get(1);
+        // skip when they are identical or do not match types
+        if (fst.equals(snd) || fst.type() != snd.type() || fst.role() != snd.role()) {
           continue;
         }
-        for (Response b : input) {
-          if (a == b || b.canonicalArgument().string().trim().isEmpty()) {
+        warnings.putAll(findOverlap(trfrToResponse.get(fst), trfrToResponse.get(snd)));
+      }
+      return warnings.build();
+    }
+
+    @Override
+    public Warning warning() {
+      return Warning.OVERLAP;
+    }
+
+    protected Multimap<? extends Response, ? extends Warning> findOverlap(
+        final Iterable<Response> first,
+        final Iterable<Response> second) {
+      final ImmutableMultimap.Builder<Response, Warning> result = ImmutableMultimap.builder();
+      for (Response a : first) {
+        for (Response b : second) {
+          if (a == b || b.canonicalArgument().string().trim().isEmpty() || a.role() != b.role()
+              || a.type() != b.type()) {
             continue;
           }
           // check for complete containment
           if (a.canonicalArgument().string().contains(b.canonicalArgument().string())) {
-            //log.info("adding {} and {} by complete string containment", a, b);
-            output.add(a);
-            output.add(b);
+            log.info("adding \"{}\" and \"{}\" by complete string containment", a.canonicalArgument().string(), b.canonicalArgument().string());
+            //result.put(a, warning());
+            result.put(b, warning());
           }
+          /*
           // arbitrarily chosen magic constant
           if (diceScoreBySpace(a.canonicalArgument().string(), b.canonicalArgument().string())
               > 0.5) {
-            //log.info("adding {} and {} by dice score", a, b);
-            output.add(a);
-            output.add(b);
-          }
+            log.info("adding {} and {} by dice score", a, b);
+            result.put(a, Warning.OVERLAP);
+            result.put(b, Warning.OVERLAP);
+          }*/
         }
       }
-      return output.build();
+      return result.build();
+    }
+
+    public static OverlapWarningRule create() {
+      return new OverlapWarningRule();
+    }
+  }
+
+  private static abstract class ConstainsStringWarningRule implements WarningRule {
+
+    final ImmutableSet<String> verboten;
+    final Warning type;
+
+    protected ConstainsStringWarningRule(final ImmutableSet<String> verboten, final Warning type) {
+      this.verboten = verboten;
+      this.type = type;
+    }
+
+    public SetMultimap<Response, Warning> applyWarning(final AnswerKey answerKey) {
+      final Iterable<Response> responses =
+          Iterables.transform(answerKey.annotatedResponses(), AssessedResponse.Response);
+      final ImmutableSetMultimap.Builder<Response, Warning> warnings =
+          ImmutableSetMultimap.builder();
+      for (Response r : responses) {
+        if (apply(r)) {
+          warnings.put(r, type);
+        }
+      }
+      return warnings.build();
+    }
+
+    protected boolean apply(final Response input) {
+      Set<String> inputParts =
+          Sets.newHashSet(input.canonicalArgument().string().trim().toLowerCase().split(
+              "\\s+"));
+      inputParts.retainAll(verboten);
+      return inputParts.size() > 0;
+    }
+  }
+
+  private final static class ConjunctionWarningRule extends ConstainsStringWarningRule {
+
+    final static ImmutableSet<String> conjunctions = ImmutableSet.of("and", "or");
+
+    protected ConjunctionWarningRule() {
+      super(conjunctions, Warning.CONJUNCTION);
+    }
+
+    public static ConjunctionWarningRule create() {
+      return new ConjunctionWarningRule();
+    }
+
+    @Override
+    public Warning warning() {
+      return Warning.CONJUNCTION;
     }
   }
 
@@ -252,8 +285,8 @@ public class AssessmentQA {
 
     private static String CSS() {
       final StringBuilder sb = new StringBuilder("<style>\n");
-      for (Warning w : warnings) {
-        sb.append(w.CSSForWarning());
+      for (WarningRule w : warnings) {
+        sb.append(w.warning().CSS);
         sb.append("\n");
       }
       sb.append(defaultStyle());
@@ -273,9 +306,9 @@ public class AssessmentQA {
       int total = 0;
       for (final Warning w : warnings) {
         sb.append("<div style=\"");
-        sb.append(w.CSSStyleName());
+        sb.append(w.CSSClassName);
         sb.append("\" class=\"");
-        sb.append(w.CSSStyleName());
+        sb.append(w.CSSClassName);
         sb.append("\" />");
         total += 1;
       }
@@ -301,24 +334,10 @@ public class AssessmentQA {
           .index(warnings.keySet(), TypeRoleFillerRealis
               .extractFromSystemResponse(answerKey.corefAnnotation().laxCASNormalizerFunction()));
       final ImmutableMultimap<TypeRoleFillerRealis, Warning> trfrToWarning =
-          MultimapUtils.deriveFromKeys(
-              trfrToReponses.keySet(), new Function<TypeRoleFillerRealis, Iterable<Warning>>() {
-                final Function<Response, Iterable<Warning>>
-                    r2w = MultimapUtils.multiMapAsFunction(warnings);
-
-                @Override
-                public Iterable<Warning> apply(final TypeRoleFillerRealis input) {
-                  return ImmutableSet.copyOf(
-                      Iterables.concat(Iterables.transform(trfrToReponses.get(input), r2w)));
-                }
-              });
+          MultimapUtils.composeToSetMultimap(trfrToReponses, warnings);
       final Multimap<String, TypeRoleFillerRealis> typeToTRFR = Multimaps.index(
-          trfrToReponses.keySet(), new Function<TypeRoleFillerRealis, String>() {
-            @Override
-            public String apply(final TypeRoleFillerRealis input) {
-              return input.type().asString();
-            }
-          });
+          trfrToReponses.keySet(),
+          Functions.compose(Functions.toStringFunction(), TypeRoleFillerRealis.Type));
 
       for (final String type : Ordering.natural().sortedCopy(typeToTRFR.keySet())) {
         sb.append(href(type));
