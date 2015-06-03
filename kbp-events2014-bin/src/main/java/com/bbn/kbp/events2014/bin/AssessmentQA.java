@@ -91,70 +91,83 @@ public class AssessmentQA {
     }
   }
 
-  private enum Warning {
-    OVERLAP("overlap", ".overlap {\n"
+  private final static class Warning {
+    public enum SEVERITY {
+      MAJOR("major", ".major {\n"
         + "box-sizing: border-box;\n"
         + "margin: 2px;\n"
-        + "border-color: purple;\n"
-        + "background-color: purple;\n"
+        + "border-color: red;\n"
+        + "background-color: red;\n"
         + "border-width: 2px;\n"
         + "border-style: solid;\n"
         + "visibility: inherit;\n"
         + "font-weight: bold;\n"
         + "}\n"),
-    CONJUNCTION("conjunction", ".conjunction {\n"
-        + "box-sizing: border-box;\n"
-        + "margin: 2px;\n"
-        + "border-color: green;\n"
-        + "background-color: green;\n"
-        + "border-width: 2px;\n"
-        + "border-style: solid;\n"
-        + "visibility: inherit;\n"
-        + "font-weight: bold;\n"
-        + "}\n"),
-    DUMMY("dummy", ".dummy {\n"
-        + "box-sizing: border-box;\n"
-        + "margin: 2px;\n"
-        + "border-color: inherit;\n"
-        + "background-color: inherit;\n"
-        + "border-width: 0px;\n"
-        + "border-style: solid;\n"
-        + "visibility: inherit;\n"
-        + "font-weight: bold;\n"
-        + "}\n");
-    final String CSSClassName;
-    final String CSS;
+      MINIOR("minor", ".minor {\n"
+          + "box-sizing: border-box;\n"
+          + "margin: 2px;\n"
+          + "border-color: orange;\n"
+          + "background-color: orange;\n"
+          + "border-width: 2px;\n"
+          + "border-style: solid;\n"
+          + "visibility: inherit;\n"
+          + "font-weight: bold;\n"
+          + "}\n");
 
-    Warning(final String cssClassName, final String css) {
-      CSSClassName = cssClassName;
-      CSS = css;
+        final String CSSClassName;
+        final String CSS;
+      SEVERITY(final String cssClassName, final String css) {
+        CSSClassName = cssClassName;
+        CSS = css;
+      }
     }
+
+    final String warningString;
+    final SEVERITY severity;
+
+    private Warning(final String warningString, final SEVERITY severity) {
+      this.warningString = warningString;
+      this.severity = severity;
+    }
+
+    public static Warning create(final String warningString, final SEVERITY severity) {
+      return new Warning(warningString, severity);
+    }
+
+    public static ImmutableSet<SEVERITY> extractSeverity(final Iterable<Warning> warnings) {
+      Set<SEVERITY> severities = Sets.newHashSet();
+      for(Warning w: warnings) {
+        severities.add(w.severity);
+      }
+      return ImmutableSet.copyOf(severities);
+    }
+
+
   }
 
   private interface WarningRule {
 
     SetMultimap<Response, Warning> applyWarning(final AnswerKey answerKey);
 
-    Warning warning();
   }
-
-  private static final class DummyWarningRule implements WarningRule {
-
-    @Override
-    public SetMultimap<Response, Warning> applyWarning(final AnswerKey answerKey) {
-      ImmutableSetMultimap.Builder<Response, Warning> warnings = ImmutableSetMultimap.builder();
-      for (Response r : Iterables.transform(answerKey.annotatedResponses(),
-          AssessedResponse.Response)) {
-        warnings.put(r, warning());
-      }
-      return warnings.build();
-    }
-
-    @Override
-    public Warning warning() {
-      return Warning.DUMMY;
-    }
-  }
+//
+//  private static final class DummyWarningRule implements WarningRule {
+//
+//    @Override
+//    public SetMultimap<Response, Warning> applyWarning(final AnswerKey answerKey) {
+//      ImmutableSetMultimap.Builder<Response, Warning> warnings = ImmutableSetMultimap.builder();
+//      for (Response r : Iterables.transform(answerKey.annotatedResponses(),
+//          AssessedResponse.Response)) {
+//        warnings.put(r, warning());
+//      }
+//      return warnings.build();
+//    }
+//
+//    @Override
+//    public Warning warning() {
+//      return Warning.DUMMY;
+//    }
+//  }
 
   private static abstract class TRFRWarning implements WarningRule {
 
@@ -186,10 +199,6 @@ public class AssessmentQA {
       return warnings.build();
     }
 
-    @Override
-    public Warning warning() {
-      return Warning.OVERLAP;
-    }
 
     protected Multimap<? extends Response, ? extends Warning> findOverlap(
         final Iterable<Response> first,
@@ -206,7 +215,9 @@ public class AssessmentQA {
             log.info("adding \"{}\" and \"{}\" by complete string containment",
                 b.canonicalArgument().string(), a.canonicalArgument().string());
             //result.put(a, warning());
-            result.put(b, warning());
+            result.put(b, Warning.create(
+                String.format("Conainted by %s", a.canonicalArgument().string()),
+                Warning.SEVERITY.MINIOR));
           }
           /*
           // arbitrarily chosen magic constant
@@ -229,11 +240,9 @@ public class AssessmentQA {
   private static abstract class ConstainsStringWarningRule implements WarningRule {
 
     final ImmutableSet<String> verboten;
-    final Warning type;
 
-    protected ConstainsStringWarningRule(final ImmutableSet<String> verboten, final Warning type) {
+    protected ConstainsStringWarningRule(final ImmutableSet<String> verboten) {
       this.verboten = verboten;
-      this.type = type;
     }
 
     public SetMultimap<Response, Warning> applyWarning(final AnswerKey answerKey) {
@@ -243,7 +252,8 @@ public class AssessmentQA {
           ImmutableSetMultimap.builder();
       for (Response r : responses) {
         if (apply(r)) {
-          warnings.put(r, type);
+          warnings.put(r, Warning.create(String.format("contains one of {}", verboten),
+              Warning.SEVERITY.MAJOR));
           log.info("adding {} by contains string", r.canonicalArgument().string());
         }
       }
@@ -264,16 +274,11 @@ public class AssessmentQA {
     final static ImmutableSet<String> conjunctions = ImmutableSet.of("and", "or");
 
     protected ConjunctionWarningRule() {
-      super(conjunctions, Warning.CONJUNCTION);
+      super(conjunctions);
     }
 
     public static ConjunctionWarningRule create() {
       return new ConjunctionWarningRule();
-    }
-
-    @Override
-    public Warning warning() {
-      return Warning.CONJUNCTION;
     }
   }
 
@@ -328,8 +333,8 @@ public class AssessmentQA {
 
     private static String CSS() {
       final StringBuilder sb = new StringBuilder("<style>\n");
-      for (WarningRule w : warnings) {
-        sb.append(w.warning().CSS);
+      for(Warning.SEVERITY s: Warning.SEVERITY.values()) {
+        sb.append(s.CSS);
         sb.append("\n");
       }
       sb.append(defaultStyle());
@@ -345,13 +350,13 @@ public class AssessmentQA {
       return "</a>";
     }
 
-    private static int warningsDiv(final StringBuilder sb, final Iterable<Warning> warnings) {
+    private static int warningsDiv(final StringBuilder sb, final Iterable<Warning.SEVERITY> severities) {
       int total = 0;
-      for (final Warning w : warnings) {
+      for (final Warning.SEVERITY s: severities) {
         sb.append("<div style=\"");
-        sb.append(w.CSSClassName);
+        sb.append(s.CSSClassName);
         sb.append("\" class=\"");
-        sb.append(w.CSSClassName);
+        sb.append(s.CSSClassName);
         sb.append("\">");
         total += 1;
       }
@@ -389,7 +394,7 @@ public class AssessmentQA {
       for (final String type : Ordering.natural().sortedCopy(typeToTRFR.keySet())) {
         final ImmutableSet<Warning> typeWarnings =
             MultimapUtils.composeToSetMultimap(typeToTRFR, trfrToWarning).get(type);
-        int typeWarningsCount = warningsDiv(sb, typeWarnings);
+        int typeWarningsCount = warningsDiv(sb, Warning.extractSeverity(typeWarnings));
         sb.append(href(type));
         sb.append("<h2>");
         sb.append(type);
@@ -406,14 +411,14 @@ public class AssessmentQA {
           final String trfrID =
               String.format("%s.%s", trfr.type().asString(), trfr.role().asString());
          // sb.append("<li>\n");
-          int totalWarnings = warningsDiv(sb, trfrToWarning.get(trfr));
+          int totalWarnings = warningsDiv(sb, Warning.extractSeverity(trfrToWarning.get(trfr)));
           sb.append(href(trfr.uniqueIdentifier()));
           sb.append(String.format("<h3>%s</h3>", trfrID));
           sb.append(closehref());
           sb.append(Strings.repeat("</div>", totalWarnings));
 
           sb.append(String.format("<div id=\"%s\" style=\"display:none\" >", trfr.uniqueIdentifier()));
-          totalWarnings = warningsDiv(sb, trfrToWarning.get(trfr));
+          totalWarnings = warningsDiv(sb, Warning.extractSeverity(trfrToWarning.get(trfr)));
           sb.append("<h3>");
           sb.append(String.format("%s-%s:%s - %s", trfr.type().asString(), trfr.role().asString(),
               trfr.realis().name(), trfr.argumentCanonicalString().string()));
@@ -453,7 +458,7 @@ public class AssessmentQA {
       for (Response r : responses) {
         sb.append("<li>\n");
         if (warnings.containsKey(r)) {
-          int totalWarnings = warningsDiv(sb, warnings.get(r));
+          int totalWarnings = warningsDiv(sb, Warning.extractSeverity(warnings.get(r)));
           sb.append(responseToString().apply(r));
           sb.append(Strings.repeat("</div>", totalWarnings));
           with_warning++;
