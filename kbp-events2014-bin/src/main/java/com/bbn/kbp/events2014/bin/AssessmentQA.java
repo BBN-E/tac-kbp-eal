@@ -66,7 +66,7 @@ public class AssessmentQA {
   private static Ordering<TypeRoleFillerRealis> trfrOrdering = Ordering.compound(ImmutableList.of(
       TypeRoleFillerRealis.byType(), TypeRoleFillerRealis.byRole(), TypeRoleFillerRealis.byCAS(),
       TypeRoleFillerRealis.byRealis()));
-  private final static List<WarningRule> warnings =
+  private final static List<? extends WarningRule> warnings =
       ImmutableList.of(ConjunctionWarningRule.create(), OverlapWarningRule.create());
 
 
@@ -92,14 +92,24 @@ public class AssessmentQA {
 
   private enum Warning {
     OVERLAP("overlap", ".overlap {\n"
-        + "color: red;\n"
-        + "margin-left: 14px;\n"
+        + "box-sizing: border-box;\n"
+        + "margin: 2px;\n"
+        + "border-color: purple;\n"
+        + "background-color: purple;\n"
+        + "border-width: 2px;\n"
+        + "border-style: solid;\n"
         + "visibility: inherit;\n"
+        + "font-weight: bold\n"
         + "}\n"),
     CONJUNCTION("conjunction", ".conjunction {\n"
-        + "color: red;\n"
-        + "margin-left: 14px;\n"
+        + "box-sizing: border-box;\n"
+        + "margin: 2px;\n"
+        + "border-color: blue;\n"
+        + "background-color: blue;\n"
+        + "border-width: 2px;\n"
+        + "border-style: solid;\n"
         + "visibility: inherit;\n"
+        + "font-weight: bold\n"
         + "}\n");
     final String CSSClassName;
     final String CSS;
@@ -164,7 +174,8 @@ public class AssessmentQA {
           }
           // check for complete containment
           if (a.canonicalArgument().string().contains(b.canonicalArgument().string())) {
-            log.info("adding \"{}\" and \"{}\" by complete string containment", a.canonicalArgument().string(), b.canonicalArgument().string());
+            log.info("adding \"{}\" and \"{}\" by complete string containment",
+                b.canonicalArgument().string(), a.canonicalArgument().string());
             //result.put(a, warning());
             result.put(b, warning());
           }
@@ -204,6 +215,7 @@ public class AssessmentQA {
       for (Response r : responses) {
         if (apply(r)) {
           warnings.put(r, type);
+          log.info("adding {} by contains string", r.canonicalArgument().string());
         }
       }
       return warnings.build();
@@ -278,9 +290,12 @@ public class AssessmentQA {
     }
 
     private static String defaultStyle() {
-      return "* {\n"
+      return "body {\n"
+          + "background-color: rgb(128,128,128);\n"
+          + "}\n"
+          + "* {\n"
           + "\tvisibility: inherit;\n"
-          + "};\n";
+          + "}\n";
     }
 
     private static String CSS() {
@@ -330,16 +345,25 @@ public class AssessmentQA {
       sb.append(docID);
       sb.append("</h1>\n");
 
-      final ImmutableMultimap<TypeRoleFillerRealis, Response> trfrToReponses = Multimaps
+      final ImmutableMultimap<TypeRoleFillerRealis, Response> trfrToAllResponses = Multimaps
+          .index(Iterables.transform(answerKey.annotatedResponses(), AssessedResponse.Response),
+              TypeRoleFillerRealis
+                  .extractFromSystemResponse(
+                      answerKey.corefAnnotation().laxCASNormalizerFunction()));
+      final ImmutableMultimap<TypeRoleFillerRealis, Response> trfrToErrorfulReponses = Multimaps
           .index(warnings.keySet(), TypeRoleFillerRealis
               .extractFromSystemResponse(answerKey.corefAnnotation().laxCASNormalizerFunction()));
+
       final ImmutableMultimap<TypeRoleFillerRealis, Warning> trfrToWarning =
-          MultimapUtils.composeToSetMultimap(trfrToReponses, warnings);
+          MultimapUtils.composeToSetMultimap(trfrToErrorfulReponses, warnings);
       final Multimap<String, TypeRoleFillerRealis> typeToTRFR = Multimaps.index(
-          trfrToReponses.keySet(),
+          trfrToAllResponses.keySet(),
           Functions.compose(Functions.toStringFunction(), TypeRoleFillerRealis.Type));
 
       for (final String type : Ordering.natural().sortedCopy(typeToTRFR.keySet())) {
+        final ImmutableSet<Warning> typeWarnings =
+            MultimapUtils.composeToSetMultimap(typeToTRFR, trfrToWarning).get(type);
+        int typeWarningsCount = warningsDiv(sb, typeWarnings);
         sb.append(href(type));
         sb.append("<h2>");
         sb.append(type);
@@ -348,23 +372,21 @@ public class AssessmentQA {
         sb.append("<div id=\"");
         sb.append(type);
         sb.append("\" style=\"display:none\">\n");
-
+        sb.append(Strings.repeat("</div>", typeWarningsCount));
         sb.append("<ul>\n");
 
         for (final TypeRoleFillerRealis trfr : trfrOrdering.sortedCopy(typeToTRFR.get(type))) {
+          int totalWarnings = warningsDiv(sb, trfrToWarning.get(trfr));
           final String trfrID =
               String.format("%s.%s", trfr.type().asString(), trfr.role().asString());
           sb.append("<li>\n");
-          int totalWarnings = warningsDiv(sb, trfrToWarning.get(trfr));
           sb.append(String.format("<div id=\"%s\" style=\"display:inherit\" >", trfrID));
           sb.append("<h3>");
           sb.append(String.format("%s-%s:%s - %s", trfr.type().asString(), trfr.role().asString(),
               trfr.realis().name(), trfr.argumentCanonicalString().string()));
           sb.append("</h3>\n");
-          sb.append(Strings.repeat("</div>", totalWarnings));
-
           addSection(sb,
-              Iterables.transform(overallOrdering.sortedCopy(trfrToReponses.get(trfr)),
+              Iterables.transform(overallOrdering.sortedCopy(trfrToErrorfulReponses.get(trfr)),
                   new Function<Response, String>() {
                     @Override
                     public String apply(final Response r) {
@@ -373,7 +395,9 @@ public class AssessmentQA {
                     }
                   }));
           sb.append("</div>\n");
+          sb.append(Strings.repeat("</div>", totalWarnings));
           sb.append("</li>\n");
+
         }
         sb.append("</ul>\n");
         sb.append("</div>\n");
