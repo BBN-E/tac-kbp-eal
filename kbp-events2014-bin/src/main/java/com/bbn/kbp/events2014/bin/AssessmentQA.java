@@ -293,7 +293,6 @@ public class AssessmentQA {
     private static String htmlHeader() {
       return "<!doctype html>\n"
           + "<html>\n"
-          + "<html>\n"
           + "  <head>\n"
           + "    <meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n";
     }
@@ -353,7 +352,7 @@ public class AssessmentQA {
         sb.append(w.CSSClassName);
         sb.append("\" class=\"");
         sb.append(w.CSSClassName);
-        sb.append("\" />");
+        sb.append("\">");
         total += 1;
       }
       return total;
@@ -364,12 +363,10 @@ public class AssessmentQA {
         throws IOException {
       final StringBuilder sb = new StringBuilder();
       sb.append(htmlHeader());
-      //sb.append("<meta charset=\"UTF-8\">");
+      sb.append(String.format("<title>%s</title>", answerKey.docId().asString()));
       sb.append(javascript());
       sb.append(CSS());
       sb.append(bodyHeader());
-      sb.append("</head>");
-      sb.append("</head>");
       sb.append("<h1>");
       sb.append(docID);
       sb.append("</h1>\n");
@@ -431,7 +428,7 @@ public class AssessmentQA {
         }
         //sb.append("</ul>\n");
         sb.append("</div>\n");
-        sb.append("</li>\n");
+        //sb.append("</li>\n");
       }
       sb.append(bodyFooter());
       sb.append(htmlFooter());
