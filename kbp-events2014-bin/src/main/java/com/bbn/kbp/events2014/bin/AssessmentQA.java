@@ -13,6 +13,7 @@ import com.bbn.kbp.events2014.transformers.MakeAllRealisActual;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
@@ -111,12 +112,11 @@ public class AssessmentQA {
 
     @Override
     public boolean apply(final Response input) {
-      for (final String bad : verboten) {
-        if (input.canonicalArgument().string().contains(bad)) {
-          return true;
-        }
-      }
-      return false;
+      Set<String> inputParts =
+          ImmutableSet.copyOf(input.canonicalArgument().string().trim().toLowerCase().split(
+              "\\s+"));
+      inputParts.retainAll(verboten);
+      return inputParts.size() > 0;
     }
 
   }
@@ -135,14 +135,15 @@ public class AssessmentQA {
 
     @Override
     public String CSSStyleName() {
-      return ".conjunction";
+      return "conjunction";
     }
 
     @Override
     public String CSSForWarning() {
-      return CSSStyleName() + " {\n"
+      return "." + CSSStyleName() + " {\n"
           + "color: red;\n"
           + "margin-left: 14px;\n"
+          + "visibility: inherit;\n"
           + "}\n";
     }
   }
@@ -151,14 +152,15 @@ public class AssessmentQA {
 
     @Override
     public String CSSStyleName() {
-      return ".overlap";
+      return "overlap";
     }
 
     @Override
     public String CSSForWarning() {
-      return CSSStyleName() + " {\n"
+      return "." + CSSStyleName() + " {\n"
           + "color: blue;\n"
           + "margin-left: 12px;\n"
+          + "visibility: inherit;\n"
           + "}\n";
     }
 
@@ -242,12 +244,19 @@ public class AssessmentQA {
           + "</script>";
     }
 
+    private static String defaultStyle() {
+      return "* {\n"
+          + "\tvisibility: inherit;\n"
+          + "};\n";
+    }
+
     private static String CSS() {
       final StringBuilder sb = new StringBuilder("<style>\n");
       for (Warning w : warnings) {
         sb.append(w.CSSForWarning());
         sb.append("\n");
       }
+      sb.append(defaultStyle());
       sb.append("</style>\n");
       return sb.toString();
     }
@@ -263,9 +272,11 @@ public class AssessmentQA {
     private static int warningsDiv(final StringBuilder sb, final Iterable<Warning> warnings) {
       int total = 0;
       for (final Warning w : warnings) {
-        sb.append("<div style=");
+        sb.append("<div style=\"");
         sb.append(w.CSSStyleName());
-        sb.append("/>");
+        sb.append("\" class=\"");
+        sb.append(w.CSSStyleName());
+        sb.append("\" />");
         total += 1;
       }
       return total;
@@ -289,17 +300,18 @@ public class AssessmentQA {
       final ImmutableMultimap<TypeRoleFillerRealis, Response> trfrToReponses = Multimaps
           .index(warnings.keySet(), TypeRoleFillerRealis
               .extractFromSystemResponse(answerKey.corefAnnotation().laxCASNormalizerFunction()));
-      final ImmutableMultimap<TypeRoleFillerRealis, Warning> trfrToWarning = MultimapUtils.deriveFromKeys(
-          trfrToReponses.keySet(), new Function<TypeRoleFillerRealis, Iterable<Warning>>() {
-            final Function<Response, Iterable<Warning>>
-                r2w = MultimapUtils.multiMapAsFunction(warnings);
+      final ImmutableMultimap<TypeRoleFillerRealis, Warning> trfrToWarning =
+          MultimapUtils.deriveFromKeys(
+              trfrToReponses.keySet(), new Function<TypeRoleFillerRealis, Iterable<Warning>>() {
+                final Function<Response, Iterable<Warning>>
+                    r2w = MultimapUtils.multiMapAsFunction(warnings);
 
-            @Override
-            public Iterable<Warning> apply(final TypeRoleFillerRealis input) {
-              return ImmutableSet.copyOf(
-                  Iterables.concat(Iterables.transform(trfrToReponses.get(input), r2w)));
-            }
-          });
+                @Override
+                public Iterable<Warning> apply(final TypeRoleFillerRealis input) {
+                  return ImmutableSet.copyOf(
+                      Iterables.concat(Iterables.transform(trfrToReponses.get(input), r2w)));
+                }
+              });
       final Multimap<String, TypeRoleFillerRealis> typeToTRFR = Multimaps.index(
           trfrToReponses.keySet(), new Function<TypeRoleFillerRealis, String>() {
             @Override
@@ -324,13 +336,13 @@ public class AssessmentQA {
           final String trfrID =
               String.format("%s.%s", trfr.type().asString(), trfr.role().asString());
           sb.append("<li>\n");
-          //int totalWarnings = warningsDiv(sb, trfrToWarning.get(trfr));
+          int totalWarnings = warningsDiv(sb, trfrToWarning.get(trfr));
           sb.append(String.format("<div id=\"%s\" style=\"display:inherit\" >", trfrID));
           sb.append("<h3>");
           sb.append(String.format("%s-%s:%s - %s", trfr.type().asString(), trfr.role().asString(),
               trfr.realis().name(), trfr.argumentCanonicalString().string()));
           sb.append("</h3>\n");
-          //sb.append(Strings.repeat("</div", totalWarnings));
+          sb.append(Strings.repeat("</div>", totalWarnings));
 
           addSection(sb,
               Iterables.transform(overallOrdering.sortedCopy(trfrToReponses.get(trfr)),
