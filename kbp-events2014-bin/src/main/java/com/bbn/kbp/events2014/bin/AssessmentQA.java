@@ -54,7 +54,7 @@ public class AssessmentQA {
       final AnswerKey answerKey = MakeAllRealisActual.forAnswerKey().apply(store.read(docID));
       final DocumentRenderer htmlRenderer = new DocumentRenderer(docID.asString());
       final File output = params.getCreatableDirectory("output");
-      log.info("serializing {}" , docID.asString());
+      log.info("serializing {}", docID.asString());
       htmlRenderer.renderTo(
           Files.asCharSink(new File(output, docID.asString() + ".html"), Charset.defaultCharset()),
           answerKey, generateWarnings(answerKey));
@@ -92,17 +92,18 @@ public class AssessmentQA {
   }
 
   private final static class Warning {
+
     public enum SEVERITY {
       MAJOR("major", ".major {\n"
-        + "box-sizing: border-box;\n"
-        + "margin: 2px;\n"
-        + "border-color: red;\n"
-        + "background-color: red;\n"
-        + "border-width: 2px;\n"
-        + "border-style: solid;\n"
-        + "visibility: inherit;\n"
-        + "font-weight: bold;\n"
-        + "}\n"),
+          + "box-sizing: border-box;\n"
+          + "margin: 2px;\n"
+          + "border-color: red;\n"
+          + "background-color: red;\n"
+          + "border-width: 2px;\n"
+          + "border-style: solid;\n"
+          + "visibility: inherit;\n"
+          + "font-weight: bold;\n"
+          + "}\n"),
       MINIOR("minor", ".minor {\n"
           + "box-sizing: border-box;\n"
           + "margin: 2px;\n"
@@ -114,8 +115,9 @@ public class AssessmentQA {
           + "font-weight: bold;\n"
           + "}\n");
 
-        final String CSSClassName;
-        final String CSS;
+      final String CSSClassName;
+      final String CSS;
+
       SEVERITY(final String cssClassName, final String css) {
         CSSClassName = cssClassName;
         CSS = css;
@@ -136,7 +138,7 @@ public class AssessmentQA {
 
     public static ImmutableSet<SEVERITY> extractSeverity(final Iterable<Warning> warnings) {
       Set<SEVERITY> severities = Sets.newHashSet();
-      for(Warning w: warnings) {
+      for (Warning w : warnings) {
         severities.add(w.severity);
       }
       return ImmutableSet.copyOf(severities);
@@ -252,7 +254,7 @@ public class AssessmentQA {
           ImmutableSetMultimap.builder();
       for (Response r : responses) {
         if (apply(r)) {
-          warnings.put(r, Warning.create(String.format("contains one of {}", verboten),
+          warnings.put(r, Warning.create(String.format("contains one of %s", verboten.toString()),
               Warning.SEVERITY.MAJOR));
           log.info("adding {} by contains string", r.canonicalArgument().string());
         }
@@ -333,7 +335,7 @@ public class AssessmentQA {
 
     private static String CSS() {
       final StringBuilder sb = new StringBuilder("<style>\n");
-      for(Warning.SEVERITY s: Warning.SEVERITY.values()) {
+      for (Warning.SEVERITY s : Warning.SEVERITY.values()) {
         sb.append(s.CSS);
         sb.append("\n");
       }
@@ -350,9 +352,10 @@ public class AssessmentQA {
       return "</a>";
     }
 
-    private static int warningsDiv(final StringBuilder sb, final Iterable<Warning.SEVERITY> severities) {
+    private static int warningsDiv(final StringBuilder sb,
+        final Iterable<Warning.SEVERITY> severities) {
       int total = 0;
-      for (final Warning.SEVERITY s: severities) {
+      for (final Warning.SEVERITY s : severities) {
         sb.append("<div style=\"");
         sb.append(s.CSSClassName);
         sb.append("\" class=\"");
@@ -410,16 +413,18 @@ public class AssessmentQA {
           log.info("serializing trfr {}", trfr);
           final String trfrID =
               String.format("%s.%s", trfr.type().asString(), trfr.role().asString());
-         // sb.append("<li>\n");
-          final String readableTRFR = String.format("%s-%s:%s - %s", trfr.type().asString(), trfr.role().asString(),
-              trfr.realis().name(), trfr.argumentCanonicalString().string());
+          // sb.append("<li>\n");
+          final String readableTRFR =
+              String.format("%s-%s:%s - %s", trfr.type().asString(), trfr.role().asString(),
+                  trfr.realis().name(), trfr.argumentCanonicalString().string());
           int totalWarnings = warningsDiv(sb, Warning.extractSeverity(trfrToWarning.get(trfr)));
           sb.append(href(trfr.uniqueIdentifier()));
           sb.append(String.format("<h3>%s</h3>", readableTRFR));
           sb.append(closehref());
           sb.append(Strings.repeat("</div>", totalWarnings));
 
-          sb.append(String.format("<div id=\"%s\" style=\"display:none\" >", trfr.uniqueIdentifier()));
+          sb.append(
+              String.format("<div id=\"%s\" style=\"display:none\" >", trfr.uniqueIdentifier()));
           totalWarnings = warningsDiv(sb, Warning.extractSeverity(trfrToWarning.get(trfr)));
           sb.append(Strings.repeat("</div>", totalWarnings));
 
@@ -454,13 +459,23 @@ public class AssessmentQA {
       int without_warning = 0;
       for (Response r : responses) {
         sb.append("<li>\n");
+        final String responseString = responseToString().apply(r);
         if (warnings.containsKey(r)) {
           int totalWarnings = warningsDiv(sb, Warning.extractSeverity(warnings.get(r)));
-          sb.append(responseToString().apply(r));
+          sb.append(href(responseString));
+          sb.append(responseString);
+          sb.append(closehref());
+          sb.append(String.format("<div id=\"%s\" style=\"display:none\" >", responseString));
+          sb.append("<ul>\n");
+          for(Warning w: warnings.get(r)) {
+            sb.append(String.format("<li>%s</li>\n", w.warningString));
+          }
+          sb.append("</ul>\n");
+          sb.append("</div>");
           sb.append(Strings.repeat("</div>", totalWarnings));
           with_warning++;
         } else {
-          sb.append(responseToString().apply(r));
+          sb.append(responseString);
           without_warning++;
         }
 
