@@ -70,7 +70,8 @@ public class OverlapWarningRule extends TRFRWarning {
           continue;
         }
         // check for complete containment
-        if (a.canonicalArgument().string().contains(b.canonicalArgument().string())) {
+        if (a.canonicalArgument().string().toLowerCase().contains(
+            b.canonicalArgument().string().toLowerCase())) {
           log.info("adding \"{}\" from {} by complete string containment in \"{}\" from {}",
               b.canonicalArgument().string(), snd, a.canonicalArgument().string(), fst);
           //result.put(a, warning());
