@@ -68,7 +68,7 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
                         "%s has same string as %s but mismatched types %s/%s and %s/%s in trfr %s",
                         a.canonicalArgument().string(),
                         b.canonicalArgument().string(), a.type().asString(), a.role().asString(),
-                        b.type().asString(), b.role().asString(), AssessmentQA.readableTRFR(fst)),
+                        b.type().asString(), b.role().asString(), AssessmentQA.readableTRFR(snd)),
                 Warning.SEVERITY.MINIOR));
           }
         }
