@@ -68,7 +68,8 @@ public class AssessmentQA {
       TypeRoleFillerRealis.byType(), TypeRoleFillerRealis.byRole(), TypeRoleFillerRealis.byCAS(),
       TypeRoleFillerRealis.byRealis()));
   private final static List<? extends WarningRule> warnings =
-      ImmutableList.of(ConjunctionWarningRule.create(), OverlapWarningRule.create());
+      ImmutableList.of(ConjunctionWarningRule.create(), OverlapWarningRule.create(),
+          ConflictingTypeWarningRule.create());
 
 
   private static ImmutableMultimap<Response, Warning> generateWarnings(
@@ -212,6 +213,18 @@ public class AssessmentQA {
 
   private static class OverlapWarningRule extends TRFRWarning {
 
+    protected boolean warningAppliesTo(TypeRoleFillerRealis fst, TypeRoleFillerRealis snd) {
+      // we don't want to handle the same TRFR twice, but we do want identical TRFRs to be an error
+      if (fst == snd) {
+        return false;
+      }
+      // only apply to things of the same type
+      if (fst.equals(snd) || fst.type() != snd.type() || fst.role() != snd.role()) {
+        return false;
+      }
+      return true;
+    }
+
     @Override
     public ImmutableSetMultimap<Response, Warning> applyWarning(final AnswerKey answerKey) {
       final Multimap<TypeRoleFillerRealis, Response> trfrToResponse = extractTRFRs(answerKey);
@@ -222,10 +235,9 @@ public class AssessmentQA {
         TypeRoleFillerRealis fst = pair.get(0);
         TypeRoleFillerRealis snd = pair.get(1);
         // skip when they are identical or do not match types
-        if (fst.equals(snd) || fst.type() != snd.type() || fst.role() != snd.role()) {
-          continue;
+        if (warningAppliesTo(fst, snd)) {
+          warnings.putAll(findOverlap(fst, trfrToResponse.get(fst), snd, trfrToResponse.get(snd)));
         }
-        warnings.putAll(findOverlap(fst, trfrToResponse.get(fst), snd, trfrToResponse.get(snd)));
       }
       return warnings.build();
     }
@@ -266,6 +278,45 @@ public class AssessmentQA {
     public static OverlapWarningRule create() {
       return new OverlapWarningRule();
     }
+  }
+
+  private static class ConflictingTypeWarningRule extends OverlapWarningRule {
+
+    @Override
+    protected boolean warningAppliesTo(TypeRoleFillerRealis fst, TypeRoleFillerRealis snd) {
+      if (fst == snd || fst.type().equals(snd.type())) {
+        return false;
+      }
+      return true;
+    }
+
+    @Override
+    protected Multimap<? extends Response, ? extends Warning> findOverlap(
+        final TypeRoleFillerRealis fst, final Iterable<Response> first,
+        final TypeRoleFillerRealis snd, final Iterable<Response> second) {
+      final ImmutableMultimap.Builder<Response, Warning> result = ImmutableMultimap.builder();
+      for (Response a : first) {
+        for (Response b : second) {
+          if (a == b || b.canonicalArgument().string().trim().isEmpty()) {
+            continue;
+          }
+          if (a.canonicalArgument().equals(b.canonicalArgument()) && !a.type().equals(b.type())) {
+//            result.put(b, Warning.create(String
+//                .format("%s has same string as %s by mismatched types %s and %s", a.toString(),
+//                    b.toString(), a.type().asString(), b.type().asString()), Warning.SEVERITY.MINIOR));
+//            result.put(b, Warning.create(String
+//                .format("%s has same string as %s by mismatched types %s and %s", b.toString(),
+//                    a.toString(), b.type().asString(), a.type().asString()), Warning.SEVERITY.MINIOR));
+          }
+        }
+      }
+      return result.build();
+    }
+
+    public static ConflictingTypeWarningRule create() {
+      return new ConflictingTypeWarningRule();
+    }
+
   }
 
   private static abstract class ConstainsStringWarningRule implements WarningRule {
