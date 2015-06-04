@@ -7,6 +7,7 @@ import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.bin.QA.Warnings.ConflictingTypeWarningRule;
 import com.bbn.kbp.events2014.bin.QA.Warnings.ConjunctionWarningRule;
+import com.bbn.kbp.events2014.bin.QA.Warnings.EmptyResponseWarning;
 import com.bbn.kbp.events2014.bin.QA.Warnings.OverlapWarningRule;
 import com.bbn.kbp.events2014.bin.QA.Warnings.Warning;
 import com.bbn.kbp.events2014.bin.QA.Warnings.WarningRule;
@@ -41,7 +42,8 @@ public class AssessmentQA {
         AssessmentSpecFormats.openAnnotationStore(params.getExistingDirectory("annotationStore"),
             AssessmentSpecFormats.Format.KBP2015);
     warnings = ImmutableList.of(ConjunctionWarningRule.create(), OverlapWarningRule.create(),
-        ConflictingTypeWarningRule.create(params.getString("argFile"), params.getString("roleFile")));
+        ConflictingTypeWarningRule.create(params.getString("argFile"), params.getString("roleFile")),
+        EmptyResponseWarning.create());
 
     for (Symbol docID : store.docIDs()) {
       log.info("processing document {}", docID.asString());
