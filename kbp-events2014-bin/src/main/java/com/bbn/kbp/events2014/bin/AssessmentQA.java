@@ -82,6 +82,11 @@ public class AssessmentQA {
     return warningResponseBuilder.build();
   }
 
+  private static String readableTRFR(TypeRoleFillerRealis trfr) {
+    return String.format("%s-%s:%s - %s", trfr.type().asString(), trfr.role().asString(),
+        trfr.realis().name(), trfr.argumentCanonicalString().string());
+  }
+
   public static void main(String... args) {
     try {
       trueMain(args);
@@ -144,7 +149,31 @@ public class AssessmentQA {
       return ImmutableSet.copyOf(severities);
     }
 
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
 
+      final Warning warning = (Warning) o;
+
+      if (warningString != null ? !warningString.equals(warning.warningString)
+                                : warning.warningString != null) {
+        return false;
+      }
+      return severity == warning.severity;
+
+    }
+
+    @Override
+    public int hashCode() {
+      int result = warningString != null ? warningString.hashCode() : 0;
+      result = 31 * result + (severity != null ? severity.hashCode() : 0);
+      return result;
+    }
   }
 
   private interface WarningRule {
@@ -196,15 +225,15 @@ public class AssessmentQA {
         if (fst.equals(snd) || fst.type() != snd.type() || fst.role() != snd.role()) {
           continue;
         }
-        warnings.putAll(findOverlap(trfrToResponse.get(fst), trfrToResponse.get(snd)));
+        warnings.putAll(findOverlap(fst, trfrToResponse.get(fst), snd, trfrToResponse.get(snd)));
       }
       return warnings.build();
     }
 
 
     protected Multimap<? extends Response, ? extends Warning> findOverlap(
-        final Iterable<Response> first,
-        final Iterable<Response> second) {
+        final TypeRoleFillerRealis fst, final Iterable<Response> first,
+        final TypeRoleFillerRealis snd, final Iterable<Response> second) {
       final ImmutableMultimap.Builder<Response, Warning> result = ImmutableMultimap.builder();
       for (Response a : first) {
         for (Response b : second) {
@@ -214,12 +243,12 @@ public class AssessmentQA {
           }
           // check for complete containment
           if (a.canonicalArgument().string().contains(b.canonicalArgument().string())) {
-            log.info("adding \"{}\" and \"{}\" by complete string containment",
-                b.canonicalArgument().string(), a.canonicalArgument().string());
+            log.info("adding \"{}\" from {} by complete string containment in \"{}\" from {}",
+                b.canonicalArgument().string(), snd, a.canonicalArgument().string(), fst);
             //result.put(a, warning());
             result.put(b, Warning.create(
-                String.format("Conainted by %s", a.canonicalArgument().string()),
-                Warning.SEVERITY.MINIOR));
+                String.format("Contained by \"%s\" in \"%s\"", a.canonicalArgument().string(),
+                    readableTRFR(fst)), Warning.SEVERITY.MINIOR));
           }
           /*
           // arbitrarily chosen magic constant
@@ -414,9 +443,7 @@ public class AssessmentQA {
           final String trfrID =
               String.format("%s.%s", trfr.type().asString(), trfr.role().asString());
           // sb.append("<li>\n");
-          final String readableTRFR =
-              String.format("%s-%s:%s - %s", trfr.type().asString(), trfr.role().asString(),
-                  trfr.realis().name(), trfr.argumentCanonicalString().string());
+          final String readableTRFR = readableTRFR(trfr);
           int totalWarnings = warningsDiv(sb, Warning.extractSeverity(trfrToWarning.get(trfr)));
           sb.append(href(trfr.uniqueIdentifier()));
           sb.append(String.format("<h3>%s</h3>", readableTRFR));
@@ -462,12 +489,12 @@ public class AssessmentQA {
         final String responseString = responseToString().apply(r);
         if (warnings.containsKey(r)) {
           int totalWarnings = warningsDiv(sb, Warning.extractSeverity(warnings.get(r)));
-          sb.append(href(responseString));
+          sb.append(href(r.hashCode() + ""));
           sb.append(responseString);
           sb.append(closehref());
-          sb.append(String.format("<div id=\"%s\" style=\"display:none\" >", responseString));
+          sb.append(String.format("<div id=\"%s\" style=\"display:none\" >", r.hashCode()));
           sb.append("<ul>\n");
-          for(Warning w: warnings.get(r)) {
+          for (Warning w : warnings.get(r)) {
             sb.append(String.format("<li>%s</li>\n", w.warningString));
           }
           sb.append("</ul>\n");
