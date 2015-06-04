@@ -13,6 +13,7 @@ import com.bbn.kbp.events2014.transformers.MakeAllRealisActual;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
+import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.HashMultimap;
@@ -327,11 +328,11 @@ public class AssessmentQA {
             btypes.retainAll(atypes);
             if(btypes.size() == 0) {
             result.put(b, Warning.create(String
-                .format("%s has same string as %s by mismatched types %s/%s and %s/%s in trfr %s", a.canonicalArgument().string(),
+                .format("%s has same string as %s but mismatched types %s/%s and %s/%s in trfr %s", a.canonicalArgument().string(),
                     b.canonicalArgument().string(), a.type().asString(), a.role().asString(), b.type().asString(), b.role().asString(), readableTRFR(fst)), Warning.SEVERITY.MINIOR));
-            result.put(b, Warning.create(String
-                .format("%s has same string as %s by mismatched types %s/%s and %s/%s in trfr %s", b.canonicalArgument().string(),
-                    a.canonicalArgument().string(), b.type().asString(), b.role().asString(), a.type().asString(), a.role().asString(), readableTRFR(snd)), Warning.SEVERITY.MINIOR));
+//            result.put(b, Warning.create(String
+//                .format("%s has same string as %s by mismatched types %s/%s and %s/%s in trfr %s", b.canonicalArgument().string(),
+//                    a.canonicalArgument().string(), b.type().asString(), b.role().asString(), a.type().asString(), a.role().asString(), readableTRFR(snd)), Warning.SEVERITY.MINIOR));
 
             }
           }
@@ -411,7 +412,7 @@ public class AssessmentQA {
       for (Response r : responses) {
         if (apply(r)) {
           warnings.put(r, Warning.create(String.format("contains one of %s", verboten.toString()),
-              Warning.SEVERITY.MAJOR));
+              Warning.SEVERITY.MINIOR));
           log.info("adding {} by contains string", r.canonicalArgument().string());
         }
       }
@@ -522,6 +523,30 @@ public class AssessmentQA {
       return total;
     }
 
+
+    protected static <K> Optional<Warning.SEVERITY> extractWarningForType(Iterable<Warning> warnings,
+        Iterable<K> all) {
+      int numWarnings = 0;
+      for(Warning w: warnings) {
+        numWarnings++;
+        // any severe warning is propogated
+        if(w.severity.equals(Warning.SEVERITY.MAJOR)) {
+          return Optional.of(Warning.SEVERITY.MAJOR);
+        }
+      }
+      int totalItems = ImmutableList.copyOf(all).size();
+      // if there are a lot of warning compared to the number of things, this is severe
+      // there can be more than one warning per thing
+      // 1 is a UI hack - this way singletons don't get propogated
+      if((numWarnings >= totalItems/2) && totalItems > 1) {
+        return Optional.of(Warning.SEVERITY.MAJOR);
+      }
+      if(numWarnings > 0) {
+        return Optional.of(Warning.SEVERITY.MINIOR);
+      }
+      return Optional.absent();
+    }
+
     public void renderTo(final CharSink sink, final AnswerKey answerKey,
         final ImmutableMultimap<Response, Warning> warnings)
         throws IOException {
@@ -553,43 +578,49 @@ public class AssessmentQA {
       for (final String type : Ordering.natural().sortedCopy(typeToTRFR.keySet())) {
         final ImmutableSet<Warning> typeWarnings =
             MultimapUtils.composeToSetMultimap(typeToTRFR, trfrToWarning).get(type);
-        int typeWarningsCount = warningsDiv(sb, Warning.extractSeverity(typeWarnings));
+        final Optional<Warning.SEVERITY> typeWarning = extractWarningForType(typeWarnings,
+            typeToTRFR.get(type));
+        if(typeWarning.isPresent()) {
+          warningsDiv(sb, ImmutableList.of(typeWarning.get()));
+        }
         sb.append(href(type));
         sb.append("<h2>");
         sb.append(type);
         sb.append("</h2>\n");
         sb.append(closehref());
-        sb.append(Strings.repeat("</div>", typeWarningsCount));
+        if(typeWarning.isPresent()) {
+          // one close div needed for one warning
+          sb.append(Strings.repeat("</div>", 1));
+        }
         sb.append("<div id=\"");
         sb.append(type);
         sb.append("\" style=\"display:none\">\n");
-        //sb.append("<ul>\n");
 
         for (final TypeRoleFillerRealis trfr : trfrOrdering.sortedCopy(typeToTRFR.get(type))) {
           log.info("serializing trfr {}", trfr);
-          final String trfrID =
-              String.format("%s.%s", trfr.type().asString(), trfr.role().asString());
-          // sb.append("<li>\n");
           final String readableTRFR = readableTRFR(trfr);
-          int totalWarnings = warningsDiv(sb, Warning.extractSeverity(trfrToWarning.get(trfr)));
+          final Optional<Warning.SEVERITY> trfrWarning = extractWarningForType(trfrToWarning.get(trfr), trfrToAllResponses.get(trfr));
+          if(trfrWarning.isPresent()) {
+            warningsDiv(sb, ImmutableList.of(trfrWarning.get()));
+          }
           sb.append(href(trfr.uniqueIdentifier()));
           sb.append(String.format("<h3>%s</h3>", readableTRFR));
           sb.append(closehref());
-          sb.append(Strings.repeat("</div>", totalWarnings));
+          if(trfrWarning.isPresent()) {
+            // only need one close div for a warning
+            sb.append(Strings.repeat("</div>", 1));
+          }
 
           sb.append(
               String.format("<div id=\"%s\" style=\"display:none\" >", trfr.uniqueIdentifier()));
-          totalWarnings = warningsDiv(sb, Warning.extractSeverity(trfrToWarning.get(trfr)));
+          int totalWarnings = warningsDiv(sb, Warning.extractSeverity(trfrToWarning.get(trfr)));
           sb.append(Strings.repeat("</div>", totalWarnings));
 
           addSection(sb, overallOrdering.sortedCopy(trfrToAllResponses.get(trfr)), warnings);
           sb.append("</div>\n");
 
-          //sb.append("</li>\n");
         }
-        //sb.append("</ul>\n");
         sb.append("</div>\n");
-        //sb.append("</li>\n");
       }
       sb.append(bodyFooter());
       sb.append(htmlFooter());
