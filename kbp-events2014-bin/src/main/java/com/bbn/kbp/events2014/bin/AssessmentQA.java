@@ -14,16 +14,20 @@ import com.bbn.kbp.events2014.transformers.MakeAllRealisActual;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Strings;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Table;
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
 
@@ -33,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -48,6 +53,8 @@ public class AssessmentQA {
     final AnnotationStore store =
         AssessmentSpecFormats.openAnnotationStore(params.getExistingDirectory("annotationStore"),
             AssessmentSpecFormats.Format.KBP2015);
+    warnings = ImmutableList.of(ConjunctionWarningRule.create(), OverlapWarningRule.create(),
+        ConflictingTypeWarningRule.create(params.getString("argFile"), params.getString("roleFile")));
 
     for (Symbol docID : store.docIDs()) {
       log.info("processing document {}", docID.asString());
@@ -67,9 +74,8 @@ public class AssessmentQA {
   private static Ordering<TypeRoleFillerRealis> trfrOrdering = Ordering.compound(ImmutableList.of(
       TypeRoleFillerRealis.byType(), TypeRoleFillerRealis.byRole(), TypeRoleFillerRealis.byCAS(),
       TypeRoleFillerRealis.byRealis()));
-  private final static List<? extends WarningRule> warnings =
-      ImmutableList.of(ConjunctionWarningRule.create(), OverlapWarningRule.create(),
-          ConflictingTypeWarningRule.create());
+  private static List<? extends WarningRule> warnings = null;
+
 
 
   private static ImmutableMultimap<Response, Warning> generateWarnings(
@@ -213,6 +219,10 @@ public class AssessmentQA {
 
   private static class OverlapWarningRule extends TRFRWarning {
 
+    protected OverlapWarningRule() {
+
+    }
+
     protected boolean warningAppliesTo(TypeRoleFillerRealis fst, TypeRoleFillerRealis snd) {
       // we don't want to handle the same TRFR twice, but we do want identical TRFRs to be an error
       if (fst == snd) {
@@ -282,6 +292,14 @@ public class AssessmentQA {
 
   private static class ConflictingTypeWarningRule extends OverlapWarningRule {
 
+    private final ImmutableTable<Symbol, Symbol, Set<Symbol>> argTypeRoleType;
+
+    private ConflictingTypeWarningRule(final Table<Symbol, Symbol, Set<Symbol>> argTypeRoleType) {
+      super();
+      this.argTypeRoleType = ImmutableTable.copyOf(argTypeRoleType);
+    }
+
+
     @Override
     protected boolean warningAppliesTo(TypeRoleFillerRealis fst, TypeRoleFillerRealis snd) {
       if (fst == snd || fst.type().equals(snd.type())) {
@@ -296,25 +314,83 @@ public class AssessmentQA {
         final TypeRoleFillerRealis snd, final Iterable<Response> second) {
       final ImmutableMultimap.Builder<Response, Warning> result = ImmutableMultimap.builder();
       for (Response a : first) {
+        Set<Symbol> atypes = argTypeRoleType.get(a.type(), a.role());
+//        log.info("a response {} type: {} role: {} has types {}", a, a.type(), a.role(), atypes);
         for (Response b : second) {
           if (a == b || b.canonicalArgument().string().trim().isEmpty()) {
             continue;
           }
-          if (a.canonicalArgument().equals(b.canonicalArgument()) && !a.type().equals(b.type())) {
+          if(a.canonicalArgument().equals(b.canonicalArgument())) {
+//            log.info("b response {} type: {} role: {} has types {}", b, b.type(), b.role(), argTypeRoleType.get(b.type(), b.role()));
+            Set<Symbol> btypes = Sets.newHashSet(argTypeRoleType.get(b.type(), b.role()));
+//            log.info("b response {} type: {} role: {} has types {}", b, b.type(), b.role(), btypes);
+            btypes.retainAll(atypes);
+            if(btypes.size() == 0) {
+            result.put(b, Warning.create(String
+                .format("%s has same string as %s by mismatched types %s/%s and %s/%s in trfr %s", a.canonicalArgument().string(),
+                    b.canonicalArgument().string(), a.type().asString(), a.role().asString(), b.type().asString(), b.role().asString(), readableTRFR(fst)), Warning.SEVERITY.MINIOR));
+            result.put(b, Warning.create(String
+                .format("%s has same string as %s by mismatched types %s/%s and %s/%s in trfr %s", b.canonicalArgument().string(),
+                    a.canonicalArgument().string(), b.type().asString(), b.role().asString(), a.type().asString(), a.role().asString(), readableTRFR(snd)), Warning.SEVERITY.MINIOR));
+
+            }
+          }
+
+
+//          if (a.canonicalArgument().equals(b.canonicalArgument()) && !a.type().equals(b.type())) {
 //            result.put(b, Warning.create(String
 //                .format("%s has same string as %s by mismatched types %s and %s", a.toString(),
 //                    b.toString(), a.type().asString(), b.type().asString()), Warning.SEVERITY.MINIOR));
 //            result.put(b, Warning.create(String
 //                .format("%s has same string as %s by mismatched types %s and %s", b.toString(),
 //                    a.toString(), b.type().asString(), a.type().asString()), Warning.SEVERITY.MINIOR));
-          }
+//          }
         }
       }
       return result.build();
     }
 
-    public static ConflictingTypeWarningRule create() {
-      return new ConflictingTypeWarningRule();
+    public static ConflictingTypeWarningRule create(String argsFile, String rolesFile)
+        throws IOException {
+      Table<Symbol, Symbol, Set<Symbol>> argTypeRoleType = HashBasedTable.create();
+      Multimap<Symbol, Symbol> roleToTypes = HashMultimap.create();
+      for(String line : Files.readLines(new File(rolesFile), Charset.defaultCharset())) {
+        String[] parts = line.split("\t");
+        for(String type: parts[1].split(",\\s+")) {
+          roleToTypes.put(Symbol.from(parts[0].trim()), Symbol.from(type.trim()));
+        }
+      }
+
+      for(String line : Files.readLines(new File(argsFile), Charset.defaultCharset())) {
+        String[] parts = line.trim().split("\t");
+        Symbol type = Symbol.from(parts[0].trim());
+        for(int i = 1; i < parts.length; i++) {
+          Symbol roleKey = Symbol.from(parts[i].trim());
+          Symbol role = Symbol.from(parts[i].trim().replaceAll("[^A-Za-z-.\\s]", ""));
+          log.info("type: {}, roleKey {}, role {}", type, roleKey, role);
+          if(argTypeRoleType.contains(type, role)) {
+            Set<Symbol> types = new HashSet<Symbol>(argTypeRoleType.get(type, role));
+            types.addAll(roleToTypes.get(roleKey));
+            argTypeRoleType.put(type, role, ImmutableSet.copyOf(types));
+          } else {
+            argTypeRoleType.put(type, role, ImmutableSet.copyOf(roleToTypes.get(roleKey)));
+          }
+        }
+      }
+
+      for(Symbol r: roleToTypes.keySet()) {
+        log.info("{} -> {}", r, roleToTypes.get(r));
+      }
+
+      for(Symbol r: argTypeRoleType.rowKeySet()) {
+        for (Symbol c: argTypeRoleType.columnKeySet()) {
+          if(c != null) {
+            log.info("{}.{}: {}", r, c, argTypeRoleType.get(r, c));
+          }
+        }
+      }
+
+      return new ConflictingTypeWarningRule(ImmutableTable.copyOf(argTypeRoleType));
     }
 
   }
