@@ -17,7 +17,6 @@ import com.bbn.kbp.events2014.transformers.MakeAllRealisActual;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Ordering;
 import com.google.common.io.Files;
 
 import org.slf4j.Logger;
@@ -47,7 +46,7 @@ public class AssessmentQA {
             .create(params.getString("argFile"), params.getString("roleFile")),
         EmptyResponseWarning.create());
 
-    final QADocumentRenderer htmlRenderer = new QADocumentRenderer(OVERALL_ORDERING, TRFR_ORDERING);
+    final QADocumentRenderer htmlRenderer = QADocumentRenderer.createWithDefaultOrdering();
 
     for (Symbol docID : store.docIDs()) {
       log.info("processing document {}", docID.asString());
@@ -58,13 +57,6 @@ public class AssessmentQA {
           answerKey, generateWarnings(answerKey, warnings));
     }
   }
-
-  private static final Ordering<Response> OVERALL_ORDERING = Ordering.compound(ImmutableList
-      .of(Response.byEvent(), Response.byRole(), Response.byFillerString(),
-          Response.byCASSttring()));
-  private static final Ordering<TypeRoleFillerRealis> TRFR_ORDERING = Ordering.compound(ImmutableList.of(
-      TypeRoleFillerRealis.byType(), TypeRoleFillerRealis.byRole(), TypeRoleFillerRealis.byCAS(),
-      TypeRoleFillerRealis.byRealis()));
 
   private static ImmutableMultimap<Response, Warning> generateWarnings(
       AnswerKey answerKey, final Iterable<? extends WarningRule> warningRules) {
