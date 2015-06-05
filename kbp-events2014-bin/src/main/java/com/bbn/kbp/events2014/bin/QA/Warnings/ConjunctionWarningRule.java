@@ -7,7 +7,7 @@ import com.google.common.collect.ImmutableSet;
  */
 public final class ConjunctionWarningRule extends ConstainsStringWarningRule {
 
-  final static ImmutableSet<String> conjunctions = ImmutableSet.of("and", "or");
+  private final static ImmutableSet<String> conjunctions = ImmutableSet.of("and", "or");
 
   protected ConjunctionWarningRule() {
     super(conjunctions);
