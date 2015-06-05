@@ -42,10 +42,7 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
 
   @Override
   protected boolean warningAppliesTo(TypeRoleFillerRealis fst, TypeRoleFillerRealis snd) {
-    if (fst.equals(snd) || fst.type().equals(snd.type())) {
-      return false;
-    }
-    return true;
+    return !fst.type().equals(snd.type());
   }
 
   @Override
