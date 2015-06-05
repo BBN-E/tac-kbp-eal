@@ -52,15 +52,16 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
     final ImmutableMultimap.Builder<Response, Warning> result =
         ImmutableMultimap.builder();
     for (final Response a : first) {
-      final Set<Symbol> atypes = eventToRoleToFillerType.get(a.type(), a.role());
+      final Set<Symbol> possibleFillerTypesForFirst = eventToRoleToFillerType.get(a.type(), a.role());
       for (final Response b : second) {
         if (a == b || b.canonicalArgument().string().trim().isEmpty()) {
           continue;
         }
         if (a.canonicalArgument().equals(b.canonicalArgument())) {
-          final Set<Symbol> btypes = Sets.newHashSet(eventToRoleToFillerType.get(b.type(), b.role()));
-          btypes.retainAll(atypes);
-          if (btypes.size() == 0) {
+          final Set<Symbol> possibleFillerTypesForSecond = eventToRoleToFillerType.get(b.type(), b.role());
+          final boolean noRolesPossibleForBoth =
+              Sets.intersection(possibleFillerTypesForFirst, possibleFillerTypesForSecond).isEmpty();
+          if (noRolesPossibleForBoth) {
             result.put(b, Warning.create(String
                     .format(
                         "%s has same string as %s but mismatched types %s/%s and %s/%s in trfr %s",
@@ -70,7 +71,6 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
                 Warning.SEVERITY.MINIOR));
           }
         }
-
       }
     }
     return result.build();
