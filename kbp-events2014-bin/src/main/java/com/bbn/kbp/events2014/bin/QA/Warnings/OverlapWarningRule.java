@@ -54,7 +54,7 @@ public class OverlapWarningRule extends TRFRWarning {
   }
 
 
-  protected Multimap<? extends Response, ? extends Warning> findOverlap(
+  protected Multimap<Response, Warning> findOverlap(
       final TypeRoleFillerRealis fst, final Iterable<Response> first,
       final TypeRoleFillerRealis snd, final Iterable<Response> second) {
     final ImmutableMultimap.Builder<Response, Warning> result =
