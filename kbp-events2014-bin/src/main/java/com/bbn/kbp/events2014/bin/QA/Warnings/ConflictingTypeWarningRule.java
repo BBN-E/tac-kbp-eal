@@ -68,7 +68,7 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
                         a.canonicalArgument().string(),
                         b.canonicalArgument().string(), a.type().asString(), a.role().asString(),
                         b.type().asString(), b.role().asString(), AssessmentQA.readableTRFR(snd)),
-                Warning.SEVERITY.MINIOR));
+                Warning.SEVERITY.MINOR));
           }
         }
       }
