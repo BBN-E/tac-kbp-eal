@@ -161,14 +161,13 @@ final class QADocumentRenderer {
     sb.append(answerKey.docId());
     sb.append("</h1>\n");
 
+    final Function<Response, TypeRoleFillerRealis> responseToTRFR = TypeRoleFillerRealis
+        .extractFromSystemResponse(answerKey.corefAnnotation().laxCASNormalizerFunction());
     final ImmutableMultimap<TypeRoleFillerRealis, Response> trfrToAllResponses = Multimaps
         .index(Iterables.transform(answerKey.annotatedResponses(), AssessedResponse.Response),
-            TypeRoleFillerRealis
-                .extractFromSystemResponse(
-                    answerKey.corefAnnotation().laxCASNormalizerFunction()));
+            responseToTRFR);
     final ImmutableMultimap<TypeRoleFillerRealis, Response> trfrToErrorfulReponses = Multimaps
-        .index(warnings.keySet(), TypeRoleFillerRealis
-            .extractFromSystemResponse(answerKey.corefAnnotation().laxCASNormalizerFunction()));
+        .index(warnings.keySet(), responseToTRFR);
 
     final ImmutableMultimap<TypeRoleFillerRealis, Warning> trfrToWarning =
         MultimapUtils.composeToSetMultimap(trfrToErrorfulReponses, warnings);
