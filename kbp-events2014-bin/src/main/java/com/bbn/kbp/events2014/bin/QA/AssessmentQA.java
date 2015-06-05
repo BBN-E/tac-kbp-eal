@@ -43,7 +43,7 @@ public class AssessmentQA {
     final ImmutableList<WarningRule> warnings = ImmutableList.of(ConjunctionWarningRule.create(),
         OverlapWarningRule.create(),
         ConflictingTypeWarningRule
-            .create(params.getString("argFile"), params.getString("roleFile")),
+            .create(params.getExistingFile("argFile"), params.getExistingFile("roleFile")),
         EmptyResponseWarning.create());
 
     final QADocumentRenderer htmlRenderer = QADocumentRenderer.createWithDefaultOrdering();

@@ -1,5 +1,6 @@
 package com.bbn.kbp.events2014.bin.QA.Warnings;
 
+import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
@@ -106,9 +107,8 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
       }
     }
 
-    for (Symbol r : roleToTypes.keySet()) {
-      log.info("{} -> {}", r, roleToTypes.get(r));
-    }
+    log.info("Role to type mapping: {}", 
+        StringUtils.NewlineJoiner.withKeyValueSeparator(" -> ").join(roleToTypes.asMap()));
 
     for (Symbol r : argTypeRoleType.rowKeySet()) {
       for (Symbol c : argTypeRoleType.columnKeySet()) {

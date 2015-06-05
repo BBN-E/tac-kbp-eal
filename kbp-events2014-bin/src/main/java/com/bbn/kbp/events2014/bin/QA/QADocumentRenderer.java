@@ -29,19 +29,26 @@ import java.io.IOException;
  * Created by jdeyoung on 6/4/15.
  */
 final class QADocumentRenderer {
-
-  final private String docID;
   private static final Logger log = LoggerFactory.getLogger(QADocumentRenderer.class);
   private final Ordering<Response> overallOrdering;
   private final Ordering<TypeRoleFillerRealis> trfrOrdering;
 
-
-  QADocumentRenderer(final String docID, final Ordering<Response> overallOrdering,
+  private QADocumentRenderer(final Ordering<Response> overallOrdering,
       final Ordering<TypeRoleFillerRealis> trfrOrdering) {
-    this.docID = docID;
     this.trfrOrdering = trfrOrdering;
     this.overallOrdering = overallOrdering;
   }
+
+  public static QADocumentRenderer createWithDefaultOrdering() {
+    return new QADocumentRenderer(DEFAULT_OVERALL_ORDERING, DEFAULT_TRFR_ORDERING);
+  }
+
+  private static final Ordering<Response> DEFAULT_OVERALL_ORDERING = Ordering.compound(ImmutableList
+      .of(Response.byEvent(), Response.byRole(), Response.byFillerString(),
+          Response.byCASSttring()));
+  private static final Ordering<TypeRoleFillerRealis> DEFAULT_TRFR_ORDERING = Ordering.compound(ImmutableList.of(
+      TypeRoleFillerRealis.byType(), TypeRoleFillerRealis.byRole(), TypeRoleFillerRealis.byCAS(),
+      TypeRoleFillerRealis.byRealis()));
 
   private static String bodyHeader() {
     return "<body>";
@@ -151,7 +158,7 @@ final class QADocumentRenderer {
     sb.append(CSS());
     sb.append(bodyHeader());
     sb.append("<h1>");
-    sb.append(docID);
+    sb.append(answerKey.docId());
     sb.append("</h1>\n");
 
     final ImmutableMultimap<TypeRoleFillerRealis, Response> trfrToAllResponses = Multimaps
