@@ -14,6 +14,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
@@ -175,9 +176,11 @@ final class QADocumentRenderer {
         trfrToAllResponses.keySet(),
         Functions.compose(Functions.toStringFunction(), TypeRoleFillerRealis.Type));
 
+    final ImmutableSetMultimap<String, Warning>
+        typesToWarnings = MultimapUtils.composeToSetMultimap(typeToTRFR, trfrToWarning);
+
     for (final String type : Ordering.natural().sortedCopy(typeToTRFR.keySet())) {
-      final ImmutableSet<Warning> typeWarnings =
-          MultimapUtils.composeToSetMultimap(typeToTRFR, trfrToWarning).get(type);
+      final ImmutableSet<Warning> typeWarnings = typesToWarnings.get(type);
       final Optional<Warning.Severity> typeWarning = extractWarningForType(typeWarnings,
           typeToTRFR.get(type));
       if (typeWarning.isPresent()) {
