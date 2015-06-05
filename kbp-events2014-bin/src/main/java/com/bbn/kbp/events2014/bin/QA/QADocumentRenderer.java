@@ -28,7 +28,7 @@ import java.io.IOException;
 /**
  * Created by jdeyoung on 6/4/15.
  */
-public final class QADocumentRenderer {
+final class QADocumentRenderer {
 
   final private String docID;
   private static final Logger log = LoggerFactory.getLogger(QADocumentRenderer.class);
