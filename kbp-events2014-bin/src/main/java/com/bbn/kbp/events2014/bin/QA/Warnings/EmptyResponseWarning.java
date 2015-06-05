@@ -25,7 +25,7 @@ public final class EmptyResponseWarning implements WarningRule {
       final String noPunct = trimmed.replaceAll("[^A-Za-z0-9]", "");
       if(noPunct.trim().isEmpty()) {
         result.put(r, new Warning(String.format("%s appears to be garbage or empty", trimmed),
-            Warning.SEVERITY.MINIOR));
+            Warning.Severity.MINOR));
       }
     }
     return result.build();

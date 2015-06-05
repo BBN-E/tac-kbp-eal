@@ -92,7 +92,7 @@ final class QADocumentRenderer {
 
   private static String CSS() {
     final StringBuilder sb = new StringBuilder("<style>\n");
-    for (Warning.SEVERITY s : Warning.SEVERITY.values()) {
+    for (Warning.Severity s : Warning.Severity.values()) {
       sb.append(s.CSS());
       sb.append("\n");
     }
@@ -110,9 +110,9 @@ final class QADocumentRenderer {
   }
 
   private static int warningsDiv(final StringBuilder sb,
-      final Iterable<Warning.SEVERITY> severities) {
+      final Iterable<Warning.Severity> severities) {
     int total = 0;
-    for (final Warning.SEVERITY s : severities) {
+    for (final Warning.Severity s : severities) {
       sb.append("<div style=\"");
       sb.append(s.CSSClassName());
       sb.append("\" class=\"");
@@ -124,15 +124,15 @@ final class QADocumentRenderer {
   }
 
 
-  protected static <K> Optional<Warning.SEVERITY> extractWarningForType(
+  protected static <K> Optional<Warning.Severity> extractWarningForType(
       Iterable<Warning> warnings,
       Iterable<K> all) {
     int numWarnings = 0;
     for (Warning w : warnings) {
       numWarnings++;
       // any severe warning is propogated
-      if (w.severity().equals(Warning.SEVERITY.MAJOR)) {
-        return Optional.of(Warning.SEVERITY.MAJOR);
+      if (w.severity().equals(Warning.Severity.MAJOR)) {
+        return Optional.of(Warning.Severity.MAJOR);
       }
     }
     int totalItems = ImmutableList.copyOf(all).size();
@@ -140,10 +140,10 @@ final class QADocumentRenderer {
     // there can be more than one warning per thing
     // 1 is a UI hack - this way singletons don't get propogated
     if ((numWarnings >= totalItems / 2) && totalItems > 1) {
-      return Optional.of(Warning.SEVERITY.MAJOR);
+      return Optional.of(Warning.Severity.MAJOR);
     }
     if (numWarnings > 0) {
-      return Optional.of(Warning.SEVERITY.MINIOR);
+      return Optional.of(Warning.Severity.MINOR);
     }
     return Optional.absent();
   }
@@ -179,7 +179,7 @@ final class QADocumentRenderer {
     for (final String type : Ordering.natural().sortedCopy(typeToTRFR.keySet())) {
       final ImmutableSet<Warning> typeWarnings =
           MultimapUtils.composeToSetMultimap(typeToTRFR, trfrToWarning).get(type);
-      final Optional<Warning.SEVERITY> typeWarning = extractWarningForType(typeWarnings,
+      final Optional<Warning.Severity> typeWarning = extractWarningForType(typeWarnings,
           typeToTRFR.get(type));
       if (typeWarning.isPresent()) {
         warningsDiv(sb, ImmutableList.of(typeWarning.get()));
@@ -200,7 +200,7 @@ final class QADocumentRenderer {
       for (final TypeRoleFillerRealis trfr : trfrOrdering.sortedCopy(typeToTRFR.get(type))) {
         log.info("serializing trfr {}", trfr);
         final String readableTRFR = AssessmentQA.readableTRFR(trfr);
-        final Optional<Warning.SEVERITY> trfrWarning =
+        final Optional<Warning.Severity> trfrWarning =
             extractWarningForType(trfrToWarning.get(trfr), trfrToAllResponses.get(trfr));
         if (trfrWarning.isPresent()) {
           warningsDiv(sb, ImmutableList.of(trfrWarning.get()));

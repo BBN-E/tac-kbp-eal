@@ -11,20 +11,20 @@ import java.util.Set;
 public class Warning {
 
   final String warningString;
-  final Warning.SEVERITY severity;
+  final Severity severity;
 
   public Warning(
-      final String warningString, final SEVERITY severity) {
+      final String warningString, final Severity severity) {
     this.warningString = warningString;
     this.severity = severity;
   }
 
-  public static Warning create(final String warningString, final SEVERITY severity) {
+  public static Warning create(final String warningString, final Severity severity) {
     return new Warning(warningString, severity);
   }
 
-  public static ImmutableSet<SEVERITY> extractSeverity(final Iterable<Warning> warnings) {
-    Set<SEVERITY> severities = Sets.newHashSet();
+  public static ImmutableSet<Severity> extractSeverity(final Iterable<Warning> warnings) {
+    Set<Severity> severities = Sets.newHashSet();
     for (Warning w : warnings) {
       severities.add(w.severity);
     }
@@ -54,7 +54,7 @@ public class Warning {
     return warningString;
   }
 
-  public SEVERITY severity() {
+  public Severity severity() {
     return severity;
   }
 
@@ -65,7 +65,7 @@ public class Warning {
     return result;
   }
 
-  public enum SEVERITY {
+  public enum Severity {
     MAJOR("major", ".major {\n"
         + "box-sizing: border-box;\n"
         + "margin: 2px;\n"
@@ -76,7 +76,7 @@ public class Warning {
         + "visibility: inherit;\n"
         + "font-weight: bold;\n"
         + "}\n"),
-    MINIOR("minor", ".minor {\n"
+    MINOR("minor", ".minor {\n"
         + "box-sizing: border-box;\n"
         + "margin: 2px;\n"
         + "border-color: orange;\n"
@@ -90,7 +90,7 @@ public class Warning {
     final String CSSClassName;
     final String CSS;
 
-    SEVERITY(final String cssClassName, final String css) {
+    Severity(final String cssClassName, final String css) {
       CSSClassName = cssClassName;
       CSS = css;
     }
