@@ -1,13 +1,14 @@
 package com.bbn.kbp.events2014.bin.QA.Warnings;
 
 import com.bbn.bue.common.StringUtils;
+import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.bin.QA.AssessmentQA;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableTable;
@@ -82,13 +83,9 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
   public static ConflictingTypeWarningRule create(File argsFile, File rolesFile)
       throws IOException {
     Table<Symbol, Symbol, Set<Symbol>> argTypeRoleType = HashBasedTable.create();
-    Multimap<Symbol, Symbol> roleToTypes = HashMultimap.create();
-    for (String line : Files.readLines(rolesFile, Charset.defaultCharset())) {
-      String[] parts = line.split("\t");
-      for (String type : parts[1].split(",\\s+")) {
-        roleToTypes.put(Symbol.from(parts[0].trim()), Symbol.from(type.trim()));
-      }
-    }
+
+    final ImmutableMultimap<Symbol, Symbol> roleToTypes = FileUtils.loadSymbolMultimap(
+        Files.asCharSource(rolesFile, Charsets.UTF_8));
 
     for (String line : Files.readLines(argsFile, Charset.defaultCharset())) {
       String[] parts = line.trim().split("\t");
@@ -107,7 +104,7 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
       }
     }
 
-    log.info("Role to type mapping: {}", 
+    log.info("Role to type mapping: {}",
         StringUtils.NewlineJoiner.withKeyValueSeparator(" -> ").join(roleToTypes.asMap()));
 
     for (Symbol r : argTypeRoleType.rowKeySet()) {
