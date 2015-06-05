@@ -13,7 +13,7 @@ import com.google.common.collect.SetMultimap;
  */
 public final class EmptyResponseWarning implements WarningRule {
 
-  protected EmptyResponseWarning() {
+  private EmptyResponseWarning() {
 
   }
 
