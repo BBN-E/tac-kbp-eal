@@ -48,7 +48,8 @@ public class AssessmentQA {
     for (Symbol docID : store.docIDs()) {
       log.info("processing document {}", docID.asString());
       final AnswerKey answerKey = MakeAllRealisActual.forAnswerKey().apply(store.read(docID));
-      final DocumentRenderer htmlRenderer = new DocumentRenderer(docID.asString(), OVERALL_ORDERING,
+      final QADocumentRenderer
+          htmlRenderer = new QADocumentRenderer(docID.asString(), OVERALL_ORDERING,
           TRFR_ORDERING);
       log.info("serializing {}", docID.asString());
       htmlRenderer.renderTo(

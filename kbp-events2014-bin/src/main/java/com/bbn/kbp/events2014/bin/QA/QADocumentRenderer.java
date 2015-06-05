@@ -28,15 +28,15 @@ import java.io.IOException;
 /**
  * Created by jdeyoung on 6/4/15.
  */
-public final class DocumentRenderer {
+public final class QADocumentRenderer {
 
   final private String docID;
-  private static final Logger log = LoggerFactory.getLogger(DocumentRenderer.class);
+  private static final Logger log = LoggerFactory.getLogger(QADocumentRenderer.class);
   private final Ordering<Response> overallOrdering;
   private final Ordering<TypeRoleFillerRealis> trfrOrdering;
 
 
-  DocumentRenderer(final String docID, final Ordering<Response> overallOrdering,
+  QADocumentRenderer(final String docID, final Ordering<Response> overallOrdering,
       final Ordering<TypeRoleFillerRealis> trfrOrdering) {
     this.docID = docID;
     this.trfrOrdering = trfrOrdering;
