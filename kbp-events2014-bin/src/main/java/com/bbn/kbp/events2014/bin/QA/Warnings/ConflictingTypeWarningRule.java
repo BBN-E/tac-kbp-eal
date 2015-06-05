@@ -54,7 +54,7 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
     for (final Response a : first) {
       final Set<Symbol> possibleFillerTypesForFirst = eventToRoleToFillerType.get(a.type(), a.role());
       for (final Response b : second) {
-        if (a == b || b.canonicalArgument().string().trim().isEmpty()) {
+        if (a.equals(b) || b.canonicalArgument().string().trim().isEmpty()) {
           continue;
         }
         if (a.canonicalArgument().equals(b.canonicalArgument())) {
