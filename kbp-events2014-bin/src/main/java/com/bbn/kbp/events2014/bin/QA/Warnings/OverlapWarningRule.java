@@ -29,6 +29,7 @@ public class OverlapWarningRule extends TRFRWarning {
 
   protected boolean warningAppliesTo(TypeRoleFillerRealis fst, TypeRoleFillerRealis snd) {
     // we don't want to handle the same TRFR twice, but we do want identical TRFRs to be an error
+    // I'm not sure I understand the comment above? ~ rgabbard
     if (fst == snd) {
       return false;
     }
