@@ -69,8 +69,7 @@ public class AssessmentQA {
     ImmutableMultimap.Builder<Response, Warning> warningResponseBuilder =
         ImmutableMultimap.builder();
     for (WarningRule w : warningRules) {
-      Multimap<Response, Warning> warnings = w.applyWarning(answerKey);
-      warningResponseBuilder.putAll(warnings);
+      warningResponseBuilder.putAll(w.applyWarning(answerKey));
     }
     return warningResponseBuilder.build();
   }
