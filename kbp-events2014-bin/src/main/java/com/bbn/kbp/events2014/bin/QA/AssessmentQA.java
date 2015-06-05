@@ -17,7 +17,6 @@ import com.bbn.kbp.events2014.transformers.MakeAllRealisActual;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
 import com.google.common.io.Files;
 
@@ -49,7 +48,8 @@ public class AssessmentQA {
     for (Symbol docID : store.docIDs()) {
       log.info("processing document {}", docID.asString());
       final AnswerKey answerKey = MakeAllRealisActual.forAnswerKey().apply(store.read(docID));
-      final DocumentRenderer htmlRenderer = new DocumentRenderer(docID.asString(), overallOrdering, trfrOrdering);
+      final DocumentRenderer htmlRenderer = new DocumentRenderer(docID.asString(), OVERALL_ORDERING,
+          TRFR_ORDERING);
       log.info("serializing {}", docID.asString());
       htmlRenderer.renderTo(
           Files.asCharSink(new File(outputDir, docID.asString() + ".html"), Charset.defaultCharset()),
@@ -57,10 +57,10 @@ public class AssessmentQA {
     }
   }
 
-  private static Ordering<Response> overallOrdering = Ordering.compound(ImmutableList
+  private static final Ordering<Response> OVERALL_ORDERING = Ordering.compound(ImmutableList
       .of(Response.byEvent(), Response.byRole(), Response.byFillerString(),
           Response.byCASSttring()));
-  private static Ordering<TypeRoleFillerRealis> trfrOrdering = Ordering.compound(ImmutableList.of(
+  private static final Ordering<TypeRoleFillerRealis> TRFR_ORDERING = Ordering.compound(ImmutableList.of(
       TypeRoleFillerRealis.byType(), TypeRoleFillerRealis.byRole(), TypeRoleFillerRealis.byCAS(),
       TypeRoleFillerRealis.byRealis()));
 
