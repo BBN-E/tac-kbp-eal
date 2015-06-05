@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.List;
 
 /**
  * Created by jdeyoung on 6/1/15.
@@ -43,7 +42,7 @@ public class AssessmentQA {
             AssessmentSpecFormats.Format.KBP2015);
     final File outputDir = params.getCreatableDirectory("outputDir");
 
-    warnings = ImmutableList.of(ConjunctionWarningRule.create(), OverlapWarningRule.create(),
+    final ImmutableList<WarningRule> warnings = ImmutableList.of(ConjunctionWarningRule.create(), OverlapWarningRule.create(),
         ConflictingTypeWarningRule.create(params.getString("argFile"), params.getString("roleFile")),
         EmptyResponseWarning.create());
 
@@ -54,7 +53,7 @@ public class AssessmentQA {
       log.info("serializing {}", docID.asString());
       htmlRenderer.renderTo(
           Files.asCharSink(new File(outputDir, docID.asString() + ".html"), Charset.defaultCharset()),
-          answerKey, generateWarnings(answerKey));
+          answerKey, generateWarnings(answerKey, warnings));
     }
   }
 
@@ -64,15 +63,12 @@ public class AssessmentQA {
   private static Ordering<TypeRoleFillerRealis> trfrOrdering = Ordering.compound(ImmutableList.of(
       TypeRoleFillerRealis.byType(), TypeRoleFillerRealis.byRole(), TypeRoleFillerRealis.byCAS(),
       TypeRoleFillerRealis.byRealis()));
-  private static List<? extends WarningRule> warnings = null;
-
-
 
   private static ImmutableMultimap<Response, Warning> generateWarnings(
-      AnswerKey answerKey) {
+      AnswerKey answerKey, final Iterable<? extends WarningRule> warningRules) {
     ImmutableMultimap.Builder<Response, Warning> warningResponseBuilder =
         ImmutableMultimap.builder();
-    for (WarningRule w : warnings) {
+    for (WarningRule w : warningRules) {
       Multimap<Response, Warning> warnings = w.applyWarning(answerKey);
       warningResponseBuilder.putAll(warnings);
     }
