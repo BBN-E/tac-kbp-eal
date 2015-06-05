@@ -41,6 +41,8 @@ public class AssessmentQA {
     final AnnotationStore store =
         AssessmentSpecFormats.openAnnotationStore(params.getExistingDirectory("annotationStore"),
             AssessmentSpecFormats.Format.KBP2015);
+    final File outputDir = params.getCreatableDirectory("outputDir");
+
     warnings = ImmutableList.of(ConjunctionWarningRule.create(), OverlapWarningRule.create(),
         ConflictingTypeWarningRule.create(params.getString("argFile"), params.getString("roleFile")),
         EmptyResponseWarning.create());
@@ -49,10 +51,9 @@ public class AssessmentQA {
       log.info("processing document {}", docID.asString());
       final AnswerKey answerKey = MakeAllRealisActual.forAnswerKey().apply(store.read(docID));
       final DocumentRenderer htmlRenderer = new DocumentRenderer(docID.asString(), overallOrdering, trfrOrdering);
-      final File output = params.getCreatableDirectory("output");
       log.info("serializing {}", docID.asString());
       htmlRenderer.renderTo(
-          Files.asCharSink(new File(output, docID.asString() + ".html"), Charset.defaultCharset()),
+          Files.asCharSink(new File(outputDir, docID.asString() + ".html"), Charset.defaultCharset()),
           answerKey, generateWarnings(answerKey));
     }
   }
