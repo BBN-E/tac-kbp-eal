@@ -22,7 +22,7 @@ abstract class ConstainsStringWarningRule implements WarningRule {
 
   private static final Logger log = LoggerFactory.getLogger(ConstainsStringWarningRule.class);
 
-  final ImmutableSet<String> verboten;
+  private final ImmutableSet<String> verboten;
 
   protected ConstainsStringWarningRule(final ImmutableSet<String> verboten) {
     this.verboten = verboten;
@@ -38,7 +38,7 @@ abstract class ConstainsStringWarningRule implements WarningRule {
       if (apply(r)) {
         warnings.put(r, Warning
             .create(String.format("contains one of %s", verboten.toString()),
-                Warning.SEVERITY.MINIOR));
+                Warning.Severity.MINOR));
         log.info("adding {} by contains string", r.canonicalArgument().string());
       }
     }
