@@ -33,11 +33,11 @@ public class OverlapWarningRule extends TRFRWarning {
     if (fst == snd) {
       return false;
     }
-    // only apply to things of the same type
-    if (fst.equals(snd) || fst.type() != snd.type() || fst.role() != snd.role()) {
+    if (fst.equals(snd)) {
       return false;
     }
-    return true;
+    // only apply to things of the same type
+    return fst.type().equals(snd.type()) && fst.role().equals(snd.role());
   }
 
   @Override
