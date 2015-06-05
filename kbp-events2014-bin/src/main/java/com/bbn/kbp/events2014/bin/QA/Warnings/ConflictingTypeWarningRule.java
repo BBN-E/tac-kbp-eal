@@ -1,6 +1,7 @@
 package com.bbn.kbp.events2014.bin.QA.Warnings;
 
 import com.bbn.bue.common.StringUtils;
+import com.bbn.bue.common.annotations.MoveToBUECommon;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.Response;
@@ -8,7 +9,6 @@ import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.bin.QA.AssessmentQA;
 
 import com.google.common.base.Charsets;
-import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableTable;
@@ -22,8 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -33,9 +32,9 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
 
   private static final Logger log = LoggerFactory.getLogger(ConflictingTypeWarningRule.class);
 
-  private final ImmutableTable<Symbol, Symbol, Set<Symbol>> argTypeRoleType;
+  private final ImmutableTable<Symbol, Symbol, ImmutableSet<Symbol>> argTypeRoleType;
 
-  private ConflictingTypeWarningRule(final Table<Symbol, Symbol, Set<Symbol>> argTypeRoleType) {
+  private ConflictingTypeWarningRule(final Table<Symbol, Symbol, ImmutableSet<Symbol>> argTypeRoleType) {
     super();
     this.argTypeRoleType = ImmutableTable.copyOf(argTypeRoleType);
   }
@@ -82,27 +81,13 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
 
   public static ConflictingTypeWarningRule create(File argsFile, File rolesFile)
       throws IOException {
-    Table<Symbol, Symbol, Set<Symbol>> argTypeRoleType = HashBasedTable.create();
-
     final ImmutableMultimap<Symbol, Symbol> roleToTypes = FileUtils.loadSymbolMultimap(
         Files.asCharSource(rolesFile, Charsets.UTF_8));
+    final ImmutableMultimap<Symbol, Symbol> eventTypesToRoles = FileUtils.loadSymbolMultimap(
+        Files.asCharSource(argsFile, Charsets.UTF_8));
 
-    for (String line : Files.readLines(argsFile, Charset.defaultCharset())) {
-      String[] parts = line.trim().split("\t");
-      Symbol type = Symbol.from(parts[0].trim());
-      for (int i = 1; i < parts.length; i++) {
-        Symbol roleKey = Symbol.from(parts[i].trim());
-        Symbol role = Symbol.from(parts[i].trim().replaceAll("[^A-Za-z-.\\s]", ""));
-        log.info("type: {}, roleKey {}, role {}", type, roleKey, role);
-        if (argTypeRoleType.contains(type, role)) {
-          Set<Symbol> types = new HashSet<Symbol>(argTypeRoleType.get(type, role));
-          types.addAll(roleToTypes.get(roleKey));
-          argTypeRoleType.put(type, role, ImmutableSet.copyOf(types));
-        } else {
-          argTypeRoleType.put(type, role, ImmutableSet.copyOf(roleToTypes.get(roleKey)));
-        }
-      }
-    }
+    final ImmutableTable<Symbol, Symbol, ImmutableSet<Symbol>> argTypeRoleType =
+        composeToTableOfSets(roleToTypes, eventTypesToRoles);
 
     log.info("Role to type mapping: {}",
         StringUtils.NewlineJoiner.withKeyValueSeparator(" -> ").join(roleToTypes.asMap()));
@@ -116,6 +101,20 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
     }
 
     return new ConflictingTypeWarningRule(ImmutableTable.copyOf(argTypeRoleType));
+  }
+
+  @MoveToBUECommon
+  private static <R,C,V> ImmutableTable<R, C, ImmutableSet<V>> composeToTableOfSets(
+      final Multimap<R, C> first,
+      final Multimap<C, V> second) {
+    final ImmutableTable.Builder<R,C,ImmutableSet<V>> ret = ImmutableTable.builder();
+    for (final Map.Entry<R, C> firstEntry : first.entries()) {
+      final R rowKey = firstEntry.getKey();
+      final C colKey = firstEntry.getValue();
+
+      ret.put(rowKey, colKey, ImmutableSet.copyOf(second.get(colKey)));
+    }
+    return ret.build();
   }
 
 }
