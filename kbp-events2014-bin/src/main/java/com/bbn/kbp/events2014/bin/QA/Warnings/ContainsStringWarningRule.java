@@ -18,13 +18,13 @@ import java.util.Set;
 /**
  * Created by jdeyoung on 6/4/15.
  */
-abstract class ConstainsStringWarningRule implements WarningRule {
+abstract class ContainsStringWarningRule implements WarningRule {
 
-  private static final Logger log = LoggerFactory.getLogger(ConstainsStringWarningRule.class);
+  private static final Logger log = LoggerFactory.getLogger(ContainsStringWarningRule.class);
 
   private final ImmutableSet<String> verboten;
 
-  protected ConstainsStringWarningRule(final Iterable<String> verboten) {
+  protected ContainsStringWarningRule(final Iterable<String> verboten) {
     this.verboten = ImmutableSet.copyOf(verboten);
   }
 
