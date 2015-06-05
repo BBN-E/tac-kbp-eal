@@ -32,11 +32,11 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
 
   private static final Logger log = LoggerFactory.getLogger(ConflictingTypeWarningRule.class);
 
-  private final ImmutableTable<Symbol, Symbol, ImmutableSet<Symbol>> argTypeRoleType;
+  private final ImmutableTable<Symbol, Symbol, ImmutableSet<Symbol>> eventToRoleToFillerType;
 
-  private ConflictingTypeWarningRule(final Table<Symbol, Symbol, ImmutableSet<Symbol>> argTypeRoleType) {
+  private ConflictingTypeWarningRule(final Table<Symbol, Symbol, ImmutableSet<Symbol>> eventToRoleToFillerType) {
     super();
-    this.argTypeRoleType = ImmutableTable.copyOf(argTypeRoleType);
+    this.eventToRoleToFillerType = ImmutableTable.copyOf(eventToRoleToFillerType);
   }
 
 
@@ -55,13 +55,13 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
     final ImmutableMultimap.Builder<Response, Warning> result =
         ImmutableMultimap.builder();
     for (final Response a : first) {
-      final Set<Symbol> atypes = argTypeRoleType.get(a.type(), a.role());
+      final Set<Symbol> atypes = eventToRoleToFillerType.get(a.type(), a.role());
       for (final Response b : second) {
         if (a == b || b.canonicalArgument().string().trim().isEmpty()) {
           continue;
         }
         if (a.canonicalArgument().equals(b.canonicalArgument())) {
-          final Set<Symbol> btypes = Sets.newHashSet(argTypeRoleType.get(b.type(), b.role()));
+          final Set<Symbol> btypes = Sets.newHashSet(eventToRoleToFillerType.get(b.type(), b.role()));
           btypes.retainAll(atypes);
           if (btypes.size() == 0) {
             result.put(b, Warning.create(String
@@ -86,21 +86,21 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
     final ImmutableMultimap<Symbol, Symbol> eventTypesToRoles = FileUtils.loadSymbolMultimap(
         Files.asCharSource(argsFile, Charsets.UTF_8));
 
-    final ImmutableTable<Symbol, Symbol, ImmutableSet<Symbol>> argTypeRoleType =
+    final ImmutableTable<Symbol, Symbol, ImmutableSet<Symbol>> eventToRoleToFillerType =
         composeToTableOfSets(roleToTypes, eventTypesToRoles);
 
     log.info("Role to type mapping: {}",
         StringUtils.NewlineJoiner.withKeyValueSeparator(" -> ").join(roleToTypes.asMap()));
 
-    for (Symbol r : argTypeRoleType.rowKeySet()) {
-      for (Symbol c : argTypeRoleType.columnKeySet()) {
+    for (Symbol r : eventToRoleToFillerType.rowKeySet()) {
+      for (Symbol c : eventToRoleToFillerType.columnKeySet()) {
         if (c != null) {
-          log.info("{}.{}: {}", r, c, argTypeRoleType.get(r, c));
+          log.info("{}.{}: {}", r, c, eventToRoleToFillerType.get(r, c));
         }
       }
     }
 
-    return new ConflictingTypeWarningRule(ImmutableTable.copyOf(argTypeRoleType));
+    return new ConflictingTypeWarningRule(ImmutableTable.copyOf(eventToRoleToFillerType));
   }
 
   @MoveToBUECommon
