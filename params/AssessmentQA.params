@@ -1,5 +1,5 @@
 annotationStore: /d4m/home/rgabbard/repos/emnlp2015-dwholey/special-purpose/emnlp2015/assessments/dwholey/annotation
-output: /d4m/home/jdeyoung/tmp/qa
+outputDir: /d4m/home/jdeyoung/tmp/qa
 kbp.open.root: /home/jdeyoung/workspace/kbp-2014-event-arguments/
 roleFile: %kbp.open.root%/params/role.args.tsv
 argFile: %kbp.open.root%/params/table.args.tsv
