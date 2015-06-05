@@ -24,8 +24,8 @@ abstract class ConstainsStringWarningRule implements WarningRule {
 
   private final ImmutableSet<String> verboten;
 
-  protected ConstainsStringWarningRule(final ImmutableSet<String> verboten) {
-    this.verboten = verboten;
+  protected ConstainsStringWarningRule(final Iterable<String> verboten) {
+    this.verboten = ImmutableSet.copyOf(verboten);
   }
 
   public SetMultimap<Response, Warning> applyWarning(
