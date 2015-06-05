@@ -78,18 +78,18 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
     return result.build();
   }
 
-  public static ConflictingTypeWarningRule create(String argsFile, String rolesFile)
+  public static ConflictingTypeWarningRule create(File argsFile, File rolesFile)
       throws IOException {
     Table<Symbol, Symbol, Set<Symbol>> argTypeRoleType = HashBasedTable.create();
     Multimap<Symbol, Symbol> roleToTypes = HashMultimap.create();
-    for (String line : Files.readLines(new File(rolesFile), Charset.defaultCharset())) {
+    for (String line : Files.readLines(rolesFile, Charset.defaultCharset())) {
       String[] parts = line.split("\t");
       for (String type : parts[1].split(",\\s+")) {
         roleToTypes.put(Symbol.from(parts[0].trim()), Symbol.from(type.trim()));
       }
     }
 
-    for (String line : Files.readLines(new File(argsFile), Charset.defaultCharset())) {
+    for (String line : Files.readLines(argsFile, Charset.defaultCharset())) {
       String[] parts = line.trim().split("\t");
       Symbol type = Symbol.from(parts[0].trim());
       for (int i = 1; i < parts.length; i++) {
