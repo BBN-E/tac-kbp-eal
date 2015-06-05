@@ -41,16 +41,17 @@ public class AssessmentQA {
             AssessmentSpecFormats.Format.KBP2015);
     final File outputDir = params.getCreatableDirectory("outputDir");
 
-    final ImmutableList<WarningRule> warnings = ImmutableList.of(ConjunctionWarningRule.create(), OverlapWarningRule.create(),
-        ConflictingTypeWarningRule.create(params.getString("argFile"), params.getString("roleFile")),
+    final ImmutableList<WarningRule> warnings = ImmutableList.of(ConjunctionWarningRule.create(),
+        OverlapWarningRule.create(),
+        ConflictingTypeWarningRule
+            .create(params.getString("argFile"), params.getString("roleFile")),
         EmptyResponseWarning.create());
+
+    final QADocumentRenderer htmlRenderer = new QADocumentRenderer(OVERALL_ORDERING, TRFR_ORDERING);
 
     for (Symbol docID : store.docIDs()) {
       log.info("processing document {}", docID.asString());
       final AnswerKey answerKey = MakeAllRealisActual.forAnswerKey().apply(store.read(docID));
-      final QADocumentRenderer
-          htmlRenderer = new QADocumentRenderer(docID.asString(), OVERALL_ORDERING,
-          TRFR_ORDERING);
       log.info("serializing {}", docID.asString());
       htmlRenderer.renderTo(
           Files.asCharSink(new File(outputDir, docID.asString() + ".html"), Charset.defaultCharset()),
