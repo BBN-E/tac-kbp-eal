@@ -1,30 +1,30 @@
-Business.Declare-Bankruptcy	Org 	Time	Place
-Business.Merge-Org	Org	Org 	Time	Place
-Conflict.Attack	Attacker	Target	Instrument 	Time	Place
-Conflict.Demonstrate	Entity[2] 	Time	Place
-Contact.Meet	Entity[3]	Entity[3] 	Time	Place
-Contact.Phone-Write	Entity[3]	Entity[3] 	Time	Place
-Life.Marry	Person	Person 	Time	Place
-Life.Divorce	Person	Person 	Time	Place
-Life.Injure	Agent[1]	Victim	Instrument 	Time	Place
-Life.Die	Agent[1]	Victim	Instrument 	Time	Place
-Movement.Transport 	Agent[1]	Artifact[1]	Vehicle	Price[2]	Origin	Destination 	Time	Place
-Personnel.Start-Position	Person	Entity[1]	Position 	Time	Place
-Personnel.End-Position	Person	Entity[1]	Position 	Time	Place
-Personnel.Nominate	Agent[2]	Person	Position 	Time	Place
-Personnel.Elect	Entity[3]	Person	Position 	Time	Place
-Transaction.Transfer-Ownership	Seller	Buyer	Beneficiary	Price[1]	Artifact[2] 	Time	Place
-Transaction.Transfer-Money	Giver	Recipient	Beneficiary	Money[1] 	Time	Place
-Justice.Arrest-Jail	Agent[1]	Person	Crime 	Time	Place
-Justice.Release-Parole	Entity[3]	Person	Crime 	Time	Place
-Justice.Trial-Hearing	Prosecutor	Adjudicator	Defendant	Crime 	Time	Place
-Justice.Sentence	Adjudicator	Defendant	Sentence	Crime 	Time	Place
-Justice.Fine	Adjudicator	Entity[3]	Money[2]	Crime 	Time	Place
-Justice.Charge-Indict	Prosecutor	Adjudicator	Defendant	Crime 	Time	Place
-Justice.Sue	Plaintiff	Adjudicator	Defendant	Crime 	Time	Place
-Justice.Extradite	Agent[1]	Person	Origin	Destination	Crime 	Time	Place
-Justice.Acquit	Adjudicator	Defendant	Crime 	Time	Place
-Justice.Convict	Adjudicator	Defendant	Crime 	Time	Place
-Justice.Appeal	Prosecutor	Adjudicator	Plaintiff	Defendant	Crime 	Time	Place
-Justice.Execute	Agent[1]	Person	Crime 	Time	Place
-Justice.Pardon	Adjudicator	Defendant	Crime 	Time	Place
+Business.Declare-Bankruptcy	Org	Time	Place
+Business.Merge-Org	Org	Time	Place
+Conflict.Attack	Attacker	Target	Instrument	Time	Place
+Conflict.Demonstrate	Entity[2]	Time	Place
+Contact.Meet		Entity[3]	Time	Place
+Contact.Phone-Write	Entity[3]	Time	Place
+Life.Marry	Person	Time	Place
+Life.Divorce	Person	Time	Place
+Life.Injure	Agent[1]	Victim	Instrument	Time	Place
+Life.Die	Agent[1]	Victim	Instrument	Time	Place
+Movement.Transport	Agent[1]	Artifact[1]	Vehicle	Price[2]	Origin	Destination	Time	Place
+Personnel.Start-Position	Person	Entity[1]	Position	Time	Place
+Personnel.End-Position	Person	Entity[1]	Position	Time	Place
+Personnel.Nominate	Agent[2]	Person	Position	Time	Place
+Personnel.Elect	Entity[3]	Person	Position	Time	Place
+Transaction.Transfer-Ownership	Seller	Buyer	Beneficiary	Price[1]	Artifact[2]	Time	Place
+Transaction.Transfer-Money	Giver	Recipient	Beneficiary	Money[1]	Time	Place
+Justice.Arrest-Jail	Agent[1]	Person	Crime	Time	Place
+Justice.Release-Parole	Entity[3]	Person	Crime	Time	Place
+Justice.Trial-Hearing	Prosecutor	Adjudicator	Defendant	Crime	Time	Place
+Justice.Sentence	Adjudicator	Defendant	Sentence	Crime	Time	Place
+Justice.Fine	Adjudicator	Entity[3]	Money[2]	Crime	Time	Place
+Justice.Charge-Indict	Prosecutor	Adjudicator	Defendant	Crime	Time	Place
+Justice.Sue	Plaintiff	Adjudicator	Defendant	Crime	Time	Place
+Justice.Extradite	Agent[1]	Person	Origin	Destination	Crime	Time	Place
+Justice.Acquit	Adjudicator	Defendant	Crime	Time	Place
+Justice.Convict	Adjudicator	Defendant	Crime	Time	Place
+Justice.Appeal	Prosecutor	Adjudicator	Plaintiff	Defendant	Crime	Time	Place
+Justice.Execute	Agent[1]	Person	Crime	Time	Place
+Justice.Pardon	Adjudicator	Defendant	Crime	Time	Place

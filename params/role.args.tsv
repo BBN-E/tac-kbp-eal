@@ -1,35 +1,35 @@
-Adjudicator	PER, ORG, GPE
-Agent[1]	PER, ORG, GPE
-Agent[2]	PER, ORG, GPE, FAC
-Artifact[1]	PER, WEA, VEH
-Artifact[2]	VEH, WEA, FAC, ORG
-Attacker	PER, ORG, GPE
-Beneficiary	PER, ORG, GPE
-Buyer	PER, ORG, GPE
+Adjudicator	PER	ORG	GPE
+Agent[1]	PER	ORG	GPE
+Agent[2]	PER	ORG	GPE	FAC
+Artifact[1]	PER	WEA	VEH
+Artifact[2]	VEH	WEA	FAC	ORG
+Attacker	PER	ORG	GPE
+Beneficiary	PER	ORG	GPE
+Buyer	PER	ORG	GPE
 Crime	CRIME
-Defendant	PER, ORG, GPE
-Destination	GPE, LOC, FAC
-Entity[1]	ORG, GPE
-Entity[2]	PER, ORG
-Entity[3]	PER, ORG, GPE
-Giver	PER, ORG, GPE
-Instrument	WEA, VEH
+Defendant	PER	ORG	GPE
+Destination	GPE	LOC	FAC
+Entity[1]	ORG	GPE
+Entity[2]	PER	ORG
+Entity[3]	PER	ORG	GPE
+Giver	PER	ORG	GPE
+Instrument	WEA	VEH
 Money[1]	MONEY
 Money[2]	NUM
 Org	ORG
-Origin	GPE, LOC, FAC
+Origin	GPE	LOC	FAC
 Person	PER
-Plaintiff	PER, ORG, GPE
+Plaintiff	PER	ORG	GPE
 Position	JOB
 Price[1]	MONEY
 Price[2]	NUM
-Prosecutor	PER, ORG, GPE
-Recipient	PER, ORG, GPE
-Seller	PER, ORG, GPE
-Target	PER, ORG, VEH, FAC, WEA
+Prosecutor	PER	ORG	GPE
+Recipient	PER	ORG	GPE
+Seller	PER	ORG	GPE
+Target	PER	ORG	VEH	FAC	WEA
 Vehicle	VEH
 Victim	PER
-Place	PLACE, GPE, LOC, FAC 
+Place	PLACE	GPE	LOC	FAC	
 CRIME	CRIME
 PLACE	PLACE
 FAC	FAC
