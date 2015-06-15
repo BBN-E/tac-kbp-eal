@@ -8,6 +8,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Ordering;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
@@ -214,6 +215,42 @@ public final class TypeRoleFillerRealis implements Comparable<TypeRoleFillerReal
       @Override
       public KBPRealis apply(TypeRoleFillerRealis input) {
         return input.realis;
+      }
+    };
+  }
+
+  public static Ordering<TypeRoleFillerRealis> byType() {
+    return new Ordering<TypeRoleFillerRealis>() {
+      @Override
+      public int compare(final TypeRoleFillerRealis left, final TypeRoleFillerRealis right) {
+        return left.type().asString().compareTo(right.type().asString());
+      }
+    };
+  }
+
+  public static Ordering<TypeRoleFillerRealis> byRole() {
+    return new Ordering<TypeRoleFillerRealis>() {
+      @Override
+      public int compare(final TypeRoleFillerRealis left, final TypeRoleFillerRealis right) {
+        return left.role().asString().compareTo(right.role().asString());
+      }
+    };
+  }
+
+  public static Ordering<TypeRoleFillerRealis> byCAS() {
+    return new Ordering<TypeRoleFillerRealis>() {
+      @Override
+      public int compare(final TypeRoleFillerRealis left, final TypeRoleFillerRealis right) {
+        return left.argumentCanonicalString().string().compareTo(right.argumentCanonicalString().string());
+      }
+    };
+  }
+
+  public static Ordering<TypeRoleFillerRealis> byRealis() {
+    return new Ordering<TypeRoleFillerRealis>() {
+      @Override
+      public int compare(final TypeRoleFillerRealis left, final TypeRoleFillerRealis right) {
+        return left.realis().name().compareTo(right.realis().name());
       }
     };
   }

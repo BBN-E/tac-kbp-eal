@@ -28,6 +28,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
@@ -68,6 +69,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public final class AssessmentSpecFormats {
 
   private static final Logger log = LoggerFactory.getLogger(AssessmentSpecFormats.class);
+  private static Character METADATA_MARKER = '#';
 
   private AssessmentSpecFormats() {
     throw new UnsupportedOperationException();
@@ -201,11 +203,14 @@ public final class AssessmentSpecFormats {
       final File f = bareOrWithSuffix(directory, docid.asString(), ACCEPTABLE_SUFFIXES);
 
       final ImmutableList.Builder<Scored<Response>> ret = ImmutableList.builder();
+      final ImmutableMap.Builder<Response, String> responseToMetadata = new ImmutableMap.Builder<Response, String>();
 
       int lineNo = 0;
+      String lastLine = SystemOutput.DEFAULT_METADATA;
       for (final String line : Files.asCharSource(f, UTF_8).readLines()) {
         ++lineNo;
         if (line.isEmpty() || line.startsWith("#")) {
+          lastLine = line.trim();
           continue;
         }
         final List<String> parts = ImmutableList.copyOf(OnTabs.split(line));
@@ -213,7 +218,18 @@ public final class AssessmentSpecFormats {
           // we ignore the first field because input system IDs are currently not preserved
           try {
             final double confidence = Double.parseDouble(parts.get(10));
-            ret.add(Scored.from(parseArgumentFields(parts.subList(1, parts.size())), confidence));
+            final Response response = parseArgumentFields(parts.subList(1, parts.size()));
+            // do not require a # to be put in the metadata beforehand
+            if (lastLine.length() > 0 && lastLine.charAt(0) == METADATA_MARKER
+                && lastLine.length() > 1) {
+              final String metadata = lastLine.substring(1);
+              responseToMetadata.put(response, metadata);
+            } else {
+              responseToMetadata.put(response, SystemOutput.DEFAULT_METADATA);
+            }
+
+            ret.add(Scored.from(response, confidence));
+            lastLine = line;
           } catch (IndexOutOfBoundsException iobe) {
             throw new RuntimeException(
                 String.format("Expected 11 tab-separated columns, but got %d", parts.size()), iobe);
@@ -224,7 +240,7 @@ public final class AssessmentSpecFormats {
         }
       }
 
-      return SystemOutput.from(docid, ret.build());
+      return SystemOutput.from(docid, ret.build(), responseToMetadata.build());
     }
 
     @Override
@@ -244,6 +260,10 @@ public final class AssessmentSpecFormats {
 
       try {
         for (final Response response : format.responseOrdering().sortedCopy(output.responses())) {
+          final String metadata = output.metadata(response);
+          if(!metadata.equals(SystemOutput.DEFAULT_METADATA)) {
+            out.print(METADATA_MARKER + metadata + "\n");
+          }
           //out.print(response.responseID());
           out.print(format.identifierField(response));
           out.print("\t");
@@ -271,8 +291,14 @@ public final class AssessmentSpecFormats {
       if (docIDs().contains(docid)) {
         return read(docid);
       } else {
-        return SystemOutput.from(docid, ImmutableList.<Scored<Response>>of());
+        return SystemOutput.from(docid, ImmutableList.<Scored<Response>>of(),
+            ImmutableMap.<Response, String>of());
       }
+    }
+
+    @Override
+    public String toString() {
+      return "SystemOutputStore <-- " + directory;
     }
   }
 

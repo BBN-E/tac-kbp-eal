@@ -3,9 +3,11 @@ package com.bbn.bue.common.diff;
 import com.bbn.bue.common.collections.CollectionUtils;
 import com.bbn.bue.common.collections.MapUtils;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events2014.scorer.observers.breakdowns.BrokenDownProvenancedConfusionMatrix;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.HashBasedTable;
@@ -148,19 +150,38 @@ public final class ProvenancedConfusionMatrix<CellFiller> {
     return builder.build();
   }
 
-  public String prettyPrint() {
+  private String prettyPrint(Ordering<Symbol> labelOrdering, Optional<? extends Ordering<? super CellFiller>> fillerOrdering) {
     final StringBuilder sb = new StringBuilder();
 
-    for (final Table.Cell<Symbol, Symbol, List<CellFiller>> cell : table.cellSet()) {
-      sb.append(String.format(" =============== %s / %s ==============\n", cell.getRowKey(),
-          cell.getColumnKey()));
-      for (final CellFiller filler : cell.getValue()) {
-        sb.append("\n\t").append(filler.toString());
+    final List<Symbol> sortedColumns = labelOrdering.sortedCopy(table.columnKeySet());
+    for (final Symbol rowLabel : labelOrdering.sortedCopy(table.rowKeySet())) {
+      for (final Symbol colLabel : sortedColumns) {
+        if (table.contains(rowLabel, colLabel)) {
+          sb.append(String.format(" =============== %s / %s ==============\n", rowLabel, colLabel));
+          final Iterable<CellFiller> orderedFillers;
+          if (fillerOrdering.isPresent()) {
+            orderedFillers = fillerOrdering.get().sortedCopy(table.get(rowLabel, colLabel));
+          } else {
+            orderedFillers = table.get(rowLabel, colLabel);
+          }
+
+          for (final CellFiller filler : orderedFillers) {
+            sb.append("\n\t").append(filler.toString());
+          }
+          sb.append("\n");
+        }
       }
-      sb.append("\n");
     }
 
     return sb.toString();
+  }
+
+  public String prettyPrint() {
+    return prettyPrint(SymbolUtils.byStringOrdering(), Optional.<Ordering<CellFiller>>absent());
+  }
+
+  public String prettyPrintWithFillerOrdering(Ordering<? super CellFiller> cellFillerOrdering) {
+    return prettyPrint(SymbolUtils.byStringOrdering(), Optional.of(cellFillerOrdering));
   }
 
 

@@ -3,12 +3,14 @@ package com.bbn.bue.common.diff;
 import com.bbn.bue.common.evaluation.FMeasureCounts;
 import com.bbn.bue.common.primitives.DoubleUtils;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.bue.common.symbols.SymbolUtils;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableTable;
+import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
 
@@ -44,16 +46,20 @@ public abstract class SummaryConfusionMatrix {
   public abstract Set<Symbol> rightLabels();
 
   // this should be made prettier
-  public final String prettyPrint() {
+  public final String prettyPrint(Ordering<Symbol> labelOrdering) {
     final StringBuilder sb = new StringBuilder();
 
-    for (final Symbol key1 : leftLabels()) {
-      for (final Symbol key2 : rightLabels()) {
+    for (final Symbol key1 : labelOrdering.sortedCopy(leftLabels())) {
+      for (final Symbol key2 : labelOrdering.sortedCopy(rightLabels())) {
         sb.append(String.format("%s / %s: %6.2f\n", key1, key2, cell(key1, key2)));
       }
     }
 
     return sb.toString();
+  }
+
+  public final String prettyPrint() {
+    return prettyPrint(SymbolUtils.byStringOrdering());
   }
 
   public static Builder builder() {

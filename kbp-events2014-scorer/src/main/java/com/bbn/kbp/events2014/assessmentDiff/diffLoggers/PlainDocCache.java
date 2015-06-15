@@ -26,6 +26,11 @@ public final class PlainDocCache {
   // a little, but I'm not sure this is actually even used, so I won't bother with it
   // more for now...
   public String getPlainDoc(final Symbol docid) throws IOException {
-    return Files.toString(this.docIDToFileMap.get(docid), Charsets.UTF_8);
+    final File file = this.docIDToFileMap.get(docid);
+    if (file != null) {
+      return Files.toString(file, Charsets.UTF_8);
+    } else {
+      throw new RuntimeException("Don't know original text for " + docid);
+    }
   }
 }

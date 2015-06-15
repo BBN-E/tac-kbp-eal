@@ -85,6 +85,10 @@ public final class CorefAnnotation {
     return CASesToIDs.keySet();
   }
 
+  public ImmutableMap<KBPString, Integer> CASesToIDs() {
+    return CASesToIDs;
+  }
+
   public ImmutableSet<KBPString> unannotatedCASes() {
     return unannotated;
   }
@@ -400,10 +404,24 @@ public final class CorefAnnotation {
       return this;
     }
 
-    public void addUnannotatedCASes(Iterable<KBPString> unannotatedCASes) {
+    public Builder addUnannotatedCASes(Iterable<KBPString> unannotatedCASes) {
       for (final KBPString cas : unannotatedCASes) {
         addUnannotatedCAS(cas);
       }
+      return this;
+    }
+
+    /**
+     * Notify the coref annotation that a CAS ought to be present. If it is already present as
+     * assessed or unassessed, nothing happens. Otherwise it is put in a new cluster (not as
+     * unannotated).  A {@link Random} must be provided in case we need to put it in a new random
+     * cluster.
+     */
+    public Builder registerCAS(final KBPString cas, final Random rng) {
+      if (!CASesToIDsMutable.containsKey(cas)) {
+        return putInNewRandomCluster(cas, rng);
+      }
+      return this;
     }
   }
 

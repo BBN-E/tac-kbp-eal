@@ -13,10 +13,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * Interface to define preprocessing steps for KBP
  */
 public interface Preprocessor {
-  public Preprocessor.Result preprocess(final SystemOutput systemOutput,
+
+  Preprocessor.Result preprocess(final SystemOutput systemOutput,
       final AnswerKey answerKey);
 
-  public class Result {
+  void logStats();
+
+  class Result {
     private final AnswerKey answerKey;
     private final SystemOutput systemOutput;
     private final Function<KBPString, KBPString> normalizer;

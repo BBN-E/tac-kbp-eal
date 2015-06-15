@@ -268,6 +268,48 @@ public final class Response {
     }
   };
 
+
+  public static final Ordering<Response> byEvent() {
+    return new Ordering<Response>() {
+      @Override
+      public int compare(final Response left, final Response right) {
+        return left.type().asString().compareTo(right.type().asString());
+      }
+    };
+  }
+
+  public static final Ordering<Response> byRole() {
+    return new Ordering<Response>() {
+      @Override
+      public int compare(final Response left, final Response right) {
+        return left.role().asString().compareTo(right.role().asString());
+      }
+    };
+  }
+
+  public static final Ordering<Response> byFillerString() {
+    return new Ordering<Response>() {
+      @Override
+      public int compare(final Response left, final Response right) {
+        CharOffsetSpan leftString = left.baseFiller();
+        CharOffsetSpan rightString = right.baseFiller();
+        if(leftString.string().isPresent() && rightString.string().isPresent()) {
+          return leftString.string().get().compareTo(rightString.string().get());
+        }
+        return leftString.compareTo(rightString);
+      }
+    };
+  }
+
+  public static final Ordering<Response> byCASSttring() {
+    return new Ordering<Response>() {
+      @Override
+      public int compare(final Response left, final Response right) {
+        return left.canonicalArgument().compareTo(right.canonicalArgument());
+      }
+    };
+  }
+
   public static final Function<Response, Symbol> DocID = new Function<Response, Symbol>() {
     @Override
     public Symbol apply(final Response x) {

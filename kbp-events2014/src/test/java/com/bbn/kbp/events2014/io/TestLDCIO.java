@@ -15,7 +15,9 @@ import com.bbn.kbp.events2014.ResponseAssessment.MentionType;
 import com.bbn.kbp.events2014.SystemOutput;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Files;
@@ -33,6 +35,7 @@ public class TestLDCIO extends TestCase {
   private Scored<Response> arg;
   private ResponseAssessment ann;
   private AssessedResponse annArg;
+  private String argMetadata;
 
   @Override
   public void setUp() {
@@ -52,6 +55,7 @@ public class TestLDCIO extends TestCase {
             Optional.of(KBPRealis.Actual),
             Optional.of(FieldAssessment.CORRECT),
             Optional.of(MentionType.NAME));
+    argMetadata = "metadata";
     annArg = AssessedResponse.from(arg.item(), ann);
   }
 
@@ -65,12 +69,20 @@ public class TestLDCIO extends TestCase {
     testArgumentRoundtrip(AssessmentSpecFormats.Format.KBP2015);
   }
 
+  @Test
+  public void testFilter() throws IOException {
+    SystemOutput raw = SystemOutput.from(docid, ImmutableList.of(arg), ImmutableMap.of(arg.item(), argMetadata));
+    SystemOutput filtered = raw.copyWithFilteredResponses(Predicates.<Scored<Response>>alwaysTrue());
+    assertEquals(raw.metadata(arg.item()), filtered.metadata(arg.item()));
+    assertEquals(raw.metadata(arg.item()), argMetadata);
+  }
+
   public void testArgumentRoundtrip(AssessmentSpecFormats.Format format) throws IOException {
     final File tmpDir = Files.createTempDir();
     tmpDir.deleteOnExit();
 
     final SystemOutputStore store1 = AssessmentSpecFormats.createSystemOutputStore(tmpDir, format);
-    store1.write(SystemOutput.from(docid, ImmutableList.of(arg)));
+    store1.write(SystemOutput.from(docid, ImmutableList.of(arg), ImmutableMap.of(arg.item(), argMetadata)));
     store1.close();
 
     final SystemOutputStore source2 = AssessmentSpecFormats.openSystemOutputStore(tmpDir, format);
@@ -79,6 +91,7 @@ public class TestLDCIO extends TestCase {
 
     assertEquals(1, rereadArg.size());
     assertEquals(arg, Iterables.getFirst(rereadArg.scoredResponses(), null));
+    assertEquals(argMetadata, rereadArg.metadata(arg.item()));
   }
 
   @Test

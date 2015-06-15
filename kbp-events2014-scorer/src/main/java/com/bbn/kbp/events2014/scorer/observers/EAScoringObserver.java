@@ -118,6 +118,11 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
     return breakdowns.build();
   }
 
+  @Override
+  public void startCorpus() {
+    documentResults.clear();
+    ;
+  }
 
   /**
    * Write the final scoring output to a directory.
@@ -196,7 +201,8 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
 
     final SummaryConfusionMatrix summaryConfusionMatrix = confusionMatrix.buildSummaryMatrix();
     sb.append(summaryConfusionMatrix.prettyPrint()).append("\n");
-    sb.append(confusionMatrix.prettyPrint()).append("\n");
+    sb.append(confusionMatrix.prettyPrintWithFillerOrdering(
+        Ordering.usingToString())).append("\n");
 
     Files.asCharSink(new File(perDocLogDir, "confusionMatrix.txt"), Charsets.UTF_8)
         .write(sb.toString());

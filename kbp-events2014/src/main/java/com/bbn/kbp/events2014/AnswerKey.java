@@ -1,26 +1,26 @@
 package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.StringUtils;
+import com.bbn.bue.common.annotations.MoveToBUECommon;
 import com.bbn.bue.common.symbols.Symbol;
 
+import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
-import static com.bbn.bue.common.collections.IterableUtils.allEqual;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -40,14 +40,20 @@ public final class AnswerKey {
   private static final Logger log = LoggerFactory.getLogger(AnswerKey.class);
 
   private final Symbol docid;
-  private final ImmutableSet<AssessedResponse> annotatedArgs;
+  private final ImmutableMap<Response, AssessedResponse> annotatedArgs;
   private final ImmutableSet<Response> unannotatedResponses;
   private final CorefAnnotation corefAnnotation;
 
   private AnswerKey(final Symbol docId, final Iterable<AssessedResponse> annotatedArgs,
       final Iterable<Response> unannotatedResponses, CorefAnnotation corefAnnotation) {
     this.docid = checkNotNull(docId);
-    this.annotatedArgs = ImmutableSet.copyOf(annotatedArgs);
+    try {
+      this.annotatedArgs = DuplicateTolerantImmutableMapBuilder
+          .uniqueIndex(annotatedArgs, AssessedResponse.Response);
+    } catch (IllegalArgumentException iae) {
+      throw new IllegalStateException("The same response is assessed multiple times differently",
+          iae);
+    }
     this.unannotatedResponses = ImmutableSet.copyOf(unannotatedResponses);
     this.corefAnnotation = checkNotNull(corefAnnotation);
     assertConsistency();
@@ -57,7 +63,8 @@ public final class AnswerKey {
    * Get all assessed responses in this answer key *
    */
   public ImmutableSet<AssessedResponse> annotatedResponses() {
-    return annotatedArgs;
+    // this is a little ugly but we don't want to change the type signature
+    return ImmutableSet.copyOf(annotatedArgs.values());
   }
 
   /**
@@ -94,53 +101,18 @@ public final class AnswerKey {
     return unannotatedResponses.isEmpty();
   }
 
-  public AnswerKey copyAddingPossiblyUnannotated(final Iterable<Response> newUnannotated) {
-    final Set<Response> currentlyAnnotated = FluentIterable.from(annotatedArgs)
-        .transform(AssessedResponse.Response).toSet();
-    final Iterable<Response> newTrulyUnannotated =
-        Iterables.filter(newUnannotated, not(in(currentlyAnnotated)));
-    final CorefAnnotation.Builder corefBuilder = corefAnnotation.strictCopyBuilder();
-    corefBuilder.addUnannotatedCASes(transform(newTrulyUnannotated, Response.CASFunction()));
-
-    return AnswerKey.from(docId(), annotatedResponses(),
-        concat(unannotatedResponses(), newTrulyUnannotated), corefBuilder.build());
+  public Builder modifiedCopyBuilder() {
+    return new Builder(docId(), annotatedArgs, unannotatedResponses,
+        corefAnnotation.strictCopyBuilder());
   }
 
-//    /**
-//     * Get a new AnswerKey which is a copy of this one, except:
-//     *  (a) if a response was previously unannotated and an assessment is present in {@code newAnnotatedResponses},
-//     *  the new assessment will be used in the result.
-//     *  (b) if a response was previously annotated and an assessment is present in {@code newAnnotatedResponses},
-//     *  the new assessment will replace the old one in the result.
-//     *
-//     * @param newAnnotatedResponses
-//     * @return
-//     */
-//	public AnswerKey copyAnnotating(final Iterable<AssessedResponse> newAnnotatedResponses) {
-//        // we use immutable maps for these things to guarantee deterministic order ~ rgabbard
-//        final Map<Response, AssessedResponse> currentResponseToAnnotation =
-//                Maps.uniqueIndex(annotatedResponses(), AssessedResponse.Response);
-//        final Map<Response, AssessedResponse> newResponseToAnnotation =
-//                Maps.uniqueIndex(newAnnotatedResponses, AssessedResponse.Response);
-//
-//        final Set<Response> responsesAnnotatedInResult = Sets.union(
-//                currentResponseToAnnotation.keySet(), newResponseToAnnotation.keySet());
-//
-//        final ImmutableList.Builder<AssessedResponse> resultAnnotatedResponseB = ImmutableList.builder();
-//
-//        for (final Response response : responsesAnnotatedInResult) {
-//            if (newResponseToAnnotation.containsKey(response)) {
-//                resultAnnotatedResponseB.add(newResponseToAnnotation.get(response));
-//            } else {
-//                // this must be present by construction
-//                resultAnnotatedResponseB.add(currentResponseToAnnotation.get(response));
-//            }
-//        }
-//
-//		return new AnswerKey(docId(),
-//			resultAnnotatedResponseB.build(),
-//			difference(unannotatedResponses, responsesAnnotatedInResult));
-//	}
+  /**
+   * Prefer using {@link #modifiedCopyBuilder()}.
+   */
+  @Deprecated
+  public AnswerKey copyAddingPossiblyUnannotated(final Iterable<Response> newUnannotated) {
+    return modifiedCopyBuilder().addUnannotated(newUnannotated).build();
+  }
 
   public static AnswerKey from(final Symbol docId, final Iterable<AssessedResponse> annotatedArgs,
       final Iterable<Response> unannotatedResponses, CorefAnnotation corefAnnotation) {
@@ -183,23 +155,8 @@ public final class AnswerKey {
 
 
   private void assertConsistency() {
-    // maps responses (ignoring confidence) to their annotations
-    final Multimap<Response, AssessedResponse> responseToAnn =
-        Multimaps.index(annotatedArgs, AssessedResponse.Response);
-
-    // check if there are any responses with multiple incompatible annotations.
-    for (final Map.Entry<Response, Collection<AssessedResponse>> entry : responseToAnn.asMap()
-        .entrySet()) {
-      if (!allEqual(transform(entry.getValue(), AssessedResponse.Annotation))) {
-        throw new RuntimeException(String.format(
-            "For %s: inconsistent pooled answer key. The one or more of the following is inconsistent: %s",
-            docid, entry.getValue()));
-      }
-    }
-
     // check there are no response listed as both annotated and unannotated
-    checkArgument(Sets.intersection(FluentIterable.from(annotatedArgs)
-            .transform(AssessedResponse.Response).toSet(), unannotatedResponses).isEmpty(),
+    checkArgument(Sets.intersection(annotatedArgs.keySet(), unannotatedResponses).isEmpty(),
         "For %s, there are responses which are both unannotated and unannotated", docid);
 
     assertNoIncompatibleCorefAnnotations();
@@ -346,4 +303,125 @@ public final class AnswerKey {
             "{" + StringUtils.NewlineJoiner.join(unannotatedResponses()))
         .add("coref", corefAnnotation()).toString();
   }
+
+  public static final class Builder {
+
+    private final Symbol docId;
+    private final Map<Response, AssessedResponse> annotatedArgs;
+    private final Set<Response> unannotatedResponses;
+    private final CorefAnnotation.Builder corefAnnotation;
+
+    private Builder(final Symbol docId,
+        final Map<Response, AssessedResponse> annotatedArgs,
+        final Set<Response> unannotatedResponses,
+        final CorefAnnotation.Builder corefAnnotation) {
+      this.docId = checkNotNull(docId);
+      this.annotatedArgs = Maps.newHashMap(annotatedArgs);
+      this.unannotatedResponses = Sets.newHashSet(unannotatedResponses);
+      this.corefAnnotation = checkNotNull(corefAnnotation);
+    }
+
+    /**
+     * Adds the specified response as an unassessed response to the answer key. If the response is
+     * already assessed, this is ignored.
+     */
+    public Builder addUnannotated(Response r) {
+      if (!annotatedArgs.containsKey(r)) {
+        corefAnnotation.addUnannotatedCAS(r.canonicalArgument());
+        unannotatedResponses.add(r);
+      }
+      // if we attempt to add an assessed response as unannotated nothing happens
+      return this;
+    }
+
+    /**
+     * Adds the specified response as an unassessed responses to the answer key. If any response is
+     * already assessed, the assessment is not removed.
+     */
+    public Builder addUnannotated(Iterable<Response> responses) {
+      for (final Response r : responses) {
+        addUnannotated(r);
+      }
+      return this;
+    }
+
+    public AnswerKey build() {
+      final Set<KBPString> allCASes = FluentIterable.from(annotatedArgs.keySet())
+          .append(unannotatedResponses)
+          .transform(Response.CASFunction()).toSet();
+
+      return new AnswerKey(docId, annotatedArgs.values(), unannotatedResponses,
+          corefAnnotation.build().copyRemovingStringsNotIn(allCASes));
+    }
+
+    public Builder replaceAsssessedResponseMaintainingAssessment(final Response original,
+        final Response replacement, final Random rng) {
+      if (annotatedArgs.keySet().contains(original)) {
+        final ResponseAssessment assessment = annotatedArgs.get(original).assessment();
+        annotatedArgs.remove(original);
+        annotatedArgs.put(replacement, AssessedResponse.from(replacement, assessment));
+        corefAnnotation.registerCAS(replacement.canonicalArgument(), rng);
+      } else {
+        throw new IllegalArgumentException("Cannot replace allegedly assessed response "
+            + original + " because it is not assessed");
+      }
+      return this;
+    }
+
+    public Builder replaceAssessment(final Response response,
+        final ResponseAssessment newAssessment) {
+
+      if (annotatedArgs.containsKey(response)) {
+        annotatedArgs.put(response, AssessedResponse.from(response, newAssessment));
+      } else {
+        throw new IllegalArgumentException("Cannot replace assessment for response " + response +
+            " because it is not yet assessed");
+      }
+      return this;
+    }
+  }
 }
+
+/**
+ * A way of building immutable maps which allows duplicate identical entries.  Guava's standard
+ * {@link com.google.common.collect.ImmutableMap.Builder} will crash when a duplicate key is
+ * encountered, even if the value is the same.  This is often inconvenient.  This class allows
+ * duplicate entries but otherwise works like an {@link com.google.common.collect.ImmutableMap.Builder}.
+ *  Use this when you want to preserve the deterministic ordering properties of {@link
+ * ImmutableMap}. If you don't care, just us a {@link java.util.HashMap}.
+ */
+@MoveToBUECommon
+final class DuplicateTolerantImmutableMapBuilder<K, V> {
+
+  private final ImmutableMap.Builder<K, V> innerBuilder = ImmutableMap.builder();
+  private final Map<K, V> mappingsSeen = Maps.newHashMap();
+
+  public DuplicateTolerantImmutableMapBuilder put(K key, V value) {
+    checkNotNull(value);
+    final V currentValue = mappingsSeen.get(key);
+    if (currentValue != null) {
+      if (!value.equals(currentValue)) {
+        throw new IllegalArgumentException("Attempting to add entry mapping " + key + " to " + value
+            + " but it is already mapped to " + currentValue);
+      }
+    } else {
+      mappingsSeen.put(key, value);
+      innerBuilder.put(key, value);
+    }
+    return this;
+  }
+
+  public ImmutableMap<K, V> build() {
+    return innerBuilder.build();
+  }
+
+  public static <K, V> ImmutableMap<K, V> uniqueIndex(Iterable<V> values,
+      Function<? super V, K> keyFunction) {
+    final DuplicateTolerantImmutableMapBuilder ret = new DuplicateTolerantImmutableMapBuilder();
+    for (final V val : values) {
+      ret.put(keyFunction.apply(val), val);
+    }
+    return ret.build();
+  }
+}
+

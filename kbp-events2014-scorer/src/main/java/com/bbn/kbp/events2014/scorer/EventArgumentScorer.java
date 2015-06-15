@@ -1,28 +1,18 @@
 package com.bbn.kbp.events2014.scorer;
 
-import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.EventArgScoringAlignment;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
-import com.bbn.kbp.events2014.io.AnnotationStore;
-import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.scorer.bin.Preprocessor;
 import com.bbn.kbp.events2014.scorer.observers.KBPScoringObserver;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -58,6 +48,10 @@ public final class EventArgumentScorer {
     final StandardScoringAligner<TypeRoleFillerRealis> scoringAligner =
         StandardScoringAligner.forEquivalenceClassFunction(equivalenceClassFunction);
     return scoringAligner.align(preprocessorResult.answerKey(), preprocessorResult.systemOutput());
+  }
+
+  public void logStats() {
+    preprocessor.logStats();
   }
 }
 
