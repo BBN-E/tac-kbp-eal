@@ -109,6 +109,10 @@ Parameters:
 * `referenceLinking`: the path to the reference linking store
 * `documentsToScore`: a file listing the IDs of the documents to be scored, one per line
 * either `systemOutput` or `systemOutputsDir`.  If `systemOutput`, the value must be a path to the system output to be scored.  This path must have an `arguments` and a `linking` subdirectory containing a system output store and a linking store, respectively.  If `systemOutputsDir`, the path must contain sub-directories representing the outputs of multiple systems.  Each such sub-directory must have the format described above for `systemOutput`.
+* neutralizeRealis: map all realises in system input and the answer key to ACTUAL. This will be false for the evaluation, but setting it to true can be useful for diagnostic purposes.
+* attemptToNeutralizeCoref: Another diagnostic parameter. If set to true, attempts to minimize the impact of system coreference errors on scoring by
+* * Leaving untouched any system response whose base filler assessment correctness matched its CAS assessment correctness.
+* * For other responses, if the base filler assessment is correct, replace the response with another which matches it in type, role, and base filler but with a correctly annotated CAS, if possible.  If this is not possible, replace it with any correcrly assessed response match its type and role.  If this is still not possible, delete the response.
 
 ## Baseline linking
 We provide a baseline implementation of event argument linking for those who wish to try out the 2015 scorer but have not yet developed their own algorithm.  This baseline implementation simply links together all arguments of the same event type in a document.  To run this, use `ApplyLinkingStrategy`.
