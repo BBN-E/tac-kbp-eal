@@ -51,7 +51,7 @@ abstract class ContainsStringWarningRule implements WarningRule {
     // replace non ascii characters before applying warning
     final ImmutableSet<String> words = ImmutableSet
         .copyOf(WHITESPACE_SPLITTER
-            .split(input.canonicalArgument().string().toLowerCase().replaceAll("[^A-Za-z0-9]", "")));
+            .split(input.canonicalArgument().string().toLowerCase().replaceAll("[^A-Za-z0-9]", " ")));
     final Sets.SetView<String> forbiddenWords = Sets.intersection(words, verboten);
     return !forbiddenWords.isEmpty();
   }
