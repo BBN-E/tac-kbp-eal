@@ -186,12 +186,12 @@ final class QADocumentRenderer {
     sb.append("</h1>\n");
 
     sb.append("<div>");
-    sb.append(href("Warning Strings"));
+    sb.append(href("WarningStrings"));
     sb.append(String.format("<h2>%s</h2>", "Warning Strings"));
     sb.append(closehref());
-    sb.append("<div id=\"Warning Strings\" style=\"display:none\">\n");
+    sb.append("<div id=\"WarningStrings\" style=\"display:none\">\n");
     sb.append("<ul>");
-    for(Map.Entry<String, String> e : warningTypeToDescription.entrySet()) {
+    for (Map.Entry<String, String> e : warningTypeToDescription.entrySet()) {
       sb.append(String.format("<li>%s: %s</li>\n", e.getKey(), e.getValue()));
     }
     sb.append("</ul>");
@@ -233,7 +233,7 @@ final class QADocumentRenderer {
       }
       sb.append("<div id=\"");
       sb.append(type);
-      sb.append("\" style=\"display:none\">\n");
+      sb.append("\" style=\"display:block\">\n");
 
       for (final TypeRoleFillerRealis trfr : trfrOrdering.sortedCopy(typeToTRFR.get(type))) {
         log.info("serializing trfr {}", trfr);
@@ -249,14 +249,12 @@ final class QADocumentRenderer {
         if (trfrWarning.isPresent()) {
           // only need one close div for a warning
           sb.append(Strings.repeat("</div>", 1));
+          sb.append(
+              String.format("<div id=\"%s\" style=\"display:inherit\" >", trfr.uniqueIdentifier()));
+        } else {
+          sb.append(String.format("<div id=\"%s\" style=\"display:none\" >", trfr.uniqueIdentifier()));
         }
-
-        sb.append(
-            String.format("<div id=\"%s\" style=\"display:none\" >", trfr.uniqueIdentifier()));
-        int totalWarnings = warningsDiv(sb, Warning
-            .extractSeverity(trfrToWarning.get(trfr)));
-        sb.append(Strings.repeat("</div>", totalWarnings));
-
+        
         addSection(sb, overallOrdering.sortedCopy(trfrToAllResponses.get(trfr)), warnings);
         sb.append("</div>\n");
 
@@ -292,7 +290,7 @@ final class QADocumentRenderer {
         sb.append(href(r.hashCode() + ""));
         sb.append(responseString);
         sb.append(closehref());
-        sb.append(String.format("<div id=\"%s\" style=\"display:none\" >", r.hashCode()));
+        sb.append(String.format("<div id=\"%s\" style=\"display:inherit\" >", r.hashCode()));
         sb.append("<ul>\n");
         for (Warning w : warnings.get(r)) {
           sb.append(String.format("<li>%s: %s</li>\n", w.typeString(), w.warningString()));
