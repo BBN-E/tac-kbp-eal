@@ -9,6 +9,8 @@ import com.bbn.kbp.events2014.bin.QA.Warnings.ConflictingTypeWarningRule;
 import com.bbn.kbp.events2014.bin.QA.Warnings.ConjunctionWarningRule;
 import com.bbn.kbp.events2014.bin.QA.Warnings.EmptyResponseWarning;
 import com.bbn.kbp.events2014.bin.QA.Warnings.OverlapWarningRule;
+import com.bbn.kbp.events2014.bin.QA.Warnings.PronounAsCASWarningRule;
+import com.bbn.kbp.events2014.bin.QA.Warnings.VeryLongCASWarningRule;
 import com.bbn.kbp.events2014.bin.QA.Warnings.Warning;
 import com.bbn.kbp.events2014.bin.QA.Warnings.WarningRule;
 import com.bbn.kbp.events2014.io.AnnotationStore;
@@ -44,9 +46,11 @@ public class AssessmentQA {
         OverlapWarningRule.create(),
         ConflictingTypeWarningRule
             .create(params.getExistingFile("argFile"), params.getExistingFile("roleFile")),
-        EmptyResponseWarning.create());
+        EmptyResponseWarning.create(),
+        PronounAsCASWarningRule.create(),
+        VeryLongCASWarningRule.create());
 
-    final QADocumentRenderer htmlRenderer = QADocumentRenderer.createWithDefaultOrdering();
+    final QADocumentRenderer htmlRenderer = QADocumentRenderer.createWithDefaultOrdering(warnings);
 
     for (Symbol docID : store.docIDs()) {
       log.info("processing document {}", docID.asString());

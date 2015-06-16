@@ -34,9 +34,9 @@ abstract class ContainsStringWarningRule implements WarningRule {
     final ImmutableSetMultimap.Builder<Response, Warning> warnings =
         ImmutableSetMultimap.builder();
     for (Response r : responses) {
-      if (apply(r)) {
+      if (warningApplies(r)) {
         warnings.put(r, Warning
-            .create(String.format("contains one of %s", verboten.toString()),
+            .create(getTypeString(), String.format("contains one of %s", verboten.toString()),
                 Warning.Severity.MINOR));
         log.info("adding {} by contains string", r.canonicalArgument().string());
       }
@@ -44,11 +44,14 @@ abstract class ContainsStringWarningRule implements WarningRule {
     return warnings.build();
   }
 
-  private static final Splitter WHITESPACE_SPLITTER = Splitter.on("\\s+").omitEmptyStrings().trimResults();
+  protected static final Splitter WHITESPACE_SPLITTER =
+      Splitter.on("\\s+").omitEmptyStrings().trimResults();
 
-  protected boolean apply(final Response input) {
+  protected boolean warningApplies(final Response input) {
+    // replace non ascii characters before applying warning
     final ImmutableSet<String> words = ImmutableSet
-        .copyOf(WHITESPACE_SPLITTER.split(input.canonicalArgument().string().toLowerCase()));
+        .copyOf(WHITESPACE_SPLITTER
+            .split(input.canonicalArgument().string().toLowerCase().replaceAll("[^A-Za-z0-9]", "")));
     final Sets.SetView<String> forbiddenWords = Sets.intersection(words, verboten);
     return !forbiddenWords.isEmpty();
   }

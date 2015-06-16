@@ -24,11 +24,21 @@ public final class EmptyResponseWarning implements WarningRule {
       final String trimmed = r.canonicalArgument().string().trim();
       final String noPunct = trimmed.replaceAll("[^A-Za-z0-9]", "");
       if(noPunct.trim().isEmpty()) {
-        result.put(r, new Warning(String.format("%s appears to be garbage or empty", trimmed),
+        result.put(r, new Warning(getTypeString(), String.format("%s appears to be garbage or empty", trimmed),
             Warning.Severity.MINOR));
       }
     }
     return result.build();
+  }
+
+  @Override
+  public String getTypeString() {
+    return "Empty Response";
+  }
+
+  @Override
+  public String getTypeDescription() {
+    return "The response has no content, it's probably an error";
   }
 
   public static EmptyResponseWarning create() {

@@ -18,6 +18,6 @@ abstract class TRFRWarning implements WarningRule {
     return Multimaps.index(
         Iterables.transform(answerKey.annotatedResponses(), AssessedResponse.Response),
         TypeRoleFillerRealis
-            .extractFromSystemResponse(answerKey.corefAnnotation().laxCASNormalizerFunction()));
+            .extractFromSystemResponse(answerKey.corefAnnotation().strictCASNormalizerFunction()));
   }
 }

@@ -62,17 +62,17 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
         if (a.equals(b) || b.canonicalArgument().string().trim().isEmpty()) {
           continue;
         }
+        // changing this conditions means getTypeDescription must be updated as well
         if (a.canonicalArgument().equals(b.canonicalArgument())) {
           final Set<Symbol> possibleFillerTypesForSecond = eventToRoleToFillerType.get(b.type(), b.role());
           checkNotNull(possibleFillerTypesForSecond);
           final boolean noRolesPossibleForBoth =
               Sets.intersection(possibleFillerTypesForFirst, possibleFillerTypesForSecond).isEmpty();
           if (noRolesPossibleForBoth) {
-            result.put(b, Warning.create(String
+            result.put(b, Warning.create(getTypeString(), String
                     .format(
-                        "%s has same string as %s but mismatched types %s/%s and %s/%s in trfr %s",
-                        a.canonicalArgument().string(),
-                        b.canonicalArgument().string(), a.type().asString(), a.role().asString(),
+                        " mismatched types %s/%s and %s/%s in trfr %s",
+                        a.type().asString(), a.role().asString(),
                         b.type().asString(), b.role().asString(), AssessmentQA.readableTRFR(snd)),
                 Warning.Severity.MINOR));
           }
@@ -129,4 +129,13 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
     return ret.build();
   }
 
+  @Override
+  public String getTypeString() {
+    return "Conflicting Role";
+  }
+
+  @Override
+  public String getTypeDescription() {
+    return "We think this response is the same as another (by identical string) but with an incompatible type, maybe it should not have this type/role?";
+  }
 }

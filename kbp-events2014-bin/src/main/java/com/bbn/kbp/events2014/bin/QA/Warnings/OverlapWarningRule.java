@@ -31,7 +31,7 @@ public class OverlapWarningRule extends TRFRWarning {
     if (fst.equals(snd)) {
       return false;
     }
-    // only apply to things of the same type
+    // only warningApplies to things of the same type
     return fst.type().equals(snd.type()) && fst.role().equals(snd.role());
   }
 
@@ -53,6 +53,16 @@ public class OverlapWarningRule extends TRFRWarning {
     return warnings.build();
   }
 
+  @Override
+  public String getTypeString() {
+    return "Significant Overlap";
+  }
+
+  @Override
+  public String getTypeDescription() {
+    return "We think that there's a significant overlap between two responses of the same type, maybe they should have been coreffed together";
+  }
+
 
   protected Multimap<Response, Warning> findOverlap(
       final TypeRoleFillerRealis fst, final Iterable<Response> first,
@@ -71,9 +81,8 @@ public class OverlapWarningRule extends TRFRWarning {
           log.info("adding \"{}\" from {} by complete string containment in \"{}\" from {}",
               b.canonicalArgument().string(), snd, a.canonicalArgument().string(), fst);
           //result.put(a, warning());
-          result.put(b, Warning.create(
-              String.format("Contained by \"%s\" in \"%s\"", a.canonicalArgument().string(),
-                  AssessmentQA.readableTRFR(fst)), Warning.Severity.MINOR));
+          result.put(b, Warning.create(getTypeString(),
+              String.format("Contained in \"%s\"", AssessmentQA.readableTRFR(fst)), Warning.Severity.MINOR));
         }
         /*
         // arbitrarily chosen magic constant

@@ -16,4 +16,14 @@ public final class ConjunctionWarningRule extends ContainsStringWarningRule {
   public static ConjunctionWarningRule create() {
     return new ConjunctionWarningRule();
   }
+
+  @Override
+  public String getTypeString() {
+    return "Conjunction";
+  }
+
+  @Override
+  public String getTypeDescription() {
+    return "The response contains a conjunction " + conjunctions + "- it should probably be two separate annotations";
+  }
 }

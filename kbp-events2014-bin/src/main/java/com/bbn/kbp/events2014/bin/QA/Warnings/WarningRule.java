@@ -11,4 +11,8 @@ import com.google.common.collect.SetMultimap;
 public interface WarningRule {
 
   SetMultimap<Response, Warning> applyWarning(AnswerKey answerKey);
+
+  String getTypeString();
+
+  String getTypeDescription();
 }

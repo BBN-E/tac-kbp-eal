@@ -8,19 +8,21 @@ import java.util.Set;
 /**
  * Created by jdeyoung on 6/4/15.
  */
-public class Warning {
+public final class Warning {
 
+  final String type;
   final String warningString;
   final Severity severity;
 
   public Warning(
-      final String warningString, final Severity severity) {
+      final String type, final String warningString, final Severity severity) {
+    this.type = type;
     this.warningString = warningString;
     this.severity = severity;
   }
 
-  public static Warning create(final String warningString, final Severity severity) {
-    return new Warning(warningString, severity);
+  public static Warning create(final String type, final String warningString, final Severity severity) {
+    return new Warning(type, warningString, severity);
   }
 
   public static ImmutableSet<Severity> extractSeverity(final Iterable<Warning> warnings) {
@@ -29,6 +31,18 @@ public class Warning {
       severities.add(w.severity);
     }
     return ImmutableSet.copyOf(severities);
+  }
+
+  public String typeString() {
+    return type;
+  }
+
+  public String warningString() {
+    return warningString;
+  }
+
+  public Severity severity() {
+    return severity;
   }
 
   @Override
@@ -42,26 +56,21 @@ public class Warning {
 
     final Warning warning = (Warning) o;
 
-    if (warningString != null ? !warningString.equals(warning.warningString)
-                              : warning.warningString != null) {
+    if (!type.equals(warning.type)) {
+      return false;
+    }
+    if (!warningString.equals(warning.warningString)) {
       return false;
     }
     return severity == warning.severity;
 
   }
 
-  public String warningString() {
-    return warningString;
-  }
-
-  public Severity severity() {
-    return severity;
-  }
-
   @Override
   public int hashCode() {
-    int result = warningString != null ? warningString.hashCode() : 0;
-    result = 31 * result + (severity != null ? severity.hashCode() : 0);
+    int result = type.hashCode();
+    result = 31 * result + warningString.hashCode();
+    result = 31 * result + severity.hashCode();
     return result;
   }
 
