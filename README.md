@@ -1,6 +1,6 @@
 This is code developed by BBN to support the 
 2015 KBP Event Argument and Linking Shared Task.
-A draft of the description of this task may be found [here](https://docs.google.com/document/d/1oC4nRRN-HI1wsVTUMCWkA1Z1kCKq4z0UB0dKFDCVKcs/edit).
+A description of this task may be found [here](http://www.nist.gov/tac/2015/KBP/Event/Argument/guidelines.html).
 
 This repository contains three artifacts: 
 * `kbp-events2014` contains classes to represent system responses, assessments, and linkings for
