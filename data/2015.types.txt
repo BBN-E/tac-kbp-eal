@@ -28,3 +28,4 @@ Justice.Convict	Adjudicator	Defendant	Crime
 Justice.Appeal	Prosecutor	Adjudicator	Defendant	Crime	Plaintiff
 Justice.Execute	Agent	Person	Crime
 Justice.Pardon	Adjudicator	Defendant	Crime
+Manufacture.Artifact	Agent	Artifact	Instrument
