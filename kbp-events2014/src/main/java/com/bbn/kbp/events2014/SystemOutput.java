@@ -342,6 +342,13 @@ public final class SystemOutput {
       }
     }
 
+    public Builder remove(Response response) {
+      responses.remove(response);
+      confidences.remove(response);
+      metadata.remove(response);
+      return this;
+    }
+
     public SystemOutput build() {
       return new SystemOutput(docId, responses, confidences, metadata);
     }
