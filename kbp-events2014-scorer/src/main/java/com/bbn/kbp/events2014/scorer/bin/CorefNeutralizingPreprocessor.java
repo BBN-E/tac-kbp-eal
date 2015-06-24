@@ -113,8 +113,7 @@ public final class CorefNeutralizingPreprocessor implements Preprocessor {
     final SystemOutput corefNeutralizedSystemOutput =
         SystemOutput.createWithConstantScore(systemOutput.docId(),
             newResponses, 1.0);
-    return new Result(corefNeutralizedSystemOutput, wrappedResult.answerKey(),
-        wrappedResult.normalizer());
+    return new Result(corefNeutralizedSystemOutput, wrappedResult.answerKey());
   }
 
   public void logStats() {

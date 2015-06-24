@@ -22,13 +22,10 @@ public interface Preprocessor {
   class Result {
     private final AnswerKey answerKey;
     private final SystemOutput systemOutput;
-    private final Function<KBPString, KBPString> normalizer;
 
-    protected Result(SystemOutput systemOutput, AnswerKey answerKey,
-        Function<KBPString, KBPString> normalizer) {
+    protected Result(SystemOutput systemOutput, AnswerKey answerKey) {
       this.answerKey = checkNotNull(answerKey);
       this.systemOutput = checkNotNull(systemOutput);
-      this.normalizer = checkNotNull(normalizer);
     }
 
     public AnswerKey answerKey() {
@@ -38,10 +35,5 @@ public interface Preprocessor {
     public SystemOutput systemOutput() {
       return systemOutput;
     }
-
-    public Function<KBPString, KBPString> normalizer() {
-      return normalizer;
-    }
-
   }
 }

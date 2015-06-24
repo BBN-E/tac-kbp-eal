@@ -153,7 +153,8 @@ public final class EALScorer2015Style {
     final Preprocessor.Result preprocessorResult = preprocessor.preprocess(systemOutput,
         referenceArguments);
     final Function<Response, TypeRoleFillerRealis> equivalenceClassFunction =
-        TypeRoleFillerRealis.extractFromSystemResponse(preprocessorResult.normalizer());
+        TypeRoleFillerRealis.extractFromSystemResponse(
+            preprocessorResult.answerKey().corefAnnotation().strictCASNormalizerFunction());
 
     final StandardScoringAligner<TypeRoleFillerRealis> scoringAligner =
         StandardScoringAligner.forEquivalenceClassFunction(equivalenceClassFunction);

@@ -41,7 +41,7 @@ public final class PreprocessorKBP2014 implements Preprocessor {
     final List<Function<SystemOutput, SystemOutput>> systemOutputTransformations = Lists.newArrayList();
 
     if (params.getBoolean("neutralizeRealis")) {
-      answerKeyTransformations.add(MakeAllRealisActual.forAnswerKey());
+      answerKeyTransformations.add(MakeAllRealisActual.forAssessments());
       systemOutputTransformations.add(MakeAllRealisActual.forSystemOutput());
     }
 
@@ -109,7 +109,7 @@ public final class PreprocessorKBP2014 implements Preprocessor {
     systemOutput = temporalFilter.apply(systemOutput);
     systemOutput = injureSystemOutputFilter.apply(systemOutput);
 
-    Preprocessor.Result result = new Preprocessor.Result(systemOutput, answerKey, entityNormalizer);
+    Preprocessor.Result result = new Preprocessor.Result(systemOutput, answerKey);
     return result;
   }
 
@@ -117,4 +117,19 @@ public final class PreprocessorKBP2014 implements Preprocessor {
 
   }
 
+}
+
+class AbstractPreprocessor implements Preprocessor {
+
+
+  @Override
+  public Result preprocess(final SystemOutput systemOutput,
+      final AnswerKey answerKey) {
+    return null;
+  }
+
+  @Override
+  public void logStats() {
+
+  }
 }
