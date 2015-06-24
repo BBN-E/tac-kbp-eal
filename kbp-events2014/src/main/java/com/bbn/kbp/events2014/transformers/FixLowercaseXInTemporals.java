@@ -55,7 +55,7 @@ public final class FixLowercaseXInTemporals {
           if (fixedResponse.isPresent()) {
             log.info("Fixing bad time in answer key from {} to {}", r.canonicalArgument().string(),
                 fixedResponse.get().canonicalArgument().string());
-            ret.replaceAsssessedResponseMaintainingAssessment(r, fixedResponse.get(), rng);
+            ret.replaceAssessedResponseMaintainingAssessment(r, fixedResponse.get(), rng);
           }
         }
 

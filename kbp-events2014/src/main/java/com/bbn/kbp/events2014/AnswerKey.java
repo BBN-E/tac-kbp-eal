@@ -362,7 +362,7 @@ public final class AnswerKey {
           corefAnnotation.build().copyRemovingStringsNotIn(allCASes));
     }
 
-    public Builder replaceAsssessedResponseMaintainingAssessment(final Response original,
+    public Builder replaceAssessedResponseMaintainingAssessment(final Response original,
         final Response replacement, final Random rng) {
       if (annotatedArgs.keySet().contains(original)) {
         final ResponseAssessment assessment = annotatedArgs.get(original).assessment();
