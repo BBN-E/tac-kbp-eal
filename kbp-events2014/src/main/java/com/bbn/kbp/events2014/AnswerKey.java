@@ -319,6 +319,8 @@ public final class AnswerKey {
       this.annotatedArgs = Maps.newHashMap(annotatedArgs);
       this.unannotatedResponses = Sets.newHashSet(unannotatedResponses);
       this.corefAnnotation = checkNotNull(corefAnnotation);
+      checkArgument(Sets.intersection(annotatedArgs.keySet(), unannotatedResponses).isEmpty(),
+          "No response may be both annotated and unannotated");
     }
 
     /**
