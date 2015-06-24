@@ -144,7 +144,7 @@ public final class DeleteInjureForCorrectDie implements ResponseMappingRule {
   }
 
   @Override
-  public Result computeResponseTransformation(final AnswerKey answerKey) {
+  public ResponseMapping computeResponseTransformation(final AnswerKey answerKey) {
     final Function<Response, TypeRoleFillerRealis> normalizedFingerprintExtractor =
         TypeRoleFillerRealis.extractFromSystemResponse(
             answerKey.corefAnnotation().strictCASNormalizerFunction());
@@ -156,6 +156,6 @@ public final class DeleteInjureForCorrectDie implements ResponseMappingRule {
         .filter(isInDeletedTRFR)
         .toSet();
 
-    return Result.create(ImmutableMap.<Response, Response>of(), responsesToDelete);
+    return ResponseMapping.create(ImmutableMap.<Response, Response>of(), responsesToDelete);
   }
 }

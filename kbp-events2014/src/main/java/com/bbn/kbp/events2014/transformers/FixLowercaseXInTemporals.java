@@ -79,7 +79,7 @@ public final class FixLowercaseXInTemporals implements ResponseMappingRule {
   }
 
   @Override
-  public Result computeResponseTransformation(final AnswerKey answerKey) {
+  public ResponseMapping computeResponseTransformation(final AnswerKey answerKey) {
     final ImmutableMap.Builder<Response, Response> replacements = ImmutableMap.builder();
     for (final Response response : answerKey.allResponses()) {
       final Optional<Response> fixedResponse = fixLowercaseXInTime(response);
@@ -90,6 +90,6 @@ public final class FixLowercaseXInTemporals implements ResponseMappingRule {
         replacements.put(response, fixedResponse.get());
       }
     }
-    return Result.create(replacements.build(), ImmutableSet.<Response>of());
+    return ResponseMapping.create(replacements.build(), ImmutableSet.<Response>of());
   }
 }

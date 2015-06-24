@@ -263,4 +263,5 @@ public final class QuoteFilter implements Function<SystemOutput, SystemOutput> {
     }
     return QuoteFilter.createFromBannedRegions(ret.build());
   }
+
 }

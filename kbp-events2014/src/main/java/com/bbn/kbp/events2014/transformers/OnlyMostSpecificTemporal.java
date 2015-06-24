@@ -11,17 +11,12 @@ import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 
 import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static com.google.common.base.Predicates.compose;
-import static com.google.common.base.Predicates.in;
 
 /**
  * Implements the rule for scoring temporal arguments as described below:
@@ -140,19 +135,17 @@ public final class OnlyMostSpecificTemporal implements Function<SystemOutput, Sy
 
 
   @Override
-  public Result computeResponseTransformation(final AnswerKey answerKey) {
-    final Function<Response, TypeRoleFillerRealis> normalizedFingerprintExtractor =
-        TypeRoleFillerRealis.extractFromSystemResponse(
-            answerKey.corefAnnotation().strictCASNormalizerFunction());
-
-    final ImmutableSet<TypeRoleFillerRealis> trfrsToDelete =
+  public ResponseMapping computeResponseTransformation(final AnswerKey answerKey) {
+    final ImmutableSet<TypeRoleFillerRealis> bannedResponseSignatures =
         computeBannedResponseSignatures(answerKey);
-    final Predicate<Response> isInDeletedTRFR =
-        compose(in(trfrsToDelete), normalizedFingerprintExtractor);
-    final ImmutableSet<Response> responsesToDelete = FluentIterable.from(answerKey.allResponses())
-        .filter(isInDeletedTRFR)
-        .toSet();
 
-    return Result.create(ImmutableMap.<Response, Response>of(), responsesToDelete);
+    final ImmutableSet.Builder<Response> toDelete = ImmutableSet.builder();
+    for (final Response response : answerKey.allResponses()) {
+      if (bannedResponseSignatures.contains(responseSignature(response))) {
+        toDelete.add(response);
+      }
+    }
+
+    return ResponseMapping.create(ImmutableMap.<Response, Response>of(), toDelete.build());
   }
 }

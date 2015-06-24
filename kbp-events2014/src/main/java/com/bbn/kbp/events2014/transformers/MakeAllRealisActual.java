@@ -10,13 +10,13 @@ import com.bbn.kbp.events2014.SystemOutput;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import java.util.Set;
 
 public final class MakeAllRealisActual {
-
   private MakeAllRealisActual() {
     throw new UnsupportedOperationException();
   }
@@ -30,7 +30,7 @@ public final class MakeAllRealisActual {
     }
   }
 
-  public static Function<AnswerKey, AnswerKey> forAnswerKey() {
+  public static Function<AnswerKey, AnswerKey> forAssessments() {
     return new Function<AnswerKey, AnswerKey>() {
       @Override
       public AnswerKey apply(AnswerKey input) {
@@ -66,6 +66,23 @@ public final class MakeAllRealisActual {
     };
   }
 
+  public static ResponseMappingRule forResponses() {
+    return new ResponseMappingRule() {
+      @Override
+      public ResponseMapping computeResponseTransformation(final AnswerKey answerKey) {
+        final ImmutableMap.Builder<Response, Response> replacements = ImmutableMap.builder();
+        for (final Response response : answerKey.allResponses()) {
+          final Response replacement = response.copyWithSwappedRealis(KBPRealis.Actual);
+          if (!response.equals(replacement)) {
+            replacements.put(response, replacement);
+          }
+        }
+        return ResponseMapping.create(replacements.build(), ImmutableSet.<Response>of());
+      }
+    };
+  }
+
+  @Deprecated
   public static Function<SystemOutput, SystemOutput> forSystemOutput() {
     return new Function<SystemOutput, SystemOutput>() {
       @Override
