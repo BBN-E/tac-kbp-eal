@@ -45,7 +45,7 @@ import static com.google.common.base.Predicates.not;
  * Joe in a game of cards. Wrong: (Life.Die, Victim, Bob, Actual) à rule not applied Wrong:
  * (Life.Injure, Victim, Bob, Actual)
  */
-public final class DeleteInjureForCorrectDie implements ResponseMappingRule {
+public final class DeleteInjureForCorrectDie implements AnswerKeyToResponseMappingRule {
 
   private static final Logger log = LoggerFactory.getLogger(DeleteInjureForCorrectDie.class);
   // given a response, this will extract its type, role, filler, and realis while

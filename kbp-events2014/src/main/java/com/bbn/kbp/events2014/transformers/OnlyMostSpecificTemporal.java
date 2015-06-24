@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * temporal resolution.)
  */
 public final class OnlyMostSpecificTemporal implements Function<SystemOutput, SystemOutput>,
-    ResponseMappingRule {
+    AnswerKeyToResponseMappingRule {
 
   private static final Logger log = LoggerFactory.getLogger(OnlyMostSpecificTemporal.class);
   private final ImmutableSet<TypeRoleFillerRealis> bannedResponseSignatures;

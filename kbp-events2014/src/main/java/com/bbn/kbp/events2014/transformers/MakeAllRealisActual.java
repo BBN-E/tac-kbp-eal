@@ -66,8 +66,8 @@ public final class MakeAllRealisActual {
     };
   }
 
-  public static ResponseMappingRule forResponses() {
-    return new ResponseMappingRule() {
+  public static AnswerKeyToResponseMappingRule forResponses() {
+    return new AnswerKeyToResponseMappingRule() {
       @Override
       public ResponseMapping computeResponseTransformation(final AnswerKey answerKey) {
         final ImmutableMap.Builder<Response, Response> replacements = ImmutableMap.builder();

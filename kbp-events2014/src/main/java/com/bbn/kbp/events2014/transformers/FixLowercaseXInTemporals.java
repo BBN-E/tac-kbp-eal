@@ -17,7 +17,7 @@ import java.util.Random;
 /**
  * Created by rgabbard on 5/29/15.
  */
-public final class FixLowercaseXInTemporals implements ResponseMappingRule {
+public final class FixLowercaseXInTemporals implements AnswerKeyToResponseMappingRule {
 
   private static final Logger log = LoggerFactory.getLogger(FixLowercaseXInTemporals.class);
 

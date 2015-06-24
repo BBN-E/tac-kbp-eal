@@ -46,7 +46,7 @@ public class AssessmentQA {
 
     for (Symbol docID : store.docIDs()) {
       log.info("processing document {}", docID.asString());
-      final AnswerKey answerKey = MakeAllRealisActual.forAnswerKey().apply(store.read(docID));
+      final AnswerKey answerKey = MakeAllRealisActual.forAssessments().apply(store.read(docID));
       final HTMLRenderer htmlRenderer = new HTMLRenderer(docID.asString());
       htmlRenderer.setCorefAnnotation(answerKey.corefAnnotation());
       htmlRenderer.addResponses(
