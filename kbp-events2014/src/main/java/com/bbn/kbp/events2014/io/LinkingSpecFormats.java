@@ -56,7 +56,7 @@ public final class LinkingSpecFormats {
    *
    * Blank lines are allowed, as are comment lines (the first character on the line must be #).
    */
-  private static final class DirectoryLinkingStore implements LinkingStore {
+  public static final class DirectoryLinkingStore implements LinkingStore {
 
     private final File directory;
     private boolean closed = false;
@@ -79,18 +79,23 @@ public final class LinkingSpecFormats {
 
     @Override
     public Optional<ResponseLinking> read(AnswerKey answerKey) throws IOException {
-      return read(answerKey.docId(), answerKey.allResponses());
+      return read(answerKey.docId(), answerKey.allResponses(), true);
     }
 
     @Override
     public Optional<ResponseLinking> read(SystemOutput systemOutput) throws IOException {
-      return read(systemOutput.docId(), systemOutput.responses());
+      return read(systemOutput.docId(), systemOutput.responses(), true);
     }
 
+    public Optional<ResponseLinking> readWithFiltering(SystemOutput systemOutput) throws IOException {
+      return read(systemOutput.docId(), systemOutput.responses(), false);
+    }
+    
     private static final Splitter ON_TABS = Splitter.on('\t').trimResults().omitEmptyStrings();
 
     private static final ImmutableSet<String> ACCEPTABLE_SUFFIXES = ImmutableSet.of("linking");
-    public Optional<ResponseLinking> read(Symbol docID, Set<Response> responses)
+    
+    public Optional<ResponseLinking> read(Symbol docID, Set<Response> responses, final boolean reportUnknownResponse) 
         throws IOException {
       checkNotClosed();
 
@@ -130,11 +135,15 @@ public final class LinkingSpecFormats {
         for (String idString : parts) {
           final Response responseForIDString = responsesByUID.get(idString);
           if (responseForIDString == null) {
-            throw new IOException("On line " + lineNo + ", ID " + idString
-                + " cannot be resolved using provided response store. Known"
-                + "response IDs are " + responsesByUID.keySet());
+            if(reportUnknownResponse) {
+              throw new IOException("On line " + lineNo + ", ID " + idString
+                  + " cannot be resolved using provided response store. Known"
+                  + "response IDs are " + responsesByUID.keySet());
+            }
           }
-          responseSet.add(responseForIDString);
+          else {
+            responseSet.add(responseForIDString);
+          }
         }
         if (incomplete) {
           incompleteResponses = responseSet.build();
