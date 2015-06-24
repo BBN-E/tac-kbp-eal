@@ -362,16 +362,29 @@ public final class AnswerKey {
           corefAnnotation.build().copyRemovingStringsNotIn(allCASes));
     }
 
+    /**
+     * Replaces one response with another, maintaining the original assessment, if any. The random
+     * number generator is used when creating a new coref cluster, if necessary,
+     */
     public Builder replaceAssessedResponseMaintainingAssessment(final Response original,
         final Response replacement, final Random rng) {
+      if (original.equals(replacement)) {
+        return;
+      }
+
       if (annotatedArgs.keySet().contains(original)) {
         final ResponseAssessment assessment = annotatedArgs.get(original).assessment();
         annotatedArgs.remove(original);
         annotatedArgs.put(replacement, AssessedResponse.from(replacement, assessment));
         corefAnnotation.registerCAS(replacement.canonicalArgument(), rng);
+      } else if (unannotatedResponses.contains(original)) {
+        unannotatedResponses.remove(original);
+        if (!annotatedArgs.containsKey(replacement)) {
+          unannotatedResponses.add(replacement);
+        }
       } else {
-        throw new IllegalArgumentException("Cannot replace allegedly assessed response "
-            + original + " because it is not assessed");
+        throw new RuntimeException("Cannot replace " + original + " with " + replacement
+            + " because " + original + " is unknown");
       }
       return this;
     }
