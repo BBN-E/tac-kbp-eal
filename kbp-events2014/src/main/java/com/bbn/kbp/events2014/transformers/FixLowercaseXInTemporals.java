@@ -6,6 +6,8 @@ import com.bbn.kbp.events2014.SystemOutput;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +17,7 @@ import java.util.Random;
 /**
  * Created by rgabbard on 5/29/15.
  */
-public final class FixLowercaseXInTemporals {
+public final class FixLowercaseXInTemporals implements ResponseMappingRule {
 
   private static final Logger log = LoggerFactory.getLogger(FixLowercaseXInTemporals.class);
 
@@ -74,5 +76,20 @@ public final class FixLowercaseXInTemporals {
       }
     }
     return Optional.absent();
+  }
+
+  @Override
+  public Result computeResponseTransformation(final AnswerKey answerKey) {
+    final ImmutableMap.Builder<Response, Response> replacements = ImmutableMap.builder();
+    for (final Response response : answerKey.allResponses()) {
+      final Optional<Response> fixedResponse = fixLowercaseXInTime(response);
+      if (fixedResponse.isPresent()) {
+        log.info("Fixing bad time in answer key from {} to {}",
+            response.canonicalArgument().string(),
+            fixedResponse.get().canonicalArgument().string());
+        replacements.put(response, fixedResponse.get());
+      }
+    }
+    return Result.create(replacements.build(), ImmutableSet.<Response>of());
   }
 }
