@@ -345,6 +345,12 @@ public final class AnswerKey {
       return this;
     }
 
+    public Builder remove(Response response) {
+      annotatedArgs.remove(response);
+      unannotatedResponses.remove(response);
+      return this;
+    }
+
     public AnswerKey build() {
       final Set<KBPString> allCASes = FluentIterable.from(annotatedArgs.keySet())
           .append(unannotatedResponses)
