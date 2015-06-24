@@ -369,7 +369,7 @@ public final class AnswerKey {
     public Builder replaceAssessedResponseMaintainingAssessment(final Response original,
         final Response replacement, final Random rng) {
       if (original.equals(replacement)) {
-        return;
+        return this;
       }
 
       if (annotatedArgs.keySet().contains(original)) {
