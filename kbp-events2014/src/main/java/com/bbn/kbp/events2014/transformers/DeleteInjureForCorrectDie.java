@@ -12,8 +12,9 @@ import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
-import com.google.common.base.Predicates;
+import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
@@ -21,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Predicates.compose;
 import static com.google.common.base.Predicates.in;
 import static com.google.common.base.Predicates.not;
 
@@ -43,7 +45,7 @@ import static com.google.common.base.Predicates.not;
  * Joe in a game of cards. Wrong: (Life.Die, Victim, Bob, Actual) à rule not applied Wrong:
  * (Life.Injure, Victim, Bob, Actual)
  */
-public final class DeleteInjureForCorrectDie {
+public final class DeleteInjureForCorrectDie implements ResponseMappingRule {
 
   private static final Logger log = LoggerFactory.getLogger(DeleteInjureForCorrectDie.class);
   // given a response, this will extract its type, role, filler, and realis while
@@ -62,7 +64,7 @@ public final class DeleteInjureForCorrectDie {
         TypeRoleFillerRealis.extractFromSystemResponse(entityNormalizer));
   }
 
-
+  @Deprecated
   public Function<AnswerKey, AnswerKey> answerKeyTransformer() {
     return new Function<AnswerKey, AnswerKey>() {
       @Override
@@ -81,7 +83,7 @@ public final class DeleteInjureForCorrectDie {
         // we want to remove all responses whose type-role-realis-normalized-fillers are
         // scheduled for deletion
         final ImmutableSet<AssessedResponse> filtered = FluentIterable.from(currentResponseSet)
-            .filter(Predicates.compose(not(in(toDelete)),
+            .filter(compose(not(in(toDelete)),
                 Functions.compose(normalizedFingerprintExtractor, AssessedResponse.Response)))
             .toSet();
 
@@ -96,6 +98,7 @@ public final class DeleteInjureForCorrectDie {
     };
   }
 
+  @Deprecated
   public Function<SystemOutput, SystemOutput> systemOutputTransformerForAnswerKey(
       AnswerKey answerKey) {
     final ImmutableSet<TypeRoleFillerRealis> toDelete = responsesToDelete(answerKey);
@@ -108,7 +111,7 @@ public final class DeleteInjureForCorrectDie {
             Functions.compose(normalizedFingerprintExtractor, Scoreds.<Response>itemsOnly());
 
         final SystemOutput ret = input.copyWithFilteredResponses(
-            Predicates.compose(
+            compose(
                 not(in(toDelete)),
                 scoredResponseToNormalizedFingerPrint));
 
@@ -138,5 +141,21 @@ public final class DeleteInjureForCorrectDie {
       }
     }
     return ret.build();
+  }
+
+  @Override
+  public Result computeResponseTransformation(final AnswerKey answerKey) {
+    final Function<Response, TypeRoleFillerRealis> normalizedFingerprintExtractor =
+        TypeRoleFillerRealis.extractFromSystemResponse(
+            answerKey.corefAnnotation().strictCASNormalizerFunction());
+
+    final ImmutableSet<TypeRoleFillerRealis> trfrsToDelete = responsesToDelete(answerKey);
+    final Predicate<Response> isInDeletedTRFR =
+        compose(in(trfrsToDelete), normalizedFingerprintExtractor);
+    final ImmutableSet<Response> responsesToDelete = FluentIterable.from(answerKey.allResponses())
+        .filter(isInDeletedTRFR)
+        .toSet();
+
+    return Result.create(ImmutableMap.<Response, Response>of(), responsesToDelete);
   }
 }
