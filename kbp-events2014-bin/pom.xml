@@ -186,6 +186,11 @@
 			    <name>exploreEalScorer</name>
 			</program>
 
+			<program>
+			    <mainClass>com.bbn.kbp.events2014.bin.FilterResponseLinking</mainClass>
+			    <name>filterResponseLinking</name>
+			</program>
+
                     </programs>
                 </configuration>
             </plugin>
