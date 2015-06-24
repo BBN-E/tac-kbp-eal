@@ -11,11 +11,17 @@ import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static com.google.common.base.Predicates.compose;
+import static com.google.common.base.Predicates.in;
 
 /**
  * Implements the rule for scoring temporal arguments as described below:
@@ -46,7 +52,8 @@ import org.slf4j.LoggerFactory;
  * (and in cases where the date is given as e.g. the 15th week of 2014, systems will have to do the
  * temporal resolution.)
  */
-public final class OnlyMostSpecificTemporal implements Function<SystemOutput, SystemOutput> {
+public final class OnlyMostSpecificTemporal implements Function<SystemOutput, SystemOutput>,
+    ResponseMappingRule {
 
   private static final Logger log = LoggerFactory.getLogger(OnlyMostSpecificTemporal.class);
   private final ImmutableSet<TypeRoleFillerRealis> bannedResponseSignatures;
@@ -55,7 +62,16 @@ public final class OnlyMostSpecificTemporal implements Function<SystemOutput, Sy
     this.bannedResponseSignatures = ImmutableSet.copyOf(bannedResponseSignatures);
   }
 
+  @Deprecated
   public static OnlyMostSpecificTemporal forAnswerKey(AnswerKey key) {
+    final ImmutableSet<TypeRoleFillerRealis> bannedResponseSignatures =
+        computeBannedResponseSignatures(key);
+
+    return new OnlyMostSpecificTemporal(bannedResponseSignatures);
+  }
+
+  private static ImmutableSet<TypeRoleFillerRealis> computeBannedResponseSignatures(
+      final AnswerKey key) {
     final ImmutableSet.Builder<TypeRoleFillerRealis> bannedResponseSignatures =
         ImmutableSet.builder();
 
@@ -83,8 +99,7 @@ public final class OnlyMostSpecificTemporal implements Function<SystemOutput, Sy
 
       }
     }
-
-    return new OnlyMostSpecificTemporal(bannedResponseSignatures.build());
+    return bannedResponseSignatures.build();
   }
 
   private static TypeRoleFillerRealis responseSignature(Response response) {
@@ -100,6 +115,7 @@ public final class OnlyMostSpecificTemporal implements Function<SystemOutput, Sy
     return KBPString.from(s.string(), DUMMY_OFFSETS);
   }
 
+  @Deprecated
   @Override
   public SystemOutput apply(SystemOutput input) {
     final ImmutableList.Builder<Scored<Response>> newResponses = ImmutableList.builder();
@@ -123,4 +139,20 @@ public final class OnlyMostSpecificTemporal implements Function<SystemOutput, Sy
   }
 
 
+  @Override
+  public Result computeResponseTransformation(final AnswerKey answerKey) {
+    final Function<Response, TypeRoleFillerRealis> normalizedFingerprintExtractor =
+        TypeRoleFillerRealis.extractFromSystemResponse(
+            answerKey.corefAnnotation().strictCASNormalizerFunction());
+
+    final ImmutableSet<TypeRoleFillerRealis> trfrsToDelete =
+        computeBannedResponseSignatures(answerKey);
+    final Predicate<Response> isInDeletedTRFR =
+        compose(in(trfrsToDelete), normalizedFingerprintExtractor);
+    final ImmutableSet<Response> responsesToDelete = FluentIterable.from(answerKey.allResponses())
+        .filter(isInDeletedTRFR)
+        .toSet();
+
+    return Result.create(ImmutableMap.<Response, Response>of(), responsesToDelete);
+  }
 }
