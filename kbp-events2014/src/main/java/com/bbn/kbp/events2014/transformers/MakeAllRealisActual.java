@@ -11,11 +11,16 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static com.google.common.base.Preconditions.checkArgument;
 
 public final class MakeAllRealisActual implements ScoringDataTransformation {
+  private static final Logger log = LoggerFactory.getLogger(MakeAllRealisActual.class);
+
   private MakeAllRealisActual() {
-    throw new UnsupportedOperationException();
+
   }
 
   public static MakeAllRealisActual create() {
@@ -65,6 +70,9 @@ public final class MakeAllRealisActual implements ScoringDataTransformation {
     final ScoringData.Builder ret = scoringData.modifiedCopy();
 
     final ResponseMapping responseMapping = responseMapping(scoringData.answerKey().get());
+    if (!responseMapping.isIdentity()) {
+      log.info("Realis neutralization resulting in {}", responseMapping.summaryString());
+    }
 
     AnswerKey newAnswerKey = neutralizeAssessments(responseMapping.apply(scoringData.answerKey().get()));
     ret.withAnswerKey(newAnswerKey);
@@ -81,26 +89,3 @@ public final class MakeAllRealisActual implements ScoringDataTransformation {
 
   }
 }
-
-/*final class AssessmentMapping {
-  private final ImmutableMap<Response, ResponseAssessment> replacements;
-
-  private AssessmentMapping(
-      final Map<Response, ResponseAssessment> replacements) {
-    this.replacements = ImmutableMap.copyOf(replacements);
-  }
-
-  public static AssessmentMapping from(Map<Response, ResponseAssessment> replacements) {
-    return new AssessmentMapping(replacements);
-  }
-
-  public AnswerKey apply(AnswerKey input) {
-    final AnswerKey.Builder ret = input.modifiedCopyBuilder();
-
-    for (final Map.Entry<Response, ResponseAssessment> e : replacements.entrySet()) {
-      ret.replaceAssessment(e.getKey(), e.getValue());
-    }
-    return ret.build();
-  }
-}
-*/

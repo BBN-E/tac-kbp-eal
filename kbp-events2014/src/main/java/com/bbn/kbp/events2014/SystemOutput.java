@@ -322,24 +322,30 @@ public final class SystemOutput {
     /**
      * Replaces {@code oldResponse} with {@code newResponse}. {@code oldResponse} must have been
      * previously added or a {@link NoSuchElementException} will be thrown.  If {@code newResponse}
-     * is already present the only effect will be to remove {@code oldResponse}. Otherwise, {@code
+     * is already present, we compare the score of {@code oldResponse} and {@code newResponse} and use
+     * the score and metadata of the higher one. Otherwise, {@code
      * newResponse} will inherit {@code oldResponse}'s score and metadata.
      */
-    public void replaceResponseKeepingScoreAndMetadata(Response oldResponse, Response newResponse) {
+    public void replaceResponseKeepingBestScoreAndMetadata(Response oldResponse,
+        Response newResponse) {
       if (!responses.contains(oldResponse)) {
         throw new NoSuchElementException("Cannot replace response " + oldResponse
             + " because it is not present");
       }
 
-      final double scoreToKeep = confidences.get(oldResponse);
-      final String metadataToKeep = metadata.get(oldResponse);
-
-      responses.remove(oldResponse);
-
-      if (!responses.contains(newResponse)) {
-        confidences.put(newResponse, scoreToKeep);
-        metadata.put(newResponse, metadataToKeep);
+      if (oldResponse.equals(newResponse)) {
+        return;
       }
+
+      if (!responses.contains(newResponse) || confidences.get(oldResponse)>confidences.get(newResponse)) {
+        confidences.put(newResponse, confidences.get(oldResponse));
+        metadata.put(newResponse, metadata.get(oldResponse));
+      }
+
+      responses.add(newResponse);
+      responses.remove(oldResponse);
+      confidences.remove(oldResponse);
+      metadata.remove(oldResponse);
     }
 
     public Builder remove(Response response) {

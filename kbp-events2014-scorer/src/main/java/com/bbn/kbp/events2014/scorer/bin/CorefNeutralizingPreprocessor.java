@@ -107,6 +107,10 @@ public final class CorefNeutralizingPreprocessor implements ScoringDataTransform
     final ResponseMapping responseMapping = ResponseMapping.create(responseReplacements.build(),
         toDelete.build());
 
+    if (!responseMapping.isIdentity()) {
+      log.info("Coref neutralization resulted in {}", responseMapping.summaryString());
+    }
+
     final ScoringData.Builder ret = input.modifiedCopy();
     ret.withSystemOutput(responseMapping.apply(systemOutput));
     if (input.systemLinking().isPresent()) {

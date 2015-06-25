@@ -50,6 +50,20 @@ public final class ResponseMapping {
     return new ResponseMapping(replacedResponses, deletedResponses);
   }
 
+  public boolean isIdentity() {
+    if (!deletedResponses.isEmpty()) {
+      return false;
+    }
+
+    for (final Map.Entry<Response, Response> entry : replacedResponses.entrySet()) {
+      if (!entry.getKey().equals(entry.getValue())) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   public AnswerKey apply(AnswerKey input) {
     final AnswerKey.Builder ret = input.modifiedCopyBuilder();
     final Random rng = new Random(0);
@@ -70,7 +84,7 @@ public final class ResponseMapping {
       if (deletedResponses.contains(response)) {
         ret.remove(response);
       } else if (replacedResponses.containsKey(response)) {
-        ret.replaceResponseKeepingScoreAndMetadata(response, replacedResponses.get(response));
+        ret.replaceResponseKeepingBestScoreAndMetadata(response, replacedResponses.get(response));
       }
     }
     return ret.build();
@@ -83,9 +97,12 @@ public final class ResponseMapping {
 
     final ImmutableSet.Builder<ResponseSet> newResponseSetsB = ImmutableSet.builder();
     for (final ResponseSet responseSet : responseLinking.responseSets()) {
-      newResponseSetsB.add(ResponseSet.from(FluentIterable.from(responseSet)
+      final ImmutableSet<Response> filteredResponses = FluentIterable.from(responseSet)
           .filter(notDeleted)
-          .transform(responseMapping).toSet()));
+          .transform(responseMapping).toSet();
+      if (!filteredResponses.isEmpty()) {
+        newResponseSetsB.add(ResponseSet.from(filteredResponses));
+      }
     }
 
     final ImmutableSet<ResponseSet> newResponseSets = newResponseSetsB.build();
@@ -97,5 +114,9 @@ public final class ResponseMapping {
             .filter(notLinked)
             .toSet();
     return ResponseLinking.from(responseLinking.docID(), newResponseSets, newIncompletes);
+  }
+
+  public String summaryString() {
+    return replacedResponses.size() + " mapped; " + deletedResponses.size() + " deleted";
   }
 }

@@ -37,12 +37,12 @@ public final class EventArgumentScorer {
   public EventArgScoringAlignment<TypeRoleFillerRealis> score(ScoringData scoringData) {
     final ScoringData preprocessorResult = preprocessor.transform(scoringData);
     final Function<Response, TypeRoleFillerRealis> equivalenceClassFunction =
-        TypeRoleFillerRealis.extractFromSystemResponse(scoringData.answerKey().get()
+        TypeRoleFillerRealis.extractFromSystemResponse(preprocessorResult.answerKey().get()
             .corefAnnotation().strictCASNormalizerFunction());
 
     final StandardScoringAligner<TypeRoleFillerRealis> scoringAligner =
         StandardScoringAligner.forEquivalenceClassFunction(equivalenceClassFunction);
-    return scoringAligner.align(scoringData.answerKey().get(), scoringData.systemOutput().get());
+    return scoringAligner.align(preprocessorResult.answerKey().get(), preprocessorResult.systemOutput().get());
   }
 
   public void logStats() {

@@ -16,7 +16,6 @@ public final class MakeBrokenTimesWrong implements ScoringDataTransformation {
   private static final Logger log = LoggerFactory.getLogger(MakeBrokenTimesWrong.class);
 
   private MakeBrokenTimesWrong() {
-    throw new UnsupportedOperationException();
   }
 
   public static MakeBrokenTimesWrong create() {

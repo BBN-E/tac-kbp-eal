@@ -1,5 +1,6 @@
 package com.bbn.kbp.events2014;
 
+import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
@@ -144,6 +145,15 @@ public final class ResponseAssessment {
         mentionTypeOfCAS());
   }
 
+  public static Function<ResponseAssessment, Optional<KBPRealis>> realisFunction() {
+    return new Function<ResponseAssessment, Optional<KBPRealis>>() {
+
+      @Override
+      public Optional<KBPRealis> apply(final ResponseAssessment input) {
+        return input.realis();
+      }
+    };
+  }
 
   @Override
   public String toString() {

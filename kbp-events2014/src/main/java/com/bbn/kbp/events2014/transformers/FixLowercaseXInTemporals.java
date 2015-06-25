@@ -18,7 +18,6 @@ public final class FixLowercaseXInTemporals implements AnswerKeyToResponseMappin
   private static final Logger log = LoggerFactory.getLogger(FixLowercaseXInTemporals.class);
 
   private FixLowercaseXInTemporals() {
-    throw new UnsupportedOperationException();
   }
 
   public static ScoringDataTransformation asTransformationForBoth() {

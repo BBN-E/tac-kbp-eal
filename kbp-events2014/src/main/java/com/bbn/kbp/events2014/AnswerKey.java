@@ -408,6 +408,14 @@ public final class AnswerKey {
 
       if (annotatedArgs.keySet().contains(original)) {
         final ResponseAssessment assessment = annotatedArgs.get(original).assessment();
+        if (annotatedArgs.containsKey(replacement)) {
+          final ResponseAssessment assessmentOfReplacement = annotatedArgs.get(replacement).assessment();
+          if (!assessmentOfReplacement.equals(assessment)) {
+            log.warn("When replacing responses in answer key, merged two "
+                    + "responses with differing assessments {} and {}, keeping original (the latter)",
+                assessmentOfReplacement, assessment);
+          }
+        }
         annotatedArgs.remove(original);
         annotatedArgs.put(replacement, AssessedResponse.from(replacement, assessment));
         corefAnnotation.registerCAS(replacement.canonicalArgument(), rng);
