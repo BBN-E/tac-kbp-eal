@@ -6,6 +6,7 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.ResponseLinking;
+import com.bbn.kbp.events2014.ScoringData;
 import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
@@ -32,9 +33,18 @@ import java.util.List;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class KBP2015Scorer {
   private static final Logger log = LoggerFactory.getLogger(KBP2015Scorer.class);
+
+  private KBP2015Scorer(final EALScorer2015Style documentScorer) {
+    this.documentScorer = checkNotNull(documentScorer);
+  }
+
+  public static KBP2015Scorer fromParameters(Parameters params) {
+    return new KBP2015Scorer(EALScorer2015Style.create(params));
+  }
 
   private static void usage() {
     log.warn("usage: KBP2015Scorer param_file\n" +
@@ -73,7 +83,7 @@ public final class KBP2015Scorer {
       System.exit(1);
     }
     final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
-    final KBP2015Scorer scorer = new KBP2015Scorer();
+    final KBP2015Scorer scorer = KBP2015Scorer.fromParameters(params);
 
     final AnnotationStore goldAnswerStore = AssessmentSpecFormats.openAnnotationStore(params
             .getExistingDirectory("answerKey"), AssessmentSpecFormats.Format.KBP2015);
@@ -121,7 +131,7 @@ public final class KBP2015Scorer {
     }
   }
 
-  private EALScorer2015Style documentScorer = EALScorer2015Style.create();
+  private EALScorer2015Style documentScorer;
 
   private void score(final AnnotationStore goldAnswerStore,
       final LinkingStore referenceLinkingStore, final SystemOutputStore systemOutputStore,
@@ -146,8 +156,14 @@ public final class KBP2015Scorer {
           throw new RuntimeException("System linking missing for " + docID);
         }
 
-        perDocResults.add(documentScorer
-            .score(argumentKey, referenceLinking.get(), systemOutput, systemLinking.get()));
+        final ScoringData scoringData = ScoringData.builder()
+            .withAnswerKey(argumentKey)
+            .withSystemOutput(systemOutput)
+            .withReferenceLinking(referenceLinking.get())
+            .withSystemLinking(systemLinking.get())
+            .build();
+
+        perDocResults.add(documentScorer.score(scoringData));
       } catch (Exception e) {
         throw new RuntimeException("Exception while processing " + docID, e);
       }

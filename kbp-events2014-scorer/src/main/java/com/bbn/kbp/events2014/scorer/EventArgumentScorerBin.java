@@ -2,6 +2,7 @@ package com.bbn.kbp.events2014.scorer;
 
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.EventArgScoringAlignment;
+import com.bbn.kbp.events2014.ScoringData;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
@@ -45,7 +46,8 @@ public class EventArgumentScorerBin {
       log.info("Scoring document: {}", docid);
 
       final EventArgScoringAlignment<TypeRoleFillerRealis> scoringAlignment = eventArgumentScorer
-          .score(goldAnswerStore.readOrEmpty(docid), systemAnswerStore.readOrEmpty(docid));
+          .score(ScoringData.builder().withAnswerKey(goldAnswerStore.readOrEmpty(docid))
+              .withSystemOutput(systemAnswerStore.readOrEmpty(docid)).build());
 
       for (final KBPScoringObserver<TypeRoleFillerRealis> scoringObserver : scoringObservers) {
         final File docLogDir = new File(scorerToOutputDir.get(scoringObserver), docid.toString());

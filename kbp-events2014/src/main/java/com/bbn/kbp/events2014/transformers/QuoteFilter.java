@@ -1,17 +1,15 @@
 package com.bbn.kbp.events2014.transformers;
 
 import com.bbn.bue.common.StringUtils;
-import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.ScoringData;
 import com.bbn.kbp.events2014.SystemOutput;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Charsets;
-import com.google.common.base.Function;
 import com.google.common.base.Objects;
-import com.google.common.base.Predicate;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -45,7 +43,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * throw an except in order to prevent accidental mismatches the filter and the input it is applied
  * to.
  */
-public final class QuoteFilter implements Function<SystemOutput, SystemOutput> {
+public final class QuoteFilter implements ScoringDataTransformation {
 
   private static final Logger log = LoggerFactory.getLogger(QuoteFilter.class);
   private static final Set<String> BANNED_REGION_STARTS =
@@ -56,26 +54,42 @@ public final class QuoteFilter implements Function<SystemOutput, SystemOutput> {
 
   private final Map<Symbol, ImmutableRangeSet<Integer>> docIdToBannedRegions;
 
-  @Override
-  public SystemOutput apply(final SystemOutput input) {
+  private ResponseMapping computeResponseMapping(final SystemOutput input) {
     final ImmutableRangeSet<Integer> bannedRegions = docIdToBannedRegions.get(input.docId());
     if (bannedRegions == null) {
       throw new RuntimeException(String.format(
           "QuoteFilter does not know about document ID %s", input.docId()));
     }
 
-    final SystemOutput ret = input.copyWithFilteredResponses(
-        new Predicate<Scored<Response>>() {
-          public boolean apply(Scored<Response> x) {
-            return !isInQuote(input.docId(), x.item().baseFiller())
-                && !isInQuote(input.docId(), x.item().canonicalArgument().charOffsetSpan());
-          }
-        }
-    );
+    final ImmutableSet.Builder<Response> toDeleteB = ImmutableSet.builder();;
+
+    for (final Response response : input.responses()) {
+      if (isInQuote(input.docId(), response.baseFiller())
+          || isInQuote(input.docId(), response.canonicalArgument().charOffsetSpan()))
+      {
+        toDeleteB.add(response);
+      }
+    }
+    final ImmutableSet<Response> toDelete = toDeleteB.build();
     log.info("For document {}, filtered out {} responses which were in quoted regions",
-        input.docId(), input.size() - ret.size());
-    return ret;
+        input.docId(), toDelete.size());
+    return ResponseMapping.create(ImmutableMap.<Response,Response>of(), toDelete);
   }
+
+  @Override
+  public ScoringData transform(final ScoringData input) {
+    checkArgument(input.systemOutput().isPresent(), "To apply quote filtering, you need system output");
+    checkArgument(!input.answerKey().isPresent(), "Can't apply quote filtering to answer keys");
+
+    final ResponseMapping responseMapping = computeResponseMapping(input.systemOutput().get());
+    final ScoringData.Builder ret = input.modifiedCopy();
+    ret.withSystemOutput(responseMapping.apply(input.systemOutput().get()));
+    if (input.systemLinking().isPresent()) {
+      ret.withSystemLinking(responseMapping.apply(input.systemLinking().get()));
+    }
+    return ret.build();
+  }
+
 
   public boolean isInQuote(Symbol docId, CharOffsetSpan span) {
     final ImmutableRangeSet<Integer> bannedRegions = docIdToBannedRegions.get(docId);
@@ -262,5 +276,11 @@ public final class QuoteFilter implements Function<SystemOutput, SystemOutput> {
       ret.put(docid, ranges.build());
     }
     return QuoteFilter.createFromBannedRegions(ret.build());
+  }
+
+
+  @Override
+  public void logStats() {
+
   }
 }

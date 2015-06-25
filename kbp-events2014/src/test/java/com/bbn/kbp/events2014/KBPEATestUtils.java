@@ -27,6 +27,8 @@ public final class KBPEATestUtils {
         Symbol.from("dummyRole"), KBPRealis.Actual, CAS);
   }
 
+
+
 /*    public static AnswerKey minimalAnswerKey(ResponseLinking linking, CorefAnnotation corefAnnotation) {
         final ImmutableSet.Builder<AssessedResponse> responses = ImmutableSet.builder();
 
@@ -92,7 +94,7 @@ public final class KBPEATestUtils {
     return ResponseLinking.from(linking.docID(), responseSets.build(), incompletes);
   }
 
-  private static class DummyResponseGenerator {
+  public static class DummyResponseGenerator {
 
     private int nextIdx = 0;
 
