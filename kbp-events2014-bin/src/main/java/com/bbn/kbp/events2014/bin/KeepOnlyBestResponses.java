@@ -2,14 +2,16 @@ package com.bbn.kbp.events2014.bin;
 
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
+import com.bbn.kbp.events2014.io.LinkingSpecFormats;
+import com.bbn.kbp.events2014.io.LinkingStore;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.transformers.KeepBestJustificationOnly;
-import com.bbn.kbp.events2014.transformers.ProbableInferenceCases;
+import com.bbn.kbp.events2014.transformers.ResponseMapping;
 
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
+import com.google.common.base.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +43,8 @@ public final class KeepOnlyBestResponses {
 
     final File inputStoreLocation = params.getExistingDirectory("inputStore");
     final File outputStoreLocation = params.getCreatableDirectory("outputStore");
+
+
     final boolean keepInferenceCases = params.getBoolean("keepInferenceCases");
 
     final AssessmentSpecFormats.Format fileFormat =
@@ -49,37 +53,43 @@ public final class KeepOnlyBestResponses {
         AssessmentSpecFormats.openSystemOutputStore(inputStoreLocation, fileFormat);
     final SystemOutputStore destStore =
         AssessmentSpecFormats.createSystemOutputStore(outputStoreLocation, fileFormat);
-    final Function<SystemOutput, SystemOutput> bestJustFilter = KeepBestJustificationOnly.create();
-    final Function<SystemOutput, SystemOutput> probablyInferenceFilter =
-        ProbableInferenceCases.createKeepingMultisentenceJustifications();
+
+    final Optional<LinkingStore> sourceLinkingStore;
+    final Optional<LinkingStore> destLinkingStore;
+    final Optional<File> inputLinkingStoreLocation = params.getOptionalExistingDirectory(
+        "linkingStore");
+    if (inputLinkingStoreLocation.isPresent()) {
+      log.info("Also applying keep best to linking");
+      final File outputLinkingStoreLocation = params.getExistingDirectory("outputLinkingStore");
+      sourceLinkingStore = Optional.of(LinkingSpecFormats.openLinkingStore(inputLinkingStoreLocation.get()));
+      destLinkingStore = Optional.of(LinkingSpecFormats.openOrCreateLinkingStore(outputLinkingStoreLocation));
+    } else {
+      sourceLinkingStore = Optional.absent();
+      destLinkingStore = Optional.absent();
+    }
 
     log.info("Source store has {} documents", sourceStore.docIDs().size());
     for (final Symbol docID : sourceStore.docIDs()) {
       final SystemOutput original = sourceStore.read(docID);
-      final SystemOutput probableInferenceCases = probablyInferenceFilter.apply(original);
-      final SystemOutput filtered = bestJustFilter.apply(original);
+      final ResponseMapping responseMapping = KeepBestJustificationOnly.computeResponseMapping(
+          original);
+      final SystemOutput filtered = responseMapping.apply(original);
       int numFiltered = original.size() - filtered.size();
 
-      final SystemOutput toOutput;
+      log.info("For document {}, filtered out {} responses as duplicate justifications",
+          docID, numFiltered);
 
-      if (keepInferenceCases) {
-        toOutput = SystemOutput
-            .unionKeepingMaximumScore(ImmutableList.of(filtered, probableInferenceCases));
-        if (toOutput.size() > filtered.size()) {
-          log.info(
-              "For document {}, filtered out {} responses as duplicate justifications, but restored {} as probably inference cases",
-              docID, numFiltered, toOutput.size() - filtered.size());
+      destStore.write(filtered);
+
+      if (sourceLinkingStore.isPresent()) {
+        final Optional<ResponseLinking> originalLinking = sourceLinkingStore.get().read(original);
+        if (originalLinking.isPresent()) {
+          // .get() save because source and dest are set together
+          destLinkingStore.get().write(responseMapping.apply(originalLinking.get()));
         } else {
-          log.info("For document {}, filtered out {} responses as duplicate justifications",
-              docID, numFiltered);
+          throw new RuntimeException("No linking present for document " + docID);
         }
-      } else {
-        toOutput = filtered;
-        log.info("For document {}, filtered out {} responses as duplicate justifications",
-            docID, numFiltered);
       }
-
-      destStore.write(toOutput);
     }
 
     sourceStore.close();
