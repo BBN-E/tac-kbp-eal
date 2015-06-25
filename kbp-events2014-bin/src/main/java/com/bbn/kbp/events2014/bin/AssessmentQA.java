@@ -6,6 +6,7 @@ import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.ScoringData;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
@@ -46,7 +47,7 @@ public class AssessmentQA {
 
     for (Symbol docID : store.docIDs()) {
       log.info("processing document {}", docID.asString());
-      final AnswerKey answerKey = MakeAllRealisActual.forAnswerKey().apply(store.read(docID));
+      final AnswerKey answerKey = MakeAllRealisActual.create().transform(ScoringData.builder().withAnswerKey(store.read(docID)).build()).answerKey().get();
       final HTMLRenderer htmlRenderer = new HTMLRenderer(docID.asString());
       htmlRenderer.setCorefAnnotation(answerKey.corefAnnotation());
       htmlRenderer.addResponses(

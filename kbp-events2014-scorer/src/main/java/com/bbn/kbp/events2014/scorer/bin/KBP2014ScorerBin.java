@@ -68,7 +68,7 @@ public final class KBP2014ScorerBin {
 
     log.info("Creating event argument scorer..");
     final EventArgumentScorer
-        innerScorer = EventArgumentScorer.create(PreprocessorKBP2014.fromParameters(params),
+        innerScorer = EventArgumentScorer.create(Preprocessors.for2014FromParameters(params),
         corpusObservers);
     final EventArgumentScorerBin scorer = new EventArgumentScorerBin(innerScorer, corpusObservers);
     final AnnotationStore goldAnswerStore = AssessmentSpecFormats.openAnnotationStore(params
