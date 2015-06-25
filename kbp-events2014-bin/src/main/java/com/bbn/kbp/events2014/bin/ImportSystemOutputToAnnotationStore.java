@@ -124,7 +124,7 @@ public final class ImportSystemOutputToAnnotationStore {
   private static Function<SystemOutput, SystemOutput> getSystemOutputFilter(Parameters params) {
     final Function<SystemOutput, SystemOutput> filter;
     if (params.getBoolean("importOnlyBestAnswers")) {
-      filter = KeepBestJustificationOnly.create();
+      filter = KeepBestJustificationOnly.asFunctionOnSystemOutput();
       log.info("Importing only responses the scorer would select");
     } else {
       filter = Functions.identity();

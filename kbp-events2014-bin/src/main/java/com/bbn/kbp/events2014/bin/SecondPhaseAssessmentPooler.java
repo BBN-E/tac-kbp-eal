@@ -120,11 +120,8 @@ public final class SecondPhaseAssessmentPooler {
   // coref information in answerKey. Then take the union of the result of this for all system outputs.
   private static AnswerKey responsesNeededToScore(Iterable<SystemOutput> systemOutputs,
       AnswerKey answerKey) {
-    final KeepBestJustificationOnly keepBestJustificationOnly =
-        KeepBestJustificationOnly.createForCorefAnnotation(answerKey.corefAnnotation());
-
     final ImmutableSet<SystemOutput> locallyBestUsingCoref = FluentIterable.from(systemOutputs)
-        .transform(keepBestJustificationOnly).toSet();
+        .transform(KeepBestJustificationOnly.asFunctionUsingCoref(answerKey.corefAnnotation())).toSet();
     final SystemOutput pooledResponsesUsingCoref =
         SystemOutput.unionKeepingMaximumScore(locallyBestUsingCoref);
 

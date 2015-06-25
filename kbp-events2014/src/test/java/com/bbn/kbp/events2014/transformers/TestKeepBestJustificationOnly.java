@@ -99,7 +99,7 @@ public class TestKeepBestJustificationOnly {
         best, differByType,
         differByRole, differByRealis, differByCASOffsets, differByCASString));
 
-    final SystemOutput deduplicated = KeepBestJustificationOnly.create().apply(toDeduplicate);
+    final SystemOutput deduplicated = KeepBestJustificationOnly.asFunctionOnSystemOutput().apply(toDeduplicate);
     assertEquals(reference, deduplicated);
   }
 }
