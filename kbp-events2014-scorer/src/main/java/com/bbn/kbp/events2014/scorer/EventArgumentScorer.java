@@ -1,15 +1,13 @@
 package com.bbn.kbp.events2014.scorer;
 
-import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.EventArgScoringAlignment;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.ScoringData;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
-import com.bbn.kbp.events2014.scorer.bin.Preprocessor;
 import com.bbn.kbp.events2014.scorer.observers.KBPScoringObserver;
+import com.bbn.kbp.events2014.transformers.ScoringDataTransformation;
 
 import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,31 +22,27 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public final class EventArgumentScorer {
 
   private static final Logger log = LoggerFactory.getLogger(EventArgumentScorer.class);
-  private final Preprocessor preprocessor;
-  private final ImmutableList<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers;
+  private final ScoringDataTransformation preprocessor;
 
-  private EventArgumentScorer(Preprocessor preprocessor,
+  private EventArgumentScorer(ScoringDataTransformation preprocessor,
       final Iterable<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers) {
     this.preprocessor = checkNotNull(preprocessor);
-    this.scoringObservers = ImmutableList.copyOf(scoringObservers);
   }
 
-  public static EventArgumentScorer create(Preprocessor preprocessor,
+  public static EventArgumentScorer create(ScoringDataTransformation preprocessor,
       Iterable<KBPScoringObserver<TypeRoleFillerRealis>> scoringObservers) {
     return new EventArgumentScorer(preprocessor, scoringObservers);
   }
 
-  public EventArgScoringAlignment<TypeRoleFillerRealis> score(
-      final AnswerKey referenceArguments, final SystemOutput systemOutput) {
-    final Preprocessor.Result preprocessorResult = preprocessor.preprocess(systemOutput,
-        referenceArguments);
+  public EventArgScoringAlignment<TypeRoleFillerRealis> score(ScoringData scoringData) {
+    final ScoringData preprocessorResult = preprocessor.transform(scoringData);
     final Function<Response, TypeRoleFillerRealis> equivalenceClassFunction =
-        TypeRoleFillerRealis.extractFromSystemResponse(preprocessorResult.answerKey().
-            corefAnnotation().strictCASNormalizerFunction());
+        TypeRoleFillerRealis.extractFromSystemResponse(scoringData.answerKey().get()
+            .corefAnnotation().strictCASNormalizerFunction());
 
     final StandardScoringAligner<TypeRoleFillerRealis> scoringAligner =
         StandardScoringAligner.forEquivalenceClassFunction(equivalenceClassFunction);
-    return scoringAligner.align(preprocessorResult.answerKey(), preprocessorResult.systemOutput());
+    return scoringAligner.align(scoringData.answerKey().get(), scoringData.systemOutput().get());
   }
 
   public void logStats() {

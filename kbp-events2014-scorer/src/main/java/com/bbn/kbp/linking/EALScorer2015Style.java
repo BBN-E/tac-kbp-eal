@@ -3,6 +3,7 @@ package com.bbn.kbp.linking;
 import com.bbn.bue.common.annotations.MoveToBUECommon;
 import com.bbn.bue.common.collections.CollectionUtils;
 import com.bbn.bue.common.evaluation.FMeasureCounts;
+import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.EventArgScoringAlignment;
@@ -10,17 +11,18 @@ import com.bbn.kbp.events2014.EventArgumentLinking;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.ScoringData;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.linking.EventArgumentLinkingAligner;
 import com.bbn.kbp.events2014.linking.ExactMatchEventArgumentLinkingAligner;
 import com.bbn.kbp.events2014.scorer.LinkingScore;
 import com.bbn.kbp.events2014.scorer.StandardScoringAligner;
-import com.bbn.kbp.events2014.scorer.bin.Preprocessor;
-import com.bbn.kbp.events2014.scorer.bin.PreprocessorKBP2014;
+import com.bbn.kbp.events2014.scorer.bin.Preprocessors;
+import com.bbn.kbp.events2014.transformers.ScoringDataTransformation;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.FluentIterable;
@@ -47,24 +49,28 @@ import static com.google.common.collect.Iterables.filter;
 public final class EALScorer2015Style {
   private static final Logger log = LoggerFactory.getLogger(EALScorer2015Style.class);
 
-  private final Preprocessor preprocessor;
+  private final Optional<ScoringDataTransformation> preprocessor;
   private final EventArgumentLinkingAligner aligner =
       ExactMatchEventArgumentLinkingAligner.create();
   private final LinkF1 linkF1 = LinkF1.create();
   private final double beta;
   private final double lambda;
 
-  /* pacakge-private */ EALScorer2015Style(Preprocessor preprocessor, final double beta, final double lambda) {
+  /* pacakge-private */ EALScorer2015Style(ScoringDataTransformation preprocessor, final double beta, final double lambda) {
     checkArgument(beta >= 0.0);
     checkArgument(lambda >= 0.0);
 
-    this.preprocessor = checkNotNull(preprocessor);
+    this.preprocessor = Optional.fromNullable(preprocessor);
     this.beta = beta;
     this.lambda = lambda;
   }
 
-  public static EALScorer2015Style create() {
-    return new EALScorer2015Style(PreprocessorKBP2014.createKeepingRealis(), 0.25, 0.5);
+  public static EALScorer2015Style create(Parameters params) {
+    return new EALScorer2015Style(Preprocessors.for2015FromParameters(params), 0.25, 0.5);
+  }
+
+  public static EALScorer2015Style createWithoutPreprocessing() {
+    return new EALScorer2015Style(null, 0.25, 0.5);
   }
 
   public double lambda() {
@@ -130,11 +136,18 @@ public final class EALScorer2015Style {
   private static final Predicate<TypeRoleFillerRealis> REALIS_IS_NOT_GENERIC =
       compose(not(equalTo(KBPRealis.Generic)), TypeRoleFillerRealis.realisFunction());
 
-  public Result score(AnswerKey referenceArguments, ResponseLinking referenceLinking,
-      SystemOutput systemOutput, ResponseLinking systemLinking) {
+  public Result score(ScoringData unpreprocessedScoringData) {
+    checkArgument(unpreprocessedScoringData.answerKey().isPresent() && unpreprocessedScoringData
+        .systemOutput().isPresent()
+        && unpreprocessedScoringData.referenceLinking().isPresent() && unpreprocessedScoringData
+        .systemLinking().isPresent());
+
+    final ScoringData scoringData = preprocessor.isPresent()?
+                                    preprocessor.get().transform(unpreprocessedScoringData)
+                                                            :unpreprocessedScoringData;
 
     final EventArgScoringAlignment<TypeRoleFillerRealis> scoringAlignment =
-        scoreEventArguments(referenceArguments, systemOutput);
+        scoreEventArguments(scoringData);
 
     final ImmutableSet<TypeRoleFillerRealis> linkableEquivalenceClasses =
         FluentIterable.from(scoringAlignment.truePositiveEquivalenceClasses())
@@ -142,23 +155,21 @@ public final class EALScorer2015Style {
           .filter(REALIS_IS_NOT_GENERIC)
         .toSet();
 
-    final LinkingScore linkingScore = scoreLinking(referenceArguments, linkableEquivalenceClasses,
-        referenceLinking, systemLinking);
+    final LinkingScore linkingScore = scoreLinking(scoringData.answerKey().get(),
+        linkableEquivalenceClasses,
+        scoringData.referenceLinking().get(), scoringData.systemLinking().get());
 
     return new Result(scoringAlignment, linkingScore);
   }
 
-  private EventArgScoringAlignment<TypeRoleFillerRealis> scoreEventArguments(
-      final AnswerKey referenceArguments, final SystemOutput systemOutput) {
-    final Preprocessor.Result preprocessorResult = preprocessor.preprocess(systemOutput,
-        referenceArguments);
+  private EventArgScoringAlignment<TypeRoleFillerRealis> scoreEventArguments(ScoringData scoringData) {
     final Function<Response, TypeRoleFillerRealis> equivalenceClassFunction =
         TypeRoleFillerRealis.extractFromSystemResponse(
-            preprocessorResult.answerKey().corefAnnotation().strictCASNormalizerFunction());
+            scoringData.answerKey().get().corefAnnotation().strictCASNormalizerFunction());
 
     final StandardScoringAligner<TypeRoleFillerRealis> scoringAligner =
         StandardScoringAligner.forEquivalenceClassFunction(equivalenceClassFunction);
-    return scoringAligner.align(preprocessorResult.answerKey(), preprocessorResult.systemOutput());
+    return scoringAligner.align(scoringData.answerKey().get(), scoringData.systemOutput().get());
   }
 
   public LinkingScore scoreLinking(AnswerKey answerKey, Set<TypeRoleFillerRealis> linkableEquivalenceClasses,

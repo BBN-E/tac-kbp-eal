@@ -1,24 +1,25 @@
 package com.bbn.kbp.events2014.transformers;
 
-import com.bbn.bue.common.scoring.Scored;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.ScoringData;
 
-import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
-import java.util.Set;
+import static com.google.common.base.Preconditions.checkArgument;
 
-public final class MakeAllRealisActual {
+public final class MakeAllRealisActual implements ScoringDataTransformation {
   private MakeAllRealisActual() {
     throw new UnsupportedOperationException();
+  }
+
+  public static MakeAllRealisActual create() {
+    return new MakeAllRealisActual();
   }
 
   private static ResponseAssessment neutralizeResponseAssessment(
@@ -30,73 +31,76 @@ public final class MakeAllRealisActual {
     }
   }
 
-  public static Function<AnswerKey, AnswerKey> forAssessments() {
-    return new Function<AnswerKey, AnswerKey>() {
-      @Override
-      public AnswerKey apply(AnswerKey input) {
-        // seenResponses is to ensure we don't end up with two different
-        // assessments for the same response, or have the same response
-        // as both assessed and unassessed
-        final Set<Response> seenResponses = Sets.newHashSet();
-        final ImmutableSet.Builder<AssessedResponse> newAssessed = ImmutableSet.builder();
+  private static AnswerKey neutralizeAssessments(AnswerKey input) {
+    final AnswerKey.Builder ret = input.modifiedCopyBuilder();
 
-        for (final AssessedResponse response : input.annotatedResponses()) {
-          final Response neutralizedResponse =
-              response.response().copyWithSwappedRealis(KBPRealis.Actual);
-          if (!seenResponses.contains(neutralizedResponse)) {
-            newAssessed.add(AssessedResponse.from(neutralizedResponse,
-                neutralizeResponseAssessment(response.assessment())));
-          }
-          seenResponses.add(neutralizedResponse);
-        }
-
-        final ImmutableSet.Builder<Response> newUnannotated = ImmutableSet.builder();
-
-        for (final Response response : input.unannotatedResponses()) {
-          final Response neutralizedResponse = response.copyWithSwappedRealis(KBPRealis.Actual);
-          if (!seenResponses.contains(neutralizedResponse)) {
-            newUnannotated.add(neutralizedResponse);
-          }
-          seenResponses.add(neutralizedResponse);
-        }
-
-        return AnswerKey.from(input.docId(), newAssessed.build(), newUnannotated.build(),
-            input.corefAnnotation());
+    for (final AssessedResponse assessedResponse : input.annotatedResponses()) {
+      final ResponseAssessment neutralizedAssessment =
+          neutralizeResponseAssessment(assessedResponse.assessment());
+      if (!neutralizedAssessment.equals(assessedResponse.assessment())) {
+        ret.replaceAssessment(assessedResponse.response(), neutralizedAssessment);
       }
-    };
+    }
+    return ret.build();
   }
 
-  public static AnswerKeyToResponseMappingRule forResponses() {
-    return new AnswerKeyToResponseMappingRule() {
-      @Override
-      public ResponseMapping computeResponseTransformation(final AnswerKey answerKey) {
-        final ImmutableMap.Builder<Response, Response> replacements = ImmutableMap.builder();
-        for (final Response response : answerKey.allResponses()) {
-          final Response replacement = response.copyWithSwappedRealis(KBPRealis.Actual);
-          if (!response.equals(replacement)) {
-            replacements.put(response, replacement);
-          }
-        }
-        return ResponseMapping.create(replacements.build(), ImmutableSet.<Response>of());
+  private static ResponseMapping responseMapping(final AnswerKey answerKey) {
+    final ImmutableMap.Builder<Response, Response> replacements = ImmutableMap.builder();
+    for (final Response response : answerKey.allResponses()) {
+      final Response replacement = response.copyWithSwappedRealis(KBPRealis.Actual);
+      if (!response.equals(replacement)) {
+        replacements.put(response, replacement);
       }
-    };
+    }
+    return ResponseMapping.create(replacements.build(), ImmutableSet.<Response>of());
   }
 
-  @Deprecated
-  public static Function<SystemOutput, SystemOutput> forSystemOutput() {
-    return new Function<SystemOutput, SystemOutput>() {
-      @Override
-      public SystemOutput apply(SystemOutput input) {
-        final ImmutableSet.Builder<Scored<Response>> newResponses = ImmutableSet.builder();
+  @Override
+  public ScoringData transform(final ScoringData scoringData) {
+    checkArgument(!scoringData.referenceLinking().isPresent()
+        && !scoringData.systemLinking().isPresent(), "Realis neutralization is not currently compatible with "
+        + "linking scoring");
+    checkArgument(scoringData.answerKey().isPresent(), "Answer key must be present to neutralize realis");
 
-        for (final Scored<Response> assessedResponse : input.scoredResponses()) {
-          newResponses.add(
-              Scored.from(assessedResponse.item().copyWithSwappedRealis(KBPRealis.Actual),
-                  assessedResponse.score()));
-        }
+    final ScoringData.Builder ret = scoringData.modifiedCopy();
 
-        return SystemOutput.from(input.docId(), newResponses.build());
-      }
-    };
+    final ResponseMapping responseMapping = responseMapping(scoringData.answerKey().get());
+
+    AnswerKey newAnswerKey = neutralizeAssessments(responseMapping.apply(scoringData.answerKey().get()));
+    ret.withAnswerKey(newAnswerKey);
+
+    if (scoringData.systemOutput().isPresent()) {
+      ret.withSystemOutput(responseMapping.apply(scoringData.systemOutput().get()));
+    }
+
+    return ret.build();
+  }
+
+  @Override
+  public void logStats() {
+
   }
 }
+
+/*final class AssessmentMapping {
+  private final ImmutableMap<Response, ResponseAssessment> replacements;
+
+  private AssessmentMapping(
+      final Map<Response, ResponseAssessment> replacements) {
+    this.replacements = ImmutableMap.copyOf(replacements);
+  }
+
+  public static AssessmentMapping from(Map<Response, ResponseAssessment> replacements) {
+    return new AssessmentMapping(replacements);
+  }
+
+  public AnswerKey apply(AnswerKey input) {
+    final AnswerKey.Builder ret = input.modifiedCopyBuilder();
+
+    for (final Map.Entry<Response, ResponseAssessment> e : replacements.entrySet()) {
+      ret.replaceAssessment(e.getKey(), e.getValue());
+    }
+    return ret.build();
+  }
+}
+*/

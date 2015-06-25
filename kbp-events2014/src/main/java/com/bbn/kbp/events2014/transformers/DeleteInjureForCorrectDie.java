@@ -1,30 +1,19 @@
 package com.bbn.kbp.events2014.transformers;
 
-import com.bbn.bue.common.scoring.Scored;
-import com.bbn.bue.common.scoring.Scoreds;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.AssessedResponse;
-import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 
 import com.google.common.base.Function;
-import com.google.common.base.Functions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.compose;
 import static com.google.common.base.Predicates.in;
-import static com.google.common.base.Predicates.not;
 
 /**
  * Deletes Life.Injure events corresponding to correct Life.Die events.  From the 2014 KBP EAA task
@@ -47,90 +36,18 @@ import static com.google.common.base.Predicates.not;
  */
 public final class DeleteInjureForCorrectDie implements AnswerKeyToResponseMappingRule {
 
-  private static final Logger log = LoggerFactory.getLogger(DeleteInjureForCorrectDie.class);
-  // given a response, this will extract its type, role, filler, and realis while
-  // using coref to normalize the filler. This is necessary because when we delete a
-  // Life.Injure event because of a Life.Die, we want to delete all its coreferent forms
-  private final Function<Response, TypeRoleFillerRealis> normalizedFingerprintExtractor;
-
-  private DeleteInjureForCorrectDie(
-      Function<Response, TypeRoleFillerRealis> normalizedFingerprintExtractor) {
-    this.normalizedFingerprintExtractor = checkNotNull(normalizedFingerprintExtractor);
+  private DeleteInjureForCorrectDie() {
   }
 
-  public static DeleteInjureForCorrectDie fromEntityNormalizer(
-      Function<KBPString, KBPString> entityNormalizer) {
-    return new DeleteInjureForCorrectDie(
-        TypeRoleFillerRealis.extractFromSystemResponse(entityNormalizer));
-  }
-
-  @Deprecated
-  public Function<AnswerKey, AnswerKey> answerKeyTransformer() {
-    return new Function<AnswerKey, AnswerKey>() {
-      @Override
-      public AnswerKey apply(AnswerKey input) {
-        final ImmutableSet<TypeRoleFillerRealis> toDelete = responsesToDelete(input);
-        return AnswerKey
-            .from(input.docId(), removeInjuresMatchingDies(input.annotatedResponses(), toDelete),
-                input.unannotatedResponses(), input.corefAnnotation());
-      }
-
-      private Iterable<AssessedResponse> removeInjuresMatchingDies(
-          Iterable<AssessedResponse> currentResponses,
-          ImmutableSet<TypeRoleFillerRealis> toDelete) {
-        final ImmutableSet<AssessedResponse> currentResponseSet =
-            ImmutableSet.copyOf(currentResponses);
-        // we want to remove all responses whose type-role-realis-normalized-fillers are
-        // scheduled for deletion
-        final ImmutableSet<AssessedResponse> filtered = FluentIterable.from(currentResponseSet)
-            .filter(compose(not(in(toDelete)),
-                Functions.compose(normalizedFingerprintExtractor, AssessedResponse.Response)))
-            .toSet();
-
-        if (currentResponseSet.size() != filtered.size()) {
-          log.info(
-              "Deleted {} Life.Injure events from answer key due to matching Life.Die events: {}",
-              currentResponseSet.size() - filtered.size(),
-              Sets.difference(currentResponseSet, filtered));
-        }
-        return filtered;
-      }
-    };
-  }
-
-  @Deprecated
-  public Function<SystemOutput, SystemOutput> systemOutputTransformerForAnswerKey(
-      AnswerKey answerKey) {
-    final ImmutableSet<TypeRoleFillerRealis> toDelete = responsesToDelete(answerKey);
-
-    return new Function<SystemOutput, SystemOutput>() {
-      @Override
-      public SystemOutput apply(SystemOutput input) {
-        final Function<Scored<Response>, TypeRoleFillerRealis>
-            scoredResponseToNormalizedFingerPrint =
-            Functions.compose(normalizedFingerprintExtractor, Scoreds.<Response>itemsOnly());
-
-        final SystemOutput ret = input.copyWithFilteredResponses(
-            compose(
-                not(in(toDelete)),
-                scoredResponseToNormalizedFingerPrint));
-
-        if (ret.size() != input.size()) {
-          log.info(
-              "Deleted {} Life.Injure events from system output due to matching Life.Die events in answer key: {}",
-              input.size() - ret.size(),
-              Sets.difference(input.responses(), ret.responses()));
-        }
-
-        return ret;
-      }
-    };
+  public static ScoringDataTransformation asTransformationForBoth() {
+    return ApplyAnswerKeyToResponseMappingRuleToAll.forRuleApplyingToBoth(new DeleteInjureForCorrectDie());
   }
 
   private static final Symbol LIFE_DIE = Symbol.from("Life.Die");
   private static final Symbol LIFE_INJURE = Symbol.from("Life.Injure");
 
-  private ImmutableSet<TypeRoleFillerRealis> responsesToDelete(AnswerKey answerKey) {
+  private ImmutableSet<TypeRoleFillerRealis> responsesToDelete(AnswerKey answerKey,
+      final Function<Response, TypeRoleFillerRealis> normalizedFingerprintExtractor) {
     final ImmutableSet.Builder<TypeRoleFillerRealis> ret = ImmutableSet.builder();
 
     for (final AssessedResponse assessedResponse : answerKey.annotatedResponses()) {
@@ -149,7 +66,8 @@ public final class DeleteInjureForCorrectDie implements AnswerKeyToResponseMappi
         TypeRoleFillerRealis.extractFromSystemResponse(
             answerKey.corefAnnotation().strictCASNormalizerFunction());
 
-    final ImmutableSet<TypeRoleFillerRealis> trfrsToDelete = responsesToDelete(answerKey);
+    final ImmutableSet<TypeRoleFillerRealis> trfrsToDelete = responsesToDelete(answerKey,
+        normalizedFingerprintExtractor);
     final Predicate<Response> isInDeletedTRFR =
         compose(in(trfrsToDelete), normalizedFingerprintExtractor);
     final ImmutableSet<Response> responsesToDelete = FluentIterable.from(answerKey.allResponses())
