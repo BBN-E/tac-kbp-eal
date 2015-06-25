@@ -54,8 +54,28 @@ public final class Preprocessors {
     return ScoringDataTransformationSequence.compose(transformationsInOrder);
   }
 
-  public static ScoringDataTransformation for2015FromParameters(Parameters parameters) {
-    throw new UnsupportedOperationException("Implement me");
+  public static ScoringDataTransformation for2015FromParameters(Parameters params) {
+    final List<ScoringDataTransformation> transformationsInOrder = Lists.newArrayList();
+
+    if (params.getBoolean("neutralizeRealis")) {
+      transformationsInOrder.add(MakeAllRealisActual.create());
+    }
+
+    // in 2015, we no longe rhave mercy on you if you have a bad time format. This should now
+    // be caught in the validator
+
+    // in the original TAC KBP 2014 evaluation many invalid temporal responses were erroneously
+    // assessed as correct. This is just here in case the LDC misses marking any wrong.
+    transformationsInOrder.add(MakeBrokenTimesWrong.create());
+
+    transformationsInOrder.add(DeleteInjureForCorrectDie.asTransformationForBoth());
+    transformationsInOrder.add(OnlyMostSpecificTemporal.asTransformationForBoth());
+
+    if (params.getBoolean("attemptToNeutralizeCoref")) {
+      log.info("Attempting to neutralize coref");
+      transformationsInOrder.add(CorefNeutralizingPreprocessor.create());
+    }
+    return ScoringDataTransformationSequence.compose(transformationsInOrder);
   }
 }
 
