@@ -43,6 +43,13 @@ public final class LinkingSpecFormats {
     return new DirectoryLinkingStore(directory);
   }
 
+  public static LinkingStore openLinkingStore(final File directory) throws FileNotFoundException {
+    if (!directory.isDirectory()) {
+      throw new FileNotFoundException("Not a directory: " + directory);
+    }
+    return new DirectoryLinkingStore(directory);
+  }
+
   /**
    * {@link com.bbn.kbp.events2014.io.LinkingStore} implementations which uses a directory with one
    * file per doc ID.  Each file contains a {@link com.bbn.kbp.events2014.ResponseSet} on each line
