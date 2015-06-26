@@ -5,7 +5,7 @@ import com.bbn.kbp.events2014.EventArgScoringAlignment;
 import com.bbn.kbp.events2014.ScoringData;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.io.AnnotationStore;
-import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.events2014.io.ArgumentStore;
 import com.bbn.kbp.events2014.scorer.observers.KBPScoringObserver;
 
 import com.google.common.collect.ImmutableList;
@@ -32,7 +32,7 @@ public class EventArgumentScorerBin {
     this.scoringObservers = scoringObservers;
   }
 
-  public void run(final SystemOutputStore systemAnswerStore, final AnnotationStore goldAnswerStore,
+  public void run(final ArgumentStore systemAnswerStore, final AnnotationStore goldAnswerStore,
       final Set<Symbol> documentsToScore, final File baseOutputDir)
       throws IOException {
     final Map<KBPScoringObserver<TypeRoleFillerRealis>, File> scorerToOutputDir =

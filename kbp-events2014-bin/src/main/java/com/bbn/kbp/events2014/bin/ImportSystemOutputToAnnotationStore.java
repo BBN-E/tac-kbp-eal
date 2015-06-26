@@ -6,10 +6,10 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events2014.AnswerKey;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
-import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.events2014.io.ArgumentStore;
 import com.bbn.kbp.events2014.transformers.KeepBestJustificationOnly;
 
 import com.google.common.base.Charsets;
@@ -66,7 +66,7 @@ public final class ImportSystemOutputToAnnotationStore {
       final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
       log.info(params.dump());
 
-      final Function<SystemOutput, SystemOutput> filter = getSystemOutputFilter(params);
+      final Function<ArgumentOutput, ArgumentOutput> filter = getSystemOutputFilter(params);
       final Predicate<Symbol> docIdFilter = getDocIdFilter(params);
 
       final AssessmentSpecFormats.Format systemFileFormat =
@@ -74,7 +74,7 @@ public final class ImportSystemOutputToAnnotationStore {
       final AssessmentSpecFormats.Format annStoreFileFormat =
           params.getEnum("annStore.fileFormat", AssessmentSpecFormats.Format.class);
 
-      final ImmutableSet<SystemOutputStore> systemOutputs =
+      final ImmutableSet<ArgumentStore> systemOutputs =
           loadSystemOutputStores(params, systemFileFormat);
       final ImmutableSet<AnnotationStore> annotationStores =
           loadAnnotationStores(params, annStoreFileFormat);
@@ -104,15 +104,15 @@ public final class ImportSystemOutputToAnnotationStore {
     return annotationStores;
   }
 
-  private static ImmutableSet<SystemOutputStore> loadSystemOutputStores(final Parameters params,
+  private static ImmutableSet<ArgumentStore> loadSystemOutputStores(final Parameters params,
       final AssessmentSpecFormats.Format systemFileFormat) throws IOException {
-    final ImmutableSet<SystemOutputStore> systemOutputs;
+    final ImmutableSet<ArgumentStore> systemOutputs;
     params.assertAtLeastOneDefined("systemOutput", "systemOutputsList");
     if (params.isPresent("systemOutput")) {
       systemOutputs = ImmutableSet.of(AssessmentSpecFormats
           .openSystemOutputStore(params.getExistingDirectory("systemOutput"), systemFileFormat));
     } else {
-      final ImmutableSet.Builder<SystemOutputStore> stores = ImmutableSet.builder();
+      final ImmutableSet.Builder<ArgumentStore> stores = ImmutableSet.builder();
       for (File dir : FileUtils.loadFileList(params.getCreatableFile("systemOutputsList"))) {
         stores.add(AssessmentSpecFormats.openSystemOutputStore(dir, systemFileFormat));
       }
@@ -121,8 +121,8 @@ public final class ImportSystemOutputToAnnotationStore {
     return systemOutputs;
   }
 
-  private static Function<SystemOutput, SystemOutput> getSystemOutputFilter(Parameters params) {
-    final Function<SystemOutput, SystemOutput> filter;
+  private static Function<ArgumentOutput, ArgumentOutput> getSystemOutputFilter(Parameters params) {
+    final Function<ArgumentOutput, ArgumentOutput> filter;
     if (params.getBoolean("importOnlyBestAnswers")) {
       filter = KeepBestJustificationOnly.asFunctionOnSystemOutput();
       log.info("Importing only responses the scorer would select");
@@ -148,19 +148,19 @@ public final class ImportSystemOutputToAnnotationStore {
     }
   }
 
-  private static void importSystemOutputToAnnotationStore(Set<SystemOutputStore> systemOutputStores,
+  private static void importSystemOutputToAnnotationStore(Set<ArgumentStore> argumentStores,
       Set<AnnotationStore> annotationStores,
-      Function<SystemOutput, SystemOutput> filter, Predicate<Symbol> docIdFilter) throws IOException {
-    log.info("Loading system outputs from {}", StringUtils.NewlineJoiner.join(systemOutputStores));
+      Function<ArgumentOutput, ArgumentOutput> filter, Predicate<Symbol> docIdFilter) throws IOException {
+    log.info("Loading system outputs from {}", StringUtils.NewlineJoiner.join(argumentStores));
     log.info("Using assessment stores at {}", StringUtils.NewlineJoiner.join(annotationStores));
 
     final Multiset<AnnotationStore> totalNumAdded = HashMultiset.create();
 
-    for (final SystemOutputStore systemOutput : systemOutputStores) {
+    for (final ArgumentStore systemOutput : argumentStores) {
       log.info("Processing system output from {}", systemOutput);
 
       for (final Symbol docid : filter(systemOutput.docIDs(), docIdFilter)) {
-        final SystemOutput docOutput = filter.apply(systemOutput.read(docid));
+        final ArgumentOutput docOutput = filter.apply(systemOutput.read(docid));
         log.info("Processing {} responses for document {}", docid, docOutput.size());
 
         for (final AnnotationStore annStore : annotationStores) {

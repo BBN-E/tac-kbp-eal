@@ -3,6 +3,7 @@ package com.bbn.kbp.events2014.scorer;
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.CorefAnnotation;
@@ -13,7 +14,6 @@ import com.bbn.kbp.events2014.ResponseAssessment;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
 import com.bbn.kbp.events2014.ScoringData;
-import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.linking.EALScorer2015Style;
 
 import com.google.common.collect.ImmutableSet;
@@ -40,22 +40,22 @@ public class ScorerTest {
   final Response i = dummyResponseOfType(CONFLICT, VICTIM, "i", KBPRealis.Actual);
   final Response aGeneric = dummyResponseOfType(CONFLICT, VICTIM, "a", KBPRealis.Generic);
   /*
-  final SystemOutput output_A = systemOutputFromResponses(ImmutableSet.of(a));
+  final ArgumentOutput output_A = systemOutputFromResponses(ImmutableSet.of(a));
   final ResponseLinking linking_A = ResponseLinking.from(output_A.docId(),
       ImmutableSet.of(ResponseSet.from(a)),
       ImmutableSet.<Response>of());
 
-  final SystemOutput output_AB = systemOutputFromResponses(ImmutableSet.of(a, b));
+  final ArgumentOutput output_AB = systemOutputFromResponses(ImmutableSet.of(a, b));
   final ResponseLinking linking_A_B = ResponseLinking.from(output_AB.docId(),
       ImmutableSet.of(ResponseSet.from(a), ResponseSet.from(b)),
       ImmutableSet.<Response>of());
 
-  final SystemOutput output_ABC = systemOutputFromResponses(ImmutableSet.of(a, b, c));
+  final ArgumentOutput output_ABC = systemOutputFromResponses(ImmutableSet.of(a, b, c));
   final ResponseLinking linking_A_B_C = ResponseLinking.from(output_ABC.docId(),
       ImmutableSet.of(ResponseSet.from(a), ResponseSet.from(b), ResponseSet.from(c)),
       ImmutableSet.<Response>of());
   */
-  final SystemOutput output_ABCD = systemOutputFromResponses(ImmutableSet.of(a, b, c, d));
+  final ArgumentOutput output_ABCD = systemOutputFromResponses(ImmutableSet.of(a, b, c, d));
   final ResponseLinking linking_A_B_C_D = ResponseLinking.from(output_ABCD.docId(),
       ImmutableSet.of(ResponseSet.from(a), ResponseSet.from(b), ResponseSet.from(c), ResponseSet.from(d)),
       ImmutableSet.<Response>of());
@@ -80,7 +80,7 @@ public class ScorerTest {
       ImmutableSet.of(ResponseSet.from(a,c),ResponseSet.from(b,d)),
       ImmutableSet.<Response>of());
   /*
-  final SystemOutput output_ABCDEF = systemOutputFromResponses(ImmutableSet.of(a, b, c, d, e, f));
+  final ArgumentOutput output_ABCDEF = systemOutputFromResponses(ImmutableSet.of(a, b, c, d, e, f));
   final ResponseLinking linking_ABCD_E_F = ResponseLinking.from(output_ABCDEF.docId(),
       ImmutableSet.of(ResponseSet.from(a, b, c, d), ResponseSet.from(e), ResponseSet.from(f)),
       ImmutableSet.<Response>of());
@@ -97,46 +97,46 @@ public class ScorerTest {
       ImmutableSet.of(ResponseSet.from(a),ResponseSet.from(b),ResponseSet.from(c),ResponseSet.from(d),ResponseSet.from(e),ResponseSet.from(f)),
       ImmutableSet.<Response>of());
 
-  final SystemOutput output_ABG = systemOutputFromResponses(ImmutableSet.of(a, b, g));
+  final ArgumentOutput output_ABG = systemOutputFromResponses(ImmutableSet.of(a, b, g));
   final ResponseLinking linking_AB_G = ResponseLinking.from(output_ABG.docId(),
       ImmutableSet.of(ResponseSet.from(a, b), ResponseSet.from(g)),
       ImmutableSet.<Response>of());
   */
-  final SystemOutput output_ABDG = systemOutputFromResponses(ImmutableSet.of(a, b, d, g));
+  final ArgumentOutput output_ABDG = systemOutputFromResponses(ImmutableSet.of(a, b, d, g));
   final ResponseLinking linking_ABD_G = ResponseLinking.from(output_ABDG.docId(),
       ImmutableSet.of(ResponseSet.from(a,b,d),ResponseSet.from(g)),
       ImmutableSet.<Response>of());
 
-  final SystemOutput output_ABCG = systemOutputFromResponses(ImmutableSet.of(a,b,c,g));
+  final ArgumentOutput output_ABCG = systemOutputFromResponses(ImmutableSet.of(a,b,c,g));
   final ResponseLinking linking_AB_C_G = ResponseLinking.from(output_ABCG.docId(),
       ImmutableSet.of(ResponseSet.from(a,b),ResponseSet.from(c),ResponseSet.from(g)),
       ImmutableSet.<Response>of());
 
-  final SystemOutput output_GHI = systemOutputFromResponses(ImmutableSet.of(g,h,i));
+  final ArgumentOutput output_GHI = systemOutputFromResponses(ImmutableSet.of(g,h,i));
   final ResponseLinking linking_G_H_I = ResponseLinking.from(output_GHI.docId(),
       ImmutableSet.of(ResponseSet.from(g),ResponseSet.from(h),ResponseSet.from(i)),
       ImmutableSet.<Response>of());
 
-  final SystemOutput output_DEA = systemOutputFromResponses(ImmutableSet.of(d,e,a));
+  final ArgumentOutput output_DEA = systemOutputFromResponses(ImmutableSet.of(d,e,a));
   final ResponseLinking linking_DE_DEA = ResponseLinking.from(output_DEA.docId(),
       ImmutableSet.of(ResponseSet.from(d,e),ResponseSet.from(d,e,a)),
       ImmutableSet.<Response>of());
 
   ////////////////////
 
-  final SystemOutput output_C = systemOutputFromResponses(ImmutableSet.of(c));
+  final ArgumentOutput output_C = systemOutputFromResponses(ImmutableSet.of(c));
   final ResponseLinking linking_C = ResponseLinking.from(output_C.docId(),
       ImmutableSet.of(ResponseSet.from(c)),
       ImmutableSet.<Response>of());
   /*
-  final SystemOutput output_ABCE = systemOutputFromResponses(ImmutableSet.of(a,b,c,e));
+  final ArgumentOutput output_ABCE = systemOutputFromResponses(ImmutableSet.of(a,b,c,e));
   final ResponseLinking linking_ABCE = ResponseLinking.from(output_ABCE.docId(),
       ImmutableSet.of(ResponseSet.from(a,b,c,e)),
       ImmutableSet.<Response>of());
   */
   ////////////////////
 
-  final SystemOutput output_AGeneric_BCE = systemOutputFromResponses(ImmutableSet.of(aGeneric,b,c,e));
+  final ArgumentOutput output_AGeneric_BCE = systemOutputFromResponses(ImmutableSet.of(aGeneric,b,c,e));
   final ResponseLinking linking_AGenericBCE = ResponseLinking.from(output_AGeneric_BCE.docId(),
       ImmutableSet.of(ResponseSet.from(aGeneric,b,c,e)),
       ImmutableSet.<Response>of());
@@ -157,12 +157,12 @@ public class ScorerTest {
     final Response z = dummyResponseOfType(CONFLICT, VICTIM, "z", KBPRealis.Actual);
     final Response a = dummyResponseOfType(CONFLICT, VICTIM, "a", KBPRealis.Actual);
 
-    final SystemOutput systemOutput = systemOutputFromResponses(ImmutableSet.of(x, y, z));
+    final ArgumentOutput argumentOutput = systemOutputFromResponses(ImmutableSet.of(x, y, z));
     final CorefAnnotation coref = allSingletonsCoref(ImmutableSet.of(x, y, z, a));
     final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(
         ImmutableSet.of(x, y, a), ImmutableSet.of(z), coref);
 
-    final ResponseLinking systemResponseLinking = ResponseLinking.from(systemOutput.docId(),
+    final ResponseLinking systemResponseLinking = ResponseLinking.from(argumentOutput.docId(),
         ImmutableSet.of(ResponseSet.from(x, y, z)), ImmutableSet.<Response>of());
     final ResponseLinking goldResponseLinking = ResponseLinking.from(answerKey.docId(),
         ImmutableSet.of(ResponseSet.from(x, y, a)), ImmutableSet.<Response>of());
@@ -170,7 +170,7 @@ public class ScorerTest {
     final EALScorer2015Style.Result score =
         scorer.score(ScoringData.builder().withAnswerKey(answerKey)
             .withReferenceLinking(goldResponseLinking)
-            .withSystemOutput(systemOutput)
+            .withSystemOutput(argumentOutput)
             .withSystemLinking(systemResponseLinking).build());
 
     assertEquals(1.75, score.unscaledArgumentScore(), .001);
@@ -360,8 +360,8 @@ public class ScorerTest {
     //final ResponseLinking l13 = this.linking_A_B_C_D_E_F;
   }
 
-  private SystemOutput systemOutputFrom(final ResponseLinking linking) {
-    return SystemOutput.createWithConstantScore(linking.docID(), linking.allResponses(), 1.0);
+  private ArgumentOutput systemOutputFrom(final ResponseLinking linking) {
+    return ArgumentOutput.createWithConstantScore(linking.docID(), linking.allResponses(), 1.0);
   }
 
   /*
@@ -580,12 +580,12 @@ public class ScorerTest {
     return corefBuilder.build();
   }
 
-  private static SystemOutput systemOutputFromResponses(Iterable<Response> responses) {
+  private static ArgumentOutput systemOutputFromResponses(Iterable<Response> responses) {
     final ImmutableSet.Builder<Scored<Response>> scoredResponses = ImmutableSet.builder();
     for (final Response response : responses) {
       scoredResponses.add(Scored.from(response, 1.0));
     }
-    return SystemOutput.from(DOC, scoredResponses.build());
+    return ArgumentOutput.from(DOC, scoredResponses.build());
   }
 
 

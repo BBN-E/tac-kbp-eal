@@ -2,12 +2,12 @@ package com.bbn.kbp.events2014.scorer.bin;
 
 
 import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.FieldAssessment;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ScoringData;
-import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.transformers.ResponseMapping;
 import com.bbn.kbp.events2014.transformers.ScoringDataTransformation;
 
@@ -55,7 +55,7 @@ public final class CorefNeutralizingPreprocessor implements ScoringDataTransform
     assertRealisIsNeutralized(input);
 
     final AnswerKey answerKey = input.answerKey().get();
-    final SystemOutput systemOutput = input.systemOutput().get();
+    final ArgumentOutput argumentOutput = input.systemOutput().get();
 
     final ImmutableMultimap<String, AssessedResponse> answerKeyByTypeRoleBaseFiller =
         Multimaps.index(filter(answerKey.annotatedResponses(),
@@ -69,7 +69,7 @@ public final class CorefNeutralizingPreprocessor implements ScoringDataTransform
     final ImmutableMap.Builder<Response, Response> responseReplacements = ImmutableMap.builder();
     final ImmutableSet.Builder<Response> toDelete = ImmutableSet.builder();
 
-    for (final Response response : systemOutput.responses()) {
+    for (final Response response : argumentOutput.responses()) {
       final AssessedResponse assessedResponse = answerKey.assess(response).get();
       if (FieldAssessment.isAcceptable(assessedResponse.assessment().baseFillerCorrect()) &&
           !FieldAssessment.isAcceptable(assessedResponse.assessment().entityCorrectFiller())) {
@@ -112,7 +112,7 @@ public final class CorefNeutralizingPreprocessor implements ScoringDataTransform
     }
 
     final ScoringData.Builder ret = input.modifiedCopy();
-    ret.withSystemOutput(responseMapping.apply(systemOutput));
+    ret.withSystemOutput(responseMapping.apply(argumentOutput));
     if (input.systemLinking().isPresent()) {
       ret.withSystemLinking(responseMapping.apply(input.systemLinking().get()));
     }

@@ -40,7 +40,7 @@ import static com.google.common.collect.Iterables.transform;
 /**
  * Represents a KBP 2014 event argument attachment system's output on a document.
  */
-public final class SystemOutput {
+public final class ArgumentOutput {
 
   public static String DEFAULT_METADATA = "";
   private final Symbol docId;
@@ -48,7 +48,7 @@ public final class SystemOutput {
   private final ImmutableMap<Response, Double> confidences;
   private final ImmutableMap<Response, String> metadata;
 
-  private SystemOutput(final Symbol docId, final Iterable<Response> responses,
+  private ArgumentOutput(final Symbol docId, final Iterable<Response> responses,
       final Map<Response, Double> confidences, final Map<Response, String> metadata) {
     this.docId = checkNotNull(docId);
     this.responses = ImmutableSet.copyOf(responses);
@@ -150,7 +150,7 @@ public final class SystemOutput {
     return Optional.of(Collections.max(args, ByConfidenceThenOld2014ID));
   }
 
-  public static SystemOutput createWithoutMetadata(final Symbol docId,
+  public static ArgumentOutput createWithoutMetadata(final Symbol docId,
       final Iterable<Scored<Response>> scoredResponses) {
     final Map<Response, String> emptyMetadata = Maps.asMap(FluentIterable.from(scoredResponses)
         .transform(Scoreds.<Response>itemsOnly()).toSet(), Functions.constant(DEFAULT_METADATA));
@@ -160,10 +160,10 @@ public final class SystemOutput {
   /**
    * Deprecated due to the addition of metadata tracking - older Functions which filtered responses
    * and constructed new SystemOutputs are now broken for analystics use because they do not
-   * preserve metadata use @see SystemOutput#createWithoutMetadata
+   * preserve metadata use @see ArgumentOutput#createWithoutMetadata
    */
   @Deprecated
-  public static SystemOutput from(final Symbol docId,
+  public static ArgumentOutput from(final Symbol docId,
       final Iterable<Scored<Response>> scoredResponses) {
     return createWithoutMetadata(docId, scoredResponses);
   }
@@ -171,15 +171,15 @@ public final class SystemOutput {
   /**
    * retains only metadata pertaining to responses for which we have a score.
    */
-  public static SystemOutput from(final Symbol docId,
+  public static ArgumentOutput from(final Symbol docId,
       final Iterable<Scored<Response>> scoredResponses, final Map<Response, String> metadata) {
     ImmutableSet<Response> responses =
         ImmutableSet.copyOf(transform(scoredResponses, Scoreds.<Response>itemsOnly()));
-    return new SystemOutput(docId, responses, Scoreds.asMapKeepingHigestScore(scoredResponses),
+    return new ArgumentOutput(docId, responses, Scoreds.asMapKeepingHigestScore(scoredResponses),
         Maps.filterKeys(metadata, Predicates.in(responses)));
   }
 
-  public static SystemOutput createFromScoredAndMetadata(final Symbol docId,
+  public static ArgumentOutput createFromScoredAndMetadata(final Symbol docId,
       final Iterable<Scored<Response>> scoredResponses,
       final Map<Scored<Response>, String> metadata) {
     final Map<Response, Double> scores = Scoreds.asMapKeepingHigestScore(scoredResponses);
@@ -188,7 +188,7 @@ public final class SystemOutput {
     final Map<Response, String> responseToMetadata = MapUtils.copyWithKeysTransformedByInjection(
         Maps.filterKeys(metadata, Predicates.in(ImmutableSet.copyOf(highest))),
         Scoreds.<Response>itemsOnly());
-    return new SystemOutput(docId, scores.keySet(), scores, responseToMetadata);
+    return new ArgumentOutput(docId, scores.keySet(), scores, responseToMetadata);
   }
 
   private final Ordering<Response> ByConfidenceThenOld2014ID = new Ordering<Response>() {
@@ -202,17 +202,17 @@ public final class SystemOutput {
     }
   };
 
-  public static final Function<SystemOutput, Symbol> DocID = new Function<SystemOutput, Symbol>() {
+  public static final Function<ArgumentOutput, Symbol> DocID = new Function<ArgumentOutput, Symbol>() {
     @Override
-    public Symbol apply(SystemOutput input) {
+    public Symbol apply(ArgumentOutput input) {
       return input.docId();
     }
   };
 
-  public static final Function<SystemOutput, ImmutableSet<Response>> Responses =
-      new Function<SystemOutput, ImmutableSet<Response>>() {
+  public static final Function<ArgumentOutput, ImmutableSet<Response>> Responses =
+      new Function<ArgumentOutput, ImmutableSet<Response>>() {
         @Override
-        public ImmutableSet<Response> apply(SystemOutput input) {
+        public ImmutableSet<Response> apply(ArgumentOutput input) {
           return input.responses();
         }
       };
@@ -221,7 +221,7 @@ public final class SystemOutput {
    * keeps the metadata associated with the highest score for a given Response, e.g. in the case of
    * multiple derivations
    */
-  public static SystemOutput unionKeepingMaximumScore(Iterable<SystemOutput> systemOutputs) {
+  public static ArgumentOutput unionKeepingMaximumScore(Iterable<ArgumentOutput> systemOutputs) {
     checkArgument(!isEmpty(systemOutputs), "Cannot take union of zero system outputs");
     checkArgument(allEqual(transform(systemOutputs, DocID)),
         "Cannot take the union of system outputs with different docids");
@@ -229,7 +229,7 @@ public final class SystemOutput {
     final Map<Response, Scored<Response>> scoredResponses =
         new HashMap<Response, Scored<Response>>();
     final Map<Response, String> responseToMetadata = new HashMap<Response, String>();
-    for (final SystemOutput output : systemOutputs) {
+    for (final ArgumentOutput output : systemOutputs) {
       for (final Scored<Response> scoredResponse : output.scoredResponses()) {
         final Double score = responseToScore.get(scoredResponse.item());
         if (score == null || score < scoredResponse.score()) {
@@ -240,18 +240,19 @@ public final class SystemOutput {
       }
     }
 
-    return SystemOutput
+    return ArgumentOutput
         .from(getFirst(systemOutputs, null).docId(), scoredResponses.values(), responseToMetadata);
   }
 
-  public SystemOutput copyWithFilteredResponses(Predicate<Scored<Response>> predicate) {
+  public ArgumentOutput copyWithFilteredResponses(Predicate<Scored<Response>> predicate) {
     final Iterable<Scored<Response>> scoredResponses =
         Iterables.filter(scoredResponses(), predicate);
     final ImmutableSet<Response> responses = ImmutableSet.copyOf(
         transform(scoredResponses, Scoreds.<Response>itemsOnly()));
     final Predicate<Response> retainedResponse = Predicates.in(responses);
     // retain only the responses and metadata that this predicate filters
-    return SystemOutput.from(docId(), scoredResponses, Maps.filterKeys(metadata, retainedResponse));
+    return ArgumentOutput
+        .from(docId(), scoredResponses, Maps.filterKeys(metadata, retainedResponse));
   }
 
   @Override
@@ -267,7 +268,7 @@ public final class SystemOutput {
     if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
-    final SystemOutput other = (SystemOutput) obj;
+    final ArgumentOutput other = (ArgumentOutput) obj;
     return Objects.equal(this.docId, other.docId) && Objects.equal(this.responses, other.responses)
         && Objects.equal(this.confidences, other.confidences);
   }
@@ -281,10 +282,10 @@ public final class SystemOutput {
   /**
    * For testing
    */
-  public static SystemOutput createWithConstantScore(final Symbol docID,
+  public static ArgumentOutput createWithConstantScore(final Symbol docID,
       final Iterable<Response> responses, final double score) {
     return createWithoutMetadata(docID,
-        Iterables.transform(responses, SystemOutput.<Response>withConstantScoreFunction(
+        Iterables.transform(responses, ArgumentOutput.<Response>withConstantScoreFunction(
             score)));
   }
 
@@ -355,8 +356,8 @@ public final class SystemOutput {
       return this;
     }
 
-    public SystemOutput build() {
-      return new SystemOutput(docId, responses, confidences, metadata);
+    public ArgumentOutput build() {
+      return new ArgumentOutput(docId, responses, confidences, metadata);
     }
   }
 }

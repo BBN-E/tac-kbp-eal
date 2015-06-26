@@ -4,15 +4,15 @@ import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ScoringData;
-import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.io.AnnotationStore;
+import com.bbn.kbp.events2014.io.ArgumentStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.io.LinkingSpecFormats;
 import com.bbn.kbp.events2014.io.LinkingStore;
-import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.linking.SameEventTypeLinker;
 import com.bbn.kbp.linking.EALScorer2015Style;
 
@@ -98,11 +98,11 @@ public final class KBP2015Scorer {
       final File scoringOutputDir = params.getCreatableDirectory("scoringOutputDir");
       final File systemOutputDir = params.getExistingDirectory(SYSTEM_OUTPUT_PARAM);
       log.info("Scoring single system output {}", systemOutputDir);
-      final SystemOutputStore systemOutputStore = getSystemOutputStore(params, systemOutputDir);
+      final ArgumentStore argumentStore = getSystemOutputStore(params, systemOutputDir);
       final LinkingStore systemLinkingStore =
-          getLinkingStore(params, systemOutputDir, systemOutputStore);
+          getLinkingStore(params, systemOutputDir, argumentStore);
 
-      scorer.score(goldAnswerStore, referenceLinkingStore, systemOutputStore, systemLinkingStore,
+      scorer.score(goldAnswerStore, referenceLinkingStore, argumentStore, systemLinkingStore,
           docsToScore, scoringOutputDir);
     } else {
       final File systemOutputsDir = params.getExistingDirectory("systemOutputsDir");
@@ -116,11 +116,11 @@ public final class KBP2015Scorer {
             log.info("Scoring system {}", subDir);
             final File outputDir = new File(scoringOutputRoot, subDir.getName());
             outputDir.mkdirs();
-            final SystemOutputStore systemOutputStore = getSystemOutputStore(params, subDir);
+            final ArgumentStore argumentStore = getSystemOutputStore(params, subDir);
             final LinkingStore systemLinkingStore =
-                getLinkingStore(params, subDir, systemOutputStore);
+                getLinkingStore(params, subDir, argumentStore);
 
-            scorer.score(goldAnswerStore, referenceLinkingStore, systemOutputStore,
+            scorer.score(goldAnswerStore, referenceLinkingStore, argumentStore,
                 systemLinkingStore,
                 docsToScore, outputDir);
           }
@@ -134,7 +134,7 @@ public final class KBP2015Scorer {
   private EALScorer2015Style documentScorer;
 
   private void score(final AnnotationStore goldAnswerStore,
-      final LinkingStore referenceLinkingStore, final SystemOutputStore systemOutputStore,
+      final LinkingStore referenceLinkingStore, final ArgumentStore argumentStore,
       final LinkingStore systemLinkingStore, Set<Symbol> docsToScore, final File outputDir)
       throws IOException {
 
@@ -143,10 +143,10 @@ public final class KBP2015Scorer {
     for (final Symbol docID : docsToScore) {
       try {
         final AnswerKey argumentKey = goldAnswerStore.read(docID);
-        final SystemOutput systemOutput = systemOutputStore.readOrEmpty(docID);
+        final ArgumentOutput argumentOutput = argumentStore.readOrEmpty(docID);
 
         final Optional<ResponseLinking> referenceLinking = referenceLinkingStore.read(argumentKey);
-        final Optional<ResponseLinking> systemLinking = systemLinkingStore.read(systemOutput);
+        final Optional<ResponseLinking> systemLinking = systemLinkingStore.read(argumentOutput);
 
         if (!referenceLinking.isPresent()) {
           throw new RuntimeException("Reference linking missing for " + docID);
@@ -158,7 +158,7 @@ public final class KBP2015Scorer {
 
         final ScoringData scoringData = ScoringData.builder()
             .withAnswerKey(argumentKey)
-            .withSystemOutput(systemOutput)
+            .withSystemOutput(argumentOutput)
             .withReferenceLinking(referenceLinking.get())
             .withSystemLinking(systemLinking.get())
             .build();
@@ -221,11 +221,11 @@ public final class KBP2015Scorer {
 
 
   private static LinkingStore getLinkingStore(final Parameters params, final File systemOutputDir,
-      final SystemOutputStore systemOutputStore) {
+      final ArgumentStore argumentStore) {
     final LinkingStore systemLinkingStore;
     if (useDefaultLinkingHack(params)) {
       systemLinkingStore = SameEventTypeLinker.create(
-          ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other)).wrap(systemOutputStore);
+          ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other)).wrap(argumentStore);
     } else {
       systemLinkingStore = LinkingSpecFormats
           .openOrCreateLinkingStore(new File(systemOutputDir, "linking"));
@@ -233,19 +233,19 @@ public final class KBP2015Scorer {
     return systemLinkingStore;
   }
 
-  private static SystemOutputStore getSystemOutputStore(final Parameters params,
+  private static ArgumentStore getSystemOutputStore(final Parameters params,
       final File systemOutputDir) {
-    final SystemOutputStore systemOutputStore;
+    final ArgumentStore argumentStore;
     if (useDefaultLinkingHack(params)) {
-      systemOutputStore =
+      argumentStore =
           AssessmentSpecFormats
               .openSystemOutputStore(systemOutputDir, AssessmentSpecFormats.Format.KBP2015);
     } else {
-      systemOutputStore =
+      argumentStore =
           AssessmentSpecFormats.openSystemOutputStore(new File(systemOutputDir, "arguments"),
               AssessmentSpecFormats.Format.KBP2015);
     }
-    return systemOutputStore;
+    return argumentStore;
   }
 
   private static boolean useDefaultLinkingHack(final Parameters params) {

@@ -6,7 +6,7 @@ import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.ArgumentOutput;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -90,16 +90,16 @@ public class TestKeepBestJustificationOnly {
         Response.createFrom(docid, type2, role1, CAS2, baseFiller1,
             argumentJustifications1, predicateJustifications1, realis1), 0.9);
 
-    final SystemOutput toDeduplicate = SystemOutput.from(docid, ImmutableList.of(
+    final ArgumentOutput toDeduplicate = ArgumentOutput.from(docid, ImmutableList.of(
         best, tiesBestButLosesTiebreakByHash, differentPJWithLowerScore,
         differentBFWithLowerScore, differentAJWithLowerScore, differByType,
         differByRole, differByRealis, differByCASOffsets, differByCASString));
     // reference drops two losers
-    final SystemOutput reference = SystemOutput.from(docid, ImmutableList.of(
+    final ArgumentOutput reference = ArgumentOutput.from(docid, ImmutableList.of(
         best, differByType,
         differByRole, differByRealis, differByCASOffsets, differByCASString));
 
-    final SystemOutput deduplicated = KeepBestJustificationOnly.asFunctionOnSystemOutput().apply(toDeduplicate);
+    final ArgumentOutput deduplicated = KeepBestJustificationOnly.asFunctionOnSystemOutput().apply(toDeduplicate);
     assertEquals(reference, deduplicated);
   }
 }

@@ -7,14 +7,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public final class ScoringData {
 
   private final AnswerKey answerKey;
-  private final SystemOutput systemOutput;
+  private final ArgumentOutput argumentOutput;
   private final ResponseLinking systemLinking;
   private final ResponseLinking referenceLinking;
 
-  protected ScoringData(SystemOutput systemOutput, AnswerKey answerKey,
+  protected ScoringData(ArgumentOutput argumentOutput, AnswerKey answerKey,
       ResponseLinking systemLinking, ResponseLinking referenceLinking) {
     this.answerKey = answerKey;
-    this.systemOutput = systemOutput;
+    this.argumentOutput = argumentOutput;
     // nullable
     this.systemLinking = systemLinking;
     // nullable
@@ -25,8 +25,8 @@ public final class ScoringData {
     return Optional.fromNullable(answerKey);
   }
 
-  public Optional<SystemOutput> systemOutput() {
-    return Optional.fromNullable(systemOutput);
+  public Optional<ArgumentOutput> systemOutput() {
+    return Optional.fromNullable(argumentOutput);
   }
 
   public Optional<ResponseLinking> systemLinking() {
@@ -46,8 +46,8 @@ public final class ScoringData {
     if (answerKey != null) {
       ret. withAnswerKey(answerKey);
     }
-    if (systemOutput != null) {
-      ret.withSystemOutput(systemOutput);
+    if (argumentOutput != null) {
+      ret.withSystemOutput(argumentOutput);
     }
     if (systemLinking != null) {
       ret.withSystemLinking(systemLinking);
@@ -60,7 +60,7 @@ public final class ScoringData {
 
   public static final class Builder {
     private AnswerKey answerKey = null;
-    private SystemOutput systemOutput = null;
+    private ArgumentOutput argumentOutput = null;
     private ResponseLinking systemLinking = null;
     private ResponseLinking referenceLinking = null;
 
@@ -72,8 +72,8 @@ public final class ScoringData {
       return this;
     }
 
-    public Builder withSystemOutput(SystemOutput systemOutput) {
-      this.systemOutput = checkNotNull(systemOutput);
+    public Builder withSystemOutput(ArgumentOutput argumentOutput) {
+      this.argumentOutput = checkNotNull(argumentOutput);
       return this;
     }
 
@@ -88,7 +88,7 @@ public final class ScoringData {
     }
 
     public ScoringData build() {
-      return new ScoringData(systemOutput, answerKey, systemLinking, referenceLinking);
+      return new ScoringData(argumentOutput, answerKey, systemLinking, referenceLinking);
     }
   }
 }

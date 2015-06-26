@@ -2,10 +2,10 @@ package com.bbn.kbp.events2014.bin;
 
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.ScoringData;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.io.ArgumentStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
-import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.transformers.QuoteFilter;
 
 import com.google.common.collect.ImmutableMap;
@@ -65,15 +65,15 @@ public final class ApplyQuoteFilter {
   private static void filterStore(File sourceStorePath, File destStorePath, QuoteFilter quoteFilter,
       AssessmentSpecFormats.Format fileFormat) throws IOException {
     log.info("Filtering {} to {}", sourceStorePath, destStorePath);
-    final SystemOutputStore sourceStore =
+    final ArgumentStore sourceStore =
         AssessmentSpecFormats.openSystemOutputStore(sourceStorePath, fileFormat);
-    final SystemOutputStore destStore =
+    final ArgumentStore destStore =
         AssessmentSpecFormats.createSystemOutputStore(destStorePath, fileFormat);
 
     log.info("Source store has {} documents", sourceStore.docIDs().size());
     for (final Symbol docID : sourceStore.docIDs()) {
-      final SystemOutput original = sourceStore.read(docID);
-      final SystemOutput filtered = quoteFilter.transform(ScoringData.builder().withSystemOutput(original).build()).systemOutput().get();
+      final ArgumentOutput original = sourceStore.read(docID);
+      final ArgumentOutput filtered = quoteFilter.transform(ScoringData.builder().withSystemOutput(original).build()).systemOutput().get();
       log.info("For document {}, filtered out {} responses from quotes",
           docID, original.size() - filtered.size());
 
