@@ -20,6 +20,8 @@ Build steps:
 * do `chmod +x kbp-events2014-bin/target/appassembler/bin/*` (you only need to do this the first time)
 * do `chmod +x kbp-events2014-scorer/target/appassembler/bin/*` (you only need to do this the first time)
 
+[![Build Status](https://semaphoreci.com/api/v1/projects/a11da8fb-4e16-48bf-af3a-a4e1680f161e/467466/badge.svg)](https://semaphoreci.com/rgabbard-bbn/kbp-2014-event-arguments)
+
 ## Using
 ### System Output Stores and Annotation Stores
 A _system output store_ represents the output for a KBP Event Argument system on
