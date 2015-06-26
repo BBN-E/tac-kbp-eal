@@ -5,7 +5,7 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.ScoringData;
+import com.bbn.kbp.events2014.SystemOutput;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Charsets;
@@ -43,7 +43,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * throw an except in order to prevent accidental mismatches the filter and the input it is applied
  * to.
  */
-public final class QuoteFilter implements ScoringDataTransformation {
+public final class QuoteFilter{
 
   private static final Logger log = LoggerFactory.getLogger(QuoteFilter.class);
   private static final Set<String> BANNED_REGION_STARTS =
@@ -76,18 +76,8 @@ public final class QuoteFilter implements ScoringDataTransformation {
     return ResponseMapping.create(ImmutableMap.<Response,Response>of(), toDelete);
   }
 
-  @Override
-  public ScoringData transform(final ScoringData input) {
-    checkArgument(input.systemOutput().isPresent(), "To apply quote filtering, you need system output");
-    checkArgument(!input.answerKey().isPresent(), "Can't apply quote filtering to answer keys");
-
-    final ResponseMapping responseMapping = computeResponseMapping(input.systemOutput().get());
-    final ScoringData.Builder ret = input.modifiedCopy();
-    ret.withSystemOutput(responseMapping.apply(input.systemOutput().get()));
-    if (input.systemLinking().isPresent()) {
-      ret.withSystemLinking(responseMapping.apply(input.systemLinking().get()));
-    }
-    return ret.build();
+  public SystemOutput transform(final SystemOutput input) {
+    return input.copyTransformedBy(computeResponseMapping(input.arguments()));
   }
 
 
@@ -279,8 +269,4 @@ public final class QuoteFilter implements ScoringDataTransformation {
   }
 
 
-  @Override
-  public void logStats() {
-
-  }
 }
