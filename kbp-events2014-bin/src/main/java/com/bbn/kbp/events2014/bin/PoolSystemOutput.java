@@ -3,9 +3,9 @@ package com.bbn.kbp.events2014.bin;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.ArgumentOutput;
+import com.bbn.kbp.events2014.io.ArgumentStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
-import com.bbn.kbp.events2014.io.SystemOutputStore;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -38,11 +38,11 @@ public final class PoolSystemOutput {
     final AssessmentSpecFormats.Format fileFormat =
         params.getEnum("fileFormat", AssessmentSpecFormats.Format.class);
 
-    final SystemOutputStore outputStore = getOutputStore(outputStorePath, addMode, fileFormat);
+    final ArgumentStore outputStore = getOutputStore(outputStorePath, addMode, fileFormat);
 
     // gather all our input, which includes anything currently in the output store
     final Set<Symbol> allDocIds = Sets.newHashSet();
-    final Map<String, SystemOutputStore> storesToCombine = Maps.newHashMap();
+    final Map<String, ArgumentStore> storesToCombine = Maps.newHashMap();
 
     log.info("Output store currently contains responses for {} documents",
         outputStore.docIDs().size());
@@ -50,7 +50,7 @@ public final class PoolSystemOutput {
     allDocIds.addAll(outputStore.docIDs());
 
     for (final File inputStoreFile : storesToPool) {
-      final SystemOutputStore inputStore =
+      final ArgumentStore inputStore =
           AssessmentSpecFormats.openSystemOutputStore(inputStoreFile, fileFormat);
       log.info("Importing responses for {} documents from {} to {}",
           inputStore.docIDs().size(), inputStoreFile,
@@ -61,31 +61,31 @@ public final class PoolSystemOutput {
     }
 
     for (final Symbol docId : allDocIds) {
-      final List<SystemOutput> responseSets = Lists.newArrayList();
+      final List<ArgumentOutput> responseSets = Lists.newArrayList();
 
       final StringBuilder sb = new StringBuilder();
 
-      for (final Map.Entry<String, SystemOutputStore> storeEntry : storesToCombine.entrySet()) {
-        final SystemOutput responses = storeEntry.getValue().readOrEmpty(docId);
+      for (final Map.Entry<String, ArgumentStore> storeEntry : storesToCombine.entrySet()) {
+        final ArgumentOutput responses = storeEntry.getValue().readOrEmpty(docId);
         responseSets.add(responses);
         sb.append(String.format("\t%5d response from %s\n", responses.size(), storeEntry.getKey()));
       }
 
-      final SystemOutput combinedOutput = SystemOutput.unionKeepingMaximumScore(responseSets);
+      final ArgumentOutput combinedOutput = ArgumentOutput.unionKeepingMaximumScore(responseSets);
       outputStore.write(combinedOutput);
       log.info("\nFor document {}\n{}\n{} responses total", docId, sb.toString(),
           combinedOutput.size());
     }
 
     // storesToCombine.values() includes the output store
-    for (final SystemOutputStore store : storesToCombine.values()) {
+    for (final ArgumentStore store : storesToCombine.values()) {
       store.close();
     }
   }
 
-  private static SystemOutputStore getOutputStore(File outputStorePath, AddMode addMode,
+  private static ArgumentStore getOutputStore(File outputStorePath, AddMode addMode,
       AssessmentSpecFormats.Format fileFormat) throws IOException {
-    final SystemOutputStore outputStore;
+    final ArgumentStore outputStore;
     if (addMode == AddMode.CREATE) {
       outputStore = AssessmentSpecFormats.createSystemOutputStore(outputStorePath, fileFormat);
     } else if (addMode == AddMode.APPEND) {

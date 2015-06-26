@@ -5,6 +5,7 @@ import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.CorefAnnotation;
@@ -14,7 +15,6 @@ import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
 import com.bbn.kbp.events2014.ResponseAssessment.MentionType;
-import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.io.assessmentCreators.AssessmentCreator;
 import com.bbn.kbp.events2014.io.assessmentCreators.RecoveryAssessmentCreator;
 import com.bbn.kbp.events2014.io.assessmentCreators.StrictAssessmentCreator;
@@ -153,7 +153,7 @@ public final class AssessmentSpecFormats {
    * Creates a new system output store in the specified directory. If the directory is non-empty, an
    * exception is thrown.
    */
-  public static SystemOutputStore createSystemOutputStore(final File directory,
+  public static ArgumentStore createSystemOutputStore(final File directory,
       Format format) throws IOException {
     if (directory.exists() && !FileUtils.isEmptyDirectory(directory)) {
       throw new IOException(String.format(
@@ -166,14 +166,14 @@ public final class AssessmentSpecFormats {
   /**
    * Opens an existing system output store.
    */
-  public static SystemOutputStore openSystemOutputStore(final File directory, Format format) {
+  public static ArgumentStore openSystemOutputStore(final File directory, Format format) {
     checkArgument(directory.exists() && directory.isDirectory(),
         "Directory to open as annotation store %s either does not exist or is not a directory",
         directory);
     return new DirectorySystemOutputStore(directory, format);
   }
 
-  public static SystemOutputStore openOrCreateSystemOutputStore(final File directory, Format format)
+  public static ArgumentStore openOrCreateSystemOutputStore(final File directory, Format format)
       throws IOException {
     if (directory.exists()) {
       return openSystemOutputStore(directory, format);
@@ -182,7 +182,7 @@ public final class AssessmentSpecFormats {
     }
   }
 
-  private static final class DirectorySystemOutputStore implements SystemOutputStore {
+  private static final class DirectorySystemOutputStore implements ArgumentStore {
 
     private static final Logger log = LoggerFactory.getLogger(DirectorySystemOutputStore.class);
 
@@ -199,14 +199,14 @@ public final class AssessmentSpecFormats {
     private static final Splitter OnTabs = Splitter.on('\t').trimResults();
 
     @Override
-    public SystemOutput read(final Symbol docid) throws IOException {
+    public ArgumentOutput read(final Symbol docid) throws IOException {
       final File f = bareOrWithSuffix(directory, docid.asString(), ACCEPTABLE_SUFFIXES);
 
       final ImmutableList.Builder<Scored<Response>> ret = ImmutableList.builder();
       final ImmutableMap.Builder<Response, String> responseToMetadata = new ImmutableMap.Builder<Response, String>();
 
       int lineNo = 0;
-      String lastLine = SystemOutput.DEFAULT_METADATA;
+      String lastLine = ArgumentOutput.DEFAULT_METADATA;
       for (final String line : Files.asCharSource(f, UTF_8).readLines()) {
         ++lineNo;
         if (line.isEmpty() || line.startsWith("#")) {
@@ -225,7 +225,7 @@ public final class AssessmentSpecFormats {
               final String metadata = lastLine.substring(1);
               responseToMetadata.put(response, metadata);
             } else {
-              responseToMetadata.put(response, SystemOutput.DEFAULT_METADATA);
+              responseToMetadata.put(response, ArgumentOutput.DEFAULT_METADATA);
             }
 
             ret.add(Scored.from(response, confidence));
@@ -240,7 +240,7 @@ public final class AssessmentSpecFormats {
         }
       }
 
-      return SystemOutput.from(docid, ret.build(), responseToMetadata.build());
+      return ArgumentOutput.from(docid, ret.build(), responseToMetadata.build());
     }
 
     @Override
@@ -253,7 +253,7 @@ public final class AssessmentSpecFormats {
 
 
     @Override
-    public void write(final SystemOutput output) throws IOException {
+    public void write(final ArgumentOutput output) throws IOException {
       final File f = new File(directory, output.docId().toString());
       final PrintWriter out = new PrintWriter(new BufferedWriter(
           new OutputStreamWriter(new FileOutputStream(f), Charsets.UTF_8)));
@@ -261,7 +261,7 @@ public final class AssessmentSpecFormats {
       try {
         for (final Response response : format.responseOrdering().sortedCopy(output.responses())) {
           final String metadata = output.metadata(response);
-          if(!metadata.equals(SystemOutput.DEFAULT_METADATA)) {
+          if(!metadata.equals(ArgumentOutput.DEFAULT_METADATA)) {
             out.print(METADATA_MARKER + metadata + "\n");
           }
           //out.print(response.responseID());
@@ -287,18 +287,18 @@ public final class AssessmentSpecFormats {
     }
 
     @Override
-    public SystemOutput readOrEmpty(final Symbol docid) throws IOException {
+    public ArgumentOutput readOrEmpty(final Symbol docid) throws IOException {
       if (docIDs().contains(docid)) {
         return read(docid);
       } else {
-        return SystemOutput.from(docid, ImmutableList.<Scored<Response>>of(),
+        return ArgumentOutput.from(docid, ImmutableList.<Scored<Response>>of(),
             ImmutableMap.<Response, String>of());
       }
     }
 
     @Override
     public String toString() {
-      return "SystemOutputStore <-- " + directory;
+      return "ArgumentStore <-- " + directory;
     }
   }
 

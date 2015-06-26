@@ -2,10 +2,10 @@ package com.bbn.kbp.events2014.transformers;
 
 import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ScoringData;
-import com.bbn.kbp.events2014.SystemOutput;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Charsets;
@@ -35,11 +35,11 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Function to transform a {@link com.bbn.kbp.events2014.SystemOutput} to another one which is the
+ * Function to transform a {@link ArgumentOutput} to another one which is the
  * same except all responses with base fillers or CASes from within {@code <quote>} regions have
  * been removed.
  *
- * Applying this to a {@link com.bbn.kbp.events2014.SystemOutput} with an unknown document ID will
+ * Applying this to a {@link ArgumentOutput} with an unknown document ID will
  * throw an except in order to prevent accidental mismatches the filter and the input it is applied
  * to.
  */
@@ -54,7 +54,7 @@ public final class QuoteFilter implements ScoringDataTransformation {
 
   private final Map<Symbol, ImmutableRangeSet<Integer>> docIdToBannedRegions;
 
-  private ResponseMapping computeResponseMapping(final SystemOutput input) {
+  private ResponseMapping computeResponseMapping(final ArgumentOutput input) {
     final ImmutableRangeSet<Integer> bannedRegions = docIdToBannedRegions.get(input.docId());
     if (bannedRegions == null) {
       throw new RuntimeException(String.format(

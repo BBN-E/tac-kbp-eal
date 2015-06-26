@@ -3,6 +3,7 @@ package com.bbn.kbp.events2014.transformers;
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.CorefAnnotation;
@@ -12,7 +13,6 @@ import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
 import com.bbn.kbp.events2014.ScoringData;
-import com.bbn.kbp.events2014.SystemOutput;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -90,22 +90,23 @@ public class OnlyMostSpecificTemporalTest {
             AssessedResponse.from(d198212XXOtherResponse, correctAssessment)),
         ImmutableList.<Response>of(), corefAnnotation);
 
-    final SystemOutput systemOutput = SystemOutput.from(d,
-        ImmutableList.of(Scored.from(d198212XXResponse, 1.0), Scored.from(d198212XXOtherResponse, 1.0),
-            Scored.from(d19821231Response, 1.0), Scored.from(d198403XXResponse, 1.0)));
+    final ArgumentOutput argumentOutput = ArgumentOutput.from(d,
+        ImmutableList
+            .of(Scored.from(d198212XXResponse, 1.0), Scored.from(d198212XXOtherResponse, 1.0),
+                Scored.from(d19821231Response, 1.0), Scored.from(d198403XXResponse, 1.0)));
 
     // 1983-03-XX is not removed because 1984-03-04 in answer key
     // is incorrect
     // the full 1982 case is not removed because it is not less specific
     // both others are removed, illustrating that the CAS offsets don't matter, only the string
-    final SystemOutput reference = SystemOutput.from(d,
+    final ArgumentOutput reference = ArgumentOutput.from(d,
         ImmutableList.of(
             Scored.from(d19821231Response, 1.0),
             Scored.from(d198403XXResponse, 1.0)));
 
     final ScoringDataTransformation transformation = OnlyMostSpecificTemporal.asTransformationForBoth();
     final ScoringData output = transformation.transform(ScoringData.builder()
-        .withSystemOutput(systemOutput).withAnswerKey(answerKey).build());
+        .withSystemOutput(argumentOutput).withAnswerKey(answerKey).build());
 
     assertEquals(reference, output.systemOutput().get());
   }

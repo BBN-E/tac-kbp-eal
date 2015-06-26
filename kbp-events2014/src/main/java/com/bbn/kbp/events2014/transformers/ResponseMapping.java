@@ -2,10 +2,10 @@ package com.bbn.kbp.events2014.transformers;
 
 import com.bbn.bue.common.collections.MapUtils;
 import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
-import com.bbn.kbp.events2014.SystemOutput;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
@@ -78,9 +78,9 @@ public final class ResponseMapping {
     return ret.build();
   }
 
-  public SystemOutput apply(SystemOutput systemOutput) {
-    final SystemOutput.Builder ret = systemOutput.modifiedCopyBuilder();
-    for (final Response response : systemOutput.responses()) {
+  public ArgumentOutput apply(ArgumentOutput argumentOutput) {
+    final ArgumentOutput.Builder ret = argumentOutput.modifiedCopyBuilder();
+    for (final Response response : argumentOutput.responses()) {
       if (deletedResponses.contains(response)) {
         ret.remove(response);
       } else if (replacedResponses.containsKey(response)) {

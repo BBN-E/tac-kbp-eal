@@ -1,11 +1,11 @@
 package com.bbn.kbp.events2014.linking;
 
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
-import com.bbn.kbp.events2014.SystemOutput;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
@@ -36,13 +36,13 @@ public final class SameEventTypeLinker extends AbstractLinkingStrategy implement
   }
 
   @Override
-  public ResponseLinking linkResponses(final SystemOutput systemOutput) {
-    final Symbol docId = systemOutput.docId();
+  public ResponseLinking linkResponses(final ArgumentOutput argumentOutput) {
+    final Symbol docId = argumentOutput.docId();
 
     final Predicate<Response> HasRelevantRealis =
         compose(in(realisesWhichMustBeAligned), Response.realisFunction());
     final ImmutableSet<Response> systemResponsesAlignedRealis =
-        FluentIterable.from(systemOutput.responses()).filter(HasRelevantRealis).toSet();
+        FluentIterable.from(argumentOutput.responses()).filter(HasRelevantRealis).toSet();
 
     final Multimap<Symbol, Response> responsesByEventType =
         Multimaps.index(systemResponsesAlignedRealis, Response.typeFunction());

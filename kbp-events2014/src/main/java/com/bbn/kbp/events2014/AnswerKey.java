@@ -244,15 +244,15 @@ public final class AnswerKey {
         newCorefAnnotation.build());
   }
 
-  public boolean completelyAssesses(final SystemOutput systemOutput) {
-    return Sets.difference(systemOutput.responses(),annotatedArgs.keySet()).isEmpty();
+  public boolean completelyAssesses(final ArgumentOutput argumentOutput) {
+    return Sets.difference(argumentOutput.responses(),annotatedArgs.keySet()).isEmpty();
   }
 
-  public void checkCompletelyAssesses(final SystemOutput systemOutput) {
-    if (!completelyAssesses(systemOutput)) {
+  public void checkCompletelyAssesses(final ArgumentOutput argumentOutput) {
+    if (!completelyAssesses(argumentOutput)) {
       throw new RuntimeException("The following responses from the system output are not assessed: "
         + StringUtils.NewlineJoiner.join(
-          Sets.difference(systemOutput.responses(), annotatedArgs.keySet())));
+          Sets.difference(argumentOutput.responses(), annotatedArgs.keySet())));
     }
   }
 

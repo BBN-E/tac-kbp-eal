@@ -6,7 +6,7 @@ import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.ArgumentOutput;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
@@ -90,8 +90,8 @@ public final class LinkingSpecFormats {
     }
 
     @Override
-    public Optional<ResponseLinking> read(SystemOutput systemOutput) throws IOException {
-      return read(systemOutput.docId(), systemOutput.responses());
+    public Optional<ResponseLinking> read(ArgumentOutput argumentOutput) throws IOException {
+      return read(argumentOutput.docId(), argumentOutput.responses());
     }
 
     private static final Splitter ON_TABS = Splitter.on('\t').trimResults().omitEmptyStrings();

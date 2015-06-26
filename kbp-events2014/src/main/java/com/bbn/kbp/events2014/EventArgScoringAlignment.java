@@ -15,7 +15,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class EventArgScoringAlignment<EquivClassType> {
   private final Symbol docID;
-  private final SystemOutput systemOutput;
+  private final ArgumentOutput argumentOutput;
   private final AnswerKey answerKey;
   private final ImmutableSet<EquivClassType> truePositiveECs;
   private final ImmutableSet<EquivClassType> falsePositiveECs;
@@ -25,7 +25,7 @@ public final class EventArgScoringAlignment<EquivClassType> {
   private final ImmutableSetMultimap<EquivClassType, Response> ecsToSystem;
 
   private EventArgScoringAlignment(final Symbol docID,
-      final SystemOutput systemOutput,
+      final ArgumentOutput argumentOutput,
       final AnswerKey answerKey,
       final Iterable<EquivClassType> truePositiveECs,
       final Iterable<EquivClassType> falsePositiveECs,
@@ -34,7 +34,7 @@ public final class EventArgScoringAlignment<EquivClassType> {
       final Multimap<EquivClassType, AssessedResponse> ecsToAnswerKey,
       final Multimap<EquivClassType, Response> ecsToSystem) {
     this.docID = checkNotNull(docID);
-    this.systemOutput = checkNotNull(systemOutput);
+    this.argumentOutput = checkNotNull(argumentOutput);
     this.answerKey = checkNotNull(answerKey);
     this.truePositiveECs = ImmutableSet.copyOf(truePositiveECs);
     this.falsePositiveECs = ImmutableSet.copyOf(falsePositiveECs);
@@ -45,7 +45,7 @@ public final class EventArgScoringAlignment<EquivClassType> {
   }
 
   public static <EquivClassType> EventArgScoringAlignment<EquivClassType> create(final Symbol docID,
-      final SystemOutput systemOutput,
+      final ArgumentOutput argumentOutput,
       final AnswerKey answerKey,
       final Iterable<EquivClassType> truePositiveECs,
       final Iterable<EquivClassType> falsePositiveECs,
@@ -53,7 +53,7 @@ public final class EventArgScoringAlignment<EquivClassType> {
       final Iterable<EquivClassType> unassessed,
       final Multimap<EquivClassType, AssessedResponse> ecsToAnswerKey,
       final Multimap<EquivClassType, Response> ecsToSystem) {
-    return new EventArgScoringAlignment<EquivClassType>(docID, systemOutput, answerKey,
+    return new EventArgScoringAlignment<EquivClassType>(docID, argumentOutput, answerKey,
         truePositiveECs,
         falsePositiveECs, falseNegativeECs, unassessed, ecsToAnswerKey, ecsToSystem);
   }
@@ -86,8 +86,8 @@ public final class EventArgScoringAlignment<EquivClassType> {
     return unassessed;
   }
 
-  public SystemOutput systemOutput() {
-    return systemOutput;
+  public ArgumentOutput systemOutput() {
+    return argumentOutput;
   }
 
   public AnswerKey answerKey() {

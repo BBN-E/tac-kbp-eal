@@ -3,7 +3,7 @@ package com.bbn.kbp.events2014.io;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.ResponseLinking;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.ArgumentOutput;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
@@ -14,7 +14,7 @@ public interface LinkingStore {
 
   public ImmutableSet<Symbol> docIDs() throws IOException;
 
-  public Optional<ResponseLinking> read(SystemOutput systemOutput) throws IOException;
+  public Optional<ResponseLinking> read(ArgumentOutput argumentOutput) throws IOException;
 
   public Optional<ResponseLinking> read(AnswerKey answerKey) throws IOException;
 

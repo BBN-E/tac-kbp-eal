@@ -1,7 +1,7 @@
 package com.bbn.kbp.events2014.io;
 
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.ArgumentOutput;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -13,7 +13,7 @@ import java.io.IOException;
  *
  * @author rgabbard
  */
-public interface SystemOutputStore {
+public interface ArgumentStore {
 
   /**
    * The document IDs with stored responses.
@@ -24,12 +24,12 @@ public interface SystemOutputStore {
    * Gets the system output for the specified document or throws an exception if it is not
    * available.
    */
-  public SystemOutput read(Symbol docId) throws IOException;
+  public ArgumentOutput read(Symbol docId) throws IOException;
 
   /**
    * Writes the provided system output to this store.
    */
-  public void write(SystemOutput systemOutput) throws IOException;
+  public void write(ArgumentOutput argumentOutput) throws IOException;
 
   public void close() throws IOException;
 
@@ -37,5 +37,5 @@ public interface SystemOutputStore {
    * Like {@code read}, but it returns an empty system output if no data is available for a
    * document.
    */
-  public SystemOutput readOrEmpty(Symbol docid) throws IOException;
+  public ArgumentOutput readOrEmpty(Symbol docid) throws IOException;
 }

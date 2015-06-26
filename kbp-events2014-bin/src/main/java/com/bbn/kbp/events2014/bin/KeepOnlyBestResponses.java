@@ -3,11 +3,11 @@ package com.bbn.kbp.events2014.bin;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ResponseLinking;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.ArgumentOutput;
+import com.bbn.kbp.events2014.io.ArgumentStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.io.LinkingSpecFormats;
 import com.bbn.kbp.events2014.io.LinkingStore;
-import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.transformers.KeepBestJustificationOnly;
 import com.bbn.kbp.events2014.transformers.ResponseMapping;
 
@@ -49,9 +49,9 @@ public final class KeepOnlyBestResponses {
 
     final AssessmentSpecFormats.Format fileFormat =
         params.getEnum("fileFormat", AssessmentSpecFormats.Format.class);
-    final SystemOutputStore sourceStore =
+    final ArgumentStore sourceStore =
         AssessmentSpecFormats.openSystemOutputStore(inputStoreLocation, fileFormat);
-    final SystemOutputStore destStore =
+    final ArgumentStore destStore =
         AssessmentSpecFormats.createSystemOutputStore(outputStoreLocation, fileFormat);
 
     final Optional<LinkingStore> sourceLinkingStore;
@@ -70,10 +70,10 @@ public final class KeepOnlyBestResponses {
 
     log.info("Source store has {} documents", sourceStore.docIDs().size());
     for (final Symbol docID : sourceStore.docIDs()) {
-      final SystemOutput original = sourceStore.read(docID);
+      final ArgumentOutput original = sourceStore.read(docID);
       final ResponseMapping responseMapping = KeepBestJustificationOnly.computeResponseMapping(
           original);
-      final SystemOutput filtered = responseMapping.apply(original);
+      final ArgumentOutput filtered = responseMapping.apply(original);
       int numFiltered = original.size() - filtered.size();
 
       log.info("For document {}, filtered out {} responses as duplicate justifications",

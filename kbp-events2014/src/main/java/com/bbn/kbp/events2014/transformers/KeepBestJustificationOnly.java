@@ -1,10 +1,10 @@
 package com.bbn.kbp.events2014.transformers;
 
 import com.bbn.bue.common.scoring.Scored;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 
 import com.google.common.base.Function;
@@ -36,34 +36,34 @@ public final class KeepBestJustificationOnly {
 
   private static final Logger log = LoggerFactory.getLogger(KeepBestJustificationOnly.class);
 
-  public static ResponseMapping computeResponseMapping(SystemOutput input) {
+  public static ResponseMapping computeResponseMapping(ArgumentOutput input) {
     return computeResponseMapping(input, Functions.<KBPString>identity());
   }
 
-  public static ResponseMapping computeResponseMappingUsingProvidedCoref(SystemOutput input,
+  public static ResponseMapping computeResponseMappingUsingProvidedCoref(ArgumentOutput input,
       CorefAnnotation corefAnnotation) {
     return computeResponseMapping(input, corefAnnotation.strictCASNormalizerFunction());
   }
 
-  public static Function<SystemOutput, SystemOutput> asFunctionOnSystemOutput() {
-    return new Function<SystemOutput, SystemOutput>() {
+  public static Function<ArgumentOutput, ArgumentOutput> asFunctionOnSystemOutput() {
+    return new Function<ArgumentOutput, ArgumentOutput>() {
       @Override
-      public SystemOutput apply(final SystemOutput input) {
+      public ArgumentOutput apply(final ArgumentOutput input) {
         return computeResponseMapping(input).apply(input);
       }
     };
   }
-  public static Function<SystemOutput, SystemOutput> asFunctionUsingCoref(final CorefAnnotation corefAnnotation) {
-    return new Function<SystemOutput, SystemOutput>() {
+  public static Function<ArgumentOutput, ArgumentOutput> asFunctionUsingCoref(final CorefAnnotation corefAnnotation) {
+    return new Function<ArgumentOutput, ArgumentOutput>() {
       @Override
-      public SystemOutput apply(final SystemOutput input) {
+      public ArgumentOutput apply(final ArgumentOutput input) {
         return computeResponseMappingUsingProvidedCoref(input, corefAnnotation).apply(input);
       }
     };
   }
 
 
-  private static ResponseMapping computeResponseMapping(SystemOutput input, Function<KBPString, KBPString> CASNormalizer) {
+  private static ResponseMapping computeResponseMapping(ArgumentOutput input, Function<KBPString, KBPString> CASNormalizer) {
     checkNotNull(input);
 
     // group response by TypeRoleFillerRealis tuples

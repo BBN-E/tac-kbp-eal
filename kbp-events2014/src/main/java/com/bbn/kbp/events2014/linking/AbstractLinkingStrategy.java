@@ -2,10 +2,10 @@ package com.bbn.kbp.events2014.linking;
 
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.ResponseLinking;
-import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.io.LinkingStore;
-import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.events2014.io.ArgumentStore;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
@@ -14,7 +14,7 @@ import java.io.IOException;
 
 public abstract class AbstractLinkingStrategy implements LinkingStrategy {
   @Override
-  public LinkingStore wrap(final SystemOutputStore argumentStore) {
+  public LinkingStore wrap(final ArgumentStore argumentStore) {
     return new LinkingStore() {
 
       @Override
@@ -23,8 +23,8 @@ public abstract class AbstractLinkingStrategy implements LinkingStrategy {
       }
 
       @Override
-      public Optional<ResponseLinking> read(final SystemOutput systemOutput) throws IOException {
-        return Optional.of(linkResponses(systemOutput));
+      public Optional<ResponseLinking> read(final ArgumentOutput argumentOutput) throws IOException {
+        return Optional.of(linkResponses(argumentOutput));
       }
 
       @Override
