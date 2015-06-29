@@ -50,6 +50,10 @@ public final class ResponseMapping {
     return new ResponseMapping(replacedResponses, deletedResponses);
   }
 
+  public static ResponseMapping delete(final Iterable<Response> toDelete) {
+    return create(ImmutableMap.<Response, Response>of(), toDelete);
+  }
+
   public boolean isIdentity() {
     if (!deletedResponses.isEmpty()) {
       return false;

@@ -3,7 +3,9 @@ package com.bbn.kbp.events2014.validation;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.transformers.ResponseMapping;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Predicate;
@@ -82,5 +84,15 @@ public final class TypeAndRoleValidator implements Predicate<Response> {
       Multimap<Symbol, Symbol> validRoles) {
     this.alwaysValidRoles = ImmutableSet.copyOf(alwaysValidRoles);
     this.validRoles = ImmutableMultimap.copyOf(validRoles);
+  }
+
+  public ResponseMapping deleteInvalidResponses(final ArgumentOutput arguments) {
+    final ImmutableSet.Builder<Response> toDelete = ImmutableSet.builder();
+    for (final Response r : arguments.responses()) {
+      if (!apply(r)) {
+        toDelete.add(r);
+      }
+    }
+    return ResponseMapping.delete(toDelete.build());
   }
 }
