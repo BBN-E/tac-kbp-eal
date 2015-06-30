@@ -14,9 +14,12 @@ import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Random;
+
 import static com.google.common.base.Preconditions.checkArgument;
 
 public final class MakeAllRealisActual implements ScoringDataTransformation {
+
   private static final Logger log = LoggerFactory.getLogger(MakeAllRealisActual.class);
 
   private MakeAllRealisActual() {
@@ -44,6 +47,19 @@ public final class MakeAllRealisActual implements ScoringDataTransformation {
           neutralizeResponseAssessment(assessedResponse.assessment());
       if (!neutralizedAssessment.equals(assessedResponse.assessment())) {
         ret.replaceAssessment(assessedResponse.response(), neutralizedAssessment);
+      }
+    }
+    return ret.build();
+  }
+
+  public static AnswerKey neutralizeAssessedResponsesAndAssessment(AnswerKey input) {
+    final AnswerKey.Builder ret = neutralizeAssessments(input).modifiedCopyBuilder();
+    for (final AssessedResponse assessedResponse : input.annotatedResponses()) {
+      final Response neutralizedResponse =
+          assessedResponse.response().copyWithSwappedRealis(KBPRealis.Actual);
+      if(!neutralizedResponse.equals(assessedResponse.response())) {
+        ret.replaceAssessedResponseMaintainingAssessment(assessedResponse.response(), neutralizedResponse, new Random());
+        ret.removeUnannotated(neutralizedResponse);
       }
     }
     return ret.build();
