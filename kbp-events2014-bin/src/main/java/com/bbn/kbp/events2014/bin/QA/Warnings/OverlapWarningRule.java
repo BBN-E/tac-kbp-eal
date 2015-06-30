@@ -55,12 +55,12 @@ public class OverlapWarningRule extends TRFRWarning {
 
   @Override
   public String getTypeString() {
-    return "Significant Overlap";
+    return "<b>Significant Overlap</b>";
   }
 
   @Override
   public String getTypeDescription() {
-    return "We think that there's a significant overlap between two responses of the same type, maybe they should have been coreffed together";
+    return "There is a significant overlap between two responses of the same type, maybe they should have been coreffed together";
   }
 
 

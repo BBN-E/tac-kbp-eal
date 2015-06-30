@@ -131,11 +131,11 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
 
   @Override
   public String getTypeString() {
-    return "Conflicting Role";
+    return "<b>Conflicting Role</b>";
   }
 
   @Override
   public String getTypeDescription() {
-    return "We think this response is the same as another (by identical string) but with an incompatible type, maybe it should not have this type/role?";
+    return "The same CAS grouping has been marked as CORRECT/INEXACT for roles that conflict (e.g. a VICTIM and a PLACE). Most likely one of the responses is WRONG in one of the assessment categories. Alternatively, CAS’s have been incorrectly linked in the CAS coreference pane.";
   }
 }

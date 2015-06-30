@@ -19,11 +19,11 @@ public final class ConjunctionWarningRule extends ContainsStringWarningRule {
 
   @Override
   public String getTypeString() {
-    return "Conjunction";
+    return "<b>Conjunction</b>";
   }
 
   @Override
   public String getTypeDescription() {
-    return "The response contains a conjunction " + conjunctions + "- it should probably be two separate annotations";
+    return "The system has detected a conjunction in the CAS. This CAS should probably be marked as WRONG.  Its components would be marked as CORRECT.";
   }
 }

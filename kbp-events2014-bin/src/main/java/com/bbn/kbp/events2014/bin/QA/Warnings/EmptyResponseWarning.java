@@ -33,7 +33,7 @@ public final class EmptyResponseWarning implements WarningRule {
 
   @Override
   public String getTypeString() {
-    return "Empty Response";
+    return "<b>Empty Response</b>";
   }
 
   @Override
