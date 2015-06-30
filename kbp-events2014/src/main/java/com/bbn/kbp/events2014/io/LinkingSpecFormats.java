@@ -137,7 +137,8 @@ public final class LinkingSpecFormats {
         for (String idString : parts) {
           final Response responseForIDString = responsesByUID.get(idString);
           if (responseForIDString == null) {
-            throw new IOException("On line " + lineNo + ", ID " + idString
+            throw new IOException(
+                "While reading " + docID + ", on line " + lineNo + ", ID " + idString
                 + " cannot be resolved using provided response store. Known"
                 + "response IDs are " + responsesByUID.keySet());
           }
