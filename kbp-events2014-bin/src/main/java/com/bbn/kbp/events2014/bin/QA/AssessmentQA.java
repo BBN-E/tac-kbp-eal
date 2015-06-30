@@ -23,6 +23,7 @@ import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Ordering;
 import com.google.common.io.Files;
 
 import org.slf4j.Logger;
@@ -31,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -87,7 +89,7 @@ public class AssessmentQA {
         }).filter(Predicates.notNull()));
     final ImmutableList.Builder<String> nameStrings = ImmutableList.builder();
     int totalChars = 0;
-    for(final String n: names) {
+    for(final String n: orderedByAscendingLength(names)) {
       nameStrings.add(n);
       totalChars += n.length();
       // arbitrary tie breaker to decide when to stop adding new strings
@@ -98,6 +100,18 @@ public class AssessmentQA {
     final String nameStr = Joiner.on("; ").join(nameStrings.build());
     return String.format("%s-%s:%s - %s", trfr.type().asString(), trfr.role().asString(),
         trfr.realis().name(), nameStr);
+  }
+
+  /*
+   * hack to squeeze in more relevant information
+   */
+  private static List<String> orderedByAscendingLength(Iterable<String> strings) {
+    return new Ordering<String>() {
+      @Override
+      public int compare(final String left, final String right) {
+        return left.length() - right.length();
+      }
+    }.sortedCopy(strings);
   }
 
   public static void main(String... args) {
