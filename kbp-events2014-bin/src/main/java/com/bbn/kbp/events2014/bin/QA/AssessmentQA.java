@@ -16,8 +16,13 @@ import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.transformers.MakeAllRealisActual;
 
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.base.Predicates;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 
 import org.slf4j.Logger;
@@ -26,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.Set;
 
 /**
  * Created by jdeyoung on 6/1/15.
@@ -71,9 +77,27 @@ public class AssessmentQA {
     return warningResponseBuilder.build();
   }
 
-  public static String readableTRFR(TypeRoleFillerRealis trfr) {
+  public static String readableTRFR(TypeRoleFillerRealis trfr, Iterable<Response> responses) {
+    final Set<String> names = ImmutableSet.copyOf(
+        FluentIterable.from(responses).transform(new Function<Response, String>() {
+          @Override
+          public String apply(final Response input) {
+            return input.canonicalArgument().string();
+          }
+        }).filter(Predicates.notNull()));
+    final ImmutableList.Builder<String> nameStrings = ImmutableList.builder();
+    int totalChars = 0;
+    for(final String n: names) {
+      nameStrings.add(n);
+      totalChars += n.length();
+      // arbitrary tie breaker to decide when to stop adding new strings
+      if(totalChars > 50) {
+        break;
+      }
+    }
+    final String nameStr = Joiner.on("; ").join(nameStrings.build());
     return String.format("%s-%s:%s - %s", trfr.type().asString(), trfr.role().asString(),
-        trfr.realis().name(), trfr.argumentCanonicalString().string());
+        trfr.realis().name(), nameStr);
   }
 
   public static void main(String... args) {

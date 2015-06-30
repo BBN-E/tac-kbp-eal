@@ -238,7 +238,7 @@ final class QADocumentRenderer {
 
       for (final TypeRoleFillerRealis trfr : trfrOrdering.sortedCopy(typeToTRFR.get(type))) {
         log.info("serializing trfr {}", trfr);
-        final String readableTRFR = AssessmentQA.readableTRFR(trfr);
+        final String readableTRFR = AssessmentQA.readableTRFR(trfr, trfrToAllResponses.get(trfr));
         final Optional<Warning.Severity> trfrWarning =
             extractWarningForType(trfrToWarning.get(trfr), trfrToAllResponses.get(trfr));
         if (trfrWarning.isPresent()) {
