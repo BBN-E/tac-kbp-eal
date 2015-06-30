@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 
 /**
  * Assesses the agreement for dual annotation on the same files. Parameters:
@@ -116,12 +117,25 @@ public final class DualAnnotationAgreement {
         AssessmentSpecFormats.openAnnotationStore(rightStorePath, fileFormat);
     log.info("Loading right annotation store {} from {}", rightStoreName, rightStorePath);
 
+    final Optional<AnnotationStore> excludeStore =
+        getExcludeStore(dualAnnotationParams, fileFormat);
+
+    final Optional<CorefRecorder> corefRecorder;
+
+    if (dualAnnotationParams.getBoolean("doCorefAgreement")) {
+      checkState(!excludeStore.isPresent(), "Coref agreement analysis is incompatible with specifying an exclude store");
+      corefRecorder = Optional.of(new CorefRecorder());
+    } else {
+      corefRecorder = Optional.absent();
+    }
+
     final AgreementRecorder agreementRecorder = new AgreementRecorder();
-    final CorefRecorder corefRecorder = new CorefRecorder();
 
     for (final Symbol docID : docIDsToCompare) {
       final AnswerKey leftAnnotation = leftAnnStore.read(docID);
       final AnswerKey rightAnnotation = rightAnnStore.read(docID);
+      final AnswerKey excludeAnnotation = excludeStore.isPresent()?excludeStore.get().read(
+          docID):AnswerKey.createEmpty(docID);
 
       final Map<Response, AssessedResponse> leftAnnotationsIndexed = Maps.uniqueIndex(
           leftAnnotation.annotatedResponses(), AssessedResponse.Response);
@@ -133,21 +147,48 @@ public final class DualAnnotationAgreement {
             rightAnnotationsIndexed.keySet());
       }
 
-      final Sets.SetView<Response> responsesInBoth = Sets.intersection(leftAnnotationsIndexed.keySet(),
-          rightAnnotationsIndexed.keySet());
-      for (final Response response : responsesInBoth) {
+      final ImmutableSet<Response> responsesInBoth = Sets.intersection(leftAnnotationsIndexed.keySet(),
+          rightAnnotationsIndexed.keySet()).immutableCopy();
+      final Set<Response> excludedResponses = FluentIterable.from(excludeAnnotation.annotatedResponses())
+          .transform(AssessedResponse.Response).toSet();
+      final ImmutableSet<Response> nonExcludedInBoth = Sets.difference(responsesInBoth,
+          excludedResponses).immutableCopy();
+      log.info("For {}, left had {}, right had {}, {} in common, {} not excluded", docID,
+          leftAnnotation.annotatedResponses().size(), rightAnnotation.annotatedResponses().size(),
+          responsesInBoth.size(), nonExcludedInBoth.size());
+
+      for (final Response response : nonExcludedInBoth) {
         // get will succeed by above checks
         agreementRecorder.recordAgreement(leftAnnotation.assessment(response).get(),
             rightAnnotation.assessment(response).get());
       }
 
-      corefRecorder.observe(leftAnnotation.corefAnnotation(), rightAnnotation.corefAnnotation());
+      if (corefRecorder.isPresent()) {
+        corefRecorder.get().observe(leftAnnotation.corefAnnotation(), rightAnnotation.corefAnnotation());
+      }
     }
 
     agreementRecorder.dumpResults();
     System.out.println();
     System.out.println();
-    corefRecorder.dumpResults();
+    if (corefRecorder.isPresent()) {
+      corefRecorder.get().dumpResults();
+    }
+  }
+
+  private static Optional<AnnotationStore> getExcludeStore(final Parameters dualAnnotationParams,
+      final AssessmentSpecFormats.Format fileFormat) throws IOException {
+    final Optional<File> excludeStorePath = dualAnnotationParams.getOptionalExistingDirectory("exclude");
+    final Optional<AnnotationStore> excludeStore;
+    if (excludeStorePath.isPresent()) {
+      excludeStore = Optional.of(
+          AssessmentSpecFormats.openAnnotationStore(excludeStorePath.get(), fileFormat));
+      log.info("All responses found in {} will be excluded from analysis (this is probably a shared ancestor store)",
+          excludeStorePath.get());
+    } else {
+      excludeStore = Optional.absent();
+    }
+    return excludeStore;
   }
 
   private static class CorefRecorder {

@@ -3,11 +3,14 @@ package com.bbn.kbp.events2014.bin;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.SystemOutput;
-import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
+import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.events2014.io.SystemOutputStore2014;
+import com.bbn.kbp.events2014.io.SystemOutputStore2015;
 import com.bbn.kbp.events2014.transformers.QuoteFilter;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 
 import org.slf4j.Logger;
@@ -16,6 +19,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+
+import static com.google.common.base.Preconditions.checkState;
 
 public final class ApplyQuoteFilter {
 
@@ -53,34 +58,29 @@ public final class ApplyQuoteFilter {
     log.info(params.dump());
 
     final QuoteFilter quoteFilter = loadQuoteFilter(params);
-    final Map<File, File> inputStoreToOutputStore = getInputOutput(params);
+    final Map<SystemOutputStore, SystemOutputStore> inputStoreToOutputStore = getInputOutput(params);
 
-    for (final Map.Entry<File, File> inputOutputPair : inputStoreToOutputStore.entrySet()) {
-      filterStore(inputOutputPair.getKey(), inputOutputPair.getValue(), quoteFilter,
-          params.getEnum("fileFormat", AssessmentSpecFormats.Format.class));
+    for (final Map.Entry<SystemOutputStore, SystemOutputStore> inputOutputPair : inputStoreToOutputStore.entrySet()) {
+      filterStore(inputOutputPair.getKey(), inputOutputPair.getValue(), quoteFilter);
     }
   }
 
-  private static void filterStore(File sourceStorePath, File destStorePath, QuoteFilter quoteFilter,
-      AssessmentSpecFormats.Format fileFormat) throws IOException {
-    log.info("Filtering {} to {}", sourceStorePath, destStorePath);
-    final SystemOutputStore sourceStore =
-        AssessmentSpecFormats.openSystemOutputStore(sourceStorePath, fileFormat);
-    final SystemOutputStore destStore =
-        AssessmentSpecFormats.createSystemOutputStore(destStorePath, fileFormat);
+  private static void filterStore(SystemOutputStore source,
+      SystemOutputStore dest, QuoteFilter quoteFilter) throws IOException {
+    log.info("Filtering {} to {}", source, dest);
 
-    log.info("Source store has {} documents", sourceStore.docIDs().size());
-    for (final Symbol docID : sourceStore.docIDs()) {
-      final SystemOutput original = sourceStore.read(docID);
-      final SystemOutput filtered = quoteFilter.apply(original);
+    log.info("Source store has {} documents", source.docIDs().size());
+    for (final Symbol docID : source.docIDs()) {
+      final SystemOutput original = source.read(docID);
+      final SystemOutput filtered = quoteFilter.transform(original);
       log.info("For document {}, filtered out {} responses from quotes",
-          docID, original.size() - filtered.size());
+          docID, original.arguments().size() - filtered.arguments().size());
 
-      destStore.write(filtered);
+      dest.write(filtered);
     }
 
-    sourceStore.close();
-    destStore.close();
+    source.close();
+    dest.close();
   }
 
   private static QuoteFilter loadQuoteFilter(Parameters params) throws IOException {
@@ -90,16 +90,20 @@ public final class ApplyQuoteFilter {
     return QuoteFilter.loadFrom(Files.asByteSource(filterFile));
   }
 
-  private static ImmutableMap<File, File> getInputOutput(Parameters params) {
-    final ImmutableMap.Builder<File, File> ret = ImmutableMap.builder();
+  private static ImmutableMap<SystemOutputStore, SystemOutputStore> getInputOutput(Parameters params)
+      throws IOException {
+    final ImmutableMap.Builder<SystemOutputStore, SystemOutputStore> ret = ImmutableMap.builder();
 
-    boolean inputStorePresent = params.isPresent("inputStore");
-    boolean inputStoresPresent = params.isPresent("inputStoresDir");
+    final SystemOutputLayout layout = params.getEnum("outputLayout", SystemOutputLayout.class);
+
+    final boolean inputStorePresent = params.isPresent("inputStore");
+    final boolean inputStoresPresent = params.isPresent("inputStoresDir");
 
     if (inputStorePresent != inputStoresPresent) {
       if (inputStorePresent) {
-        ret.put(params.getExistingDirectory("inputStore"),
-            params.getCreatableDirectory("outputStore"));
+        final File inputPath = params.getExistingDirectory("inputStore");
+        final File outputPath = params.getCreatableDirectory("outputStore");
+        ret.put(storeFor(inputPath, outputPath, layout));
       } else {
         final File inputStoresDir = params.getExistingDirectory("inputStoresDir");
         final File outputStoresDir = params.getCreatableDirectory("outputStoresDir");
@@ -108,7 +112,7 @@ public final class ApplyQuoteFilter {
           if (subDir.isDirectory()) {
             final File outputDir = new File(outputStoresDir, subDir.getName());
             outputDir.mkdirs();
-            ret.put(subDir, outputDir);
+            ret.put(storeFor(subDir, outputDir, layout));
           }
         }
       }
@@ -117,5 +121,18 @@ public final class ApplyQuoteFilter {
     }
 
     return ret.build();
+  }
+
+  private static Map.Entry<SystemOutputStore, SystemOutputStore> storeFor(File inputPath,
+      File outputPath, SystemOutputLayout layout) throws IOException {
+    if (layout.equals(SystemOutputLayout.KBP_EA_2014)) {
+      return Maps.<SystemOutputStore, SystemOutputStore>immutableEntry(SystemOutputStore2014.open(inputPath), SystemOutputStore2014.openOrCreate(outputPath));
+    } else if (layout.equals(SystemOutputLayout.KBP_EA_2015)) {
+      return Maps.<SystemOutputStore, SystemOutputStore>immutableEntry(SystemOutputStore2015.open(inputPath),
+          SystemOutputStore2015.openOrCreate(outputPath));
+    } else {
+      checkState(false, "Can't happen");
+      return null;
+    }
   }
 }

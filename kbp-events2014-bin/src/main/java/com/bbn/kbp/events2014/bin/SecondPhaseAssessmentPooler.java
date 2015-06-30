@@ -4,14 +4,14 @@ import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.io.AnnotationStore;
+import com.bbn.kbp.events2014.io.ArgumentStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
-import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.transformers.KeepBestJustificationOnly;
 
 import com.google.common.collect.FluentIterable;
@@ -65,7 +65,7 @@ public final class SecondPhaseAssessmentPooler {
         outputAnnotationStorePath, fileFormat);
 
     // gather all our input, which includes anything currently in the output store
-    final Map<String, SystemOutputStore> storesToCombine = Maps.newHashMap();
+    final Map<String, ArgumentStore> storesToCombine = Maps.newHashMap();
 
     log.info(
         "Output annotation store currently contains responses for {} documents. These will not be altered.",
@@ -79,7 +79,7 @@ public final class SecondPhaseAssessmentPooler {
         docIDsWithCompleteCoref.size(), docIDsWithCompleteCoref);
 
     for (final File inputStoreFile : storesToPool) {
-      final SystemOutputStore inputStore =
+      final ArgumentStore inputStore =
           AssessmentSpecFormats.openSystemOutputStore(inputStoreFile, fileFormat);
       log.info("Importing responses from {} which contains {} documents",
           inputStoreFile, inputStore.docIDs().size());
@@ -91,12 +91,12 @@ public final class SecondPhaseAssessmentPooler {
     final Set<Symbol> docsToImport =
         Sets.difference(docIDsWithCompleteCoref, outputAnnotationStore.docIDs());
     for (final Symbol docId : docsToImport) {
-      final List<SystemOutput> responseSets = Lists.newArrayList();
+      final List<ArgumentOutput> responseSets = Lists.newArrayList();
 
       final StringBuilder sb = new StringBuilder();
 
-      for (final Map.Entry<String, SystemOutputStore> storeEntry : storesToCombine.entrySet()) {
-        final SystemOutput responses = storeEntry.getValue().readOrEmpty(docId);
+      for (final Map.Entry<String, ArgumentStore> storeEntry : storesToCombine.entrySet()) {
+        final ArgumentOutput responses = storeEntry.getValue().readOrEmpty(docId);
         responseSets.add(responses);
         sb.append(String.format("\t%5d response from %s\n", responses.size(), storeEntry.getKey()));
       }
@@ -109,7 +109,7 @@ public final class SecondPhaseAssessmentPooler {
     }
 
     // storesToCombine.values() includes the output store
-    for (final SystemOutputStore store : storesToCombine.values()) {
+    for (final ArgumentStore store : storesToCombine.values()) {
       store.close();
     }
     firstPhaseAnnotationStore.close();
@@ -118,15 +118,12 @@ public final class SecondPhaseAssessmentPooler {
 
   // for each system output, keep only the responses needed to score it, taking into account the
   // coref information in answerKey. Then take the union of the result of this for all system outputs.
-  private static AnswerKey responsesNeededToScore(Iterable<SystemOutput> systemOutputs,
+  private static AnswerKey responsesNeededToScore(Iterable<ArgumentOutput> systemOutputs,
       AnswerKey answerKey) {
-    final KeepBestJustificationOnly keepBestJustificationOnly =
-        KeepBestJustificationOnly.createForCorefAnnotation(answerKey.corefAnnotation());
-
-    final ImmutableSet<SystemOutput> locallyBestUsingCoref = FluentIterable.from(systemOutputs)
-        .transform(keepBestJustificationOnly).toSet();
-    final SystemOutput pooledResponsesUsingCoref =
-        SystemOutput.unionKeepingMaximumScore(locallyBestUsingCoref);
+    final ImmutableSet<ArgumentOutput> locallyBestUsingCoref = FluentIterable.from(systemOutputs)
+        .transform(KeepBestJustificationOnly.asFunctionUsingCoref(answerKey.corefAnnotation())).toSet();
+    final ArgumentOutput pooledResponsesUsingCoref =
+        ArgumentOutput.unionKeepingMaximumScore(locallyBestUsingCoref);
 
     final Set<Response> responsesAdded = Sets.difference(pooledResponsesUsingCoref.responses(),
         answerKey.allResponses());
@@ -147,16 +144,16 @@ public final class SecondPhaseAssessmentPooler {
   // turns a system output into an answer key with all responses in the systme output present as
   // unannotated responses.  The provided coref annotation is used but mus tbe trimmed because it may
   // refer to strings found in no response
-  private static AnswerKey toAnswerKeyWithCoref(SystemOutput systemOutput,
+  private static AnswerKey toAnswerKeyWithCoref(ArgumentOutput argumentOutput,
       CorefAnnotation corefAnnotation) {
-    final Set<KBPString> allCASesInResponses = FluentIterable.from(systemOutput.responses())
+    final Set<KBPString> allCASesInResponses = FluentIterable.from(argumentOutput.responses())
         .transform(Response.CASFunction())
         .toSet();
 
     final CorefAnnotation corefOnOnlyRelevantCASes =
         corefAnnotation.copyRemovingStringsNotIn(allCASesInResponses);
     return AnswerKey
-        .from(systemOutput.docId(), ImmutableSet.<AssessedResponse>of(), systemOutput.responses(),
+        .from(argumentOutput.docId(), ImmutableSet.<AssessedResponse>of(), argumentOutput.responses(),
             corefOnOnlyRelevantCASes);
   }
 

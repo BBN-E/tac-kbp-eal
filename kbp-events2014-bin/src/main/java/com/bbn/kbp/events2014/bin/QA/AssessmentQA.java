@@ -59,7 +59,7 @@ public class AssessmentQA {
 
     for (Symbol docID : store.docIDs()) {
       log.info("processing document {}", docID.asString());
-      final AnswerKey answerKey = MakeAllRealisActual.forAnswerKey().apply(store.read(docID));
+      final AnswerKey answerKey = MakeAllRealisActual.neutralizeAssessments(store.read(docID));
       log.info("serializing {}", docID.asString());
       htmlRenderer.renderTo(
           Files.asCharSink(new File(outputDir, docID.asString() + ".html"), Charset.defaultCharset()),

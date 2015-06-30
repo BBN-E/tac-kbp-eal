@@ -1,16 +1,16 @@
 package com.bbn.kbp.events2014.transformers;
 
 import com.bbn.bue.common.scoring.Scored;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.SystemOutput;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 
-public final class ProbableInferenceCases implements Function<SystemOutput, SystemOutput> {
+public final class ProbableInferenceCases implements Function<ArgumentOutput, ArgumentOutput> {
 
   @Override
-  public SystemOutput apply(SystemOutput input) {
+  public ArgumentOutput apply(ArgumentOutput input) {
     final ImmutableList.Builder<Scored<Response>> possibleInferenceCases = ImmutableList.builder();
 
     for (final Scored<Response> response : input.scoredResponses()) {
@@ -20,7 +20,7 @@ public final class ProbableInferenceCases implements Function<SystemOutput, Syst
       }
     }
 
-    return SystemOutput.from(input.docId(), possibleInferenceCases.build(), input.allMetadata());
+    return ArgumentOutput.from(input.docId(), possibleInferenceCases.build(), input.allMetadata());
   }
 
   /**

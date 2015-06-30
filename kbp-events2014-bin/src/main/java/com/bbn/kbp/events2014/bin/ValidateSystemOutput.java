@@ -3,11 +3,11 @@ package com.bbn.kbp.events2014.bin;
 import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.io.ArgumentStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
-import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 
 import com.google.common.base.Charsets;
@@ -92,7 +92,7 @@ public final class ValidateSystemOutput {
 
     // these are only non-final because the compiler isn't clever enough
     // to figure out they cannot fail to be initialized
-    SystemOutputStore outputStore = null;
+    ArgumentStore outputStore = null;
     ImmutableSet<Symbol> docIDs = null;
     try {
       outputStore = AssessmentSpecFormats.openSystemOutputStore(systemOutputStoreFile, fileFormat);
@@ -113,7 +113,7 @@ public final class ValidateSystemOutput {
     int numErrors = 0;
     for (final Symbol docID : docIDs) {
       try {
-        final SystemOutput docOutput = outputStore.read(docID);
+        final ArgumentOutput docOutput = outputStore.read(docID);
         log.info("For document {} got {} responses", docID, docOutput.size());
 
         for (final Response response : docOutput.responses()) {
@@ -138,7 +138,7 @@ public final class ValidateSystemOutput {
     return errors;
   }
 
-  private void assertNoDocumentsOutsideCorpus(SystemOutputStore outputStore,
+  private void assertNoDocumentsOutsideCorpus(ArgumentStore outputStore,
       Set<Symbol> docsInCorpus) throws IOException {
     final Set<Symbol> extraDocs = Sets.difference(outputStore.docIDs(), docsInCorpus);
     if (!extraDocs.isEmpty()) {
@@ -149,7 +149,7 @@ public final class ValidateSystemOutput {
     }
   }
 
-  private void assertAllOffsetsValid(SystemOutputStore outputStore, Map<Symbol, File> docIdMap)
+  private void assertAllOffsetsValid(ArgumentStore outputStore, Map<Symbol, File> docIdMap)
       throws IOException {
     assertNoDocumentsOutsideCorpus(outputStore, docIdMap.keySet());
 
@@ -199,7 +199,7 @@ public final class ValidateSystemOutput {
     }
   }
 
-  private static void dumpResponses(Map<Symbol, File> docIDMap, SystemOutput docOutput)
+  private static void dumpResponses(Map<Symbol, File> docIDMap, ArgumentOutput docOutput)
       throws IOException {
     final String originalText = getOriginalText(docOutput.docId(), docIDMap);
     final StringBuilder msg = new StringBuilder();
