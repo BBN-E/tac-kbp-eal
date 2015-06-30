@@ -221,6 +221,9 @@ final class QADocumentRenderer {
           typeToTRFR.get(type));
       if (typeWarning.isPresent()) {
         warningsDiv(sb, ImmutableList.of(typeWarning.get()));
+      } else {
+        // skip TRFR types without warnings
+        continue;
       }
       sb.append("<hr/>");
       sb.append(href(type));
@@ -243,6 +246,9 @@ final class QADocumentRenderer {
             extractWarningForType(trfrToWarning.get(trfr), trfrToAllResponses.get(trfr));
         if (trfrWarning.isPresent()) {
           warningsDiv(sb, ImmutableList.of(trfrWarning.get()));
+        } else {
+          // skip TRFRs without warnings
+          continue;
         }
         sb.append(href(trfr.uniqueIdentifier()));
         sb.append(String.format("<h3>%s</h3>", readableTRFR));
