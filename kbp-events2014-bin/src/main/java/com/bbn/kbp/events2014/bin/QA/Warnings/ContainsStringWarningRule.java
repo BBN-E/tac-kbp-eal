@@ -36,7 +36,7 @@ abstract class ContainsStringWarningRule implements WarningRule {
     for (Response r : responses) {
       if (warningApplies(r)) {
         warnings.put(r, Warning
-            .create(getTypeString(), String.format("contains one of %s", verboten.toString()),
+            .create(getTypeString(), String.format("contains one of <br/>%s", verboten.toString()),
                 Warning.Severity.MINOR));
         log.info("adding {} by contains string", r.canonicalArgument().string());
       }

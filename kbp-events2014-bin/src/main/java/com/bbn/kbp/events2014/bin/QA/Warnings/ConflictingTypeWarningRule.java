@@ -71,7 +71,7 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
           if (noRolesPossibleForBoth) {
             result.put(b, Warning.create(getTypeString(), String
                     .format(
-                        " mismatched types %s/%s and %s/%s in trfr %s",
+                        "%s/%s and %s/%s <br/>in trfr %s",
                         a.type().asString(), a.role().asString(),
                         b.type().asString(), b.role().asString(), AssessmentQA.readableTRFR(snd, second)),
                 Warning.Severity.MINOR));
