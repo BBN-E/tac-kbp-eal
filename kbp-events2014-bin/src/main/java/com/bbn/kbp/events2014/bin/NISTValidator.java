@@ -3,7 +3,7 @@ package com.bbn.kbp.events2014.bin;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
-import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
+import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 
 import com.google.common.base.Charsets;
@@ -101,7 +101,7 @@ public final class NISTValidator {
       log.info("Uncompressed submission to {}", uncompressedDirectory);
 
       logErrorsAndExit(errorFile, validator.validateOnly(uncompressedDirectory, MAX_ERRORS,
-          docIdMap, AssessmentSpecFormats.Format.KBP2014), verbosity);
+          docIdMap, SystemOutputLayout.KBP_EA_2014), verbosity);
     } catch (Exception e) {
       logErrorsAndExit(errorFile, ImmutableList.of(e), verbosity);
     }
