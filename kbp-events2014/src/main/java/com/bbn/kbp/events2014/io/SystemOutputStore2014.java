@@ -54,4 +54,8 @@ public final class SystemOutputStore2014 implements SystemOutputStore {
   public void close() throws IOException {
     argumentStore.close();
   }
+
+  public String toString() {
+    return "SystemOutputStore2014(" + argumentStore + ")";
+  }
 }

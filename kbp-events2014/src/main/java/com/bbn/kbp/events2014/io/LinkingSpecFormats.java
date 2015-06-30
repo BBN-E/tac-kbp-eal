@@ -183,5 +183,10 @@ public final class LinkingSpecFormats {
         throw new IOException("Cannot perform I/O operations on a closed output store");
       }
     }
+
+    @Override
+    public String toString() {
+      return "DirectoryLinkingStore(" + directory + ")";
+    }
   }
 }

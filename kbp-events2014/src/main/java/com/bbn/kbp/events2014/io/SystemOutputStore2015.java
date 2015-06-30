@@ -79,4 +79,8 @@ public final class SystemOutputStore2015 implements SystemOutputStore {
     argumentStore.close();
     linkingStore.close();
   }
+
+  public String toString() {
+    return "SystemOutputStore2015(" + argumentStore + ", " + linkingStore + ")";
+  }
 }
