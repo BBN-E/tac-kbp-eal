@@ -255,10 +255,8 @@ final class QADocumentRenderer {
         } else {
           sb.append(String.format("<div id=\"%s\" style=\"display:none\" >", trfr.uniqueIdentifier()));
         }
-        
         addSection(sb, overallOrdering.sortedCopy(trfrToAllResponses.get(trfr)), warnings);
         sb.append("</div>\n");
-
       }
       sb.append("</div>\n");
     }
@@ -304,7 +302,6 @@ final class QADocumentRenderer {
         sb.append(responseString);
         without_warning++;
       }
-
       sb.append("</li>\n");
     }
     sb.append("</ul>\n");
