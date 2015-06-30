@@ -8,7 +8,6 @@ import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.bin.QA.Warnings.ConflictingTypeWarningRule;
 import com.bbn.kbp.events2014.bin.QA.Warnings.ConjunctionWarningRule;
 import com.bbn.kbp.events2014.bin.QA.Warnings.EmptyResponseWarning;
-import com.bbn.kbp.events2014.bin.QA.Warnings.OverlapWarningRule;
 import com.bbn.kbp.events2014.bin.QA.Warnings.PronounAsCASWarningRule;
 import com.bbn.kbp.events2014.bin.QA.Warnings.VeryLongCASWarningRule;
 import com.bbn.kbp.events2014.bin.QA.Warnings.Warning;
@@ -43,7 +42,7 @@ public class AssessmentQA {
     final File outputDir = params.getCreatableDirectory("outputDir");
 
     final ImmutableList<WarningRule> warnings = ImmutableList.of(ConjunctionWarningRule.create(),
-        OverlapWarningRule.create(),
+//        OverlapWarningRule.create(),
         ConflictingTypeWarningRule
             .create(params.getExistingFile("argFile"), params.getExistingFile("roleFile")),
         EmptyResponseWarning.create(),
