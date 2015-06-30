@@ -9,7 +9,9 @@ import com.google.common.collect.ImmutableSet;
  */
 public final class PronounAsCASWarningRule extends ContainsStringWarningRule {
 
-  private static final ImmutableSet<String> pronouns = ImmutableSet.of("he", "she", "it", "they");
+  private static final ImmutableSet<String> pronouns = ImmutableSet
+      .of("he", "she", "it", "they", "his", "hers", "their", "theirs", "them", "who", "which",
+          "that");
 
   private PronounAsCASWarningRule(final Iterable<String> verboten) {
     super(verboten);
@@ -37,8 +39,8 @@ public final class PronounAsCASWarningRule extends ContainsStringWarningRule {
 
   @Override
   protected boolean warningApplies(final Response input) {
-    if(super.warningApplies(input)) {
-      if(WHITESPACE_SPLITTER.splitToList(input.canonicalArgument().string()).size() < 3) {
+    if (super.warningApplies(input)) {
+      if (WHITESPACE_SPLITTER.splitToList(input.canonicalArgument().string()).size() < 3) {
         return false;
       }
       return true;
