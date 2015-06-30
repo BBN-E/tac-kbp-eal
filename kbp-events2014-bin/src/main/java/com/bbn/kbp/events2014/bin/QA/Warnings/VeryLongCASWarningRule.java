@@ -30,8 +30,8 @@ public final class VeryLongCASWarningRule extends TRFRWarning {
         if (r.canonicalArgument().string().split("\\s+").length
             >= DEFAULT_TOO_BIG) {
           warnings.put(r, Warning.create(getTypeString(), String
-              .format("\"%s\"<br/>contained more than %d tokens", r.canonicalArgument().string(),
-                  DEFAULT_TOO_BIG - 1), Warning.Severity.MAJOR));
+              .format("contained more than %d tokens", DEFAULT_TOO_BIG - 1),
+              Warning.Severity.MAJOR));
         }
       }
     }
