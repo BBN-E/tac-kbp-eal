@@ -24,7 +24,7 @@ public final class EmptyResponseWarning implements WarningRule {
       final String trimmed = r.canonicalArgument().string().trim();
       final String noPunct = trimmed.replaceAll("[^A-Za-z0-9]", "");
       if(noPunct.trim().isEmpty()) {
-        result.put(r, new Warning(getTypeString(), String.format("%s appears to be garbage or empty", trimmed),
+        result.put(r, new Warning(getTypeString(), String.format("%s appears to be only spaces and punctuation", trimmed),
             Warning.Severity.MINOR));
       }
     }

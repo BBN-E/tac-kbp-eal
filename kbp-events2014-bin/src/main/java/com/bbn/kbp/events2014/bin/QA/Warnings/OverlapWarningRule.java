@@ -82,7 +82,7 @@ public class OverlapWarningRule extends TRFRWarning {
               b.canonicalArgument().string(), snd, a.canonicalArgument().string(), fst);
           //result.put(a, warning());
           result.put(b, Warning.create(getTypeString(),
-              String.format("Contained in \"%s\"", AssessmentQA.readableTRFR(fst, first)), Warning.Severity.MINOR));
+              String.format("Contained in <br/>\"%s\"", AssessmentQA.readableTRFR(fst, first)), Warning.Severity.MINOR));
         }
         /*
         // arbitrarily chosen magic constant
