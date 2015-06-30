@@ -187,7 +187,7 @@ final class QADocumentRenderer {
 
     sb.append("<div>");
     sb.append(href("WarningStrings"));
-    sb.append(String.format("<h2>%s</h2>", "Warning Strings"));
+    sb.append(String.format("<h1>%s</h1>", "Warning Strings"));
     sb.append(closehref());
     sb.append("<div id=\"WarningStrings\" style=\"display:none\">\n");
     sb.append("<ul>");
@@ -222,10 +222,11 @@ final class QADocumentRenderer {
       if (typeWarning.isPresent()) {
         warningsDiv(sb, ImmutableList.of(typeWarning.get()));
       }
+      sb.append("<hr/>");
       sb.append(href(type));
-      sb.append("<h2>");
+      sb.append("<h1>");
       sb.append(type);
-      sb.append("</h2>\n");
+      sb.append("</h1>\n");
       sb.append(closehref());
       if (typeWarning.isPresent()) {
         // one close div needed for one warning
