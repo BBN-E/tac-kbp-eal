@@ -57,7 +57,8 @@ public class AssessmentQA {
         PronounAsCASWarningRule.create(),
         VeryLongCASWarningRule.create());
 
-    final QADocumentRenderer htmlRenderer = QADocumentRenderer.createWithDefaultOrdering(warnings);
+    final AssessmentQADocumentRenderer
+        htmlRenderer = AssessmentQADocumentRenderer.createWithDefaultOrdering(warnings);
 
     for (Symbol docID : store.docIDs()) {
       log.info("processing document {}", docID.asString());
@@ -70,7 +71,7 @@ public class AssessmentQA {
     }
   }
 
-  private static ImmutableMultimap<Response, Warning> generateWarnings(
+  static ImmutableMultimap<Response, Warning> generateWarnings(
       AnswerKey answerKey, final Iterable<? extends WarningRule> warningRules) {
     ImmutableMultimap.Builder<Response, Warning> warningResponseBuilder =
         ImmutableMultimap.builder();

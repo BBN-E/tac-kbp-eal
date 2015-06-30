@@ -1,26 +1,16 @@
 package com.bbn.kbp.events2014.bin.QA;
 
-import com.bbn.bue.common.collections.MultimapUtils;
 import com.bbn.kbp.events2014.AnswerKey;
-import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.bin.QA.Warnings.Warning;
-import com.bbn.kbp.events2014.bin.QA.Warnings.WarningRule;
 
 import com.google.common.base.Function;
-import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharSink;
 
@@ -31,16 +21,27 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * Created by jdeyoung on 6/4/15.
+ * Created by jdeyoung on 6/30/15.
  */
-final class QADocumentRenderer {
+abstract class QADocumentRenderer {
 
   private static final Logger log = LoggerFactory.getLogger(QADocumentRenderer.class);
-  private final Ordering<Response> overallOrdering;
-  private final Ordering<TypeRoleFillerRealis> trfrOrdering;
-  private final ImmutableMap<String, String> warningTypeToDescription;
 
-  private QADocumentRenderer(final Ordering<Response> overallOrdering,
+  protected static final Ordering<Response>
+      DEFAULT_OVERALL_ORDERING = Ordering.compound(ImmutableList
+      .of(Response.byEvent(), Response.byRole(), Response.byFillerString(),
+          Response.byCASSttring()));
+  protected static final Ordering<TypeRoleFillerRealis> DEFAULT_TRFR_ORDERING =
+      Ordering.compound(ImmutableList.of(
+          TypeRoleFillerRealis.byType(), TypeRoleFillerRealis.byRole(),
+          TypeRoleFillerRealis.byCAS(),
+          TypeRoleFillerRealis.byRealis()));
+
+  protected final Ordering<Response> overallOrdering;
+  protected final Ordering<TypeRoleFillerRealis> trfrOrdering;
+  protected final ImmutableMap<String, String> warningTypeToDescription;
+
+  QADocumentRenderer(final Ordering<Response> overallOrdering,
       final Ordering<TypeRoleFillerRealis> trfrOrdering,
       final Map<String, String> warningTypeToDescription) {
     this.trfrOrdering = trfrOrdering;
@@ -48,52 +49,32 @@ final class QADocumentRenderer {
     this.warningTypeToDescription = ImmutableMap.copyOf(warningTypeToDescription);
   }
 
-  public static QADocumentRenderer createWithDefaultOrdering(
-      final ImmutableList<WarningRule> warnings) {
-    final Map<String, String> warningToType =
-        Maps.transformValues(Maps.uniqueIndex(warnings, new Function<WarningRule, String>() {
-          @Override
-          public String apply(final WarningRule input) {
-            return input.getTypeString();
-          }
-        }), new Function<WarningRule, String>() {
-          @Override
-          public String apply(final WarningRule input) {
-            return input.getTypeDescription();
-          }
-        });
-    return new QADocumentRenderer(DEFAULT_OVERALL_ORDERING, DEFAULT_TRFR_ORDERING, warningToType);
-  }
+  abstract public void renderTo(final CharSink sink, final AnswerKey answerKey,
+      final ImmutableMultimap<Response, Warning> warnings)
+      throws IOException;
 
-  private static final Ordering<Response> DEFAULT_OVERALL_ORDERING = Ordering.compound(ImmutableList
-      .of(Response.byEvent(), Response.byRole(), Response.byFillerString(),
-          Response.byCASSttring()));
-  private static final Ordering<TypeRoleFillerRealis> DEFAULT_TRFR_ORDERING =
-      Ordering.compound(ImmutableList.of(
-          TypeRoleFillerRealis.byType(), TypeRoleFillerRealis.byRole(),
-          TypeRoleFillerRealis.byCAS(),
-          TypeRoleFillerRealis.byRealis()));
+  /* html utilities */
 
-  private static String bodyHeader() {
+  protected static String bodyHeader() {
     return "<body>";
   }
 
-  private static String htmlHeader() {
+  protected static String htmlHeader() {
     return "<!doctype html>\n"
         + "<html>\n"
         + "  <head>\n"
         + "    <meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\">\n";
   }
 
-  private static String bodyFooter() {
+  protected static String bodyFooter() {
     return "</body>";
   }
 
-  private static String htmlFooter() {
+  protected static String htmlFooter() {
     return "</html>";
   }
 
-  private static String javascript() {
+  protected static String javascript() {
     return "<script type=\"text/javascript\">" +
         "function toggle(element) {\n " +
         "\tvar e = document.getElementById(element); "
@@ -105,7 +86,7 @@ final class QADocumentRenderer {
         + "</script>";
   }
 
-  private static String defaultStyle() {
+  protected static String defaultStyle() {
     return "body {\n"
         + "background-color: rgb(128,128,128);\n"
         + "}\n"
@@ -114,7 +95,7 @@ final class QADocumentRenderer {
         + "}\n";
   }
 
-  private static String CSS() {
+  protected static String CSS() {
     final StringBuilder sb = new StringBuilder("<style>\n");
     for (Warning.Severity s : Warning.Severity.values()) {
       sb.append(s.CSS());
@@ -125,15 +106,16 @@ final class QADocumentRenderer {
     return sb.toString();
   }
 
-  private static String href(final String id) {
+  protected static String href(final String id) {
     return String.format("<a href=\"javascript:toggle('%s')\">\n", id);
   }
 
-  private static String closehref() {
+  protected static String closehref() {
     return "</a>";
   }
 
-  private static int warningsDiv(final StringBuilder sb,
+
+  protected static int warningsDiv(final StringBuilder sb,
       final Iterable<Warning.Severity> severities) {
     int total = 0;
     for (final Warning.Severity s : severities) {
@@ -146,7 +128,6 @@ final class QADocumentRenderer {
     }
     return total;
   }
-
 
   protected static <K> Optional<Warning.Severity> extractWarningForType(
       Iterable<Warning> warnings,
@@ -172,107 +153,7 @@ final class QADocumentRenderer {
     return Optional.absent();
   }
 
-  public void renderTo(final CharSink sink, final AnswerKey answerKey,
-      final ImmutableMultimap<Response, Warning> warnings)
-      throws IOException {
-    final StringBuilder sb = new StringBuilder();
-    sb.append(htmlHeader());
-    sb.append(String.format("<title>%s</title>", answerKey.docId().asString()));
-    sb.append(javascript());
-    sb.append(CSS());
-    sb.append(bodyHeader());
-    sb.append("<h1>");
-    sb.append(answerKey.docId());
-    sb.append("</h1>\n");
-
-    sb.append("<div>");
-    sb.append(href("WarningStrings"));
-    sb.append(String.format("<h1>%s</h1>", "Warning Strings"));
-    sb.append(closehref());
-    sb.append("<div id=\"WarningStrings\" style=\"display:none\">\n");
-    sb.append("<ul>");
-    for (Map.Entry<String, String> e : warningTypeToDescription.entrySet()) {
-      sb.append(String.format("<li>%s: %s</li>\n", e.getKey(), e.getValue()));
-    }
-    sb.append("</ul>");
-    sb.append("</div>");
-    sb.append("</div>");
-
-    final Function<Response, TypeRoleFillerRealis> responseToTRFR = TypeRoleFillerRealis
-        .extractFromSystemResponse(answerKey.corefAnnotation().laxCASNormalizerFunction());
-    final ImmutableMultimap<TypeRoleFillerRealis, Response> trfrToAllResponses = Multimaps
-        .index(Iterables.transform(answerKey.annotatedResponses(), AssessedResponse.Response),
-            responseToTRFR);
-    final ImmutableMultimap<TypeRoleFillerRealis, Response> trfrToErrorfulReponses = Multimaps
-        .index(warnings.keySet(), responseToTRFR);
-
-    final ImmutableMultimap<TypeRoleFillerRealis, Warning> trfrToWarning =
-        MultimapUtils.composeToSetMultimap(trfrToErrorfulReponses, warnings);
-    final Multimap<String, TypeRoleFillerRealis> typeToTRFR = Multimaps.index(
-        trfrToAllResponses.keySet(),
-        Functions.compose(Functions.toStringFunction(), TypeRoleFillerRealis.Type));
-
-    final ImmutableSetMultimap<String, Warning>
-        typesToWarnings = MultimapUtils.composeToSetMultimap(typeToTRFR, trfrToWarning);
-
-    for (final String type : Ordering.natural().sortedCopy(typeToTRFR.keySet())) {
-      final ImmutableSet<Warning> typeWarnings = typesToWarnings.get(type);
-      final Optional<Warning.Severity> typeWarning = extractWarningForType(typeWarnings,
-          typeToTRFR.get(type));
-      if (typeWarning.isPresent()) {
-        warningsDiv(sb, ImmutableList.of(typeWarning.get()));
-      } else {
-        // skip TRFR types without warnings
-        continue;
-      }
-      sb.append("<hr/>");
-      sb.append(href(type));
-      sb.append("<h1>");
-      sb.append(type);
-      sb.append("</h1>\n");
-      sb.append(closehref());
-      if (typeWarning.isPresent()) {
-        // one close div needed for one warning
-        sb.append(Strings.repeat("</div>", 1));
-      }
-      sb.append("<div id=\"");
-      sb.append(type);
-      sb.append("\" style=\"display:block\">\n");
-
-      for (final TypeRoleFillerRealis trfr : trfrOrdering.sortedCopy(typeToTRFR.get(type))) {
-        log.info("serializing trfr {}", trfr);
-        final String readableTRFR = AssessmentQA.readableTRFR(trfr, trfrToAllResponses.get(trfr));
-        final Optional<Warning.Severity> trfrWarning =
-            extractWarningForType(trfrToWarning.get(trfr), trfrToAllResponses.get(trfr));
-        if (trfrWarning.isPresent()) {
-          warningsDiv(sb, ImmutableList.of(trfrWarning.get()));
-        } else {
-          // skip TRFRs without warnings
-          continue;
-        }
-        sb.append(href(trfr.uniqueIdentifier()));
-        sb.append(String.format("<h3>%s</h3>", readableTRFR));
-        sb.append(closehref());
-        if (trfrWarning.isPresent()) {
-          // only need one close div for a warning
-          sb.append(Strings.repeat("</div>", 1));
-          sb.append(
-              String.format("<div id=\"%s\" style=\"display:inherit\" >", trfr.uniqueIdentifier()));
-        } else {
-          sb.append(String.format("<div id=\"%s\" style=\"display:none\" >", trfr.uniqueIdentifier()));
-        }
-        addSection(sb, overallOrdering.sortedCopy(trfrToAllResponses.get(trfr)), warnings);
-        sb.append("</div>\n");
-      }
-      sb.append("</div>\n");
-    }
-    sb.append(bodyFooter());
-    sb.append(htmlFooter());
-
-    sink.write(sb.toString());
-  }
-
-  private static final Function<Response, String> responseToString() {
+  protected static final Function<Response, String> responseToString() {
     return new Function<Response, String>() {
       @Override
       public String apply(final Response r) {
@@ -281,7 +162,7 @@ final class QADocumentRenderer {
     };
   }
 
-  private void addSection(final StringBuilder sb, final Iterable<Response> responses,
+  protected void addSection(final StringBuilder sb, final Iterable<Response> responses,
       final ImmutableMultimap<Response, Warning> warnings) {
     sb.append("<ul>\n");
     int with_warning = 0;
