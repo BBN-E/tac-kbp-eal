@@ -43,6 +43,11 @@
                         </program>
 
                         <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.FilterOutUnannotated</mainClass>
+                            <name>filterOutUnannotated</name>
+                        </program>
+
+                        <program>
                             <mainClass>com.bbn.kbp.events2014.bin.SplitAnnStoreBySuffixes
                             </mainClass>
                             <name>splitAnnStoreBySuffixes</name>
