@@ -59,11 +59,19 @@ public class FilterOutUnannotated {
     final AnnotationStore annotation = AssessmentSpecFormats.openAnnotationStore(
         params.getExistingDirectory("answerKey"), AssessmentSpecFormats.Format.KBP2015);
 
+    int numDeletedTotal = 0;
     for (final Symbol docID : input.docIDs()) {
-      final SystemOutput systemOutput = input.read(docID);
+      final SystemOutput original = input.read(docID);
       final AnswerKey answerKey = annotation.readOrEmpty(docID);
-      output.write(systemOutput.copyTransformedBy(selectWhichToDelete(systemOutput, answerKey)));
+      final SystemOutput filtered =
+          original.copyTransformedBy(selectWhichToDelete(original, answerKey));
+      int numDeletedForThisDoc = original.arguments().size() - filtered.arguments().size();
+      log.info("For {} deleted {} unassessed responses", docID, numDeletedForThisDoc);
+      numDeletedTotal += numDeletedForThisDoc;
+      output.write(filtered);
     }
+
+    log.info("In total, delete {} unassessed responses", numDeletedTotal);
 
     input.close();
     output.close();
