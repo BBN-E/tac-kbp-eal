@@ -562,6 +562,11 @@ public final class AssessmentSpecFormats {
         throw new RuntimeException("Illegal attempt to use a closed assessment store.");
       }
     }
+
+    @Override
+    public String toString() {
+      return "AnnStore[" + directory + "]";
+    }
   }
 
   private static String offsetString(final Set<CharOffsetSpan> spans) {
