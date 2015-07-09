@@ -155,6 +155,7 @@ public final class ImportSystemOutputToAnnotationStore {
     log.info("Using assessment stores at {}", StringUtils.NewlineJoiner.join(annotationStores));
 
     final Multiset<AnnotationStore> totalNumAdded = HashMultiset.create();
+    final Multiset<AnnotationStore> totalAlreadyThere = HashMultiset.create();
 
     for (final ArgumentStore systemOutput : argumentStores) {
       log.info("Processing system output from {}", systemOutput);
@@ -174,16 +175,19 @@ public final class ImportSystemOutputToAnnotationStore {
               docOutput.responses());
           final int numAdded =
               newAnswerKey.unannotatedResponses().size() - numUnannotatedResponsesInCurrentAnnotation;
+          final int numAlreadyKnown = docOutput.responses().size() - numAdded;
           log.info(
               "Annotation store {} has {} annotated and {} unannotated; added {} for assessment",
               annStore, numAnnotatedResponsesInCurrentAnnotation,
               numUnannotatedResponsesInCurrentAnnotation, numAdded);
           annStore.write(newAnswerKey);
           totalNumAdded.add(annStore, numAdded);
+          totalAlreadyThere.add(annStore, numAlreadyKnown);
         }
       }
     }
 
     log.info("Total number of responses added: {}", totalNumAdded);
+    log.info("Total number of responses already known: {}", totalAlreadyThere);
   }
 }
