@@ -7,6 +7,10 @@ import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ArgumentOutput;
+import com.bbn.kbp.events2014.ResponseLinking;
+import com.bbn.kbp.events2014.ResponseSet;
+import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.SystemOutput2015;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -39,6 +43,8 @@ public class TestKeepBestJustificationOnly {
     final Set<CharOffsetSpan> argumentJustifications1 = ImmutableSet.of();
     final Set<CharOffsetSpan> argumentJustifications2 = ImmutableSet.of(
         CharOffsetSpan.fromOffsetsOnly(0, 100));
+    final Set<CharOffsetSpan> argumentJustifications3 = ImmutableSet.of(
+        CharOffsetSpan.fromOffsetsOnly(0, 110));
 
     final Set<CharOffsetSpan> predicateJustifications1 = ImmutableSet.of(
         CharOffsetSpan.fromOffsetsOnly(98, 99));
@@ -68,6 +74,10 @@ public class TestKeepBestJustificationOnly {
         Response.createFrom(docid, type1, role1, CAS1, baseFiller1,
             argumentJustifications2, predicateJustifications1, realis1), 0.8);
 
+    final Scored<Response> anotherDifferentAJWithLowerScore = Scored.from(
+        Response.createFrom(docid, type1, role1, CAS1, baseFiller1,
+            argumentJustifications3, predicateJustifications1, realis1), 0.7);
+
     // all of the below shouldn't be in competition with anything else
     // due to unique (docid, type, role, CAS, Realis) tuples
     final Scored<Response> differByType = Scored.from(
@@ -93,13 +103,25 @@ public class TestKeepBestJustificationOnly {
     final ArgumentOutput toDeduplicate = ArgumentOutput.from(docid, ImmutableList.of(
         best, tiesBestButLosesTiebreakByHash, differentPJWithLowerScore,
         differentBFWithLowerScore, differentAJWithLowerScore, differByType,
-        differByRole, differByRealis, differByCASOffsets, differByCASString));
+        differByRole, differByRealis, differByCASOffsets, differByCASString,
+        anotherDifferentAJWithLowerScore));
     // reference drops two losers
     final ArgumentOutput reference = ArgumentOutput.from(docid, ImmutableList.of(
         best, differByType,
         differByRole, differByRealis, differByCASOffsets, differByCASString));
+    final ResponseLinking responseLinking = ResponseLinking.from(docid,
+        ImmutableSet.of(ResponseSet.from(best.item(), tiesBestButLosesTiebreakByHash.item(),
+                differentPJWithLowerScore.item(),
+                differentBFWithLowerScore.item(), differentAJWithLowerScore.item(),
+                differByType.item(),
+                differByRole.item(), differByRealis.item(), differByCASOffsets.item(),
+                differByCASString.item()),
+            ResponseSet.from(anotherDifferentAJWithLowerScore.item())),
+        ImmutableSet.<Response>of());
 
-    final ArgumentOutput deduplicated = KeepBestJustificationOnly.asFunctionOnSystemOutput().apply(toDeduplicate);
-    assertEquals(reference, deduplicated);
+    final SystemOutput systemOutput = SystemOutput2015.from(toDeduplicate, responseLinking);
+    final SystemOutput deduplicated =
+        KeepBestJustificationOnly.asFunctionOnSystemOutput().apply(systemOutput);
+    assertEquals(reference, deduplicated.arguments());
   }
 }

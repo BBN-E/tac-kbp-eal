@@ -47,7 +47,7 @@ public final class KeepOnlyBestResponses {
     for (final Symbol docID : inputStore.docIDs()) {
       final SystemOutput original = inputStore.read(docID);
       final ResponseMapping responseMapping = KeepBestJustificationOnly.computeResponseMapping(
-          original.arguments());
+          original);
       final SystemOutput filtered = original.copyTransformedBy(responseMapping);
 
       int numFiltered = original.arguments().size() - filtered.arguments().size();
