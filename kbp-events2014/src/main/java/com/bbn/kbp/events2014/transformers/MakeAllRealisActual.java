@@ -78,7 +78,7 @@ public final class MakeAllRealisActual implements ScoringDataTransformation {
     ret.withAnswerKey(newAnswerKey);
 
     if (scoringData.argumentOutput().isPresent()) {
-      ret.withSystemOutput(responseMapping.apply(scoringData.argumentOutput().get()));
+      ret.withArgumentOutput(responseMapping.apply(scoringData.argumentOutput().get()));
     }
 
     return ret.build();

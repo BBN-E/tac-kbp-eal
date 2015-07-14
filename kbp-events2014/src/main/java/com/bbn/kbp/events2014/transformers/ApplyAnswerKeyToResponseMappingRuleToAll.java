@@ -39,7 +39,7 @@ public class ApplyAnswerKeyToResponseMappingRuleToAll implements ScoringDataTran
       ScoringData.Builder ret = input.modifiedCopy()
           .withAnswerKey(responseMapping.apply(input.answerKey().get()));
       if (input.argumentOutput().isPresent()) {
-        ret.withSystemOutput(responseMapping.apply(input.argumentOutput().get()));
+        ret.withArgumentOutput(responseMapping.apply(input.argumentOutput().get()));
       }
       if (input.systemLinking().isPresent()) {
         ret.withSystemLinking(responseMapping.apply(input.systemLinking().get()));

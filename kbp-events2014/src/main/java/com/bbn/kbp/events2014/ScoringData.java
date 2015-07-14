@@ -54,7 +54,7 @@ public final class ScoringData {
       ret. withAnswerKey(answerKey);
     }
     if (argumentOutput != null) {
-      ret.withSystemOutput(argumentOutput);
+      ret.withArgumentOutput(argumentOutput);
     }
     if (systemLinking != null) {
       ret.withSystemLinking(systemLinking);
@@ -79,7 +79,7 @@ public final class ScoringData {
       return this;
     }
 
-    public Builder withSystemOutput(ArgumentOutput argumentOutput) {
+    public Builder withArgumentOutput(ArgumentOutput argumentOutput) {
       this.argumentOutput = checkNotNull(argumentOutput);
       return this;
     }

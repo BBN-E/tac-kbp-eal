@@ -158,7 +158,7 @@ public final class EALScorer2015Style {
                 .from(scoringData.argumentOutput().get(), scoringData.systemLinking().get()),
             scoringData.answerKey().get().corefAnnotation());
     final ScoringData bestOnlyScoringData = scoringData.modifiedCopy()
-        .withSystemOutput(keepBestResponseMapping.apply(scoringData.argumentOutput().get()))
+        .withArgumentOutput(keepBestResponseMapping.apply(scoringData.argumentOutput().get()))
         .withSystemLinking(keepBestResponseMapping.apply(scoringData.systemLinking().get()))
         .build();
 

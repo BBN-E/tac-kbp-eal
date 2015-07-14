@@ -112,7 +112,7 @@ public final class CorefNeutralizingPreprocessor implements ScoringDataTransform
     }
 
     final ScoringData.Builder ret = input.modifiedCopy();
-    ret.withSystemOutput(responseMapping.apply(argumentOutput));
+    ret.withArgumentOutput(responseMapping.apply(argumentOutput));
     if (input.systemLinking().isPresent()) {
       ret.withSystemLinking(responseMapping.apply(input.systemLinking().get()));
     }

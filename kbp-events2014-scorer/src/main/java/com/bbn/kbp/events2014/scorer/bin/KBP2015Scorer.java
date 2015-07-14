@@ -158,7 +158,7 @@ public final class KBP2015Scorer {
 
         final ScoringData scoringData = ScoringData.builder()
             .withAnswerKey(argumentKey)
-            .withSystemOutput(argumentOutput)
+            .withArgumentOutput(argumentOutput)
             .withReferenceLinking(referenceLinking.get())
             .withSystemLinking(systemLinking.get())
             .build();
@@ -176,11 +176,11 @@ public final class KBP2015Scorer {
         Lists.transform(perDocResults, new Function<EALScorer2015Style.Result, String>() {
           @Override
           public String apply(final EALScorer2015Style.Result input) {
-            return String.format("%40s\t%10.2f\t%7s%7s%7s\t%10.2f\t%10.2f", 
+            return String.format("%40s\t%10.2f\t%7s%7s%7s\t%10.2f\t%10.2f",
                 input.docID(),
                 100.0 * input.scaledArgumentScore(),
-                String.format("%.1f",100.0*input.linkingScore().precision()), 
-                String.format("%.1f",100.0*input.linkingScore().recall()), 
+                String.format("%.1f", 100.0 * input.linkingScore().precision()),
+                String.format("%.1f", 100.0 * input.linkingScore().recall()),
                 String.format("%.1f",100.0*input.linkingScore().F1()),
                 100.0 * input.scaledLinkingScore(),
                 100.0 * input.scaledScore());
