@@ -6,10 +6,11 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events2014.AnswerKey;
-import com.bbn.kbp.events2014.ArgumentOutput;
+import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
-import com.bbn.kbp.events2014.io.ArgumentStore;
+import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.transformers.KeepBestJustificationOnly;
 
 import com.google.common.base.Charsets;
@@ -66,16 +67,16 @@ public final class ImportSystemOutputToAnnotationStore {
       final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
       log.info(params.dump());
 
-      final Function<ArgumentOutput, ArgumentOutput> filter = getSystemOutputFilter(params);
+      final Function<SystemOutput, SystemOutput> filter = getSystemOutputFilter(params);
       final Predicate<Symbol> docIdFilter = getDocIdFilter(params);
 
-      final AssessmentSpecFormats.Format systemFileFormat =
-          params.getEnum("system.fileFormat", AssessmentSpecFormats.Format.class);
+      final SystemOutputLayout outputLayout = params.getEnum("outputLayout",
+          SystemOutputLayout.class);
       final AssessmentSpecFormats.Format annStoreFileFormat =
           params.getEnum("annStore.fileFormat", AssessmentSpecFormats.Format.class);
 
-      final ImmutableSet<ArgumentStore> systemOutputs =
-          loadSystemOutputStores(params, systemFileFormat);
+      final ImmutableSet<SystemOutputStore> systemOutputs =
+          loadSystemOutputStores(params, outputLayout);
       final ImmutableSet<AnnotationStore> annotationStores =
           loadAnnotationStores(params, annStoreFileFormat);
 
@@ -104,25 +105,25 @@ public final class ImportSystemOutputToAnnotationStore {
     return annotationStores;
   }
 
-  private static ImmutableSet<ArgumentStore> loadSystemOutputStores(final Parameters params,
-      final AssessmentSpecFormats.Format systemFileFormat) throws IOException {
-    final ImmutableSet<ArgumentStore> systemOutputs;
+  private static ImmutableSet<SystemOutputStore> loadSystemOutputStores(final Parameters params,
+      final SystemOutputLayout outputLayout) throws IOException {
+    final ImmutableSet<SystemOutputStore> systemOutputs;
     params.assertAtLeastOneDefined("systemOutput", "systemOutputsList");
     if (params.isPresent("systemOutput")) {
-      systemOutputs = ImmutableSet.of(AssessmentSpecFormats
-          .openSystemOutputStore(params.getExistingDirectory("systemOutput"), systemFileFormat));
+      systemOutputs =
+          ImmutableSet.of(outputLayout.open(params.getExistingDirectory("systemOutput")));
     } else {
-      final ImmutableSet.Builder<ArgumentStore> stores = ImmutableSet.builder();
+      final ImmutableSet.Builder<SystemOutputStore> stores = ImmutableSet.builder();
       for (File dir : FileUtils.loadFileList(params.getCreatableFile("systemOutputsList"))) {
-        stores.add(AssessmentSpecFormats.openSystemOutputStore(dir, systemFileFormat));
+        stores.add(outputLayout.open(dir));
       }
       systemOutputs = stores.build();
     }
     return systemOutputs;
   }
 
-  private static Function<ArgumentOutput, ArgumentOutput> getSystemOutputFilter(Parameters params) {
-    final Function<ArgumentOutput, ArgumentOutput> filter;
+  private static Function<SystemOutput, SystemOutput> getSystemOutputFilter(Parameters params) {
+    final Function<SystemOutput, SystemOutput> filter;
     if (params.getBoolean("importOnlyBestAnswers")) {
       filter = KeepBestJustificationOnly.asFunctionOnSystemOutput();
       log.info("Importing only responses the scorer would select");
@@ -148,21 +149,22 @@ public final class ImportSystemOutputToAnnotationStore {
     }
   }
 
-  private static void importSystemOutputToAnnotationStore(Set<ArgumentStore> argumentStores,
+  private static void importSystemOutputToAnnotationStore(Set<SystemOutputStore> argumentStores,
       Set<AnnotationStore> annotationStores,
-      Function<ArgumentOutput, ArgumentOutput> filter, Predicate<Symbol> docIdFilter) throws IOException {
+      Function<SystemOutput, SystemOutput> filter, Predicate<Symbol> docIdFilter)
+      throws IOException {
     log.info("Loading system outputs from {}", StringUtils.NewlineJoiner.join(argumentStores));
     log.info("Using assessment stores at {}", StringUtils.NewlineJoiner.join(annotationStores));
 
     final Multiset<AnnotationStore> totalNumAdded = HashMultiset.create();
     final Multiset<AnnotationStore> totalAlreadyThere = HashMultiset.create();
 
-    for (final ArgumentStore systemOutput : argumentStores) {
+    for (final SystemOutputStore systemOutput : argumentStores) {
       log.info("Processing system output from {}", systemOutput);
 
       for (final Symbol docid : filter(systemOutput.docIDs(), docIdFilter)) {
-        final ArgumentOutput docOutput = filter.apply(systemOutput.read(docid));
-        log.info("Processing {} responses for document {}", docid, docOutput.size());
+        final SystemOutput docOutput = filter.apply(systemOutput.read(docid));
+        log.info("Processing {} responses for document {}", docid, docOutput.arguments().size());
 
         for (final AnnotationStore annStore : annotationStores) {
           final AnswerKey currentAnnotation = annStore.readOrEmpty(docid);
@@ -172,10 +174,10 @@ public final class ImportSystemOutputToAnnotationStore {
               currentAnnotation.unannotatedResponses().size();
 
           final AnswerKey newAnswerKey = currentAnnotation.copyAddingPossiblyUnannotated(
-              docOutput.responses());
+              docOutput.arguments().responses());
           final int numAdded =
               newAnswerKey.unannotatedResponses().size() - numUnannotatedResponsesInCurrentAnnotation;
-          final int numAlreadyKnown = docOutput.responses().size() - numAdded;
+          final int numAlreadyKnown = docOutput.arguments().responses().size() - numAdded;
           log.info(
               "Annotation store {} has {} annotated and {} unannotated; added {} for assessment",
               annStore, numAnnotatedResponsesInCurrentAnnotation,

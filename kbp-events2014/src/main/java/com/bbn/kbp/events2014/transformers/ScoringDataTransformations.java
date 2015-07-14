@@ -19,16 +19,16 @@ public class ScoringDataTransformations {
     return new ScoringDataTransformation() {
       @Override
       public ScoringData transform(final ScoringData scoringData) {
-        checkArgument(scoringData.systemOutput().isPresent(), "System output must be present");
+        checkArgument(scoringData.argumentOutput().isPresent(), "System output must be present");
         final ImmutableSet.Builder<Response> toDelete = ImmutableSet.builder();
-        for (final Response r : scoringData.systemOutput().get().responses()) {
+        for (final Response r : scoringData.argumentOutput().get().responses()) {
           if (!responsePredicate.apply(r)) {
             toDelete.add(r);
           }
         }
-        return scoringData.modifiedCopy().withSystemOutput(
+        return scoringData.modifiedCopy().withArgumentOutput(
             ResponseMapping.delete(toDelete.build())
-                .apply(scoringData.systemOutput().get())).build();
+                .apply(scoringData.argumentOutput().get())).build();
       }
 
       @Override

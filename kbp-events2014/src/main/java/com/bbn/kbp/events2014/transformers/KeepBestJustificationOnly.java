@@ -1,97 +1,116 @@
 package com.bbn.kbp.events2014.transformers;
 
 import com.bbn.bue.common.scoring.Scored;
-import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.ResponseLinking;
+import com.bbn.kbp.events2014.ResponseSet;
+import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.SystemOutput2015;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
+import com.google.common.collect.Sets;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Predicates.equalTo;
-import static com.google.common.base.Predicates.not;
 
 /**
  * Deduplicates a system output by keeping only a single representative for each (docid, type, role,
  * CAS, realis) tuple.  The selection criterion is the same as for the scorer - prefer the higher,
  * and if there is a tie, prefer the 'larger' ID (which is computed from a stable hash code). If
  * CorefAnnotation is provided, only a single representative is kept for each (docid, type, role,
- * CAS-coref-cluster, realis) tuple.
+ * CAS-coref-cluster, realis) tuple.  If a linking is provided, we keep the best representative of
+ * each TRFR from each response set.
  */
 public final class KeepBestJustificationOnly {
 
   private static final Logger log = LoggerFactory.getLogger(KeepBestJustificationOnly.class);
 
-  public static ResponseMapping computeResponseMapping(ArgumentOutput input) {
+  public static ResponseMapping computeResponseMapping(SystemOutput input) {
     return computeResponseMapping(input, Functions.<KBPString>identity());
   }
 
-  public static ResponseMapping computeResponseMappingUsingProvidedCoref(ArgumentOutput input,
+  public static ResponseMapping computeResponseMappingUsingProvidedCoref(SystemOutput input,
       CorefAnnotation corefAnnotation) {
     return computeResponseMapping(input, corefAnnotation.strictCASNormalizerFunction());
   }
 
-  public static Function<ArgumentOutput, ArgumentOutput> asFunctionOnSystemOutput() {
-    return new Function<ArgumentOutput, ArgumentOutput>() {
+  public static Function<SystemOutput, SystemOutput> asFunctionOnSystemOutput() {
+    return new Function<SystemOutput, SystemOutput>() {
       @Override
-      public ArgumentOutput apply(final ArgumentOutput input) {
-        return computeResponseMapping(input).apply(input);
+      public SystemOutput apply(final SystemOutput input) {
+        return input.copyTransformedBy(computeResponseMapping(input));
       }
     };
   }
-  public static Function<ArgumentOutput, ArgumentOutput> asFunctionUsingCoref(final CorefAnnotation corefAnnotation) {
-    return new Function<ArgumentOutput, ArgumentOutput>() {
+
+  public static Function<SystemOutput, SystemOutput> asFunctionUsingCoref(
+      final CorefAnnotation corefAnnotation) {
+    return new Function<SystemOutput, SystemOutput>() {
       @Override
-      public ArgumentOutput apply(final ArgumentOutput input) {
-        return computeResponseMappingUsingProvidedCoref(input, corefAnnotation).apply(input);
+      public SystemOutput apply(final SystemOutput input) {
+        return input.copyTransformedBy(
+            computeResponseMappingUsingProvidedCoref(input, corefAnnotation));
       }
     };
   }
 
 
-  private static ResponseMapping computeResponseMapping(ArgumentOutput input, Function<KBPString, KBPString> CASNormalizer) {
+  private static ResponseMapping computeResponseMapping(SystemOutput input,
+      Function<KBPString, KBPString> CASNormalizer) {
     checkNotNull(input);
+    final Function<Response, TypeRoleFillerRealis> trfrFunction =
+        TypeRoleFillerRealis.extractFromSystemResponse(CASNormalizer);
 
-    // group response by TypeRoleFillerRealis tuples
-    final Multimap<TypeRoleFillerRealis, Response> groupedResponses =
-        Multimaps.index(input.responses(),
-            TypeRoleFillerRealis.extractFromSystemResponse(CASNormalizer));
+    // if the input doesn't have response linking information,
+    // we create a dummy linking with everything in one event frame
+    final ResponseLinking responseLinking = getResponseLinking(input);
 
-    final ImmutableSet.Builder<Response> toDeleteB = ImmutableSet.builder();
+    final Set<Response> toKeep = Sets.newHashSet();
+    for (final ResponseSet eventFrame : responseLinking.responseSets()) {
+      final Multimap<TypeRoleFillerRealis, Response> groupedResponses =
+          Multimaps.index(eventFrame.asSet(), trfrFunction);
 
-    for (final Map.Entry<TypeRoleFillerRealis, Collection<Response>> group : groupedResponses
-        .asMap().entrySet()) {
-      // we know by construction known of those groups is empty, so the .get() is safe
-      final Collection<Response> competitors = group.getValue();
-      final Scored<Response> selected = input.score(input.selectFromMultipleSystemResponses(
-          competitors).get());
-      toDeleteB.addAll(Iterables.filter(competitors, not(equalTo(selected.item()))));
-      if (competitors.size() > 1) {
-        log.info("For equivalence class {}, got {} responses: {} and selected {}", group.getKey(),
-            competitors.size(), competitors, selected);
+      for (final Map.Entry<TypeRoleFillerRealis, Collection<Response>> group : groupedResponses
+          .asMap().entrySet()) {
+        // we know by construction none of those groups is empty, so the .get() is safe
+        final Collection<Response> competitors = group.getValue();
+        final Scored<Response> selected =
+            input.arguments().score(input.arguments().selectFromMultipleSystemResponses(
+                competitors).get());
+        toKeep.add(selected.item());
       }
     }
 
-    final ImmutableSet<Response> toDelete = toDeleteB.build();
-
+    final ImmutableSet<Response> toDelete =
+        Sets.difference(input.arguments().responses(), toKeep).immutableCopy();
     log.info(
         "For document {}, after keeping only selected justifications, deleted {} of {} responses",
-        input.docId(), toDelete.size(), input.size());
+        input.docID(), toDelete.size(), input.arguments().size());
 
     return ResponseMapping.create(ImmutableMap.<Response,Response>of(), toDelete);
+  }
+
+  private static ResponseLinking getResponseLinking(final SystemOutput input) {
+    if (input instanceof SystemOutput2015) {
+      return ((SystemOutput2015) input).linking();
+    } else {
+      return ResponseLinking.from(input.docID(), ImmutableSet.of(
+              ResponseSet.from(input.arguments().responses())),
+          ImmutableSet.<Response>of());
+    }
   }
 }

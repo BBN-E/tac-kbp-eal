@@ -47,7 +47,7 @@ public class EventArgumentScorerBin {
 
       final EventArgScoringAlignment<TypeRoleFillerRealis> scoringAlignment = eventArgumentScorer
           .score(ScoringData.builder().withAnswerKey(goldAnswerStore.readOrEmpty(docid))
-              .withSystemOutput(systemAnswerStore.readOrEmpty(docid)).build());
+              .withArgumentOutput(systemAnswerStore.readOrEmpty(docid)).build());
 
       for (final KBPScoringObserver<TypeRoleFillerRealis> scoringObserver : scoringObservers) {
         final File docLogDir = new File(scorerToOutputDir.get(scoringObserver), docid.toString());
