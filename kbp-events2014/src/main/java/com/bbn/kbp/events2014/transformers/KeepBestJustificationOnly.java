@@ -2,6 +2,7 @@ package com.bbn.kbp.events2014.transformers;
 
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.kbp.events2014.CorefAnnotation;
+import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
@@ -9,9 +10,10 @@ import com.bbn.kbp.events2014.ResponseSet;
 import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.SystemOutput2015;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
-
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
@@ -26,6 +28,8 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Predicates.compose;
+import static com.google.common.base.Predicates.in;
 
 /**
  * Deduplicates a system output by keeping only a single representative for each (docid, type, role,
@@ -95,6 +99,17 @@ public final class KeepBestJustificationOnly {
       }
     }
 
+    // ResponseLinking contain only Responses with Realis ACTUAL, OTHER. The above loop does keepBest for these.
+    // We now do keepBest for Generic Responses
+    final Predicate<Response> HasGenericRealis = compose(in( ImmutableSet.of(KBPRealis.Generic) ), Response.realisFunction());
+    final ImmutableSet<Response> genericResponses = FluentIterable.from(input.arguments().responses()).filter(HasGenericRealis).toSet();
+    final Multimap<TypeRoleFillerRealis, Response> groupedGenericResponses = Multimaps.index(genericResponses, trfrFunction);
+    for (final Map.Entry<TypeRoleFillerRealis, Collection<Response>> group : groupedGenericResponses.asMap().entrySet()) {
+      final Collection<Response> competitors = group.getValue();
+      final Scored<Response> selected = input.arguments().score(input.arguments().selectFromMultipleSystemResponses(competitors).get());
+      toKeep.add(selected.item());
+    }
+    
     final ImmutableSet<Response> toDelete =
         Sets.difference(input.arguments().responses(), toKeep).immutableCopy();
     log.info(
