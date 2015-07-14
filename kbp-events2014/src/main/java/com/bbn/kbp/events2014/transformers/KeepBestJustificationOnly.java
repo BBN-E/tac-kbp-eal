@@ -82,7 +82,7 @@ public final class KeepBestJustificationOnly {
     final Set<Response> toKeep = Sets.newHashSet();
     for (final ResponseSet eventFrame : responseLinking.responseSets()) {
       final Multimap<TypeRoleFillerRealis, Response> groupedResponses =
-          Multimaps.index(input.arguments().responses(), trfrFunction);
+          Multimaps.index(eventFrame.asSet(), trfrFunction);
 
       for (final Map.Entry<TypeRoleFillerRealis, Collection<Response>> group : groupedResponses
           .asMap().entrySet()) {
