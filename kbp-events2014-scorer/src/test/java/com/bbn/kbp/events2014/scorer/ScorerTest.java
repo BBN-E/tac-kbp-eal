@@ -39,6 +39,9 @@ public class ScorerTest {
   final Response h = dummyResponseOfType(CONFLICT, VICTIM, "h", KBPRealis.Actual);
   final Response i = dummyResponseOfType(CONFLICT, VICTIM, "i", KBPRealis.Actual);
   final Response aGeneric = dummyResponseOfType(CONFLICT, VICTIM, "a", KBPRealis.Generic);
+  final Response aPrime = dummyResponseOfType(CONFLICT, VICTIM, "a", KBPRealis.Actual, 1);
+  final Response aWithOtherJustifications2 =
+      dummyResponseOfType(CONFLICT, VICTIM, "a", KBPRealis.Actual, 2);
   /*
   final ArgumentOutput output_A = systemOutputFromResponses(ImmutableSet.of(a));
   final ResponseLinking linking_A = ResponseLinking.from(output_A.docId(),
@@ -533,6 +536,49 @@ public class ScorerTest {
     assertEquals(0.5458333, score_AGenericBCE.scaledScore(), .001);
   }
 
+  @Test
+  public void testWithDuplicateTRFRs() {
+    final ArgumentOutput argOutput = systemOutputFromResponses(ImmutableSet.of(a, aPrime, b, c, f));
+    final CorefAnnotation coref = allSingletonsCoref(ImmutableSet.of(a, b, c, f));
+    final AnswerKey neitherCorrect = makeAnswerKeyFromCorrectAndIncorrect(ImmutableSet.of(b, c, f),
+        ImmutableSet.of(a, aPrime), coref);
+    final AnswerKey aCorrect = makeAnswerKeyFromCorrectAndIncorrect(ImmutableSet.of(a, b, c, f),
+        ImmutableSet.of(aPrime), coref);
+    final AnswerKey aPrimeCorrect =
+        makeAnswerKeyFromCorrectAndIncorrect(ImmutableSet.of(aPrime, b, c, f),
+            ImmutableSet.of(a), coref);
+    final AnswerKey bothCorrect = makeAnswerKeyFromCorrectAndIncorrect(
+        ImmutableSet.of(a, aPrime, b, c, f),
+        ImmutableSet.<Response>of(), coref);
+
+    final ResponseLinking referenceLinking = ResponseLinking.from(neitherCorrect.docId(),
+        ImmutableSet.of(ResponseSet.from(a, b), ResponseSet.from(a, c), ResponseSet.from(f)),
+        ImmutableSet.<Response>of());
+    final ResponseLinking systemLinking = ResponseLinking.from(neitherCorrect.docId(),
+        ImmutableSet
+            .of(ResponseSet.from(a, b), ResponseSet.from(aPrime, c), ResponseSet.from(a, f)),
+        ImmutableSet.<Response>of());
+
+    final ScoringData.Builder commonBuilder = ScoringData.builder().withSystemOutput(argOutput)
+        .withSystemLinking(systemLinking).withReferenceLinking(referenceLinking);
+
+    final EALScorer2015Style.Result scoreNeitherCorrect = scorer.score(
+        commonBuilder.withAnswerKey(neitherCorrect).build());
+    assertEquals(0.25, scoreNeitherCorrect.scaledLinkingScore(), .0001);
+
+    final EALScorer2015Style.Result scoreACorrect =
+        scorer.score(commonBuilder.withAnswerKey(aCorrect).build());
+    assertEquals((3.0 / 2.0) / 4.0, scoreACorrect.scaledLinkingScore(), .0001);
+
+    final EALScorer2015Style.Result scoreAPrimeCorrect =
+        scorer.score(commonBuilder.withAnswerKey(aPrimeCorrect).build());
+    assertEquals((2.0 / 3.0), scoreAPrimeCorrect.scaledLinkingScore(), .0001);
+
+    final EALScorer2015Style.Result scoreBothCorrect =
+        scorer.score(commonBuilder.withAnswerKey(bothCorrect).build());
+    assertEquals(0.7, scoreBothCorrect.scaledLinkingScore(), .0001);
+  }
+
   // utility methods
 
   private static final Symbol DOC = Symbol.from("DOC");
@@ -546,10 +592,15 @@ public class ScorerTest {
 
   private static Response dummyResponseOfType(Symbol type, Symbol role, String cas,
       KBPRealis realis) {
+    return dummyResponseOfType(type, role, cas, realis, 0);
+  }
+
+  private static Response dummyResponseOfType(Symbol type, Symbol role, String cas,
+      KBPRealis realis, int offset) {
     return Response.createFrom(DOC, type, role, kbpString(cas),
-        CharOffsetSpan.fromOffsetsOnly(0, 1),
+        CharOffsetSpan.fromOffsetsOnly(offset + 0, offset + 1),
         ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(
-            CharOffsetSpan.fromOffsetsOnly(0, 1)),
+            CharOffsetSpan.fromOffsetsOnly(offset + 0, offset + 1)),
         realis);
   }
 
