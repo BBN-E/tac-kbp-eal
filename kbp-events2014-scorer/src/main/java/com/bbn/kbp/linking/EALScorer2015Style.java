@@ -6,18 +6,22 @@ import com.bbn.bue.common.evaluation.FMeasureCounts;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.EventArgScoringAlignment;
 import com.bbn.kbp.events2014.EventArgumentLinking;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ScoringData;
+import com.bbn.kbp.events2014.SystemOutput2015;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.linking.EventArgumentLinkingAligner;
 import com.bbn.kbp.events2014.linking.ExactMatchEventArgumentLinkingAligner;
 import com.bbn.kbp.events2014.scorer.LinkingScore;
 import com.bbn.kbp.events2014.scorer.StandardScoringAligner;
 import com.bbn.kbp.events2014.scorer.bin.Preprocessors;
+import com.bbn.kbp.events2014.transformers.KeepBestJustificationOnly;
+import com.bbn.kbp.events2014.transformers.ResponseMapping;
 import com.bbn.kbp.events2014.transformers.ScoringDataTransformation;
 
 import com.google.common.annotations.Beta;
@@ -25,7 +29,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -146,20 +149,20 @@ public final class EALScorer2015Style {
                                     preprocessor.get().transform(unpreprocessedScoringData)
                                                             :unpreprocessedScoringData;
 
-    final EventArgScoringAlignment<TypeRoleFillerRealis> scoringAlignment =
-        scoreEventArguments(scoringData);
+    // regardless of the preprocessing, we always filter down to having the smallest possible set
+    // of highest scoring responses which keeps at least one response in each event frame of the
+    // system linking.
+    final ResponseMapping keepBestResponseMapping =
+        KeepBestJustificationOnly.computeResponseMappingUsingProvidedCoref(
+            SystemOutput2015
+                .from(scoringData.systemOutput().get(), scoringData.systemLinking().get()),
+            scoringData.answerKey().get().corefAnnotation());
+    final ScoringData bestOnlyScoringData = scoringData.modifiedCopy()
+        .withSystemOutput(keepBestResponseMapping.apply(scoringData.systemOutput().get()))
+        .withSystemLinking(keepBestResponseMapping.apply(scoringData.systemLinking().get()))
+        .build();
 
-    final ImmutableSet<TypeRoleFillerRealis> linkableEquivalenceClasses =
-        FluentIterable.from(scoringAlignment.truePositiveEquivalenceClasses())
-          .append(scoringAlignment.falseNegativeEquivalenceClasses())
-          .filter(REALIS_IS_NOT_GENERIC)
-        .toSet();
-
-    final LinkingScore linkingScore = scoreLinking(scoringData.answerKey().get(),
-        linkableEquivalenceClasses,
-        scoringData.referenceLinking().get(), scoringData.systemLinking().get());
-
-    return new Result(scoringAlignment, linkingScore);
+    return new Result(scoreEventArguments(bestOnlyScoringData), scoreLinking(bestOnlyScoringData));
   }
 
   private EventArgScoringAlignment<TypeRoleFillerRealis> scoreEventArguments(ScoringData scoringData) {
@@ -172,16 +175,17 @@ public final class EALScorer2015Style {
     return scoringAligner.align(scoringData.answerKey().get(), scoringData.systemOutput().get());
   }
 
-  public LinkingScore scoreLinking(AnswerKey answerKey, Set<TypeRoleFillerRealis> linkableEquivalenceClasses,
-      ResponseLinking referenceLinking, ResponseLinking systemLinking) {
-    log.info("Scoring linking for {}", answerKey.docId());
-    checkArgument(answerKey.docId() == systemLinking.docID(), "System output has doc ID %s " +
-        "but answer key has doc ID %s", systemLinking.docID(), answerKey.docId());
-    checkArgument(answerKey.docId() == referenceLinking.docID(),
-        "Answer key docID %s does not match "
-            + "reference linking doc ID %s", answerKey.docId(), referenceLinking.docID());
-    checkArgument(systemLinking.docID() == systemLinking.docID(), "System output docID %s does "
-        + "not match system linking docID %s", systemLinking.docID(), systemLinking.docID());
+  public LinkingScore scoreLinking(ScoringData scoringData) {
+    log.info("Scoring linking for {}", scoringData.answerKey().get().docId());
+    checkArgument(scoringData.systemLinking().isPresent());
+    checkArgument(scoringData.referenceLinking().isPresent());
+    checkArgument(scoringData.answerKey().isPresent());
+
+    final ResponseLinking referenceLinking = scoringData.referenceLinking().get();
+    final AnswerKey answerKey = scoringData.answerKey().get();
+    // we need to remove all incorrectly assessed responses from the system linking
+    final ResponseLinking systemLinking = deleteIncorrectResponses(scoringData.systemOutput().get(),
+        answerKey).apply(scoringData.systemLinking().get());
 
     checkArgument(referenceLinking.incompleteResponses().isEmpty(),
         "Reference key for %s has %s responses whose linking has not been annotated",
@@ -195,16 +199,26 @@ public final class EALScorer2015Style {
     final EventArgumentLinking systemArgumentLinking =
         aligner.align(systemLinking, answerKey);
 
-    // need to redo this filtering
     final EventArgumentLinking filteredReferenceArgumentLinking = referenceArgumentLinking
-        .filteredCopy(in(linkableEquivalenceClasses));
+        .filteredCopy(REALIS_IS_NOT_GENERIC);
 
     final EventArgumentLinking filteredSystemArgumentLinking = systemArgumentLinking
-        .filteredCopy(in(linkableEquivalenceClasses));
+        .filteredCopy(REALIS_IS_NOT_GENERIC);
 
     return LinkingScore.from(referenceLinking, referenceArgumentLinking, systemLinking, systemArgumentLinking,
         linkF1.score(filteredSystemArgumentLinking.linkedAsSetOfSets(),
             filteredReferenceArgumentLinking.linkedAsSetOfSets()));
+  }
+
+  private ResponseMapping deleteIncorrectResponses(final ArgumentOutput argumentOutput,
+      final AnswerKey answerKey) {
+    final ImmutableSet.Builder<Response> toDelete = ImmutableSet.builder();
+    for (final Response r : argumentOutput.responses()) {
+      if (!answerKey.assess(r).get().isCorrectUpToInexactJustifications()) {
+        toDelete.add(r);
+      }
+    }
+    return ResponseMapping.delete(toDelete.build());
   }
 }
 
