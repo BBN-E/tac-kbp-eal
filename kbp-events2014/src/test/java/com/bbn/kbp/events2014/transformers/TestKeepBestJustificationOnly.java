@@ -108,7 +108,8 @@ public class TestKeepBestJustificationOnly {
     // reference drops two losers
     final ArgumentOutput reference = ArgumentOutput.from(docid, ImmutableList.of(
         best, differByType,
-        differByRole, differByRealis, differByCASOffsets, differByCASString));
+        differByRole, differByRealis, differByCASOffsets, differByCASString,
+        anotherDifferentAJWithLowerScore));
     final ResponseLinking responseLinking = ResponseLinking.from(docid,
         ImmutableSet.of(ResponseSet.from(best.item(), tiesBestButLosesTiebreakByHash.item(),
                 differentPJWithLowerScore.item(),
