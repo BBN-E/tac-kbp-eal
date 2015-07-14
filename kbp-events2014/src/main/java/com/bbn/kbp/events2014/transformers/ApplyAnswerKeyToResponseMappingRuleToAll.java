@@ -30,7 +30,7 @@ public class ApplyAnswerKeyToResponseMappingRuleToAll implements ScoringDataTran
   public ScoringData transform(ScoringData input) {
     checkArgument(input.answerKey().isPresent(), "Cannot apply a transformation based on "
         + "the answer key if it is absent");
-    input.answerKey().get().checkCompletelyAssesses(input.systemOutput().get());
+    input.answerKey().get().checkCompletelyAssesses(input.argumentOutput().get());
     final ResponseMapping responseMapping = rule.computeResponseTransformation(
         input.answerKey().get());
     if (!responseMapping.isIdentity()) {
@@ -38,8 +38,8 @@ public class ApplyAnswerKeyToResponseMappingRuleToAll implements ScoringDataTran
 
       ScoringData.Builder ret = input.modifiedCopy()
           .withAnswerKey(responseMapping.apply(input.answerKey().get()));
-      if (input.systemOutput().isPresent()) {
-        ret.withSystemOutput(responseMapping.apply(input.systemOutput().get()));
+      if (input.argumentOutput().isPresent()) {
+        ret.withSystemOutput(responseMapping.apply(input.argumentOutput().get()));
       }
       if (input.systemLinking().isPresent()) {
         ret.withSystemLinking(responseMapping.apply(input.systemLinking().get()));

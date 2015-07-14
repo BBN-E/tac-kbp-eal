@@ -50,12 +50,12 @@ public final class CorefNeutralizingPreprocessor implements ScoringDataTransform
 
   public ScoringData transform(final ScoringData input) {
     checkArgument(input.answerKey().isPresent()
-        && input.systemOutput().isPresent(), "Both systme output and an answer key must be "
+        && input.argumentOutput().isPresent(), "Both systme output and an answer key must be "
         + "present to neutralize coref");
     assertRealisIsNeutralized(input);
 
     final AnswerKey answerKey = input.answerKey().get();
-    final ArgumentOutput argumentOutput = input.systemOutput().get();
+    final ArgumentOutput argumentOutput = input.argumentOutput().get();
 
     final ImmutableMultimap<String, AssessedResponse> answerKeyByTypeRoleBaseFiller =
         Multimaps.index(filter(answerKey.annotatedResponses(),
@@ -127,7 +127,7 @@ public final class CorefNeutralizingPreprocessor implements ScoringDataTransform
 
 
   private void assertRealisIsNeutralized(final ScoringData input) {
-    for (final Response response : input.systemOutput().get().responses()) {
+    for (final Response response : input.argumentOutput().get().responses()) {
       if (response.realis() != KBPRealis.Actual) {
         throw new RuntimeException(
             "CorefNeutralizingProcessor is only intended to be used in conjunction with neutralizing realis");

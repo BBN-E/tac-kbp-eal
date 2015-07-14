@@ -42,7 +42,8 @@ public final class EventArgumentScorer {
 
     final StandardScoringAligner<TypeRoleFillerRealis> scoringAligner =
         StandardScoringAligner.forEquivalenceClassFunction(equivalenceClassFunction);
-    return scoringAligner.align(preprocessorResult.answerKey().get(), preprocessorResult.systemOutput().get());
+    return scoringAligner
+        .align(preprocessorResult.answerKey().get(), preprocessorResult.argumentOutput().get());
   }
 
   public void logStats() {

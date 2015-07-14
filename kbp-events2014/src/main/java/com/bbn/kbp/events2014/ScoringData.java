@@ -32,7 +32,7 @@ public final class ScoringData {
     return Optional.fromNullable(answerKey);
   }
 
-  public Optional<ArgumentOutput> systemOutput() {
+  public Optional<ArgumentOutput> argumentOutput() {
     return Optional.fromNullable(argumentOutput);
   }
 

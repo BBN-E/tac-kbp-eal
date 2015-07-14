@@ -108,6 +108,6 @@ public class OnlyMostSpecificTemporalTest {
     final ScoringData output = transformation.transform(ScoringData.builder()
         .withSystemOutput(argumentOutput).withAnswerKey(answerKey).build());
 
-    assertEquals(reference, output.systemOutput().get());
+    assertEquals(reference, output.argumentOutput().get());
   }
 }

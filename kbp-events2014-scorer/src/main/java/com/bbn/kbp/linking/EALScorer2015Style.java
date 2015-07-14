@@ -141,7 +141,7 @@ public final class EALScorer2015Style {
 
   public Result score(ScoringData unpreprocessedScoringData) {
     checkArgument(unpreprocessedScoringData.answerKey().isPresent() && unpreprocessedScoringData
-        .systemOutput().isPresent()
+        .argumentOutput().isPresent()
         && unpreprocessedScoringData.referenceLinking().isPresent() && unpreprocessedScoringData
         .systemLinking().isPresent());
 
@@ -155,10 +155,10 @@ public final class EALScorer2015Style {
     final ResponseMapping keepBestResponseMapping =
         KeepBestJustificationOnly.computeResponseMappingUsingProvidedCoref(
             SystemOutput2015
-                .from(scoringData.systemOutput().get(), scoringData.systemLinking().get()),
+                .from(scoringData.argumentOutput().get(), scoringData.systemLinking().get()),
             scoringData.answerKey().get().corefAnnotation());
     final ScoringData bestOnlyScoringData = scoringData.modifiedCopy()
-        .withSystemOutput(keepBestResponseMapping.apply(scoringData.systemOutput().get()))
+        .withSystemOutput(keepBestResponseMapping.apply(scoringData.argumentOutput().get()))
         .withSystemLinking(keepBestResponseMapping.apply(scoringData.systemLinking().get()))
         .build();
 
@@ -172,7 +172,7 @@ public final class EALScorer2015Style {
 
     final StandardScoringAligner<TypeRoleFillerRealis> scoringAligner =
         StandardScoringAligner.forEquivalenceClassFunction(equivalenceClassFunction);
-    return scoringAligner.align(scoringData.answerKey().get(), scoringData.systemOutput().get());
+    return scoringAligner.align(scoringData.answerKey().get(), scoringData.argumentOutput().get());
   }
 
   public LinkingScore scoreLinking(ScoringData scoringData) {
@@ -184,7 +184,8 @@ public final class EALScorer2015Style {
     final ResponseLinking referenceLinking = scoringData.referenceLinking().get();
     final AnswerKey answerKey = scoringData.answerKey().get();
     // we need to remove all incorrectly assessed responses from the system linking
-    final ResponseLinking systemLinking = deleteIncorrectResponses(scoringData.systemOutput().get(),
+    final ResponseLinking systemLinking =
+        deleteIncorrectResponses(scoringData.argumentOutput().get(),
         answerKey).apply(scoringData.systemLinking().get());
 
     checkArgument(referenceLinking.incompleteResponses().isEmpty(),
