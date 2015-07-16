@@ -105,8 +105,24 @@ public final class EALScorer2015Style {
       return linkingScore.F1()*linkingNormalizer();
     }
 
+    public double unscaledLinkingPrecision() {
+      return linkingScore.precision()*linkingNormalizer();
+    }
+    
+    public double unscaledLinkingRecall() {
+      return linkingScore.recall()*linkingNormalizer();
+    }
+    
     public double scaledLinkingScore() {
       return linkingScore.F1();
+    }
+    
+    public double scaledLinkingPrecision() {
+      return linkingScore.precision();
+    }
+    
+    public double scaledLinkingRecall() {
+      return linkingScore.recall();
     }
 
     public double scaledScore() {

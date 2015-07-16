@@ -191,11 +191,15 @@ public final class KBP2015Scorer {
     double argNomralizerSum = 0.0;
     double rawLinkScoreSum = 0.0;
     double linkNormalizerSum = 0.0;
+    double rawLinkPrecisionSum = 0.0;
+    double rawLinkRecallSum = 0.0;
     for (final EALScorer2015Style.Result perDocResult : perDocResults) {
       rawArgScoreSum += Math.max(0.0, perDocResult.unscaledArgumentScore());
       argNomralizerSum += perDocResult.argumentNormalizer();
       rawLinkScoreSum += perDocResult.unscaledLinkingScore();
       linkNormalizerSum += perDocResult.linkingNormalizer();
+      rawLinkPrecisionSum += perDocResult.unscaledLinkingPrecision();
+      rawLinkRecallSum += perDocResult.unscaledLinkingRecall();
     }
 
 
@@ -203,10 +207,16 @@ public final class KBP2015Scorer {
     double aggregateLinkScore = (linkNormalizerSum > 0.0) ? rawLinkScoreSum / linkNormalizerSum : 0.0;
     double aggregateScore = (1.0-documentScorer.lambda())*aggregateArgScore + documentScorer.lambda()*aggregateLinkScore;
 
+    double aggregateLinkPrecision = (linkNormalizerSum > 0.0) ? rawLinkPrecisionSum / linkNormalizerSum : 0.0;
+    double aggregateLinkRecall = (linkNormalizerSum > 0.0) ? rawLinkRecallSum / linkNormalizerSum : 0.0;
+    
     Files.asCharSink(new File(outputDir, "aggregateScore.txt"), Charsets.UTF_8).write(
         String.format("%30s:%8.2f\n", "Aggregate argument score", 100.0 * aggregateArgScore) +
             String.format("%30s:%8.2f\n", "Aggregate linking score", 100.0 * aggregateLinkScore) +
-            String.format("%30s:%8.2f\n", "Overall score", 100.0 * aggregateScore));
+            String.format("%30s:%8.2f\n", "Overall score", 100.0 * aggregateScore) +
+            String.format("%30s:%8.2f\n", "Aggregate linking precision", 100.0 * aggregateLinkPrecision) +
+            String.format("%30s:%8.2f\n", "Aggregate linking recall", 100.0 * aggregateLinkRecall));
+    
 
   }
 
