@@ -186,6 +186,12 @@
                             </jvmSettings>
                         </program>
 
+                        <program>
+                            <mainClass>
+                                com.bbn.kbp.events2014.bin.FilterAnswerKeyByTypeAndRole
+                            </mainClass>
+                            <name>FilterAnswerKeyByTypeAndRole</name>
+                        </program>
 			<program>
 			    <mainClass>com.bbn.kbp.events2014.bin.ExploreEALScorer</mainClass>
 			    <name>exploreEalScorer</name>
