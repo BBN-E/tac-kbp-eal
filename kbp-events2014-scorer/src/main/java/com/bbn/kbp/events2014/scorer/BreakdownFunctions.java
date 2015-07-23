@@ -1,7 +1,8 @@
-package com.bbn.kbp.events2014.scorer.observers.breakdowns;
+package com.bbn.kbp.events2014.scorer;
 
 import com.bbn.bue.common.collections.MultimapUtils;
-import com.bbn.bue.common.diff.ProvenancedConfusionMatrix;
+import com.bbn.bue.common.evaluation.BrokenDownProvenancedConfusionMatrix;
+import com.bbn.bue.common.evaluation.ProvenancedConfusionMatrix;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 

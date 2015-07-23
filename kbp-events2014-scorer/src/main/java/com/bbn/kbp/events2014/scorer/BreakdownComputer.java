@@ -1,7 +1,8 @@
-package com.bbn.kbp.events2014.scorer.observers.breakdowns;
+package com.bbn.kbp.events2014.scorer;
 
-import com.bbn.bue.common.diff.ProvenancedConfusionMatrix;
-import com.bbn.bue.common.serialization.jackson.JacksonSerializer;
+import com.bbn.bue.common.evaluation.BrokenDownProvenancedConfusionMatrix;
+import com.bbn.bue.common.evaluation.BrokenDownSummaryConfusionMatrix;
+import com.bbn.bue.common.evaluation.ProvenancedConfusionMatrix;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 
@@ -15,7 +16,6 @@ import java.util.Map;
 public final class BreakdownComputer<ProvenanceType> {
 
   private final Map<String, Function<? super ProvenanceType, Symbol>> breakdownFunctions;
-  private final JacksonSerializer jackson = JacksonSerializer.forNormalJSON();
 
   private BreakdownComputer(Map<String, Function<ProvenanceType, Symbol>>
       breakdownFunctions) {

@@ -1,6 +1,7 @@
 package com.bbn.kbp.events2014.bin;
 
-import com.bbn.bue.common.diff.SummaryConfusionMatrix;
+import com.bbn.bue.common.evaluation.SummaryConfusionMatrices;
+import com.bbn.bue.common.evaluation.SummaryConfusionMatrix;
 import com.bbn.bue.common.symbols.Symbol;
 
 import org.junit.Test;
@@ -12,13 +13,13 @@ public class TestKappa {
   private static final Symbol YES = Symbol.from("YES");
   private static final Symbol NO = Symbol.from("NO");
 
-  private final SummaryConfusionMatrix matrix = SummaryConfusionMatrix.builder()
+  private final SummaryConfusionMatrix matrix = SummaryConfusionMatrices.builder()
       .accumulate(YES, YES, 20.0)
       .accumulate(YES, NO, 5.0)
       .accumulate(NO, YES, 10.0)
       .accumulate(NO, NO, 15.0).build();
 
-  private final SummaryConfusionMatrix matrix2 = SummaryConfusionMatrix.builder()
+  private final SummaryConfusionMatrix matrix2 = SummaryConfusionMatrices.builder()
       .accumulate(YES, YES, 45.0)
       .accumulate(YES, NO, 6.0)
       .accumulate(NO, YES, 9.0)

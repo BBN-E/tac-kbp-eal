@@ -1,7 +1,8 @@
 package com.bbn.kbp.events2014.bin;
 
-import com.bbn.bue.common.diff.SummaryConfusionMatrix;
 import com.bbn.bue.common.evaluation.FMeasureInfo;
+import com.bbn.bue.common.evaluation.SummaryConfusionMatrices;
+import com.bbn.bue.common.evaluation.SummaryConfusionMatrix;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.primitives.DoubleUtils;
@@ -250,14 +251,14 @@ public final class DualAnnotationAgreement {
 
   private static class AgreementRecorder {
 
-    final Map<String, SummaryConfusionMatrix.Builder> assessmentNameToConfusionMatrix =
-        ImmutableMap.<String, SummaryConfusionMatrix.Builder>builder()
-            .put("AET", SummaryConfusionMatrix.builder())
-            .put("AER", SummaryConfusionMatrix.builder())
-            .put("BF", SummaryConfusionMatrix.builder())
-            .put("CAS", SummaryConfusionMatrix.builder())
-            .put("CAS type", SummaryConfusionMatrix.builder())
-            .put("Realis", SummaryConfusionMatrix.builder()).build();
+    final Map<String, SummaryConfusionMatrices.Builder> assessmentNameToConfusionMatrix =
+        ImmutableMap.<String, SummaryConfusionMatrices.Builder>builder()
+            .put("AET", SummaryConfusionMatrices.builder())
+            .put("AER", SummaryConfusionMatrices.builder())
+            .put("BF", SummaryConfusionMatrices.builder())
+            .put("CAS", SummaryConfusionMatrices.builder())
+            .put("CAS type", SummaryConfusionMatrices.builder())
+            .put("Realis", SummaryConfusionMatrices.builder()).build();
     final ImmutableSet<String> USES_CORRECT_INEXACT = ImmutableSet.of("AET", "AER", "BF", "CAS");
 
 
@@ -278,7 +279,7 @@ public final class DualAnnotationAgreement {
           leftAssessment.mentionTypeOfCAS(), rightAssessment.mentionTypeOfCAS());
     }
 
-    private static <T> void recordAssessment(SummaryConfusionMatrix.Builder confusionMatrixBuilder,
+    private static <T> void recordAssessment(SummaryConfusionMatrices.Builder confusionMatrixBuilder,
         Optional<T> leftAssessment, Optional<T> rightAssessment) {
       confusionMatrixBuilder.accumulate(asSymbol(leftAssessment), asSymbol(rightAssessment), 1.0);
     }
@@ -334,7 +335,7 @@ public final class DualAnnotationAgreement {
     private static final KappaCalculator kappaCalculator = KappaCalculator.create();
 
     public void dumpResults() {
-      for (final Map.Entry<String, SummaryConfusionMatrix.Builder> assessmentResults
+      for (final Map.Entry<String, SummaryConfusionMatrices.Builder> assessmentResults
           : assessmentNameToConfusionMatrix.entrySet()) {
         final String assessmentName = assessmentResults.getKey();
         final SummaryConfusionMatrix confusionMatrix = assessmentResults.getValue().build();
@@ -343,8 +344,8 @@ public final class DualAnnotationAgreement {
         final SummaryConfusionMatrix filteredConfusionMatrix =
             confusionMatrix.filteredCopy(NEITHER_IS_NA);
         System.out.println("Confusion matrix when both assessments are present:\n");
-        System.out.println(filteredConfusionMatrix.prettyPrint());
-        System.out.format("Agreement: %.2f%%\n", 100.0 * filteredConfusionMatrix.accuracy());
+        System.out.println(SummaryConfusionMatrices.prettyPrint(filteredConfusionMatrix));
+        System.out.format("Agreement: %.2f%%\n", 100.0 * SummaryConfusionMatrices.accuracy(filteredConfusionMatrix));
         System.out.format("Agreement kappa: %.2f\n\n",
             100.0 * kappaCalculator.computeKappa(filteredConfusionMatrix));
 
@@ -354,8 +355,9 @@ public final class DualAnnotationAgreement {
                   .copyWithTransformedLabels(COUNT_CORRECT_AND_INEXACT_AS_THE_SAME);
           System.out.println(
               "Confusion matrix when both assessments are present, collapsing CORRECT and INEXACT:\n");
-          System.out.println(lenientConfusionMatrix.prettyPrint());
-          System.out.format("Agreement: %.2f%%\n", 100.0 * lenientConfusionMatrix.accuracy());
+          System.out.println(SummaryConfusionMatrices.prettyPrint(lenientConfusionMatrix));
+          System.out.format("Agreement: %.2f%%\n",
+              100.0 * SummaryConfusionMatrices.accuracy(lenientConfusionMatrix));
           System.out.format("Agreement kappa: %.2f\n\n",
               100.0 * kappaCalculator.computeKappa(lenientConfusionMatrix));
 
@@ -367,7 +369,7 @@ public final class DualAnnotationAgreement {
               + " a certain assessment at all, regardless of how they assessed.  A difference on assessment presence "
               + " generally indicates a difference on some prior assessment this assessment depends on.");
 
-      for (final Map.Entry<String, SummaryConfusionMatrix.Builder> assessmentResults
+      for (final Map.Entry<String, SummaryConfusionMatrices.Builder> assessmentResults
           : assessmentNameToConfusionMatrix.entrySet()) {
         final String assessmentName = assessmentResults.getKey();
         final SummaryConfusionMatrix confusionMatrix = assessmentResults.getValue().build();
@@ -375,9 +377,9 @@ public final class DualAnnotationAgreement {
         System.out.println("Agreement concerning assessment presence");
         final SummaryConfusionMatrix presenceConfusionMatrix =
             confusionMatrix.copyWithTransformedLabels(ASSESSMENT_IS_PRESENT);
-        System.out.println(presenceConfusionMatrix.prettyPrint());
+        System.out.println(SummaryConfusionMatrices.prettyPrint(presenceConfusionMatrix));
         System.out
-            .format("Presence agreement: %.2f%%\n", 100.0 * presenceConfusionMatrix.accuracy());
+            .format("Presence agreement: %.2f%%\n", 100.0 * SummaryConfusionMatrices.accuracy(presenceConfusionMatrix));
         System.out.format("Presence kappa: %.2f\n\n",
             100.0 * kappaCalculator.computeKappa(presenceConfusionMatrix));
       }
