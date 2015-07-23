@@ -2,9 +2,10 @@ package com.bbn.kbp.events2014.assessmentDiff.observers;
 
 import com.bbn.bue.common.collections.MapUtils;
 import com.bbn.bue.common.diff.FMeasureTableRenderer;
-import com.bbn.bue.common.diff.ProvenancedConfusionMatrix;
-import com.bbn.bue.common.diff.SummaryConfusionMatrix;
 import com.bbn.bue.common.evaluation.FMeasureCounts;
+import com.bbn.bue.common.evaluation.ProvenancedConfusionMatrix;
+import com.bbn.bue.common.evaluation.SummaryConfusionMatrices;
+import com.bbn.bue.common.evaluation.SummaryConfusionMatrix;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
@@ -64,15 +65,16 @@ public abstract class ConfusionMatrixAssessmentPairObserver implements Assessmen
 
     final SummaryConfusionMatrix summaryConfusionMatrix = confusionMatrix.buildSummaryMatrix();
     final StringBuilder msg = new StringBuilder();
-    msg.append(summaryConfusionMatrix.prettyPrint()).append("\n\n");
+    msg.append(SummaryConfusionMatrices.prettyPrint(summaryConfusionMatrix)).append("\n\n");
     final Map<String, FMeasureCounts> fMeasureCountsMap = Maps.newHashMap();
     for (final Symbol key : summaryConfusionMatrix.leftLabels()) {
-      fMeasureCountsMap.put(key.toString(), summaryConfusionMatrix.FMeasureVsAllOthers(key));
+      fMeasureCountsMap.put(key.toString(), SummaryConfusionMatrices.FMeasureVsAllOthers(summaryConfusionMatrix, key));
     }
     final FMeasureTableRenderer tableRenderer = FMeasureTableRenderer.create()
         .setNameFieldLength(4 + MapUtils.longestKeyLength(fMeasureCountsMap));
     msg.append(tableRenderer.render(fMeasureCountsMap));
-    msg.append(String.format("Accuracy: %5.2f\n", 100.0 * summaryConfusionMatrix.accuracy()));
+    msg.append(String.format("Accuracy: %5.2f\n",
+        100.0 * SummaryConfusionMatrices.accuracy(summaryConfusionMatrix)));
     Files.asCharSink(new File(outputDir, "summary.html"), Charsets.UTF_8).write(msg.toString());
   }
 }

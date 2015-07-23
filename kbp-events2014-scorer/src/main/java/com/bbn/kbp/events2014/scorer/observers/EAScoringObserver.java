@@ -3,9 +3,11 @@ package com.bbn.kbp.events2014.scorer.observers;
 import com.bbn.bue.common.annotations.MoveToBUECommon;
 import com.bbn.bue.common.collections.MapUtils;
 import com.bbn.bue.common.diff.FMeasureTableRenderer;
-import com.bbn.bue.common.diff.ProvenancedConfusionMatrix;
-import com.bbn.bue.common.diff.SummaryConfusionMatrix;
+import com.bbn.bue.common.evaluation.BrokenDownSummaryConfusionMatrix;
 import com.bbn.bue.common.evaluation.FMeasureCounts;
+import com.bbn.bue.common.evaluation.ProvenancedConfusionMatrix;
+import com.bbn.bue.common.evaluation.SummaryConfusionMatrices;
+import com.bbn.bue.common.evaluation.SummaryConfusionMatrix;
 import com.bbn.bue.common.io.GZIPByteSink;
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.scoring.Scoreds;
@@ -15,10 +17,9 @@ import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.EventArgScoringAlignment;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
+import com.bbn.kbp.events2014.scorer.BreakdownComputer;
+import com.bbn.kbp.events2014.scorer.BreakdownFunctions;
 import com.bbn.kbp.events2014.scorer.SystemOutputEquivalenceClasses;
-import com.bbn.kbp.events2014.scorer.observers.breakdowns.BreakdownComputer;
-import com.bbn.kbp.events2014.scorer.observers.breakdowns.BreakdownFunctions;
-import com.bbn.kbp.events2014.scorer.observers.breakdowns.BrokenDownSummaryConfusionMatrix;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.HTMLErrorRecorder;
 
 import com.carrotsearch.hppc.DoubleArrayList;
@@ -200,7 +201,7 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
     sb.append("===== Confusion matrix for ").append(name()).append(" =====\n");
 
     final SummaryConfusionMatrix summaryConfusionMatrix = confusionMatrix.buildSummaryMatrix();
-    sb.append(summaryConfusionMatrix.prettyPrint()).append("\n");
+    sb.append(SummaryConfusionMatrices.prettyPrint(summaryConfusionMatrix)).append("\n");
     sb.append(confusionMatrix.prettyPrintWithFillerOrdering(
         Ordering.usingToString())).append("\n");
 
@@ -276,7 +277,7 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
     return new Function<SummaryConfusionMatrix, FMeasureCounts>() {
       @Override
       public FMeasureCounts apply(SummaryConfusionMatrix input) {
-        return input.FMeasureVsAllOthers(positiveSymbols);
+        return SummaryConfusionMatrices.FMeasureVsAllOthers(input, positiveSymbols);
       }
     };
   }
@@ -363,7 +364,8 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
 
       for (final Map.Entry<Symbol, SummaryConfusionMatrix> breakdown : data.asMap().entrySet()) {
         confusionMatrices.append("Confusion matrix for ").append(breakdown.getKey()).append("\n");
-        confusionMatrices.append(breakdown.getValue().prettyPrint()).append("\n");
+        confusionMatrices.append(SummaryConfusionMatrices.prettyPrint(breakdown.getValue())).append(
+            "\n");
       }
 
       Files.asCharSink(outputFile, Charsets.UTF_8).write(confusionMatrices.toString()
@@ -670,7 +672,7 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
       final List<Scored<String>> improvements = Lists.newArrayList();
       for (Map.Entry<String, SummaryConfusionMatrix> entry : data.entrySet()) {
         final FMeasureCounts improvedCounts = improvementMode.improve(corpusFMeasure,
-            entry.getValue().FMeasureVsAllOthers(PRESENT));
+            SummaryConfusionMatrices.FMeasureVsAllOthers(entry.getValue(), (PRESENT)));
         final double F1Improvement = improvedCounts.F1() - corpusFMeasure.F1();
         improvements.add(Scored.from(entry.getKey(), F1Improvement));
       }
