@@ -1,10 +1,10 @@
 package com.bbn.kbp.events2014.scorer;
 
 import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.EventArgScoringAlignment;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.SystemOutput;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
@@ -36,10 +36,10 @@ public final class StandardScoringAligner<EquivClassType> implements ScoringAlig
 
   @Override
   public EventArgScoringAlignment<EquivClassType> align(final AnswerKey answerKey,
-      final SystemOutput systemOutput) {
-    checkArgument(answerKey.docId() == systemOutput.docId());
+      final ArgumentOutput argumentOutput) {
+    checkArgument(answerKey.docId() == argumentOutput.docId());
     final ImmutableMultimap<EquivClassType, Response> equivClassToSystemResponses = Multimaps.index(
-        systemOutput.responses(), equivClassFunction);
+        argumentOutput.responses(), equivClassFunction);
     final ImmutableMultimap<EquivClassType, AssessedResponse> equivClassToAnswerKeyResponses =
         Multimaps.index(
             answerKey.annotatedResponses(),
@@ -69,7 +69,7 @@ public final class StandardScoringAligner<EquivClassType> implements ScoringAlig
       if (isCorrectEquivClass) {
         // only the top-scoring system response for an equivalence class counts
         final Optional<Response> selectedSystemResponse =
-            systemOutput.selectFromMultipleSystemResponses(
+            argumentOutput.selectFromMultipleSystemResponses(
                 equivClassToSystemResponses.get(eqivClass));
 
         if (selectedSystemResponse.isPresent()) {
@@ -107,7 +107,7 @@ public final class StandardScoringAligner<EquivClassType> implements ScoringAlig
     }
 
     return EventArgScoringAlignment
-        .create(systemOutput.docId(), systemOutput, answerKey, truePositives.build(),
+        .create(argumentOutput.docId(), argumentOutput, answerKey, truePositives.build(),
             falsePositives.build(),
             falseNegatives.build(), unassessed.build(), equivClassToAnswerKeyResponses,
             equivClassToSystemResponses);

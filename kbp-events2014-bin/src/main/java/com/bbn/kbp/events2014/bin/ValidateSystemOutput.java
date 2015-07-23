@@ -3,15 +3,14 @@ package com.bbn.kbp.events2014.bin;
 import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.SystemOutput;
-import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
+import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 
 import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
@@ -67,23 +66,23 @@ public final class ValidateSystemOutput {
    */
   public List<Throwable> validateOnly(File systemOutputStoreFile, int maxErrors,
       Map<Symbol, File> docIDMap,
-      AssessmentSpecFormats.Format fileFormat) throws IOException {
-    return validate(systemOutputStoreFile, maxErrors, docIDMap, fileFormat, false);
+      SystemOutputLayout layout) throws IOException {
+    return validate(systemOutputStoreFile, maxErrors, docIDMap, layout, false);
   }
 
   /**
-   * Like {@link #validateOnly(java.io.File, int, java.util.Map)} except it also logs the response
+   * Like {@link #validateOnly(File, int, Map, SystemOutputLayout)} except it also logs the response
    * in human readable format, using the supplied {@code docIDMap} to resolve offsets to strings.
    */
   public List<Throwable> validateAndDump(File systemOutputStoreFile, int maxErrors,
-      Map<Symbol, File> docIDMap, AssessmentSpecFormats.Format fileFormat)
+      Map<Symbol, File> docIDMap, SystemOutputLayout layout)
       throws IOException {
-    return validate(systemOutputStoreFile, maxErrors, docIDMap, fileFormat, true);
+    return validate(systemOutputStoreFile, maxErrors, docIDMap, layout, true);
   }
 
 
   private List<Throwable> validate(File systemOutputStoreFile, int maxErrors,
-      Map<Symbol, File> docIDMap, AssessmentSpecFormats.Format fileFormat,
+      Map<Symbol, File> docIDMap, SystemOutputLayout outputLayout,
       boolean dump) throws IOException {
     final List<Throwable> errors = Lists.newArrayList();
 
@@ -93,9 +92,9 @@ public final class ValidateSystemOutput {
     // these are only non-final because the compiler isn't clever enough
     // to figure out they cannot fail to be initialized
     SystemOutputStore outputStore = null;
-    ImmutableSet<Symbol> docIDs = null;
+    Set<Symbol> docIDs = null;
     try {
-      outputStore = AssessmentSpecFormats.openSystemOutputStore(systemOutputStoreFile, fileFormat);
+      outputStore = outputLayout.open(systemOutputStoreFile);
       docIDs = outputStore.docIDs();
     } catch (Exception e) {
       errors.add(e);
@@ -113,7 +112,7 @@ public final class ValidateSystemOutput {
     int numErrors = 0;
     for (final Symbol docID : docIDs) {
       try {
-        final SystemOutput docOutput = outputStore.read(docID);
+        final ArgumentOutput docOutput = outputStore.read(docID).arguments();
         log.info("For document {} got {} responses", docID, docOutput.size());
 
         for (final Response response : docOutput.responses()) {
@@ -156,7 +155,7 @@ public final class ValidateSystemOutput {
     for (final Symbol docId : outputStore.docIDs()) {
       final String originalText = Files.asCharSource(docIdMap.get(docId), Charsets.UTF_8).read();
       final int maxOffset = originalText.length() - 1;
-      for (final Response response : outputStore.read(docId).responses()) {
+      for (final Response response : outputStore.read(docId).arguments().responses()) {
         assertValidCharOffsetSpan(response.canonicalArgument().charOffsetSpan(),
             "canonical argument string", docId, maxOffset);
         assertValidCharOffsetSpan(response.baseFiller(), "base filler", docId, maxOffset);
@@ -199,7 +198,7 @@ public final class ValidateSystemOutput {
     }
   }
 
-  private static void dumpResponses(Map<Symbol, File> docIDMap, SystemOutput docOutput)
+  private static void dumpResponses(Map<Symbol, File> docIDMap, ArgumentOutput docOutput)
       throws IOException {
     final String originalText = getOriginalText(docOutput.docId(), docIDMap);
     final StringBuilder msg = new StringBuilder();
@@ -289,8 +288,7 @@ public final class ValidateSystemOutput {
       final ValidateSystemOutput validator = create(typeAndRoleValidator);
 
       final File systemOutputStoreFile = params.getExistingFileOrDirectory("systemOutputStore");
-      final AssessmentSpecFormats.Format fileFormat =
-          params.getEnum("fileFormat", AssessmentSpecFormats.Format.class);
+      final SystemOutputLayout layout = params.getEnum("outputLayout", SystemOutputLayout.class);
 
       final File docIDMappingFile = params.getExistingFile("docIDMap");
       log.info("Using map from document IDs to original text: {}", docIDMappingFile);
@@ -299,10 +297,10 @@ public final class ValidateSystemOutput {
       final List<Throwable> errors;
       if (params.getBoolean("dump")) {
         errors = validator
-            .validateAndDump(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap, fileFormat);
+            .validateAndDump(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap, layout);
       } else {
         errors =
-            validator.validateOnly(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap, fileFormat);
+            validator.validateOnly(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap, layout);
       }
       if (!errors.isEmpty()) {
         throw errors.get(0);

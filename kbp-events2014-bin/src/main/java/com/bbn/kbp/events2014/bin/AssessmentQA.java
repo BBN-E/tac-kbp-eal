@@ -6,6 +6,7 @@ import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.ScoringData;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
@@ -46,8 +47,8 @@ public class AssessmentQA {
 
     for (Symbol docID : store.docIDs()) {
       log.info("processing document {}", docID.asString());
-      final AnswerKey answerKey = MakeAllRealisActual.forAnswerKey().apply(store.read(docID));
-      final DocumentRenderer htmlRenderer = new DocumentRenderer(docID.asString());
+      final AnswerKey answerKey = MakeAllRealisActual.create().transform(ScoringData.builder().withAnswerKey(store.read(docID)).build()).answerKey().get();
+      final HTMLRenderer htmlRenderer = new HTMLRenderer(docID.asString());
       htmlRenderer.setCorefAnnotation(answerKey.corefAnnotation());
       htmlRenderer.addResponses(
           overallOrdering.sortedCopy(FluentIterable.from(answerKey.annotatedResponses()).filter(
@@ -76,33 +77,33 @@ public class AssessmentQA {
     }
   }
 
-  private final static class DocumentRenderer {
+  private final static class HTMLRenderer {
 
     final private Multimap<String, Response> typeToResponse = HashMultimap.create();
     final private String docID;
     private CorefAnnotation corefAnnotation;
 
-    private DocumentRenderer(final String docID) {
+    private HTMLRenderer(final String docID) {
       this.docID = docID;
     }
 
-    private static String bodyHeader() {
+    public static String bodyHeader() {
       return "<body>";
     }
 
-    private static String htmlHeader() {
+    public static String htmlHeader() {
       return "<html>";
     }
 
-    private static String bodyFooter() {
+    public static String bodyFooter() {
       return "</body>";
     }
 
-    private static String htmlFooter() {
+    public static String htmlFooter() {
       return "</html>";
     }
 
-    private static String javascript() {
+    public static String javascript() {
       return "<script type=\"text/javascript\">" +
           "function toggle(element) {\n "+
           "\tvar e = document.getElementById(element); "
@@ -140,7 +141,6 @@ public class AssessmentQA {
       checkNotNull(corefAnnotation);
       final StringBuilder sb = new StringBuilder();
       sb.append(htmlHeader());
-      sb.append("<meta charset=\"UTF-8\">");
       sb.append(javascript());
       sb.append(bodyHeader());
       sb.append("<h1>");
@@ -188,6 +188,7 @@ public class AssessmentQA {
       }
       sb.append(bodyFooter());
       sb.append(htmlFooter());
+
 
       sink.write(sb.toString());
     }

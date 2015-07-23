@@ -6,7 +6,7 @@ import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.ArgumentOutput;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
@@ -40,6 +40,13 @@ public final class LinkingSpecFormats {
 
   public static LinkingStore openOrCreateLinkingStore(File directory) {
     directory.mkdirs();
+    return new DirectoryLinkingStore(directory);
+  }
+
+  public static LinkingStore openLinkingStore(final File directory) throws FileNotFoundException {
+    if (!directory.isDirectory()) {
+      throw new FileNotFoundException("Not a directory: " + directory);
+    }
     return new DirectoryLinkingStore(directory);
   }
 
@@ -83,8 +90,8 @@ public final class LinkingSpecFormats {
     }
 
     @Override
-    public Optional<ResponseLinking> read(SystemOutput systemOutput) throws IOException {
-      return read(systemOutput.docId(), systemOutput.responses());
+    public Optional<ResponseLinking> read(ArgumentOutput argumentOutput) throws IOException {
+      return read(argumentOutput.docId(), argumentOutput.responses());
     }
 
     private static final Splitter ON_TABS = Splitter.on('\t').trimResults().omitEmptyStrings();
@@ -130,7 +137,8 @@ public final class LinkingSpecFormats {
         for (String idString : parts) {
           final Response responseForIDString = responsesByUID.get(idString);
           if (responseForIDString == null) {
-            throw new IOException("On line " + lineNo + ", ID " + idString
+            throw new IOException(
+                "While reading " + docID + ", on line " + lineNo + ", ID " + idString
                 + " cannot be resolved using provided response store. Known"
                 + "response IDs are " + responsesByUID.keySet());
           }
@@ -175,6 +183,11 @@ public final class LinkingSpecFormats {
       if (closed) {
         throw new IOException("Cannot perform I/O operations on a closed output store");
       }
+    }
+
+    @Override
+    public String toString() {
+      return "DirectoryLinkingStore(" + directory + ")";
     }
   }
 }

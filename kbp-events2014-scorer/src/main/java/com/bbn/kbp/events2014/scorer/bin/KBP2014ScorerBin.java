@@ -5,8 +5,8 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.io.AnnotationStore;
+import com.bbn.kbp.events2014.io.ArgumentStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
-import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.scorer.EventArgumentScorer;
 import com.bbn.kbp.events2014.scorer.EventArgumentScorerBin;
 import com.bbn.kbp.events2014.scorer.observers.EAScoringObserver;
@@ -68,7 +68,7 @@ public final class KBP2014ScorerBin {
 
     log.info("Creating event argument scorer..");
     final EventArgumentScorer
-        innerScorer = EventArgumentScorer.create(PreprocessorKBP2014.fromParameters(params),
+        innerScorer = EventArgumentScorer.create(Preprocessors.for2014FromParameters(params),
         corpusObservers);
     final EventArgumentScorerBin scorer = new EventArgumentScorerBin(innerScorer, corpusObservers);
     final AnnotationStore goldAnswerStore = AssessmentSpecFormats.openAnnotationStore(params
@@ -108,12 +108,12 @@ public final class KBP2014ScorerBin {
 
     for (File subDir : systemOutputsDir.listFiles()) {
       if (subDir.isDirectory()) {
-        final SystemOutputStore systemOutputStore =
+        final ArgumentStore argumentStore =
             AssessmentSpecFormats.openSystemOutputStore(subDir, fileFormat);
         final File outputDir = new File(scoringOutputRoot, subDir.getName());
 
         outputDir.mkdirs();
-        scorer.run(systemOutputStore, goldAnswerStore, docsToScore, outputDir);
+        scorer.run(argumentStore, goldAnswerStore, docsToScore, outputDir);
       }
     }
   }
@@ -124,10 +124,10 @@ public final class KBP2014ScorerBin {
       throws IOException {
     final File systemOutputDir = params.getExistingDirectory(SYSTEM_OUTPUT_PARAM);
     log.info("Scoring single system output {}", systemOutputDir);
-    final SystemOutputStore systemOutputStore =
+    final ArgumentStore argumentStore =
         AssessmentSpecFormats.openSystemOutputStore(systemOutputDir, systemFormat);
 
-    scorer.run(systemOutputStore, goldAnswerStore, docsToScore,
+    scorer.run(argumentStore, goldAnswerStore, docsToScore,
         params.getCreatableDirectory("scoringOutput"));
   }
 

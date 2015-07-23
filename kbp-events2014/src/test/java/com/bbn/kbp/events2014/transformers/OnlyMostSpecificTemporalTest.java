@@ -3,6 +3,7 @@ package com.bbn.kbp.events2014.transformers;
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.CorefAnnotation;
@@ -11,7 +12,7 @@ import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.ScoringData;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -41,7 +42,7 @@ public class OnlyMostSpecificTemporalTest {
     final CharOffsetSpan pj1 = CharOffsetSpan.fromOffsetsOnly(0, 10);
 
     final KBPString d19840304 =
-        KBPString.from("1984-03-84", CharOffsetSpan.fromOffsetsOnly(20, 21));
+        KBPString.from("1984-03-04", CharOffsetSpan.fromOffsetsOnly(20, 21));
     final KBPString d198403XX =
         KBPString.from("1984-03-XX", CharOffsetSpan.fromOffsetsOnly(20, 21));
     final CharOffsetSpan bf2 = CharOffsetSpan.fromOffsetsOnly(20, 21);
@@ -49,55 +50,64 @@ public class OnlyMostSpecificTemporalTest {
 
     final CorefAnnotation corefAnnotation = CorefAnnotation.strictBuilder(d)
         .corefCAS(d19821231, 1)
-        .corefCAS(d19840304, 2).build();
+        .corefCAS(d19840304, 2)
+        .corefCAS(d198212XX, 3)
+        .corefCAS(d198212XXOther, 4)
+        .corefCAS(d198403XX, 5).build();
 
     // this answer key has one correct temporal role (1982-12-31)
     // and one incorrect (1984-03-04)
+    final Response d19821231Response = Response.createFrom(d, type, role, d19821231, bf1,
+        ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj1), KBPRealis.Actual);
+    final Response d198212XXResponse = Response.createFrom(d, type, role, d198212XX, bf1,
+        ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj1), KBPRealis.Actual);
+    final Response d198212XXOtherResponse = Response.createFrom(d, type, role, d198212XXOther, bf2,
+        ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj2), KBPRealis.Actual);
+    final Response d198403XXResponse = Response.createFrom(d, type, role, d198403XX, bf2,
+        ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj2), KBPRealis.Actual);
+    final Response d19840304Response = Response.createFrom(d, type, role, d19840304, bf2,
+        ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj2), KBPRealis.Actual);
+
+    final ResponseAssessment correctAssessment =
+        ResponseAssessment.create(Optional.of(FieldAssessment.CORRECT),
+            Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.CORRECT),
+            Optional.of(KBPRealis.Actual), Optional.of(FieldAssessment.CORRECT),
+            Optional.of(ResponseAssessment.MentionType.NOMINAL));
+
+    final ResponseAssessment incorrectAssessment =
+        ResponseAssessment.create(Optional.of(FieldAssessment.CORRECT),
+            Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.INCORRECT),
+            Optional.of(KBPRealis.Actual), Optional.of(FieldAssessment.CORRECT),
+            Optional.of(ResponseAssessment.MentionType.NOMINAL));
+
+
     final AnswerKey answerKey = AnswerKey.from(d,
         ImmutableList.of(
-            AssessedResponse.from(
-                Response.createFrom(d, type, role, d19821231, bf1,
-                    ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj1), KBPRealis.Actual),
-                ResponseAssessment.create(Optional.of(FieldAssessment.CORRECT),
-                    Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.CORRECT),
-                    Optional.of(KBPRealis.Actual), Optional.of(FieldAssessment.CORRECT),
-                    Optional.of(ResponseAssessment.MentionType.NOMINAL)
-                )),
-            AssessedResponse.from(
-                Response.createFrom(d, type, role, d19840304, bf2,
-                    ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj2), KBPRealis.Actual),
-                ResponseAssessment.create(Optional.of(FieldAssessment.CORRECT),
-                    Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.INCORRECT),
-                    Optional.of(KBPRealis.Actual), Optional.of(FieldAssessment.CORRECT),
-                    Optional.of(ResponseAssessment.MentionType.NOMINAL)))),
+            AssessedResponse.from(d19821231Response, correctAssessment),
+            AssessedResponse.from(d19840304Response, incorrectAssessment),
+            AssessedResponse.from(d198403XXResponse, incorrectAssessment),
+            AssessedResponse.from(d198212XXResponse, correctAssessment),
+            AssessedResponse.from(d198212XXOtherResponse, correctAssessment)),
         ImmutableList.<Response>of(), corefAnnotation);
 
-    final SystemOutput systemOutput = SystemOutput.from(d,
-        ImmutableList.of(
-            Scored.from(Response.createFrom(d, type, role, d198212XX, bf1,
-                ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj1), KBPRealis.Actual), 1.0),
-            Scored.from(Response.createFrom(d, type, role, d198212XXOther, bf2,
-                ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj2), KBPRealis.Actual), 1.0),
-            Scored.from(Response.createFrom(d, type, role, d19821231, bf1,
-                ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj1), KBPRealis.Actual), 1.0),
-            Scored.from(Response.createFrom(d, type, role, d198403XX, bf2,
-                ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj2), KBPRealis.Actual), 1.0)));
+    final ArgumentOutput argumentOutput = ArgumentOutput.from(d,
+        ImmutableList
+            .of(Scored.from(d198212XXResponse, 1.0), Scored.from(d198212XXOtherResponse, 1.0),
+                Scored.from(d19821231Response, 1.0), Scored.from(d198403XXResponse, 1.0)));
 
     // 1983-03-XX is not removed because 1984-03-04 in answer key
     // is incorrect
     // the full 1982 case is not removed because it is not less specific
     // both others are removed, illustrating that the CAS offsets don't matter, only the string
-    final SystemOutput reference = SystemOutput.from(d,
+    final ArgumentOutput reference = ArgumentOutput.from(d,
         ImmutableList.of(
-            Scored.from(Response.createFrom(d, type, role, d19821231, bf1,
-                ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj1), KBPRealis.Actual), 1.0),
-            Scored.from(Response.createFrom(d, type, role, d198403XX, bf2,
-                ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj2), KBPRealis.Actual), 1.0)));
+            Scored.from(d19821231Response, 1.0),
+            Scored.from(d198403XXResponse, 1.0)));
 
-    final OnlyMostSpecificTemporal temporalFilter =
-        OnlyMostSpecificTemporal.forAnswerKey(answerKey);
-    final SystemOutput filteredOutput = temporalFilter.apply(systemOutput);
+    final ScoringDataTransformation transformation = OnlyMostSpecificTemporal.asTransformationForBoth();
+    final ScoringData output = transformation.transform(ScoringData.builder()
+        .withArgumentOutput(argumentOutput).withAnswerKey(answerKey).build());
 
-    assertEquals(reference, filteredOutput);
+    assertEquals(reference, output.argumentOutput().get());
   }
 }

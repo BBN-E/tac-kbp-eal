@@ -2,9 +2,10 @@ package com.bbn.kbp.events2014.scorer;
 
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.EventArgScoringAlignment;
+import com.bbn.kbp.events2014.ScoringData;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.io.AnnotationStore;
-import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.events2014.io.ArgumentStore;
 import com.bbn.kbp.events2014.scorer.observers.KBPScoringObserver;
 
 import com.google.common.collect.ImmutableList;
@@ -31,7 +32,7 @@ public class EventArgumentScorerBin {
     this.scoringObservers = scoringObservers;
   }
 
-  public void run(final SystemOutputStore systemAnswerStore, final AnnotationStore goldAnswerStore,
+  public void run(final ArgumentStore systemAnswerStore, final AnnotationStore goldAnswerStore,
       final Set<Symbol> documentsToScore, final File baseOutputDir)
       throws IOException {
     final Map<KBPScoringObserver<TypeRoleFillerRealis>, File> scorerToOutputDir =
@@ -45,7 +46,8 @@ public class EventArgumentScorerBin {
       log.info("Scoring document: {}", docid);
 
       final EventArgScoringAlignment<TypeRoleFillerRealis> scoringAlignment = eventArgumentScorer
-          .score(goldAnswerStore.readOrEmpty(docid), systemAnswerStore.readOrEmpty(docid));
+          .score(ScoringData.builder().withAnswerKey(goldAnswerStore.readOrEmpty(docid))
+              .withArgumentOutput(systemAnswerStore.readOrEmpty(docid)).build());
 
       for (final KBPScoringObserver<TypeRoleFillerRealis> scoringObserver : scoringObservers) {
         final File docLogDir = new File(scorerToOutputDir.get(scoringObserver), docid.toString());

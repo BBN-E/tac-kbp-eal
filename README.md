@@ -1,16 +1,16 @@
-This is code developed by BBN to support the 
+This is code developed by BBN to support the
 2015 KBP Event Argument and Linking Shared Task.
-A draft of the description of this task may be found [here](https://docs.google.com/document/d/1oC4nRRN-HI1wsVTUMCWkA1Z1kCKq4z0UB0dKFDCVKcs/edit).
+A description of this task may be found [here](http://www.nist.gov/tac/2015/KBP/Event/Argument/guidelines.html).
 
-This repository contains three artifacts: 
+This repository contains three artifacts:
 * `kbp-events2014` contains classes to represent system responses, assessments, and linkings for
 the task. While these are mainly to support the executables in this repository,
-if your system is based on Java or another JVM language, you are strongly encouraged 
+if your system is based on Java or another JVM language, you are strongly encouraged
 to use them.  Note that they can be used from Python via Jython.
 * `kbp-events2014-scorer` contains the scoring code (but not scoring binary).
 * `kbp-events2014-bin` contains all the executable programs: the validator, the pooler, the scorer, etc.
 
-## Building 
+## Building
 
 Requirements:
 * [Maven](http://maven.apache.org/)
@@ -19,6 +19,8 @@ Build steps:
 * Do `mvn install` from the root of this repository.
 * do `chmod +x kbp-events2014-bin/target/appassembler/bin/*` (you only need to do this the first time)
 * do `chmod +x kbp-events2014-scorer/target/appassembler/bin/*` (you only need to do this the first time)
+
+[![Build Status](https://semaphoreci.com/api/v1/projects/a11da8fb-4e16-48bf-af3a-a4e1680f161e/467466/badge.svg)](https://semaphoreci.com/rgabbard-bbn/kbp-2014-event-arguments)
 
 ## Using
 ### System Output Stores and Annotation Stores
@@ -37,14 +39,14 @@ of these files is described in the task specification linked to above.
 
 ### Evaluation Workflow
 
-The following workflow will be used during the evaluation.  All executables referenced below may be found in 
+The following workflow will be used during the evaluation.  All executables referenced below may be found in
 either `kbp-events2014-bin/target/appassembler/bin` or `kbp-events-2014-scorer/target/appassembler/bin`.
 
 * a 'quote filter' to remove material with CAS and BF offsets in quoted regions
 will be built from the original text of the data set.
 * competitor submissions will be validated using `validateSystemOutput`.
 * all material from quoted regions will be removed from competitor submissions.
-* all submissions will be combined into a single system output store using 
+* all submissions will be combined into a single system output store using
 `poolSystemOutput`.
 * this combined system output store will be transformed into an annotation store
 using `importSystemOutputToAnnotationStore`.
@@ -73,13 +75,13 @@ come from within `<quote>` regions.
 
 Additionally, this program will dump to standard output a human-readable version
 of your responses with all offsets resolved to strings from the original documents
-so that you can check for mistakes.  
+so that you can check for mistakes.
 
 This program takes the following parameters:
-* `systemOutputStore`: the path of the system output store to be validated 
+* `systemOutputStore`: the path of the system output store to be validated
 * `validRoles`: is `data/2014.types.txt` (for KBP 2014)
 * `dump`: whether to dump response to `stdout` in a human readable format.
-* `docIDMap`: (required if `dump` is `true`) a list of tab-separated pairs of doc ID and path to the 
+* `docIDMap`: (required if `dump` is `true`) a list of tab-separated pairs of doc ID and path to the
 them to standard output.
 
 Note that this currently does not validate linkings.
@@ -90,15 +92,15 @@ Combines the system output from multiple systems into a single system output sto
 Parameters:
 * `storesToPool`: a file listing paths to stores to pool, one per line
 * `pooledStore`: the location to write the pooled store to
-* `addMode`: either `CREATE` to create a new store for output (overwriting anything 
+* `addMode`: either `CREATE` to create a new store for output (overwriting anything
 currently there) or `ADD` to append to an existing store.
 
 ### `importSystemOutputToAnnotationStore`
 Turns a system output store into an annotation store ready for LDC's annotators.
 
 Parameters:
-* `systemOutput`: system output to import
-* `annotationStore`: location to create annotation store. The program will 
+* `argumentOutput`: system output to import
+* `annotationStore`: location to create annotation store. The program will
 refused to create a new annotation store over an existing, non-empty one.
 
 ### `KBP2015Scorer`
@@ -108,7 +110,11 @@ Parameters:
 * `answerKey`: the path to an annotation store containing assessments for all system responses
 * `referenceLinking`: the path to the reference linking store
 * `documentsToScore`: a file listing the IDs of the documents to be scored, one per line
-* either `systemOutput` or `systemOutputsDir`.  If `systemOutput`, the value must be a path to the system output to be scored.  This path must have an `arguments` and a `linking` subdirectory containing a system output store and a linking store, respectively.  If `systemOutputsDir`, the path must contain sub-directories representing the outputs of multiple systems.  Each such sub-directory must have the format described above for `systemOutput`.
+* either `argumentOutput` or `systemOutputsDir`.  If `argumentOutput`, the value must be a path to the system output to be scored.  This path must have an `arguments` and a `linking` subdirectory containing a system output store and a linking store, respectively.  If `systemOutputsDir`, the path must contain sub-directories representing the outputs of multiple systems.  Each such sub-directory must have the format described above for `argumentOutput`.
+* neutralizeRealis: map all realises in system input and the answer key to ACTUAL. This will be false for the evaluation, but setting it to true can be useful for diagnostic purposes.
+*attemptToNeutralizeCoref: Another diagnostic parameter. If set to true, attempts to minimize the impact of system coreference errors on scoring by
+  * Leaving untouched any system response whose base filler assessment correctness matched its CAS assessment correctness.
+  * For other responses, if the base filler assessment is correct, replace the response with another which matches it in type, role, and base filler but with a correctly annotated CAS, if possible.  If this is not possible, replace it with any correcrly assessed response match its type and role.  If this is still not possible, delete the response.
 
 ## Baseline linking
 We provide a baseline implementation of event argument linking for those who wish to try out the 2015 scorer but have not yet developed their own algorithm.  This baseline implementation simply links together all arguments of the same event type in a document.  To run this, use `ApplyLinkingStrategy`.
@@ -132,6 +138,4 @@ install it in your local repository as described above.
 
 ## Contact
 For questions concerning the software, please contact `rgabbard@bbn.com`.  If you 
-have bugs or feature requests, you can use the GitHub Issue Tracker. To track changes to this repository, follow https://github.com/rgabbard-bbn/kbp-2014-event-arguments/commits/master.atom in an RSS reader.
-
-
+have bugs or feature requests, you can use the GitHub Issue Tracker. The issue tracker is preferred so future users can benefit from the answers to your questions. To track changes to this repository, follow https://github.com/rgabbard-bbn/kbp-2014-event-arguments/commits/master.atom in an RSS reader.

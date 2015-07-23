@@ -2,6 +2,7 @@ package com.bbn.kbp.events2014;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.collect.ComparisonChain;
@@ -10,8 +11,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Newlines are not allowed in KBPStrings and all the constructing static methods will replace each
- * newlines in provided strings with a single space.
+ * Represents a CAS string for the KBP evaluation. This is a combination of character offsets
+ * with a string normalization which may or may not correspond with the text at those offsets.
+ * The string normalization may not contain spaces, newlines, or initial or terminal whitespace.
  */
 public final class KBPString implements Comparable<KBPString> {
 
@@ -21,16 +23,29 @@ public final class KBPString implements Comparable<KBPString> {
     checkArgument(!string.contains("\n"), "KBP strings may not contain \\n");
   }
 
+  /**
+   * Creates a KBP string from the provided normalized string and inclusive character offsets If s
+   * contains tabs or newlines, they are replaced with spaces. If it contains initial or terminal
+   * whitespace according to {@link CharMatcher#WHITESPACE}, it is removed.
+   */
   public static KBPString from(@JsonProperty("string") final String string,
       @JsonProperty("offsets") final CharOffsetSpan offsetSpan) {
-    final String sEscaped = replaceIllegalCharacters(string);
-    return new KBPString(sEscaped, offsetSpan);
+    return new KBPString(makeStringLegal(string), offsetSpan);
   }
 
+  /**
+   * Creates a KBP string from the provided normalized string and inclusive character offsets If s
+   * contains tabs or newlines, they are replaced with spaces. If it contains initial or terminal
+   * whitespace according to {@link CharMatcher#WHITESPACE}, it is removed.
+   */
   public static KBPString from(final String s, final int startInclusive, final int endInclusive) {
-    final String sEscaped = replaceIllegalCharacters(s);
-    return KBPString.from(sEscaped, CharOffsetSpan.fromOffsetsAndDebugString(
+    final String sEscaped = makeStringLegal(s);
+    return new KBPString(sEscaped, CharOffsetSpan.fromOffsetsAndDebugString(
         startInclusive, endInclusive, sEscaped));
+  }
+
+  private static String makeStringLegal(final @JsonProperty("string") String string) {
+    return CharMatcher.WHITESPACE.trimFrom(replaceIllegalCharacters(string));
   }
 
 

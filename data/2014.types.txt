@@ -25,6 +25,6 @@ Justice.Sue	Plaintiff	Adjudicator	Defendant	Crime
 Justice.Extradite	Agent	Person	Origin	Destination	Crime
 Justice.Acquit	Adjudicator	Defendant	Crime
 Justice.Convict	Adjudicator	Defendant	Crime
-Justice.Appeal	Prosecutor	Adjudicator	Defendant	Crime	Plaintiff
+Justice.Appeal	Prosecutor	Adjudicator	Defendant	Crime
 Justice.Execute	Agent	Person	Crime
 Justice.Pardon	Adjudicator	Defendant	Crime

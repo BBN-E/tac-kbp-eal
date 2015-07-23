@@ -1,14 +1,14 @@
 package com.bbn.kbp.events2014.linking;
 
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.ResponseLinking;
-import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.io.LinkingStore;
-import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.events2014.io.ArgumentStore;
 
 public interface LinkingStrategy {
 
-  ResponseLinking linkResponses(final SystemOutput systemOutput);
+  ResponseLinking linkResponses(final ArgumentOutput argumentOutput);
 
-  LinkingStore wrap(SystemOutputStore argumentStore);
+  LinkingStore wrap(ArgumentStore argumentStore);
 }
 

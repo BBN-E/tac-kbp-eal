@@ -3,6 +3,7 @@ package com.bbn.kbp.events2014.io;
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.CorefAnnotation;
@@ -12,7 +13,6 @@ import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
 import com.bbn.kbp.events2014.ResponseAssessment.MentionType;
-import com.bbn.kbp.events2014.SystemOutput;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
@@ -71,8 +71,9 @@ public class TestLDCIO extends TestCase {
 
   @Test
   public void testFilter() throws IOException {
-    SystemOutput raw = SystemOutput.from(docid, ImmutableList.of(arg), ImmutableMap.of(arg.item(), argMetadata));
-    SystemOutput filtered = raw.copyWithFilteredResponses(Predicates.<Scored<Response>>alwaysTrue());
+    ArgumentOutput raw = ArgumentOutput
+        .from(docid, ImmutableList.of(arg), ImmutableMap.of(arg.item(), argMetadata));
+    ArgumentOutput filtered = raw.copyWithFilteredResponses(Predicates.<Scored<Response>>alwaysTrue());
     assertEquals(raw.metadata(arg.item()), filtered.metadata(arg.item()));
     assertEquals(raw.metadata(arg.item()), argMetadata);
   }
@@ -81,12 +82,13 @@ public class TestLDCIO extends TestCase {
     final File tmpDir = Files.createTempDir();
     tmpDir.deleteOnExit();
 
-    final SystemOutputStore store1 = AssessmentSpecFormats.createSystemOutputStore(tmpDir, format);
-    store1.write(SystemOutput.from(docid, ImmutableList.of(arg), ImmutableMap.of(arg.item(), argMetadata)));
+    final ArgumentStore store1 = AssessmentSpecFormats.createSystemOutputStore(tmpDir, format);
+    store1.write(
+        ArgumentOutput.from(docid, ImmutableList.of(arg), ImmutableMap.of(arg.item(), argMetadata)));
     store1.close();
 
-    final SystemOutputStore source2 = AssessmentSpecFormats.openSystemOutputStore(tmpDir, format);
-    final SystemOutput rereadArg = source2.read(docid);
+    final ArgumentStore source2 = AssessmentSpecFormats.openSystemOutputStore(tmpDir, format);
+    final ArgumentOutput rereadArg = source2.read(docid);
     source2.close();
 
     assertEquals(1, rereadArg.size());

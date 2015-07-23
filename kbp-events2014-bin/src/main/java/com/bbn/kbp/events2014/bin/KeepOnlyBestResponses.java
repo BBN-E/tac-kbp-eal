@@ -3,13 +3,10 @@ package com.bbn.kbp.events2014.bin;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.SystemOutput;
-import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
+import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.transformers.KeepBestJustificationOnly;
-import com.bbn.kbp.events2014.transformers.ProbableInferenceCases;
-
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
+import com.bbn.kbp.events2014.transformers.ResponseMapping;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,49 +38,28 @@ public final class KeepOnlyBestResponses {
 
     final File inputStoreLocation = params.getExistingDirectory("inputStore");
     final File outputStoreLocation = params.getCreatableDirectory("outputStore");
-    final boolean keepInferenceCases = params.getBoolean("keepInferenceCases");
+    final SystemOutputLayout layout = params.getEnum("outputLayout", SystemOutputLayout.class);
 
-    final AssessmentSpecFormats.Format fileFormat =
-        params.getEnum("fileFormat", AssessmentSpecFormats.Format.class);
-    final SystemOutputStore sourceStore =
-        AssessmentSpecFormats.openSystemOutputStore(inputStoreLocation, fileFormat);
-    final SystemOutputStore destStore =
-        AssessmentSpecFormats.createSystemOutputStore(outputStoreLocation, fileFormat);
-    final Function<SystemOutput, SystemOutput> bestJustFilter = KeepBestJustificationOnly.create();
-    final Function<SystemOutput, SystemOutput> probablyInferenceFilter =
-        ProbableInferenceCases.createKeepingMultisentenceJustifications();
+    final SystemOutputStore inputStore = layout.open(inputStoreLocation);
+    final SystemOutputStore outputStore = layout.openOrCreate(outputStoreLocation);
 
-    log.info("Source store has {} documents", sourceStore.docIDs().size());
-    for (final Symbol docID : sourceStore.docIDs()) {
-      final SystemOutput original = sourceStore.read(docID);
-      final SystemOutput probableInferenceCases = probablyInferenceFilter.apply(original);
-      final SystemOutput filtered = bestJustFilter.apply(original);
-      int numFiltered = original.size() - filtered.size();
+    log.info("Source store has {} documents", inputStore.docIDs().size());
+    for (final Symbol docID : inputStore.docIDs()) {
+      final SystemOutput original = inputStore.read(docID);
+      final ResponseMapping responseMapping = KeepBestJustificationOnly.computeResponseMapping(
+          original);
+      final SystemOutput filtered = original.copyTransformedBy(responseMapping);
 
-      final SystemOutput toOutput;
+      int numFiltered = original.arguments().size() - filtered.arguments().size();
 
-      if (keepInferenceCases) {
-        toOutput = SystemOutput
-            .unionKeepingMaximumScore(ImmutableList.of(filtered, probableInferenceCases));
-        if (toOutput.size() > filtered.size()) {
-          log.info(
-              "For document {}, filtered out {} responses as duplicate justifications, but restored {} as probably inference cases",
-              docID, numFiltered, toOutput.size() - filtered.size());
-        } else {
-          log.info("For document {}, filtered out {} responses as duplicate justifications",
-              docID, numFiltered);
-        }
-      } else {
-        toOutput = filtered;
-        log.info("For document {}, filtered out {} responses as duplicate justifications",
-            docID, numFiltered);
-      }
+      log.info("For document {}, filtered out {} responses as duplicate justifications",
+          docID, numFiltered);
 
-      destStore.write(toOutput);
+      outputStore.write(filtered);
     }
 
-    sourceStore.close();
-    destStore.close();
+    inputStore.close();
+    outputStore.close();
   }
 
 

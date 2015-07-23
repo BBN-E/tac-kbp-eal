@@ -2,13 +2,13 @@ package com.bbn.kbp.events2014.bin;
 
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.ResponseLinking;
-import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.io.LinkingSpecFormats;
 import com.bbn.kbp.events2014.io.LinkingStore;
-import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.events2014.io.ArgumentStore;
 import com.bbn.kbp.events2014.linking.LinkingStrategy;
 import com.bbn.kbp.events2014.linking.SameEventTypeLinker;
 
@@ -47,7 +47,7 @@ public final class ApplyLinkingStrategy {
     log.info(params.dump());
 
     final File argumentSystemStoreDir = params.getExistingDirectory("argumentSystemStore");
-    final SystemOutputStore argumentSystemStore =
+    final ArgumentStore argumentSystemStore =
         AssessmentSpecFormats.openSystemOutputStore(argumentSystemStoreDir, AssessmentSpecFormats.Format.KBP2015);
     final ImmutableSet<Symbol> docIDs = argumentSystemStore.docIDs();
 
@@ -59,7 +59,7 @@ public final class ApplyLinkingStrategy {
         SameEventTypeLinker.create(ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other));
 
     for (final Symbol docID : docIDs) {
-      final SystemOutput docOutput = argumentSystemStore.read(docID);
+      final ArgumentOutput docOutput = argumentSystemStore.read(docID);
 
       log.info("For document {} got {} responses", docID, docOutput.size());
 

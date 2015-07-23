@@ -168,20 +168,42 @@ public final class AnswerKey {
         .from(allResponses())
         .transform(Response.CASFunction())
         .toSet();
-    final Set<KBPString> allCorefCASes = corefAnnotation.allCASes();
-    checkState(allResponseCASes.equals(allCorefCASes),
-        "CASes from responses must exactly equal CASes from coref assessment");
+    checkSetsEqual(corefAnnotation.allCASes(), "CASes in coref annotation",
+        allResponseCASes, "CASes in responses");
 
     // all correctly assessed responses must have coreffed CASes. Coref of others is optional.
     for (final AssessedResponse assessedResponse : annotatedResponses()) {
       if (assessedResponse.assessment().entityCorrectFiller().isPresent()
           && assessedResponse.assessment().entityCorrectFiller().get().isAcceptable()) {
-        checkState(corefAnnotation.annotatedCASes().contains(
-            assessedResponse.response().canonicalArgument()));
+        if (!corefAnnotation.annotatedCASes().contains(
+            assessedResponse.response().canonicalArgument()))
+        {
+          throw new IllegalArgumentException("Coref annotation is missing coref for canonical argument "
+          + assessedResponse.response().canonicalArgument() + " for " + assessedResponse);
+        }
       }
     }
 
     // further consistency checking already done within the corefAnnotation object
+  }
+
+  @MoveToBUECommon
+  private static <T> void checkSetsEqual(Set<T> left, String leftName, Set<T> right, String rightName) {
+    if (!left.equals(right)) {
+      final StringBuilder msg = new StringBuilder();
+      msg.append(leftName).append(" should exactly equal ").append(rightName).append(" but ");
+      final ImmutableSet<T> leftOnly = Sets.difference(left, right).immutableCopy();
+      final ImmutableSet<T> rightOnly = Sets.difference(right, left).immutableCopy();
+
+      if (!leftOnly.isEmpty()) {
+        msg.append(leftOnly).append(" are only in ").append(leftName).append(" ");
+      }
+      if (!rightOnly.isEmpty()) {
+        msg.append(rightOnly).append(" are only in ").append(rightName).append(" ");
+      }
+
+      throw new IllegalArgumentException(msg.toString());
+    }
   }
 
   public Optional<ResponseAssessment> assessment(Response response) {
@@ -220,6 +242,18 @@ public final class AnswerKey {
     }
     return AnswerKey.from(docId(), ImmutableSet.<AssessedResponse>of(), allResponses(),
         newCorefAnnotation.build());
+  }
+
+  public boolean completelyAssesses(final ArgumentOutput argumentOutput) {
+    return Sets.difference(argumentOutput.responses(),annotatedArgs.keySet()).isEmpty();
+  }
+
+  public void checkCompletelyAssesses(final ArgumentOutput argumentOutput) {
+    if (!completelyAssesses(argumentOutput)) {
+      throw new RuntimeException("The following responses from the system output are not assessed: "
+        + StringUtils.NewlineJoiner.join(
+          Sets.difference(argumentOutput.responses(), annotatedArgs.keySet())));
+    }
   }
 
   public interface Filter {
@@ -319,6 +353,8 @@ public final class AnswerKey {
       this.annotatedArgs = Maps.newHashMap(annotatedArgs);
       this.unannotatedResponses = Sets.newHashSet(unannotatedResponses);
       this.corefAnnotation = checkNotNull(corefAnnotation);
+      checkArgument(Sets.intersection(annotatedArgs.keySet(), unannotatedResponses).isEmpty(),
+          "No response may be both annotated and unannotated");
     }
 
     /**
@@ -345,6 +381,12 @@ public final class AnswerKey {
       return this;
     }
 
+    public Builder remove(Response response) {
+      annotatedArgs.remove(response);
+      unannotatedResponses.remove(response);
+      return this;
+    }
+
     public AnswerKey build() {
       final Set<KBPString> allCASes = FluentIterable.from(annotatedArgs.keySet())
           .append(unannotatedResponses)
@@ -354,16 +396,37 @@ public final class AnswerKey {
           corefAnnotation.build().copyRemovingStringsNotIn(allCASes));
     }
 
-    public Builder replaceAsssessedResponseMaintainingAssessment(final Response original,
+    /**
+     * Replaces one response with another, maintaining the original assessment, if any. The random
+     * number generator is used when creating a new coref cluster, if necessary,
+     */
+    public Builder replaceAssessedResponseMaintainingAssessment(final Response original,
         final Response replacement, final Random rng) {
+      if (original.equals(replacement)) {
+        return this;
+      }
+
       if (annotatedArgs.keySet().contains(original)) {
         final ResponseAssessment assessment = annotatedArgs.get(original).assessment();
+        if (annotatedArgs.containsKey(replacement)) {
+          final ResponseAssessment assessmentOfReplacement = annotatedArgs.get(replacement).assessment();
+          if (!assessmentOfReplacement.equals(assessment)) {
+            log.warn("When replacing responses in answer key, merged two "
+                    + "responses with differing assessments {} and {}, keeping original (the latter)",
+                assessmentOfReplacement, assessment);
+          }
+        }
         annotatedArgs.remove(original);
         annotatedArgs.put(replacement, AssessedResponse.from(replacement, assessment));
         corefAnnotation.registerCAS(replacement.canonicalArgument(), rng);
+      } else if (unannotatedResponses.contains(original)) {
+        unannotatedResponses.remove(original);
+        if (!annotatedArgs.containsKey(replacement)) {
+          unannotatedResponses.add(replacement);
+        }
       } else {
-        throw new IllegalArgumentException("Cannot replace allegedly assessed response "
-            + original + " because it is not assessed");
+        throw new RuntimeException("Cannot replace " + original + " with " + replacement
+            + " because " + original + " is unknown");
       }
       return this;
     }

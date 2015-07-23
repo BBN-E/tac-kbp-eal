@@ -2,14 +2,14 @@
     <parent>
         <artifactId>kbp-events2014-all</artifactId>
         <groupId>com.bbn.kbp.events2014</groupId>
-        <version>2.2.1-SNAPSHOT</version>
+        <version>2.3.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>kbp-events2014-bin</artifactId>
-    <version>2.2.1-SNAPSHOT</version>
+    <version>2.3.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>2014 KBP Event Arguments Task Binaries</name>
@@ -40,6 +40,11 @@
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.ChangeDocIDToMatchFile</mainClass>
                             <name>changeDocIDToMatchFile</name>
+                        </program>
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.FilterOutUnannotated</mainClass>
+                            <name>filterOutUnannotated</name>
                         </program>
 
                         <program>
@@ -181,6 +186,12 @@
                             </jvmSettings>
                         </program>
 
+                        <program>
+                            <mainClass>
+                                com.bbn.kbp.events2014.bin.FilterAnswerKeyByTypeAndRole
+                            </mainClass>
+                            <name>FilterAnswerKeyByTypeAndRole</name>
+                        </program>
 			<program>
 			    <mainClass>com.bbn.kbp.events2014.bin.ExploreEALScorer</mainClass>
 			    <name>exploreEalScorer</name>
@@ -217,13 +228,13 @@
         <dependency>
             <groupId>com.bbn.kbp.events2014</groupId>
             <artifactId>kbp-events2014</artifactId>
-            <version>2.2.1-SNAPSHOT</version>
+            <version>2.3.1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>com.bbn.kbp.events2014</groupId>
             <artifactId>kbp-events2014-scorer</artifactId>
-            <version>2.2.1-SNAPSHOT</version>
+            <version>2.3.1-SNAPSHOT</version>
         </dependency>
 
 
