@@ -14,6 +14,7 @@ import com.bbn.kbp.events2014.transformers.ResponseMapping;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
@@ -72,8 +73,7 @@ public class FilterAnswerKeyByTypeAndRole {
     checkArgument(optLinkingAnnotationStore.isPresent() == optLinkingOut.isPresent(),
         "Must specify neither or both of inputLinking and outputLinking");
 
-    final Multimap<Symbol, Symbol> typesToValidRoles = FileUtils.loadSymbolMultimap(
-        Files.asCharSource(params.getExistingFile("typeAndRoleFile"), Charsets.UTF_8));
+    final Multimap<Symbol, Symbol> typesToValidRoles = loadTypesToValidRolesMap(params);
 
     if (optLinkingAnnotationStore.isPresent() &&
         !argumentAnnotationStore.docIDs().containsAll(optLinkingAnnotationStore.get().docIDs())) {
@@ -105,6 +105,19 @@ public class FilterAnswerKeyByTypeAndRole {
       optLinkingAnnotationStore.get().close();
       optLinkingOut.get().close();
     }
+  }
+
+  private static Multimap<Symbol, Symbol> loadTypesToValidRolesMap(final Parameters params)
+      throws IOException {
+    final Multimap<Symbol, Symbol> typesToValidRolesInitial = FileUtils.loadSymbolMultimap(
+        Files.asCharSource(params.getExistingFile("typeAndRoleFile"), Charsets.UTF_8));
+    final Set<Symbol> alwaysValidRoles = params.getSymbolSet("alwaysValidRoles");
+    final ImmutableMultimap.Builder<Symbol, Symbol> typesToValidRolesB = ImmutableMultimap.builder();
+    typesToValidRolesB.putAll(typesToValidRolesInitial);
+    for (final Symbol eventType : typesToValidRolesInitial.keySet()) {
+      typesToValidRolesB.putAll(eventType, alwaysValidRoles);
+    }
+    return typesToValidRolesB.build();
   }
 
   private static ResponseMapping selectWhichToDelete(final AnswerKey answerKey,
