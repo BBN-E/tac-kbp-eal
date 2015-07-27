@@ -150,7 +150,6 @@ public final class LinkingSpecFormats {
 
         final ImmutableSet.Builder<Response> responseSet = ImmutableSet.builder();
         for (String idString : parts) {
-          final String originalID = idString;
           final String newID;
           // for translating a foreign id
           if(foreignIDToLocal.containsKey(idString)) {
@@ -162,8 +161,8 @@ public final class LinkingSpecFormats {
           if (responseForIDString == null) {
             throw new IOException(
                 "While reading " + docID + ", on line " + lineNo + ", ID " + newID
-                + "(original ID) " + originalID + " cannot be resolved using provided response store. Known"
-                + "response IDs are " + responsesByUID.keySet());
+                + "(original ID) " + idString + " cannot be resolved using provided response store. Known"
+                + "response IDs are " + responsesByUID.keySet() + "transformed response ids are " + foreignIDToLocal);
           }
           responseSet.add(responseForIDString);
         }

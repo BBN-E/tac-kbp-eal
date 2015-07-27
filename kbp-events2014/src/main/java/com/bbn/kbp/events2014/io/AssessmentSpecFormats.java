@@ -183,15 +183,16 @@ public final class AssessmentSpecFormats {
     }
   }
 
-  /* package-private */ static AnswerKey uncachedReadFromDirectoryAnnotationStoreKeepingOldIDS(
-      final AnnotationStore directoryAnnotationStore, final Symbol docID,
+  /* package-private */ static ArgumentOutput uncachedReadFromArgumentStoreCachingOldIDS(
+      final ArgumentStore directoryArgumentStore, final Symbol docID,
       final ImmutableBiMap.Builder<String, String> originalIDToSystem) throws IOException {
-    if (directoryAnnotationStore instanceof DirectoryAnnotationStore) {
-      return ((DirectoryAnnotationStore) directoryAnnotationStore).uncachedReadSavingOriginalIDs(docID, Optional.of(originalIDToSystem));
+    if (directoryArgumentStore instanceof DirectorySystemOutputStore) {
+      return ((DirectorySystemOutputStore) directoryArgumentStore).readAndCacheIDs(docID,
+          originalIDToSystem);
     } else {
       throw new RuntimeException(
-          "Invalid annotation store type, got " + directoryAnnotationStore.getClass()
-              + " but expected DirectoryAnnotationStore");
+          "Invalid annotation store type, got " + directoryArgumentStore.getClass()
+              + " but expected DirectorySystemOutputStore");
     }
   }
 
@@ -213,6 +214,10 @@ public final class AssessmentSpecFormats {
 
     @Override
     public ArgumentOutput read(final Symbol docid) throws IOException {
+      return readAndCacheIDs(docid, ImmutableMap.<String, String>builder());
+    }
+
+    /* package-private */ ArgumentOutput readAndCacheIDs(final Symbol docid, final ImmutableMap.Builder<String, String> idMap) throws IOException {
       final File f = bareOrWithSuffix(directory, docid.asString(), ACCEPTABLE_SUFFIXES);
 
       final ImmutableList.Builder<Scored<Response>> ret = ImmutableList.builder();
@@ -242,6 +247,7 @@ public final class AssessmentSpecFormats {
               responseToMetadata.put(response, ArgumentOutput.DEFAULT_METADATA);
             }
 
+            idMap.put(parts.get(0), response.uniqueIdentifier());
             ret.add(Scored.from(response, confidence));
             lastLine = line;
           } catch (IndexOutOfBoundsException iobe) {
@@ -463,12 +469,6 @@ public final class AssessmentSpecFormats {
     }
 
     private synchronized AnswerKey uncachedRead(final Symbol docid) throws IOException {
-      return uncachedReadSavingOriginalIDs(docid,
-          Optional.<ImmutableBiMap.Builder<String, String>>absent());
-    }
-
-    private synchronized AnswerKey uncachedReadSavingOriginalIDs(final Symbol docid, final
-    Optional<ImmutableBiMap.Builder<String, String>> oldIDToSystem) throws IOException {
       final ImmutableList.Builder<AssessedResponse> annotated = ImmutableList.builder();
       final ImmutableList.Builder<Response> unannotated = ImmutableList.builder();
       final CorefAnnotation.Builder corefBuilder = assessmentCreator.corefBuilder(docid);
@@ -505,11 +505,6 @@ public final class AssessmentSpecFormats {
             corefBuilder.corefCAS(response.canonicalArgument(), annotation.corefId().get());
           } else {
             corefBuilder.addUnannotatedCAS(response.canonicalArgument());
-          }
-
-          if (oldIDToSystem.isPresent()) {
-            final String sourceID = parts[0];
-            oldIDToSystem.get().put(sourceID, response.uniqueIdentifier());
           }
         } catch (Exception e) {
           throw new IOException(String.format(

@@ -1,8 +1,10 @@
 package com.bbn.kbp.events2014.io;
 
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.ResponseLinking;
+import com.bbn.kbp.events2014.SystemOutput2015;
+import com.bbn.kbp.events2014.SystemOutputLayout;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableBiMap;
@@ -30,36 +32,35 @@ final class ImportForeignIDs {
   }
 
   private static void trueMain(final String[] args) throws IOException {
-    final File originalAnnotationStoreLocation = new File(args[0]);
-    final File originalLinkingStoreLocation = new File(args[1]);
-    final File outputDirectory = new File(args[2]);
-    final AnnotationStore originalAnnotationStore =
-        AssessmentSpecFormats.openAnnotationStore(originalAnnotationStoreLocation,
+    final File outputStoreBase = new File(args[0]);
+    final File outputDirectory = new File(args[1]);
+    final ArgumentStore originalArgumentStore =
+        AssessmentSpecFormats.openSystemOutputStore(new File(outputStoreBase, "arguments"),
             AssessmentSpecFormats.Format.KBP2015);
     final LinkingStore originalLinkingStore =
-        LinkingSpecFormats.openLinkingStore(originalLinkingStoreLocation);
+        LinkingSpecFormats.openLinkingStore(new File(outputStoreBase, "linking"));
 
-    final AnnotationStore newAnnotationStore =
-        AssessmentSpecFormats.openOrCreateAnnotationStore(new File(outputDirectory, "arguments"),
-            AssessmentSpecFormats.Format.KBP2015);
-    final LinkingStore newLinkingStore =
-        LinkingSpecFormats.openOrCreateLinkingStore(new File(outputDirectory, "linking"));
+    final SystemOutputStore newOutput =
+        SystemOutputLayout.KBP_EA_2015.openOrCreate(outputDirectory);
 
-    for (final Symbol docid : originalAnnotationStore.docIDs()) {
+    for (final Symbol docid : originalArgumentStore.docIDs()) {
       log.info("Converting {}", docid);
       final ImmutableBiMap.Builder<String, String> originalToSystem = ImmutableBiMap.builder();
-      final AnswerKey key = AssessmentSpecFormats
-          .uncachedReadFromDirectoryAnnotationStoreKeepingOldIDS(originalAnnotationStore, docid,
+      final ArgumentOutput originalArguments = AssessmentSpecFormats
+          .uncachedReadFromArgumentStoreCachingOldIDS(originalArgumentStore, docid,
               originalToSystem);
-      newAnnotationStore.write(key);
+
       final Optional<ResponseLinking> transformedLinking = LinkingSpecFormats
-          .readFromLinkingStoreTransformingIDs(originalLinkingStore, docid, key.allResponses(),
+          .readFromLinkingStoreTransformingIDs(originalLinkingStore, docid,
+              originalArguments.responses(),
               originalToSystem.build());
-      newLinkingStore.write(transformedLinking.get());
+      // create system output
+      final SystemOutput2015 newSystemOutput =
+          SystemOutput2015.from(originalArguments, transformedLinking.get());
+      newOutput.write(newSystemOutput);
     }
-    originalAnnotationStore.close();
+    originalArgumentStore.close();
     originalLinkingStore.close();
-    newAnnotationStore.close();
-    newLinkingStore.close();
+    newOutput.close();
   }
 }
