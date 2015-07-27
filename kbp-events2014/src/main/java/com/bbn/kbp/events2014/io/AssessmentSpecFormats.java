@@ -27,6 +27,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -182,6 +183,18 @@ public final class AssessmentSpecFormats {
     }
   }
 
+  /* package-private */ static AnswerKey uncachedReadFromDirectoryAnnotationStoreKeepingOldIDS(
+      final AnnotationStore directoryAnnotationStore, final Symbol docID,
+      final ImmutableBiMap.Builder<String, String> originalIDToSystem) throws IOException {
+    if (directoryAnnotationStore instanceof DirectoryAnnotationStore) {
+      return ((DirectoryAnnotationStore) directoryAnnotationStore).uncachedReadSavingOriginalIDs(docID, Optional.of(originalIDToSystem));
+    } else {
+      throw new RuntimeException(
+          "Invalid annotation store type, got " + directoryAnnotationStore.getClass()
+              + " but expected DirectoryAnnotationStore");
+    }
+  }
+
   private static final class DirectorySystemOutputStore implements ArgumentStore {
 
     private static final Logger log = LoggerFactory.getLogger(DirectorySystemOutputStore.class);
@@ -203,7 +216,8 @@ public final class AssessmentSpecFormats {
       final File f = bareOrWithSuffix(directory, docid.asString(), ACCEPTABLE_SUFFIXES);
 
       final ImmutableList.Builder<Scored<Response>> ret = ImmutableList.builder();
-      final ImmutableMap.Builder<Response, String> responseToMetadata = new ImmutableMap.Builder<Response, String>();
+      final ImmutableMap.Builder<Response, String> responseToMetadata =
+          new ImmutableMap.Builder<Response, String>();
 
       int lineNo = 0;
       String lastLine = ArgumentOutput.DEFAULT_METADATA;
@@ -261,7 +275,7 @@ public final class AssessmentSpecFormats {
       try {
         for (final Response response : format.responseOrdering().sortedCopy(output.responses())) {
           final String metadata = output.metadata(response);
-          if(!metadata.equals(ArgumentOutput.DEFAULT_METADATA)) {
+          if (!metadata.equals(ArgumentOutput.DEFAULT_METADATA)) {
             out.print(METADATA_MARKER + metadata + "\n");
           }
           //out.print(response.responseID());
@@ -449,6 +463,12 @@ public final class AssessmentSpecFormats {
     }
 
     private synchronized AnswerKey uncachedRead(final Symbol docid) throws IOException {
+      return uncachedReadSavingOriginalIDs(docid,
+          Optional.<ImmutableBiMap.Builder<String, String>>absent());
+    }
+
+    private synchronized AnswerKey uncachedReadSavingOriginalIDs(final Symbol docid, final
+    Optional<ImmutableBiMap.Builder<String, String>> oldIDToSystem) throws IOException {
       final ImmutableList.Builder<AssessedResponse> annotated = ImmutableList.builder();
       final ImmutableList.Builder<Response> unannotated = ImmutableList.builder();
       final CorefAnnotation.Builder corefBuilder = assessmentCreator.corefBuilder(docid);
@@ -485,6 +505,11 @@ public final class AssessmentSpecFormats {
             corefBuilder.corefCAS(response.canonicalArgument(), annotation.corefId().get());
           } else {
             corefBuilder.addUnannotatedCAS(response.canonicalArgument());
+          }
+
+          if (oldIDToSystem.isPresent()) {
+            final String sourceID = parts[0];
+            oldIDToSystem.get().put(sourceID, response.uniqueIdentifier());
           }
         } catch (Exception e) {
           throw new IOException(String.format(

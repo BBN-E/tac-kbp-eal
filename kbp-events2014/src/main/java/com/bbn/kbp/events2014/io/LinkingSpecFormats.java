@@ -3,16 +3,17 @@ package com.bbn.kbp.events2014.io;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
-import com.bbn.kbp.events2014.ArgumentOutput;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -48,6 +49,15 @@ public final class LinkingSpecFormats {
       throw new FileNotFoundException("Not a directory: " + directory);
     }
     return new DirectoryLinkingStore(directory);
+  }
+
+  /* package-private */ static Optional<ResponseLinking> readFromLinkingStoreTransformingIDs(final LinkingStore store, Symbol docID, Set<Response> responses, ImmutableMap<String, String> foreignIDToLocal)
+      throws IOException {
+    if(store instanceof DirectoryLinkingStore) {
+      return ((DirectoryLinkingStore) store).read(docID, responses, foreignIDToLocal);
+    } else {
+      throw new RuntimeException("Expected a linking store of type DirectoryLinkingStore but got " + store.getClass());
+    }
   }
 
   /**
@@ -94,10 +104,15 @@ public final class LinkingSpecFormats {
       return read(argumentOutput.docId(), argumentOutput.responses());
     }
 
+    public Optional<ResponseLinking> read(Symbol docID, Set<Response> responses)
+        throws IOException {
+      return read(docID, responses, ImmutableMap.<String, String>of());
+    }
+
     private static final Splitter ON_TABS = Splitter.on('\t').trimResults().omitEmptyStrings();
 
     private static final ImmutableSet<String> ACCEPTABLE_SUFFIXES = ImmutableSet.of("linking");
-    public Optional<ResponseLinking> read(Symbol docID, Set<Response> responses)
+    private Optional<ResponseLinking> read(Symbol docID, Set<Response> responses, ImmutableMap<String, String> foreignIDToLocal)
         throws IOException {
       checkNotClosed();
 
@@ -135,11 +150,19 @@ public final class LinkingSpecFormats {
 
         final ImmutableSet.Builder<Response> responseSet = ImmutableSet.builder();
         for (String idString : parts) {
-          final Response responseForIDString = responsesByUID.get(idString);
+          final String originalID = idString;
+          final String newID;
+          // for translating a foreign id
+          if(foreignIDToLocal.containsKey(idString)) {
+            newID = foreignIDToLocal.get(idString);
+          } else {
+            newID = idString;
+          }
+          final Response responseForIDString = responsesByUID.get(newID);
           if (responseForIDString == null) {
             throw new IOException(
-                "While reading " + docID + ", on line " + lineNo + ", ID " + idString
-                + " cannot be resolved using provided response store. Known"
+                "While reading " + docID + ", on line " + lineNo + ", ID " + newID
+                + "(original ID) " + originalID + " cannot be resolved using provided response store. Known"
                 + "response IDs are " + responsesByUID.keySet());
           }
           responseSet.add(responseForIDString);
