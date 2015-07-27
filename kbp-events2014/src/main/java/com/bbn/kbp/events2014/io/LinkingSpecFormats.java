@@ -51,12 +51,16 @@ public final class LinkingSpecFormats {
     return new DirectoryLinkingStore(directory);
   }
 
-  /* package-private */ static Optional<ResponseLinking> readFromLinkingStoreTransformingIDs(final LinkingStore store, Symbol docID, Set<Response> responses, ImmutableMap<String, String> foreignIDToLocal)
+  /* package-private */
+  static Optional<ResponseLinking> readFromLinkingStoreTransformingIDs(final LinkingStore store,
+      Symbol docID, Set<Response> responses,
+      Optional<ImmutableMap<String, String>> foreignIDToLocal)
       throws IOException {
-    if(store instanceof DirectoryLinkingStore) {
+    if (store instanceof DirectoryLinkingStore) {
       return ((DirectoryLinkingStore) store).read(docID, responses, foreignIDToLocal);
     } else {
-      throw new RuntimeException("Expected a linking store of type DirectoryLinkingStore but got " + store.getClass());
+      throw new RuntimeException(
+          "Expected a linking store of type DirectoryLinkingStore but got " + store.getClass());
     }
   }
 
@@ -106,13 +110,15 @@ public final class LinkingSpecFormats {
 
     public Optional<ResponseLinking> read(Symbol docID, Set<Response> responses)
         throws IOException {
-      return read(docID, responses, ImmutableMap.<String, String>of());
+      return read(docID, responses, Optional.<ImmutableMap<String, String>>absent());
     }
 
     private static final Splitter ON_TABS = Splitter.on('\t').trimResults().omitEmptyStrings();
 
     private static final ImmutableSet<String> ACCEPTABLE_SUFFIXES = ImmutableSet.of("linking");
-    private Optional<ResponseLinking> read(Symbol docID, Set<Response> responses, ImmutableMap<String, String> foreignIDToLocal)
+
+    private Optional<ResponseLinking> read(Symbol docID, Set<Response> responses,
+        Optional<ImmutableMap<String, String>> foreignIDToLocal)
         throws IOException {
       checkNotClosed();
 
@@ -152,8 +158,13 @@ public final class LinkingSpecFormats {
         for (String idString : parts) {
           final String newID;
           // for translating a foreign id
-          if(foreignIDToLocal.containsKey(idString)) {
-            newID = foreignIDToLocal.get(idString);
+          if (foreignIDToLocal.isPresent()) {
+            if (!foreignIDToLocal.get().containsKey(idString)) {
+              throw new RuntimeException(
+                  "Could not find a new id for " + idString + " have id mappings "
+                      + foreignIDToLocal.get());
+            }
+            newID = foreignIDToLocal.get().get(idString);
           } else {
             newID = idString;
           }
@@ -161,8 +172,10 @@ public final class LinkingSpecFormats {
           if (responseForIDString == null) {
             throw new IOException(
                 "While reading " + docID + ", on line " + lineNo + ", ID " + newID
-                + "(original ID) " + idString + " cannot be resolved using provided response store. Known"
-                + "response IDs are " + responsesByUID.keySet() + "transformed response ids are " + foreignIDToLocal);
+                    + "(original ID) " + idString
+                    + " cannot be resolved using provided response store. Known"
+                    + "response IDs are " + responsesByUID.keySet()
+                    + "transformed response ids are " + foreignIDToLocal);
           }
           responseSet.add(responseForIDString);
         }

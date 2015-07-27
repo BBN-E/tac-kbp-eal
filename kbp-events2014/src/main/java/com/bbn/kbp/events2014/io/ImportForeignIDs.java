@@ -8,6 +8,7 @@ import com.bbn.kbp.events2014.SystemOutputLayout;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +54,7 @@ final class ImportForeignIDs {
       final Optional<ResponseLinking> transformedLinking = LinkingSpecFormats
           .readFromLinkingStoreTransformingIDs(originalLinkingStore, docid,
               originalArguments.responses(),
-              originalToSystem.build());
+              Optional.<ImmutableMap<String,String>>of(originalToSystem.build()));
       // create system output
       final SystemOutput2015 newSystemOutput =
           SystemOutput2015.from(originalArguments, transformedLinking.get());
