@@ -55,7 +55,7 @@ Personnel.Start-Position	Time	Time
 Personnel.Start-Position	Place	GPE	FAC	LOC	VEH
 Personnel.End-Position	Person	PER
 Personnel.End-Position	Entity	ORG	GPE
-Personnel.End-Position	Position	JOB
+Personnel.End-Position	Position	Job-Title
 Personnel.End-Position	Time	Time
 Personnel.End-Position	Place	GPE	FAC	LOC	VEH
 Personnel.Nominate	Agent	PER	ORG	GPE	FAC
