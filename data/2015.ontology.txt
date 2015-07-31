@@ -50,7 +50,7 @@ Movement.Transport-Artifact	Time	Time
 Movement.Transport-Artifact	Place	GPE	FAC	LOC	VEH
 Personnel.Start-Position	Person	PER
 Personnel.Start-Position	Entity	ORG	GPE
-Personnel.Start-Position	Position	JOB
+Personnel.Start-Position	Position	Job-Title
 Personnel.Start-Position	Time	Time
 Personnel.Start-Position	Place	GPE	FAC	LOC	VEH
 Personnel.End-Position	Person	PER
@@ -60,7 +60,7 @@ Personnel.End-Position	Time	Time
 Personnel.End-Position	Place	GPE	FAC	LOC	VEH
 Personnel.Nominate	Agent	PER	ORG	GPE	FAC
 Personnel.Nominate	Person	PER
-Personnel.Nominate	Position	JOB
+Personnel.Nominate	Position	Job-Title
 Personnel.Nominate	Time	Time
 Personnel.Nominate	Place	GPE	FAC	LOC	VEH
 Personnel.Elect	Entity	PER	ORG	GPE
@@ -104,7 +104,7 @@ Justice.Sentence	Time	Time
 Justice.Sentence	Place	GPE	FAC	LOC	VEH
 Justice.Fine	Adjudicator	PER	ORG	GPE
 Justice.Fine	Entity	PER	ORG	GPE
-Justice.Fine	Money	NUM
+Justice.Fine	Money	MONEY
 Justice.Fine	Crime	CRIME
 Justice.Fine	Time	Time
 Justice.Fine	Place	GPE	FAC	LOC	VEH
