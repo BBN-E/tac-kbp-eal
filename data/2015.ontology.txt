@@ -65,7 +65,7 @@ Personnel.Nominate	Time	Time
 Personnel.Nominate	Place	GPE	FAC	LOC	VEH
 Personnel.Elect	Entity	PER	ORG	GPE
 Personnel.Elect	Person	PER
-Personnel.Elect	Position	JOB
+Personnel.Elect	Position	Job-Title
 Personnel.Elect	Time	Time
 Personnel.Elect	Place	GPE	FAC	LOC	VEH
 Transaction.Transfer-Ownership	Giver	PER	ORG	GPE
