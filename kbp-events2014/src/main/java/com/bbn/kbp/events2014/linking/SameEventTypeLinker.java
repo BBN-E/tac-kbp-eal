@@ -1,7 +1,9 @@
 package com.bbn.kbp.events2014.linking;
 
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.ArgumentOutput;
+import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
@@ -10,6 +12,7 @@ import com.bbn.kbp.events2014.ResponseSet;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
@@ -37,12 +40,20 @@ public final class SameEventTypeLinker extends AbstractLinkingStrategy implement
 
   @Override
   public ResponseLinking linkResponses(final ArgumentOutput argumentOutput) {
-    final Symbol docId = argumentOutput.docId();
+    return linkResponses(argumentOutput.docId(), argumentOutput.responses());
+  }
 
+  public ResponseLinking linkResponses(AnswerKey key) {
+    return linkResponses(key.docId(), Iterables.transform(key.annotatedResponses(),
+        AssessedResponse.Response));
+  }
+
+  private ResponseLinking linkResponses(final Symbol docId,
+      final Iterable<Response> responses) {
     final Predicate<Response> HasRelevantRealis =
         compose(in(realisesWhichMustBeAligned), Response.realisFunction());
     final ImmutableSet<Response> systemResponsesAlignedRealis =
-        FluentIterable.from(argumentOutput.responses()).filter(HasRelevantRealis).toSet();
+        FluentIterable.from(responses).filter(HasRelevantRealis).toSet();
 
     final Multimap<Symbol, Response> responsesByEventType =
         Multimaps.index(systemResponsesAlignedRealis, Response.typeFunction());

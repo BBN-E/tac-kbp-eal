@@ -88,8 +88,7 @@ public final class KBP2015Scorer {
     final AnnotationStore goldAnswerStore = AssessmentSpecFormats.openAnnotationStore(params
             .getExistingDirectory("answerKey"), AssessmentSpecFormats.Format.KBP2015);
     final Set<Symbol> docsToScore = loadDocumentsToScore(params);
-    final LinkingStore referenceLinkingStore = LinkingSpecFormats.openOrCreateLinkingStore(
-        params.getExistingDirectory("referenceLinking"));
+    final LinkingStore referenceLinkingStore = getReferenceLinkingStore(goldAnswerStore, params);
 
     checkArgument(
         params.isPresent(SYSTEM_OUTPUT_PARAM) != params.isPresent(SYSTEM_OUTPUTS_DIR_PARAM),
@@ -128,6 +127,18 @@ public final class KBP2015Scorer {
           throw new RuntimeException("Exception while processing " + subDir, e);
         }
       }
+    }
+  }
+
+  private static LinkingStore getReferenceLinkingStore(AnnotationStore annStore,
+      final Parameters params)
+      throws IOException {
+    if (useDefaultLinkingHack(params)) {
+      return SameEventTypeLinker.create(
+          ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other)).wrap(annStore.docIDs());
+    } else {
+      return LinkingSpecFormats.openOrCreateLinkingStore(
+          params.getExistingDirectory("referenceLinking"));
     }
   }
 
@@ -209,14 +220,14 @@ public final class KBP2015Scorer {
 
     double aggregateLinkPrecision = (linkNormalizerSum > 0.0) ? rawLinkPrecisionSum / linkNormalizerSum : 0.0;
     double aggregateLinkRecall = (linkNormalizerSum > 0.0) ? rawLinkRecallSum / linkNormalizerSum : 0.0;
-    
+
     Files.asCharSink(new File(outputDir, "aggregateScore.txt"), Charsets.UTF_8).write(
         String.format("%30s:%8.2f\n", "Aggregate argument score", 100.0 * aggregateArgScore) +
             String.format("%30s:%8.2f\n", "Aggregate linking score", 100.0 * aggregateLinkScore) +
             String.format("%30s:%8.2f\n", "Overall score", 100.0 * aggregateScore) +
             String.format("%30s:%8.2f\n", "Aggregate linking precision", 100.0 * aggregateLinkPrecision) +
             String.format("%30s:%8.2f\n", "Aggregate linking recall", 100.0 * aggregateLinkRecall));
-    
+
 
   }
 
@@ -236,11 +247,11 @@ public final class KBP2015Scorer {
 
 
   private static LinkingStore getLinkingStore(final Parameters params, final File systemOutputDir,
-      final ArgumentStore argumentStore) {
+      final ArgumentStore argumentStore) throws IOException {
     final LinkingStore systemLinkingStore;
     if (useDefaultLinkingHack(params)) {
       systemLinkingStore = SameEventTypeLinker.create(
-          ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other)).wrap(argumentStore);
+          ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other)).wrap(argumentStore.docIDs());
     } else {
       systemLinkingStore = LinkingSpecFormats
           .openOrCreateLinkingStore(new File(systemOutputDir, "linking"));
