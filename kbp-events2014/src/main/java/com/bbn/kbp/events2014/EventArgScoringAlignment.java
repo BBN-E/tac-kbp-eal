@@ -126,7 +126,7 @@ public final class EventArgScoringAlignment<EquivClassType> {
       final Predicate<EquivClassType> filter) {
     return new EventArgScoringAlignment<EquivClassType>(docID(), argumentOutput, answerKey,
         Iterables.filter(truePositiveECs, filter),
-        Iterables.filter(falseNegativeECs, filter),
+        Iterables.filter(falsePositiveECs, filter),
         Iterables.filter(falseNegativeECs, filter),
         Iterables.filter(unassessed, filter),
         Multimaps.filterKeys(ecsToAnswerKey, filter),
