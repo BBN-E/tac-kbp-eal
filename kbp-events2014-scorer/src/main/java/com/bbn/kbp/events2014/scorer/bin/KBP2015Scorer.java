@@ -303,7 +303,7 @@ public final class KBP2015Scorer {
         .put("argOverall", 100.0 * aggregateArgScore)
         .put("argTP", argTruePositives)
         .put("argFP", argFalsePositives)
-        .put("arfFN", argFalseNegatives).build();
+        .put("argFN", argFalseNegatives).build();
 
     final File jsonFile = new File(outputDir, "aggregateScore.json");
     final JacksonSerializer jacksonSerializer = JacksonSerializer.json().prettyOutput().build();
