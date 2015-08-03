@@ -83,6 +83,7 @@ public final class KBP2015Scorer {
       System.exit(1);
     }
     final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
+    log.info(params.dump());
     final KBP2015Scorer scorer = KBP2015Scorer.fromParameters(params);
 
     final AnnotationStore goldAnswerStore = AssessmentSpecFormats.openAnnotationStore(params
