@@ -223,8 +223,10 @@ public final class KBP2015Scorer {
               return input.copyFiltered(compose(equalTo(type), TypeRoleFillerRealis.Type));
             }
           };
+      final File eventTypeDir = new File(eventTypesDir, type.asString());
+      eventTypeDir.mkdirs();
       writeArgumentScoresForTransformedResults(perDocResults, filterFunction,
-          new File(eventTypesDir, type.asString()));
+          eventTypeDir);
     }
   }
 
