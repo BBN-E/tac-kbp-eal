@@ -19,7 +19,6 @@ import com.bbn.kbp.events2014.EventArgScoringAlignment;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.scorer.BreakdownComputer;
 import com.bbn.kbp.events2014.scorer.BreakdownFunctions;
-import com.bbn.kbp.events2014.scorer.SystemOutputEquivalenceClasses;
 import com.bbn.kbp.events2014.scorer.observers.errorloggers.HTMLErrorRecorder;
 
 import com.carrotsearch.hppc.DoubleArrayList;
@@ -29,6 +28,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Strings;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
@@ -143,8 +143,6 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
     final ProvenancedConfusionMatrix.Builder<TypeRoleFillerRealis> confusionMatrixBuilder =
         ProvenancedConfusionMatrix.builder();
     final StringBuilder htmlOut = new StringBuilder();
-    final StringBuilder textOut = new StringBuilder();
-    final SystemOutputEquivalenceClasses<TypeRoleFillerRealis> systemOutputSource;
 
     htmlOut.append(renderer.preamble());
 
@@ -152,7 +150,9 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
         .truePositiveEquivalenceClasses()) {
       //textOut.append("True Positive\n");
       confusionMatrixBuilder.record(PRESENT, PRESENT, truePositive);
-      //htmlOut.append(renderer.correct(systemOutputSource.systemOutput().score(response)));
+      htmlOut.append(renderer.correct(scoringAlignment.systemOutput().score(
+          scoringAlignment.systemEquivClassToAssessedRepresentativeResponses().get(truePositive)
+              .response())));
     }
 
     for (final TypeRoleFillerRealis falsePositive : scoringAlignment
@@ -160,12 +160,15 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
       confusionMatrixBuilder.record(PRESENT, ABSENT, falsePositive);
       /*textOut.append("False positive. Response annotated in pool as ")
           .append(annotationForSelected.assessment()).append("\n");
-      confusionMatrixBuilder.record(PRESENT, ABSENT, answerable);
+      confusionMatrixBuilder.record(PRESENT, ABSENT, answerable);*/
+      final AssessedResponse falsePositiveAssessedResponse =
+          scoringAlignment.systemEquivClassToAssessedRepresentativeResponses()
+              .get(falsePositive);
       htmlOut.append(renderer
-          .vsAnnotated("kbp-false-positive-annotated", "False positive (annotated)", response,
-              systemOutputSource.systemOutput().score(response), annotationForSelected));*/
-
-      //checkForFalseNegative(answerable, allAssessments);
+          .vsAnnotated("kbp-false-positive-annotated", "False positive (annotated)",
+              falsePositiveAssessedResponse.response(),
+              scoringAlignment.systemOutput().score(falsePositiveAssessedResponse.response()),
+              falsePositiveAssessedResponse));
     }
 
     for (final TypeRoleFillerRealis falseNegative : scoringAlignment
@@ -173,10 +176,16 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
       confusionMatrixBuilder.record(ABSENT, PRESENT, falseNegative);
       /*textOut.append(
           "FN: No correct system response present, but the following correct response is in the pool: ")
-          .append(Iterables.find(assessedResponses, ResponseCorrect)).append("\n");
+          .append(Iterables.find(assessedResponses, ResponseCorrect)).append("\n");*/
+      final List<AssessedResponse> correctAnswerKeyResponses =
+          FluentIterable
+              .from(scoringAlignment.equivalenceClassesToAnswerKeyResponses().get(falseNegative))
+              .filter(AssessedResponse.IsCorrectUpToInexactJustifications)
+              .toList();
       htmlOut.append(renderer.vsAnnotated("kbp-false-negative", "False negative",
-          getFirst(assessedResponses, null).response(),
-          assessedResponses));*/
+          correctAnswerKeyResponses.get(0).response(),
+          scoringAlignment.equivalenceClassesToSystemResponses().get(falseNegative),
+          correctAnswerKeyResponses));
     }
 
     for (final TypeRoleFillerRealis unassessed : scoringAlignment.unassessed()) {

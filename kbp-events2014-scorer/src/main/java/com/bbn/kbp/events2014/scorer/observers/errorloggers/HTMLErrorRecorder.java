@@ -23,7 +23,7 @@ public interface HTMLErrorRecorder {
       Set<AssessedResponse> annotatedResponses);
 
   public String vsAnnotated(String clazz, String title, Response headerResponse,
-      Iterable<Scored<Response>> scoredResponses,
+      Iterable<Response> scoredResponses,
       Iterable<AssessedResponse> annotatedResponses);
 
   public String correct(Scored<Response> response);
