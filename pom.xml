@@ -3,7 +3,7 @@
 
     <groupId>com.bbn.kbp.events2014</groupId>
     <artifactId>kbp-events2014-all</artifactId>
-    <version>2.3.2</version>
+    <version>2.3.3-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>KBP 2014 Event Argument Shared Task</name>

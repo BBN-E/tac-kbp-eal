@@ -2,14 +2,14 @@
     <parent>
         <artifactId>kbp-events2014-all</artifactId>
         <groupId>com.bbn.kbp.events2014</groupId>
-        <version>2.3.2</version>
+        <version>2.3.3-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>kbp-events2014-bin</artifactId>
-    <version>2.3.2</version>
+    <version>2.3.3-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>2014 KBP Event Arguments Task Binaries</name>
@@ -228,13 +228,13 @@
         <dependency>
             <groupId>com.bbn.kbp.events2014</groupId>
             <artifactId>kbp-events2014</artifactId>
-            <version>2.3.2</version>
+            <version>2.3.3-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>com.bbn.kbp.events2014</groupId>
             <artifactId>kbp-events2014-scorer</artifactId>
-            <version>2.3.2</version>
+            <version>2.3.3-SNAPSHOT</version>
         </dependency>
 
 
