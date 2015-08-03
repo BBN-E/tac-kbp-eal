@@ -170,6 +170,10 @@ public final class EALScorer2015Style {
     public ArgResult copyFiltered(final Predicate<TypeRoleFillerRealis> filter) {
       return new ArgResult(argScoringAlignment.copyFiltered(filter));
     }
+
+    public double unscaledFalseNegativeArguments() {
+      return argScoringAlignment.falseNegativeEquivalenceClasses().size();
+    }
   }
 
   public final class LinkResult {

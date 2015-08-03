@@ -252,14 +252,18 @@ public final class KBP2015Scorer {
             .toList();
 
     Files.asCharSink(perDocOutput, Charsets.UTF_8).write(
-        String.format("%40s\t%10s\t%10s\t%10s\t", "Document", "ArgP", "ArgR", "Arg") +
+        String.format("%40s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\t", "Document", "ArgTP", "ArgFP",
+            "ArgFN", "ArgP", "ArgR", "Arg") +
             Joiner.on("\n").join(
                 Lists.transform(relevantArgumentScores,
                     new Function<EALScorer2015Style.ArgResult, String>() {
                       @Override
                       public String apply(final EALScorer2015Style.ArgResult input) {
-                        return String.format("%40s\t%10.2f\t%10.2f\t%10.2f",
+                        return String.format("%40s\t%10d\t%10d\t%10d\t%10.2f\t%10.2f\t%10.2f",
                             input.docID(),
+                            input.unscaledTruePositiveArguments(),
+                            input.unscaledFalsePositiveArguments(),
+                            input.unscaledFalseNegativeArguments(),
                             100.0 * input.precision(),
                             100.0 * input.recall(),
                             100.0 * input.scaledArgumentScore());
@@ -270,11 +274,13 @@ public final class KBP2015Scorer {
     double argNormalizerSum = 0.0;
     double argTruePositives = 0.0;
     double argFalsePositives = 0.0;
+    double argFalseNegatives = 0.0;
     for (final EALScorer2015Style.ArgResult perDocResult : relevantArgumentScores) {
       rawArgScoreSum += Math.max(0.0, perDocResult.unscaledArgumentScore());
       argNormalizerSum += perDocResult.argumentNormalizer();
       argTruePositives += perDocResult.unscaledTruePositiveArguments();
       argFalsePositives += perDocResult.unscaledFalsePositiveArguments();
+      argFalseNegatives += perDocResult.unscaledFalseNegativeArguments();
     }
 
     double aggregateArgScore = (argNormalizerSum > 0.0) ? rawArgScoreSum / argNormalizerSum : 0.0;
@@ -294,7 +300,10 @@ public final class KBP2015Scorer {
     final ImmutableMap<String, Double> resultsForJson = ImmutableMap.<String, Double>builder()
         .put("argPrecision", 100.0 * aggregateArgPrecision)
         .put("argRecall", 100.0 * aggregateArgRecall)
-        .put("argOverall", 100.0 * aggregateArgScore).build();
+        .put("argOverall", 100.0 * aggregateArgScore)
+        .put("argTP", argTruePositives)
+        .put("argFP", argFalsePositives)
+        .put("arfFN", argFalseNegatives).build();
 
     final File jsonFile = new File(outputDir, "aggregateScore.json");
     final JacksonSerializer jacksonSerializer = JacksonSerializer.json().prettyOutput().build();
@@ -331,6 +340,9 @@ public final class KBP2015Scorer {
     double linkNormalizerSum = 0.0;
     double rawLinkPrecisionSum = 0.0;
     double rawLinkRecallSum = 0.0;
+    double argTP = 0.0;
+    double argFP = 0.0;
+    double argFN = 0.0;
     for (final EALScorer2015Style.Result perDocResult : perDocResults) {
       rawArgScoreSum += Math.max(0.0, perDocResult.argResult().unscaledArgumentScore());
       argNormalizerSum += perDocResult.argResult().argumentNormalizer();
@@ -340,6 +352,9 @@ public final class KBP2015Scorer {
       linkNormalizerSum += perDocResult.linkResult().linkingNormalizer();
       rawLinkPrecisionSum += perDocResult.linkResult().unscaledLinkingPrecision();
       rawLinkRecallSum += perDocResult.linkResult().unscaledLinkingRecall();
+      argTP += perDocResult.argResult().unscaledTruePositiveArguments();
+      argFP += perDocResult.argResult().unscaledFalsePositiveArguments();
+      argFN += perDocResult.argResult().unscaledFalseNegativeArguments();
     }
 
     double aggregateArgScore = (argNormalizerSum > 0.0) ? rawArgScoreSum / argNormalizerSum : 0.0;
@@ -360,7 +375,8 @@ public final class KBP2015Scorer {
             +
             String.format("%30s:%8.2f\n", "Aggregate argument recall", 100.0 * aggregateArgRecall) +
             String.format("%30s:%8.2f\n\n", "Aggregate argument score", 100.0 * aggregateArgScore) +
-            String.format("%30s:%8.2f\n", "Aggregate linking precision", 100.0 * aggregateLinkPrecision) +
+            String.format("%30s:%8.2f\n", "Aggregate linking precision",
+                100.0 * aggregateLinkPrecision) +
             String.format("%30s:%8.2f\n", "Aggregate linking recall", 100.0 * aggregateLinkRecall) +
             String.format("%30s:%8.2f\n\n", "Aggregate linking score", 100.0 * aggregateLinkScore) +
             String.format("%30s:%8.2f\n", "Overall score", 100.0 * aggregateScore));
@@ -372,7 +388,11 @@ public final class KBP2015Scorer {
         .put("linkPrecision", 100.0 * aggregateLinkPrecision)
         .put("linkRecall", 100.0 * aggregateLinkRecall)
         .put("linkOverall", 100.0 * aggregateLinkScore)
-        .put("overall", 100.0 * aggregateScore).build();
+        .put("overall", 100.0 * aggregateScore)
+        .put("argTP", argTP)
+        .put("argFP", argFP)
+        .put("argFN", argFN)
+        .build();
 
     final File jsonFile = new File(outputDir, "aggregateScore.json");
     final JacksonSerializer jacksonSerializer = JacksonSerializer.json().prettyOutput().build();
