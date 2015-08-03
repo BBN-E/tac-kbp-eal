@@ -1,9 +1,10 @@
 package com.bbn.kbp.events2014.scorer;
 
+import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.EventArgumentLinking;
-import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.linking.ExplicitFMeasureInfo;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
@@ -11,26 +12,20 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public final class LinkingScore {
 
+  private final Symbol docID;
   private final ExplicitFMeasureInfo scores;
-  private final ResponseLinking referenceResponseLinking;
-  private final ResponseLinking referenceSystemLinking;
-  private final EventArgumentLinking referenceArgumentLinking;
-  private final EventArgumentLinking systemArgumentLinking;
+  private final int referenceLinkingSize;
 
-  private LinkingScore(final ResponseLinking referenceResponseLinking,
-      final EventArgumentLinking referenceArgumentLinking,
-      final ResponseLinking referenceSystemLinking,
-      final EventArgumentLinking systemArgumentLinking,
+  private LinkingScore(final Symbol docID, int referenceLinkingSize,
       final ExplicitFMeasureInfo scores) {
-    this.referenceArgumentLinking = checkNotNull(referenceArgumentLinking);
+    checkArgument(referenceLinkingSize >= 0);
+    this.referenceLinkingSize = referenceLinkingSize;
     this.scores = checkNotNull(scores);
-    this.referenceResponseLinking = checkNotNull(referenceResponseLinking);
-    this.referenceSystemLinking = checkNotNull(referenceSystemLinking);
-    this.systemArgumentLinking = checkNotNull(systemArgumentLinking);
+    this.docID = checkNotNull(docID);
   }
 
-  public EventArgumentLinking referenceArgumentLinking() {
-    return referenceArgumentLinking;
+  public int referenceLinkingSize() {
+    return referenceLinkingSize;
   }
 
   public double precision() {
@@ -45,18 +40,20 @@ public final class LinkingScore {
     return scores.f1();
   }
 
+  public Symbol docID() {
+    return docID;
+  }
+
   @Override
   public String toString() {
     return String.format("LinkingScore[%.2f/%.2f/%.2f]",
         100 * precision(), 100 * recall(), 100 * F1());
   }
 
-  public static LinkingScore from(final ResponseLinking referenceResponseLinking,
+  public static LinkingScore from(
       final EventArgumentLinking referenceArgumentLinking,
-      final ResponseLinking systemLinking,
-      final EventArgumentLinking systemArgumentLinking,
       final ExplicitFMeasureInfo scores) {
-    return new LinkingScore(referenceResponseLinking, referenceArgumentLinking, systemLinking,
-        systemArgumentLinking, scores);
+    return new LinkingScore(referenceArgumentLinking.docID(),
+        referenceArgumentLinking.allLinkedEquivalenceClasses().size(), scores);
   }
 }

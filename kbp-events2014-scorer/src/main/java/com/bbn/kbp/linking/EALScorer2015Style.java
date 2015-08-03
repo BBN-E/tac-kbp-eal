@@ -81,14 +81,55 @@ public final class EALScorer2015Style {
   }
 
   public final class Result {
-    private final EventArgScoringAlignment<TypeRoleFillerRealis> argScoringAlignment;
-    private final LinkingScore linkingScore;
 
-    private Result(
-        final EventArgScoringAlignment<TypeRoleFillerRealis> argScoringAlignment,
-        final LinkingScore linkingScore) {
+    private final ArgResult argResult;
+    private final LinkResult linkResult;
+
+    private Result(final ArgResult argResult, final LinkResult linkResult) {
+      this.argResult = checkNotNull(argResult);
+      this.linkResult = checkNotNull(linkResult);
+      checkArgument(argResult.docID().equalTo(linkResult.docID()));
+    }
+
+    public double scaledScore() {
+      return (1.0 - lambda) * argResult.scaledArgumentScore() + lambda * linkResult
+          .scaledLinkingScore();
+    }
+
+    public ArgResult argResult() {
+      return argResult;
+    }
+
+    public LinkResult linkResult() {
+      return linkResult;
+    }
+
+    public Symbol docID() {
+      return argResult.docID();
+    }
+  }
+
+  public final class ArgResult {
+
+    private final EventArgScoringAlignment<TypeRoleFillerRealis> argScoringAlignment;
+
+    private ArgResult(
+        final EventArgScoringAlignment<TypeRoleFillerRealis> argScoringAlignment) {
       this.argScoringAlignment = checkNotNull(argScoringAlignment);
-      this.linkingScore = checkNotNull(linkingScore);
+    }
+
+    public double argumentNormalizer() {
+      return Sets.union(
+          argScoringAlignment.truePositiveEquivalenceClasses(),
+          argScoringAlignment.falseNegativeEquivalenceClasses()).size();
+    }
+
+    public Symbol docID() {
+      return argScoringAlignment.docID();
+    }
+
+    public EventArgScoringAlignment<TypeRoleFillerRealis> argumentScoringAlignment() {
+      return argScoringAlignment;
     }
 
     public double scaledArgumentScore() {
@@ -96,8 +137,10 @@ public final class EALScorer2015Style {
     }
 
     public double unscaledArgumentScore() {
-      final int truePositiveArgumentECs = argScoringAlignment.truePositiveEquivalenceClasses().size();
-      final int falsePositiveArgumentECs = argScoringAlignment.falsePositiveEquivalenceClasses().size();
+      final int truePositiveArgumentECs =
+          argScoringAlignment.truePositiveEquivalenceClasses().size();
+      final int falsePositiveArgumentECs =
+          argScoringAlignment.falsePositiveEquivalenceClasses().size();
       return truePositiveArgumentECs - beta * falsePositiveArgumentECs;
     }
 
@@ -109,16 +152,56 @@ public final class EALScorer2015Style {
       return argScoringAlignment.falsePositiveEquivalenceClasses().size();
     }
 
+    public double precision() {
+      return (unscaledTruePositiveArguments() > 0.0) ?
+             unscaledTruePositiveArguments() / (unscaledTruePositiveArguments()
+                                                    + unscaledFalsePositiveArguments())
+                                                     : 0.0;
+    }
+
+    public double recall() {
+      return (unscaledTruePositiveArguments() > 0.0) ?
+             unscaledTruePositiveArguments() / (unscaledTruePositiveArguments()
+                                                    + argScoringAlignment
+                 .falseNegativeEquivalenceClasses().size())
+                                                     : 0.0;
+    }
+
+    public ArgResult copyFiltered(final Predicate<TypeRoleFillerRealis> filter) {
+      return new ArgResult(argScoringAlignment.copyFiltered(filter));
+    }
+  }
+
+  public final class LinkResult {
+
+    private final LinkingScore linkingScore;
+
+    private LinkResult(final LinkingScore linkingScore) {
+      this.linkingScore = checkNotNull(linkingScore);
+    }
+
+    public Symbol docID() {
+      return linkingScore.docID();
+    }
+
+    public double linkingNormalizer() {
+      return linkingScore.referenceLinkingSize();
+    }
+
+    public LinkingScore linkingScore() {
+      return linkingScore;
+    }
+
     public double unscaledLinkingScore() {
-      return linkingScore.F1()*linkingNormalizer();
+      return linkingScore.F1() * linkingNormalizer();
     }
 
     public double unscaledLinkingPrecision() {
-      return linkingScore.precision()*linkingNormalizer();
+      return linkingScore.precision() * linkingNormalizer();
     }
 
     public double unscaledLinkingRecall() {
-      return linkingScore.recall()*linkingNormalizer();
+      return linkingScore.recall() * linkingNormalizer();
     }
 
     public double scaledLinkingScore() {
@@ -131,32 +214,6 @@ public final class EALScorer2015Style {
 
     public double scaledLinkingRecall() {
       return linkingScore.recall();
-    }
-
-    public double scaledScore() {
-      return (1.0-lambda)*scaledArgumentScore()+lambda*scaledLinkingScore();
-    }
-
-    public EventArgScoringAlignment<TypeRoleFillerRealis> argumentScoringAlignment() {
-      return argScoringAlignment;
-    }
-
-    public LinkingScore linkingScore() {
-      return linkingScore;
-    }
-
-    public Symbol docID() {
-      return argScoringAlignment.docID();
-    }
-
-    public double argumentNormalizer() {
-      return Sets.union(
-          argScoringAlignment.truePositiveEquivalenceClasses(),
-          argScoringAlignment.falseNegativeEquivalenceClasses()).size();
-    }
-
-    public double linkingNormalizer() {
-      return linkingScore.referenceArgumentLinking().allLinkedEquivalenceClasses().size();
     }
   }
 
@@ -186,7 +243,8 @@ public final class EALScorer2015Style {
         .withSystemLinking(keepBestResponseMapping.apply(scoringData.systemLinking().get()))
         .build();
 
-    return new Result(scoreEventArguments(bestOnlyScoringData), scoreLinking(bestOnlyScoringData));
+    return new Result(new ArgResult(scoreEventArguments(bestOnlyScoringData)),
+        new LinkResult(scoreLinking(bestOnlyScoringData)));
   }
 
   private EventArgScoringAlignment<TypeRoleFillerRealis> scoreEventArguments(ScoringData scoringData) {
@@ -230,7 +288,7 @@ public final class EALScorer2015Style {
     final EventArgumentLinking filteredSystemArgumentLinking = systemArgumentLinking
         .filteredCopy(REALIS_IS_NOT_GENERIC);
 
-    return LinkingScore.from(referenceLinking, referenceArgumentLinking, systemLinking, systemArgumentLinking,
+    return LinkingScore.from(referenceArgumentLinking,
         linkF1.score(filteredSystemArgumentLinking.linkedAsSetOfSets(),
             filteredReferenceArgumentLinking.linkedAsSetOfSets()));
   }
