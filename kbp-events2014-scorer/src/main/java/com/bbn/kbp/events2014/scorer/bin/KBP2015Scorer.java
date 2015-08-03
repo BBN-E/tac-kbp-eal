@@ -261,9 +261,9 @@ public final class KBP2015Scorer {
                       public String apply(final EALScorer2015Style.ArgResult input) {
                         return String.format("%40s\t%10f\t%10f\t%10f\t%10.2f\t%10.2f\t%10.2f",
                             input.docID(),
-                            (int)input.unscaledTruePositiveArguments(),
-                            (int)input.unscaledFalsePositiveArguments(),
-                            (int)input.unscaledFalseNegativeArguments(),
+                            input.unscaledTruePositiveArguments(),
+                            input.unscaledFalsePositiveArguments(),
+                            input.unscaledFalseNegativeArguments(),
                             100.0 * input.precision(),
                             100.0 * input.recall(),
                             100.0 * input.scaledArgumentScore());
