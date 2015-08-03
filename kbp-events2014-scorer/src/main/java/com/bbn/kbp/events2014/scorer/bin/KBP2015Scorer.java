@@ -259,7 +259,7 @@ public final class KBP2015Scorer {
                     new Function<EALScorer2015Style.ArgResult, String>() {
                       @Override
                       public String apply(final EALScorer2015Style.ArgResult input) {
-                        return String.format("%40s\t%10d\t%10d\t%10d\t%10.2f\t%10.2f\t%10.2f",
+                        return String.format("%40s\t%10f\t%10f\t%10f\t%10.2f\t%10.2f\t%10.2f",
                             input.docID(),
                             input.unscaledTruePositiveArguments(),
                             input.unscaledFalsePositiveArguments(),
