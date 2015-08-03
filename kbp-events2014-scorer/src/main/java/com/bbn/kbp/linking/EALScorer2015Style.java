@@ -101,6 +101,14 @@ public final class EALScorer2015Style {
       return truePositiveArgumentECs - beta * falsePositiveArgumentECs;
     }
 
+    public double unscaledTruePositiveArguments() {
+      return argScoringAlignment.truePositiveEquivalenceClasses().size();
+    }
+
+    public double unscaledFalsePositiveArguments() {
+      return argScoringAlignment.falsePositiveEquivalenceClasses().size();
+    }
+
     public double unscaledLinkingScore() {
       return linkingScore.F1()*linkingNormalizer();
     }
@@ -108,19 +116,19 @@ public final class EALScorer2015Style {
     public double unscaledLinkingPrecision() {
       return linkingScore.precision()*linkingNormalizer();
     }
-    
+
     public double unscaledLinkingRecall() {
       return linkingScore.recall()*linkingNormalizer();
     }
-    
+
     public double scaledLinkingScore() {
       return linkingScore.F1();
     }
-    
+
     public double scaledLinkingPrecision() {
       return linkingScore.precision();
     }
-    
+
     public double scaledLinkingRecall() {
       return linkingScore.recall();
     }
