@@ -168,6 +168,15 @@ public final class Response {
         additionalArgumentJustifications, predicateJustifications, realis);
   }
 
+  public Response copyWithSwappedRole(final Symbol newRole) {
+    if (role.equalTo(newRole)) {
+      return this;
+    }
+
+    return Response.createFrom(docid, type, newRole, canonicalArgumentString, baseFiller,
+        additionalArgumentJustifications, predicateJustifications, realis);
+  }
+
   private final Symbol docid;
   private final Symbol type;
   private final Symbol role;
