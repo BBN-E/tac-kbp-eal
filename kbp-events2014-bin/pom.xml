@@ -33,6 +33,14 @@
                         </program>
 
                         <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.Convert2014TransportTo2015Variants</mainClass>
+                            <name>convert2014MovementTransports</name>
+                            <jvmSettings>
+                                <maxMemorySize>4G</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
+                        <program>
                             <mainClass>com.bbn.kbp.events2014.bin.ConvertTo2015Format</mainClass>
                             <name>convertTo2015Format</name>
                         </program>
