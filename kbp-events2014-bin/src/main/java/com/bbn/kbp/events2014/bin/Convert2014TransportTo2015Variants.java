@@ -8,9 +8,8 @@ import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 
 import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,14 +25,15 @@ public class Convert2014TransportTo2015Variants {
   private static final Logger log = LoggerFactory
       .getLogger(Convert2014TransportTo2015Variants.class);
 
-  private static final Symbol TRANSPORT_SYMBOL = Symbol.from("Movement.Transport");
-  private static final Symbol PERSON_SYMBOL = Symbol.from("Movement.Transport-Person");
-  private static final Symbol ARTIFACT_SYMBOL = Symbol.from("Movement.Transport-Artifact");
-  private static final Symbol ARTIFACT = Symbol.from("Artifact");
-  private static final Symbol VEHICLE = Symbol.from("Vehicle");
-  private static final Symbol INSTRUMENT = Symbol.from("Instrument");
-  private static final Symbol PRICE = Symbol.from("Price");
-  private static final Symbol PERSON = Symbol.from("Person");
+  private static final Symbol MOVEMENT_TRANSPORT = Symbol.from("Movement.Transport");
+  private static final Symbol MOVEMENT_TRANSPORT_PERSON = Symbol.from("Movement.Transport-Person");
+  private static final Symbol MOVEMENT_TRANSPORT_ARTIFACT =
+      Symbol.from("Movement.Transport-Artifact");
+  private static final Symbol ARTIFACT_ROLE = Symbol.from("Artifact");
+  private static final Symbol VEHICLE_ROLE = Symbol.from("Vehicle");
+  private static final Symbol INSTRUMENT_ROLE = Symbol.from("Instrument");
+  private static final Symbol PRICE_ROLE = Symbol.from("Price");
+  private static final Symbol PERSON_ROLE = Symbol.from("Person");
 
   public static void main(String... args) {
     try {
@@ -51,48 +51,26 @@ public class Convert2014TransportTo2015Variants {
         AssessmentSpecFormats.Format.KBP2015);
     int transformedAssessments = 0;
     int transformedUnassessed = 0;
+
     for (final Symbol docid : input.docIDs()) {
       final AnswerKey old = input.readOrEmpty(docid);
       final AnswerKey restrictedToRelevantTypes = old.filter(CorrectTransportFilter);
 
-      // get old responses
-      final AnswerKey restrictedToNotRelevantTypes = old.filter(notCorrectTransportFilter);
-      final ImmutableSet.Builder<Response> nuResponses = ImmutableSet.builder();
-      final ImmutableSet<Response> assessed = ImmutableSet.copyOf(Iterables
-          .transform(restrictedToNotRelevantTypes.annotatedResponses(), AssessedResponse.Response));
-      nuResponses.addAll(restrictedToNotRelevantTypes.unannotatedResponses());
+      final AnswerKey.Builder augmentedKey = old.modifiedCopyBuilder();
 
-      // transform responses
+      final ImmutableSet<Response> movementTransportResponses = FluentIterable
+          .from(restrictedToRelevantTypes.annotatedResponses())
+          .transform(AssessedResponse.Response)
+          .append(restrictedToRelevantTypes.unannotatedResponses())
+          .toSet();
 
-      for (final AssessedResponse assessedResponse : restrictedToRelevantTypes
-          .annotatedResponses()) {
-        transformedAssessments += 1;
-        final Response person = transformResponsePerson(assessedResponse.response());
-        if (!assessed.contains(person)) {
-          nuResponses.add();
-        }
-        final Response artifact = transformResponseArtifact(assessedResponse.response());
-        if (!assessed.contains(artifact)) {
-          nuResponses.add(artifact);
-        }
-      }
-      for (final Response response : restrictedToRelevantTypes.unannotatedResponses()) {
-        transformedUnassessed += 1;
-        final Response person = transformResponsePerson(response);
-        if (!assessed.contains(person)) {
-          nuResponses.add();
-        }
-        final Response artifact = transformResponseArtifact(response);
-        if (!assessed.contains(artifact)) {
-          nuResponses.add(artifact);
-        }
+      for (final Response movementTransportResponse : movementTransportResponses) {
+        ++transformedAssessments;
+        augmentedKey.addUnannotated(transformResponsePerson(movementTransportResponse));
+        augmentedKey.addUnannotated(transformResponseArtifact(movementTransportResponse));
       }
 
-      // save the old assessed as well
-      final AnswerKey nu = AnswerKey
-          .from(docid, restrictedToNotRelevantTypes.annotatedResponses(), nuResponses.build(),
-              old.corefAnnotation());
-      output.write(nu);
+      output.write(augmentedKey.build());
     }
     input.close();
     output.close();
@@ -102,24 +80,28 @@ public class Convert2014TransportTo2015Variants {
 
 
   private static Response transformResponseArtifact(Response r) {
-    if (r.role().equalTo(VEHICLE)) {
-      r = r.copyWithSwappedRole(INSTRUMENT);
+    if (r.role().equalTo(VEHICLE_ROLE)) {
+      r = r.copyWithSwappedRole(INSTRUMENT_ROLE);
     }
 
-    if (r.type().equalTo(TRANSPORT_SYMBOL)) {
-      return r.copyWithSwappedType(ARTIFACT_SYMBOL);
+    if (r.type().equalTo(MOVEMENT_TRANSPORT)) {
+      return r.copyWithSwappedType(MOVEMENT_TRANSPORT_ARTIFACT);
     } else {
       return r;
     }
   }
 
   private static Response transformResponsePerson(Response r) {
-    if (r.role().equalTo(ARTIFACT)) {
-      r = r.copyWithSwappedRole(INSTRUMENT);
+    if (r.role().equalTo(VEHICLE_ROLE)) {
+      r = r.copyWithSwappedRole(INSTRUMENT_ROLE);
     }
 
-    if (r.type().equalTo(TRANSPORT_SYMBOL)) {
-      return r.copyWithSwappedRole(PERSON_SYMBOL);
+    if (r.role().equalTo(ARTIFACT_ROLE)) {
+      r = r.copyWithSwappedRole(PERSON_ROLE);
+    }
+
+    if (r.type().equalTo(MOVEMENT_TRANSPORT)) {
+      return r.copyWithSwappedRole(MOVEMENT_TRANSPORT_PERSON);
     } else {
       return r;
     }
@@ -131,8 +113,8 @@ public class Convert2014TransportTo2015Variants {
       return new Predicate<AssessedResponse>() {
         @Override
         public boolean apply(final AssessedResponse input) {
-          return input.response().type() == TRANSPORT_SYMBOL && input
-              .isCorrectUpToInexactJustifications() && !input.response().role().equalTo(PRICE);
+          return input.response().type() == MOVEMENT_TRANSPORT && input
+              .isCorrectUpToInexactJustifications() && !input.response().role().equalTo(PRICE_ROLE);
         }
       };
     }
@@ -142,22 +124,10 @@ public class Convert2014TransportTo2015Variants {
       return new Predicate<Response>() {
         @Override
         public boolean apply(final Response input) {
-          return input.type().equalTo(TRANSPORT_SYMBOL) && !input.role().equalTo(PRICE);
+          return input.type().equalTo(MOVEMENT_TRANSPORT) && !input.role().equalTo(PRICE_ROLE);
         }
       };
     }
   };
 
-  // slight misnomer
-  private static final AnswerKey.Filter notCorrectTransportFilter = new AnswerKey.Filter() {
-    @Override
-    public Predicate<AssessedResponse> assessedFilter() {
-      return Predicates.alwaysTrue();
-    }
-
-    @Override
-    public Predicate<Response> unassessedFilter() {
-      return Predicates.not(CorrectTransportFilter.unassessedFilter());
-    }
-  };
 }
