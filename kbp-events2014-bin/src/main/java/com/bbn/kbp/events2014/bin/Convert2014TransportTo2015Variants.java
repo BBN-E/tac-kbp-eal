@@ -101,7 +101,7 @@ public class Convert2014TransportTo2015Variants {
     }
 
     if (r.type().equalTo(MOVEMENT_TRANSPORT)) {
-      return r.copyWithSwappedRole(MOVEMENT_TRANSPORT_PERSON);
+      return r.copyWithSwappedType(MOVEMENT_TRANSPORT_PERSON);
     } else {
       return r;
     }
