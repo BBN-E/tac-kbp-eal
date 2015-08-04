@@ -9,7 +9,8 @@ import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,26 +44,55 @@ public class Convert2014TransportTo2015Variants {
         AssessmentSpecFormats.Format.KBP2014);
     final AnnotationStore output = AssessmentSpecFormats.createAnnotationStore(new File(args[1]),
         AssessmentSpecFormats.Format.KBP2015);
-    int transformed = 0;
+    int transformedAssessments = 0;
+    int transformedUnassessed = 0;
     for (final Symbol docid : input.docIDs()) {
       final AnswerKey old = input.readOrEmpty(docid);
       final AnswerKey restrictedToRelevantTypes = old.filter(CorrectTransportFilter);
 
-      final ImmutableList.Builder<Response> nuResponses = ImmutableList.builder();
+      // get old responses
+      final AnswerKey restrictedToNotRelevantTypes = old.filter(notCorrectTransportFilter);
+      final ImmutableSet.Builder<Response> nuResponses = ImmutableSet.builder();
+      final ImmutableSet<Response> assessed = ImmutableSet.copyOf(Iterables
+          .transform(restrictedToNotRelevantTypes.annotatedResponses(), AssessedResponse.Response));
+      nuResponses.addAll(restrictedToNotRelevantTypes.unannotatedResponses());
+
+      // transform responses
+
       for (final AssessedResponse assessedResponse : restrictedToRelevantTypes
           .annotatedResponses()) {
-        transformed += 1;
-        nuResponses.add(assessedResponse.response().copyWithSwappedType(PERSON_SYMBOL));
-        nuResponses.add(assessedResponse.response().copyWithSwappedType(ARTIFACT_SYMBOL));
+        transformedAssessments += 1;
+        final Response person = assessedResponse.response().copyWithSwappedType(PERSON_SYMBOL);
+        if (!assessed.contains(person)) {
+          nuResponses.add();
+        }
+        final Response artifact = assessedResponse.response().copyWithSwappedType(ARTIFACT_SYMBOL);
+        if (!assessed.contains(artifact)) {
+          nuResponses.add(artifact);
+        }
       }
+      for (final Response response : restrictedToRelevantTypes.unannotatedResponses()) {
+        transformedUnassessed += 1;
+        final Response person = response.copyWithSwappedType(PERSON_SYMBOL);
+        if (!assessed.contains(person)) {
+          nuResponses.add();
+        }
+        final Response artifact = response.copyWithSwappedType(ARTIFACT_SYMBOL);
+        if (!assessed.contains(artifact)) {
+          nuResponses.add(artifact);
+        }
+      }
+
+      // save the old assessed as well
       final AnswerKey nu = AnswerKey
-          .from(docid, ImmutableList.<AssessedResponse>of(), nuResponses.build(),
+          .from(docid, restrictedToNotRelevantTypes.annotatedResponses(), nuResponses.build(),
               old.corefAnnotation());
       output.write(nu);
     }
     input.close();
     output.close();
-    log.info("Wrote {} new events.", transformed);
+    log.info("Wrote {} transformed from assessed, {} from unassessed.", transformedAssessments,
+        transformedUnassessed);
   }
 
 
@@ -80,7 +110,25 @@ public class Convert2014TransportTo2015Variants {
 
     @Override
     public Predicate<Response> unassessedFilter() {
-      return Predicates.alwaysFalse();
+      return new Predicate<Response>() {
+        @Override
+        public boolean apply(final Response input) {
+          return input.type().equalTo(TRANSPORT_SYMBOL);
+        }
+      };
+    }
+  };
+
+  // slight misnomer
+  private static final AnswerKey.Filter notCorrectTransportFilter = new AnswerKey.Filter() {
+    @Override
+    public Predicate<AssessedResponse> assessedFilter() {
+      return Predicates.alwaysTrue();
+    }
+
+    @Override
+    public Predicate<Response> unassessedFilter() {
+      return Predicates.not(CorrectTransportFilter.unassessedFilter());
     }
   };
 }
