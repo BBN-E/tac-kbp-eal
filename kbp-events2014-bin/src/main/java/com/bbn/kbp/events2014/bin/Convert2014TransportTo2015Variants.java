@@ -29,6 +29,11 @@ public class Convert2014TransportTo2015Variants {
   private static final Symbol TRANSPORT_SYMBOL = Symbol.from("Movement.Transport");
   private static final Symbol PERSON_SYMBOL = Symbol.from("Movement.Transport-Person");
   private static final Symbol ARTIFACT_SYMBOL = Symbol.from("Movement.Transport-Artifact");
+  private static final Symbol ARTIFACT = Symbol.from("Artifact");
+  private static final Symbol VEHICLE = Symbol.from("Vehicle");
+  private static final Symbol INSTRUMENT = Symbol.from("Instrument");
+  private static final Symbol PRICE = Symbol.from("Price");
+  private static final Symbol PERSON = Symbol.from("Person");
 
   public static void main(String... args) {
     try {
@@ -62,22 +67,22 @@ public class Convert2014TransportTo2015Variants {
       for (final AssessedResponse assessedResponse : restrictedToRelevantTypes
           .annotatedResponses()) {
         transformedAssessments += 1;
-        final Response person = assessedResponse.response().copyWithSwappedType(PERSON_SYMBOL);
+        final Response person = transformResponsePerson(assessedResponse.response());
         if (!assessed.contains(person)) {
           nuResponses.add();
         }
-        final Response artifact = assessedResponse.response().copyWithSwappedType(ARTIFACT_SYMBOL);
+        final Response artifact = transformResponseArtifact(assessedResponse.response());
         if (!assessed.contains(artifact)) {
           nuResponses.add(artifact);
         }
       }
       for (final Response response : restrictedToRelevantTypes.unannotatedResponses()) {
         transformedUnassessed += 1;
-        final Response person = response.copyWithSwappedType(PERSON_SYMBOL);
+        final Response person = transformResponsePerson(response);
         if (!assessed.contains(person)) {
           nuResponses.add();
         }
-        final Response artifact = response.copyWithSwappedType(ARTIFACT_SYMBOL);
+        final Response artifact = transformResponseArtifact(response);
         if (!assessed.contains(artifact)) {
           nuResponses.add(artifact);
         }
@@ -96,6 +101,30 @@ public class Convert2014TransportTo2015Variants {
   }
 
 
+  private static Response transformResponseArtifact(Response r) {
+    if (r.role().equalTo(VEHICLE)) {
+      r = r.copyWithSwappedRole(INSTRUMENT);
+    }
+
+    if (r.type().equalTo(TRANSPORT_SYMBOL)) {
+      return r.copyWithSwappedType(ARTIFACT_SYMBOL);
+    } else {
+      return r;
+    }
+  }
+
+  private static Response transformResponsePerson(Response r) {
+    if (r.role().equalTo(ARTIFACT)) {
+      r = r.copyWithSwappedRole(INSTRUMENT);
+    }
+
+    if (r.type().equalTo(TRANSPORT_SYMBOL)) {
+      return r.copyWithSwappedRole(PERSON_SYMBOL);
+    } else {
+      return r;
+    }
+  }
+
   private static final AnswerKey.Filter CorrectTransportFilter = new AnswerKey.Filter() {
     @Override
     public Predicate<AssessedResponse> assessedFilter() {
@@ -103,7 +132,7 @@ public class Convert2014TransportTo2015Variants {
         @Override
         public boolean apply(final AssessedResponse input) {
           return input.response().type() == TRANSPORT_SYMBOL && input
-              .isCorrectUpToInexactJustifications();
+              .isCorrectUpToInexactJustifications() && !input.response().role().equalTo(PRICE);
         }
       };
     }
@@ -113,7 +142,7 @@ public class Convert2014TransportTo2015Variants {
       return new Predicate<Response>() {
         @Override
         public boolean apply(final Response input) {
-          return input.type().equalTo(TRANSPORT_SYMBOL);
+          return input.type().equalTo(TRANSPORT_SYMBOL) && !input.role().equalTo(PRICE);
         }
       };
     }
