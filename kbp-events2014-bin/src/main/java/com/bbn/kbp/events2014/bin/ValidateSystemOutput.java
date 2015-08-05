@@ -11,6 +11,7 @@ import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
@@ -64,7 +65,7 @@ public final class ValidateSystemOutput {
    * output store.  If the returned list is empty, the supplied output store is valid. Processing
    * will stop early if {@code maxErrors} errors are encountered.
    */
-  public List<Throwable> validateOnly(File systemOutputStoreFile, int maxErrors,
+  public Result validateOnly(File systemOutputStoreFile, int maxErrors,
       Map<Symbol, File> docIDMap,
       SystemOutputLayout layout) throws IOException {
     return validate(systemOutputStoreFile, maxErrors, docIDMap, layout, false);
@@ -74,16 +75,17 @@ public final class ValidateSystemOutput {
    * Like {@link #validateOnly(File, int, Map, SystemOutputLayout)} except it also logs the response
    * in human readable format, using the supplied {@code docIDMap} to resolve offsets to strings.
    */
-  public List<Throwable> validateAndDump(File systemOutputStoreFile, int maxErrors,
+  public Result validateAndDump(File systemOutputStoreFile, int maxErrors,
       Map<Symbol, File> docIDMap, SystemOutputLayout layout)
       throws IOException {
     return validate(systemOutputStoreFile, maxErrors, docIDMap, layout, true);
   }
 
 
-  private List<Throwable> validate(File systemOutputStoreFile, int maxErrors,
+  private Result validate(File systemOutputStoreFile, int maxErrors,
       Map<Symbol, File> docIDMap, SystemOutputLayout outputLayout,
       boolean dump) throws IOException {
+    final List<String> warnings = Lists.newArrayList();
     final List<Throwable> errors = Lists.newArrayList();
 
     log.info("Validating system output store {} with max errors {}", systemOutputStoreFile,
@@ -98,7 +100,7 @@ public final class ValidateSystemOutput {
       docIDs = outputStore.docIDs();
     } catch (Exception e) {
       errors.add(e);
-      return errors;
+      return new Result(errors, warnings);
     }
 
     try {
@@ -126,7 +128,7 @@ public final class ValidateSystemOutput {
         errors.add(e);
         ++numErrors;
         if (numErrors > maxErrors) {
-          return errors;
+          return new Result(errors, warnings);
         }
       }
     }
@@ -134,7 +136,7 @@ public final class ValidateSystemOutput {
     // this might not get called, but for read-only use with the default
     // implementation this is not a problem
     outputStore.close();
-    return errors;
+    return new Result(errors, warnings);
   }
 
   private void assertNoDocumentsOutsideCorpus(SystemOutputStore outputStore,
@@ -294,16 +296,16 @@ public final class ValidateSystemOutput {
       log.info("Using map from document IDs to original text: {}", docIDMappingFile);
       final Map<Symbol, File> docIDMap = loadSymbolToFileMap(docIDMappingFile);
 
-      final List<Throwable> errors;
+      final ValidateSystemOutput.Result validationResult;
       if (params.getBoolean("dump")) {
-        errors = validator
+        validationResult = validator
             .validateAndDump(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap, layout);
       } else {
-        errors =
+        validationResult =
             validator.validateOnly(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap, layout);
       }
-      if (!errors.isEmpty()) {
-        throw errors.get(0);
+      if (!validationResult.wasSuccessful()) {
+        throw validationResult.errors().get(0);
       }
     } catch (Throwable t) {
       t.printStackTrace();
@@ -311,4 +313,31 @@ public final class ValidateSystemOutput {
     }
   }
 
+  public static final class Result {
+
+    private final ImmutableList<Throwable> errors;
+    private final ImmutableList<String> warnings;
+
+    private Result(final Iterable<? extends Throwable> errors,
+        final Iterable<String> warnings) {
+      this.errors = ImmutableList.copyOf(errors);
+      this.warnings = ImmutableList.copyOf(warnings);
+    }
+
+    public static Result forErrors(Iterable<? extends Throwable> errors) {
+      return new Result(errors, ImmutableList.<String>of());
+    }
+
+    public ImmutableList<Throwable> errors() {
+      return errors;
+    }
+
+    public ImmutableList<String> warnings() {
+      return warnings;
+    }
+
+    public boolean wasSuccessful() {
+      return errors.isEmpty();
+    }
+  }
 }

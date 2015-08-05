@@ -1,5 +1,6 @@
 package com.bbn.kbp.events2014.bin;
 
+import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
@@ -23,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -103,7 +103,8 @@ public final class NISTValidator {
       logErrorsAndExit(errorFile, validator.validateOnly(uncompressedDirectory, MAX_ERRORS,
           docIdMap, SystemOutputLayout.KBP_EA_2014), verbosity);
     } catch (Exception e) {
-      logErrorsAndExit(errorFile, ImmutableList.of(e), verbosity);
+      logErrorsAndExit(errorFile, ValidateSystemOutput.Result.forErrors(ImmutableList.of(e)),
+          verbosity);
     }
   }
 
@@ -117,12 +118,12 @@ public final class NISTValidator {
     }
   }
 
-  private static void logErrorsAndExit(File errorFile, List<? extends Throwable> errors,
+  private static void logErrorsAndExit(File errorFile, ValidateSystemOutput.Result validationResult,
       Verbosity verbosity) throws IOException {
     final StringBuilder sb = new StringBuilder();
     sb.append(
         "If you get any errors which are difficult to understand, please send the full stack trace to rgabbard@bbn.com for help.\n");
-    for (final Throwable error : errors) {
+    for (final Throwable error : validationResult.errors()) {
       if (verbosity == Verbosity.VERBOSE) {
         sb.append(Throwables.getStackTraceAsString(error)).append("\n");
       } else if (verbosity == Verbosity.COMPACT) {
@@ -137,11 +138,12 @@ public final class NISTValidator {
         throw new RuntimeException(String.format("Invalid verbosity %s", verbosity));
       }
     }
-    final String errorString = sb.toString();
+    final String errorString =
+        sb.toString() + StringUtils.NewlineJoiner.join(validationResult.warnings());
 
     Files.asCharSink(errorFile, Charsets.UTF_8).write(errorString);
 
-    if (errors.isEmpty()) {
+    if (validationResult.wasSuccessful()) {
       System.exit(0);
     } else {
       log.error(errorString);
