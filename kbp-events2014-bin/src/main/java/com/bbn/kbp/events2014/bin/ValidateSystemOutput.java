@@ -6,11 +6,15 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.SystemOutputLayout;
+import com.bbn.kbp.events2014.io.LinkingSpecFormats;
+import com.bbn.kbp.events2014.io.LinkingStore;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -33,14 +37,29 @@ public final class ValidateSystemOutput {
   private static final Logger log = LoggerFactory.getLogger(ValidateSystemOutput.class);
 
   private final TypeAndRoleValidator typeAndRoleValidator;
+  private final Preprocessor preprocessor;
 
+  interface Preprocessor {
 
-  private ValidateSystemOutput(TypeAndRoleValidator typeAndRoleValidator) {
-    this.typeAndRoleValidator = checkNotNull(typeAndRoleValidator);
+    File preprocess(File uncompressedSubmissionDir);
   }
 
-  public static ValidateSystemOutput create(TypeAndRoleValidator typeAndRoleValidator) {
-    return new ValidateSystemOutput(typeAndRoleValidator);
+  public static final Preprocessor NO_PREPROCESSING = new Preprocessor() {
+    @Override
+    public File preprocess(final File uncompressedSubmissionDir) {
+      return uncompressedSubmissionDir;
+    }
+  };
+
+  private ValidateSystemOutput(TypeAndRoleValidator typeAndRoleValidator,
+      Preprocessor preprocessor) {
+    this.typeAndRoleValidator = checkNotNull(typeAndRoleValidator);
+    this.preprocessor = checkNotNull(preprocessor);
+  }
+
+  public static ValidateSystemOutput create(TypeAndRoleValidator typeAndRoleValidator,
+      Preprocessor preprocessor) {
+    return new ValidateSystemOutput(typeAndRoleValidator, preprocessor);
   }
 
   private static void usage() {
@@ -82,9 +101,10 @@ public final class ValidateSystemOutput {
   }
 
 
-  private Result validate(File systemOutputStoreFile, int maxErrors,
+  private Result validate(File originalSystemOutputStoreFile, int maxErrors,
       Map<Symbol, File> docIDMap, SystemOutputLayout outputLayout,
       boolean dump) throws IOException {
+    final File systemOutputStoreFile = preprocessor.preprocess(originalSystemOutputStoreFile);
     final List<String> warnings = Lists.newArrayList();
     final List<Throwable> errors = Lists.newArrayList();
 
@@ -94,9 +114,14 @@ public final class ValidateSystemOutput {
     // these are only non-final because the compiler isn't clever enough
     // to figure out they cannot fail to be initialized
     SystemOutputStore outputStore = null;
+    Optional<LinkingStore> linkingStore = null;
     Set<Symbol> docIDs = null;
     try {
       outputStore = outputLayout.open(systemOutputStoreFile);
+      if (SystemOutputLayout.KBP_EA_2015.equals(outputLayout)) {
+        linkingStore = Optional
+            .of(LinkingSpecFormats.openLinkingStore(new File(systemOutputStoreFile, "linking")));
+      }
       docIDs = outputStore.docIDs();
     } catch (Exception e) {
       errors.add(e);
@@ -117,12 +142,20 @@ public final class ValidateSystemOutput {
         final ArgumentOutput docOutput = outputStore.read(docID).arguments();
         log.info("For document {} got {} responses", docID, docOutput.size());
 
+
         for (final Response response : docOutput.responses()) {
           assertValidTypes(response);
         }
 
         if (docOutput.size() > 0 && dump) {
           dumpResponses(docIDMap, docOutput);
+        }
+
+        if (linkingStore.isPresent()) {
+          final Optional<ResponseLinking> responseLinking = linkingStore.get().read(docOutput);
+          if (!responseLinking.isPresent()) {
+            throw new RuntimeException("Linking missing for " + docID);
+          }
         }
       } catch (Exception e) {
         errors.add(e);
@@ -132,6 +165,7 @@ public final class ValidateSystemOutput {
         }
       }
     }
+
 
     // this might not get called, but for read-only use with the default
     // implementation this is not a problem
@@ -287,7 +321,7 @@ public final class ValidateSystemOutput {
 
       final TypeAndRoleValidator typeAndRoleValidator =
           TypeAndRoleValidator.createFromParameters(params);
-      final ValidateSystemOutput validator = create(typeAndRoleValidator);
+      final ValidateSystemOutput validator = create(typeAndRoleValidator, NO_PREPROCESSING);
 
       final File systemOutputStoreFile = params.getExistingFileOrDirectory("systemOutputStore");
       final SystemOutputLayout layout = params.getEnum("outputLayout", SystemOutputLayout.class);
@@ -340,4 +374,6 @@ public final class ValidateSystemOutput {
       return errors.isEmpty();
     }
   }
+
+
 }

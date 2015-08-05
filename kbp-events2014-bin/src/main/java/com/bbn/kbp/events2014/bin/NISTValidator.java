@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * This is a wrapper around the validator to make it work nicely for NIST's online submission
@@ -46,6 +47,7 @@ public final class NISTValidator {
         "usage: NISTValidator rolesFile docIdToOriginalTextMap [VERBOSE|COMPACT] submissionFile");
     System.exit(ERROR_CODE);
   }
+
 
   public static void main(String[] argv) throws IOException {
     if (argv.length != 4) {
@@ -67,7 +69,8 @@ public final class NISTValidator {
 
     final ValidateSystemOutput validator = ValidateSystemOutput.create(
         TypeAndRoleValidator.create(SymbolUtils.setFrom("Time", "Place"),
-            FileUtils.loadSymbolMultimap(Files.asCharSource(rolesFile, Charsets.UTF_8))));
+            FileUtils.loadSymbolMultimap(Files.asCharSource(rolesFile, Charsets.UTF_8))),
+        ValidateSystemOutput.NO_PREPROCESSING);
 
     Verbosity verbosity = null;
 
@@ -80,6 +83,22 @@ public final class NISTValidator {
     }
 
     final File submitFile = new File(argv[3]);
+
+    final NISTValidator nistValidator = new NISTValidator(validator, verbosity);
+    nistValidator.run(docIdMap, submitFile);
+  }
+
+  private final ValidateSystemOutput validator;
+  private final Verbosity verbosity;
+
+  NISTValidator(final ValidateSystemOutput validator,
+      final Verbosity verbosity) {
+    this.validator = checkNotNull(validator);
+    this.verbosity = checkNotNull(verbosity);
+  }
+
+
+  public void run(final Map<Symbol, File> docIdMap, File submitFile) throws IOException {
     final File workingDirectory = new File(System.getProperty("user.dir"));
     log.info("Got submission file {} and working directory {}", submitFile, workingDirectory);
     if (!workingDirectory.exists()) {
@@ -88,7 +107,7 @@ public final class NISTValidator {
     }
 
     final File errorFile = new File(workingDirectory, submitFile.getName() + ".errlog");
-    log.info("Will write errrors to {}", errorFile);
+    log.info("Will write errors to {}", errorFile);
 
     try {
       if (!submitFile.exists()) {
