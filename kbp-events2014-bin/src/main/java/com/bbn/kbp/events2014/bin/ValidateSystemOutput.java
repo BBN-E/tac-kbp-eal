@@ -5,6 +5,7 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.CharOffsetSpan;
+import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.SystemOutputLayout;
@@ -15,7 +16,10 @@ import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
@@ -30,7 +34,11 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.bbn.bue.common.files.FileUtils.loadSymbolToFileMap;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Predicates.compose;
+import static com.google.common.base.Predicates.equalTo;
+import static com.google.common.base.Predicates.not;
 
 public final class ValidateSystemOutput {
 
@@ -41,7 +49,7 @@ public final class ValidateSystemOutput {
 
   interface Preprocessor {
 
-    File preprocess(File uncompressedSubmissionDir);
+    File preprocess(File uncompressedSubmissionDir) throws IOException;
   }
 
   public static final Preprocessor NO_PREPROCESSING = new Preprocessor() {
@@ -104,9 +112,18 @@ public final class ValidateSystemOutput {
   private Result validate(File originalSystemOutputStoreFile, int maxErrors,
       Map<Symbol, File> docIDMap, SystemOutputLayout outputLayout,
       boolean dump) throws IOException {
+    if (SystemOutputLayout.KBP_EA_2015.equals(outputLayout)) {
+      try {
+        assertExactlyTwoSubdirectories(originalSystemOutputStoreFile);
+      } catch (Exception e) {
+        return Result.forErrors(ImmutableList.of(e));
+      }
+    }
+
     final File systemOutputStoreFile = preprocessor.preprocess(originalSystemOutputStoreFile);
     final List<String> warnings = Lists.newArrayList();
     final List<Throwable> errors = Lists.newArrayList();
+
 
     log.info("Validating system output store {} with max errors {}", systemOutputStoreFile,
         maxErrors);
@@ -121,6 +138,7 @@ public final class ValidateSystemOutput {
       if (SystemOutputLayout.KBP_EA_2015.equals(outputLayout)) {
         linkingStore = Optional
             .of(LinkingSpecFormats.openLinkingStore(new File(systemOutputStoreFile, "linking")));
+
       }
       docIDs = outputStore.docIDs();
     } catch (Exception e) {
@@ -130,6 +148,9 @@ public final class ValidateSystemOutput {
 
     try {
       assertAllOffsetsValid(outputStore, docIDMap);
+      if (linkingStore.isPresent()) {
+        assertNoDocumentsOutsideCorpus(linkingStore.get().docIDs(), docIDMap.keySet(), "linking");
+      }
     } catch (Exception e) {
       // we can recover from invalid offsets and find more errors
       // this can cause some errors to be repeated more than once
@@ -152,10 +173,7 @@ public final class ValidateSystemOutput {
         }
 
         if (linkingStore.isPresent()) {
-          final Optional<ResponseLinking> responseLinking = linkingStore.get().read(docOutput);
-          if (!responseLinking.isPresent()) {
-            throw new RuntimeException("Linking missing for " + docID);
-          }
+          checkLinkingValidity(docID, docOutput, linkingStore);
         }
       } catch (Exception e) {
         errors.add(e);
@@ -173,20 +191,70 @@ public final class ValidateSystemOutput {
     return new Result(errors, warnings);
   }
 
-  private void assertNoDocumentsOutsideCorpus(SystemOutputStore outputStore,
-      Set<Symbol> docsInCorpus) throws IOException {
-    final Set<Symbol> extraDocs = Sets.difference(outputStore.docIDs(), docsInCorpus);
+  private void checkLinkingValidity(final Symbol docID, final ArgumentOutput docOutput,
+      final Optional<LinkingStore> linkingStore) throws IOException {
+    final Optional<ResponseLinking> responseLinking = linkingStore.get().read(docOutput);
+    if (!responseLinking.isPresent()) {
+      throw new RuntimeException("Linking missing for " + docID);
+    }
+    final Set<Response> allLinkedResponses = ImmutableSet
+        .copyOf(Iterables.concat(responseLinking.get().responseSets()));
+    final Set<Response> nonGenericArgumentResponses = Sets
+        .filter(docOutput.responses(), NOT_GENERIC);
+    if (!allLinkedResponses.equals(nonGenericArgumentResponses)) {
+      final StringBuilder msg = new StringBuilder();
+      msg.append(
+          "The set of linked responses should exactly equal the set of non-generic argument responses. However, ");
+      final Set<Response> linkingOnly =
+          Sets.difference(allLinkedResponses, nonGenericArgumentResponses);
+      final Set<Response> argumentOnly =
+          Sets.difference(nonGenericArgumentResponses, allLinkedResponses);
+
+      if (!linkingOnly.isEmpty()) {
+        msg.append("\nThe following are in the linking only:\n ")
+            .append(StringUtils.NewlineJoiner.join(linkingOnly));
+      }
+      if (!argumentOnly.isEmpty()) {
+        msg.append("\nThe following are in the argument output only:\n")
+            .append(StringUtils.NewlineJoiner.join(argumentOnly));
+      }
+      throw new RuntimeException(msg.toString());
+    }
+  }
+
+  private static final Predicate<Response> NOT_GENERIC = compose(not(equalTo(
+      KBPRealis.Generic)), Response.realisFunction());
+
+  private void assertExactlyTwoSubdirectories(final File outputStoreDir) throws IOException {
+    checkArgument(outputStoreDir.isDirectory());
+    if (!new File(outputStoreDir, "arguments").isDirectory()) {
+      throw new IOException("Expected system output to be contain a subdirectory named 'arguments");
+    }
+    if (!new File(outputStoreDir, "linking").isDirectory()) {
+      throw new IOException("Expected system output to be contain a subdirectory named 'linking");
+    }
+    if (outputStoreDir.listFiles().length != 2) {
+      throw new IOException(
+          "Expected system output to contain exactly two sub-directories, but it contains "
+              + outputStoreDir.listFiles() + " things");
+    }
+  }
+
+  private void assertNoDocumentsOutsideCorpus(Set<Symbol> docsInStore,
+      Set<Symbol> docsInCorpus, String storeType) throws IOException {
+    final Set<Symbol> extraDocs = Sets.difference(docsInStore, docsInCorpus);
     if (!extraDocs.isEmpty()) {
       throw new RuntimeException(
           String.format(
-              "The output store contains the following documents which are not in the target corpus: %s",
+              "The " + storeType
+                  + " store contains the following documents which are not in the target corpus: %s",
               extraDocs));
     }
   }
 
   private void assertAllOffsetsValid(SystemOutputStore outputStore, Map<Symbol, File> docIdMap)
       throws IOException {
-    assertNoDocumentsOutsideCorpus(outputStore, docIdMap.keySet());
+    assertNoDocumentsOutsideCorpus(outputStore.docIDs(), docIdMap.keySet(), "argument");
 
     for (final Symbol docId : outputStore.docIDs()) {
       final String originalText = Files.asCharSource(docIdMap.get(docId), Charsets.UTF_8).read();

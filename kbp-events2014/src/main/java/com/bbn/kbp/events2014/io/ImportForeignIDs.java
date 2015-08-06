@@ -19,7 +19,11 @@ import java.io.IOException;
 /**
  * Created by jdeyoung on 7/27/15.
  */
-final class ImportForeignIDs {
+public final class ImportForeignIDs {
+
+  private ImportForeignIDs() {
+    throw new UnsupportedOperationException();
+  }
 
   private static final Logger log = LoggerFactory.getLogger(ImportForeignIDs.class);
 
