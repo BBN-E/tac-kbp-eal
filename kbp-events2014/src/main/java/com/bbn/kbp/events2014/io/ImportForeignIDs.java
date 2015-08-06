@@ -19,7 +19,11 @@ import java.io.IOException;
 /**
  * Created by jdeyoung on 7/27/15.
  */
-final class ImportForeignIDs {
+public final class ImportForeignIDs {
+
+  private ImportForeignIDs() {
+    throw new UnsupportedOperationException();
+  }
 
   private static final Logger log = LoggerFactory.getLogger(ImportForeignIDs.class);
 
@@ -35,11 +39,16 @@ final class ImportForeignIDs {
   private static void trueMain(final String[] args) throws IOException {
     final File outputStoreBase = new File(args[0]);
     final File outputDirectory = new File(args[1]);
+    importForeignIDs(outputStoreBase, outputDirectory);
+  }
+
+  public static void importForeignIDs(final File source, final File outputDirectory)
+      throws IOException {
     final ArgumentStore originalArgumentStore =
-        AssessmentSpecFormats.openSystemOutputStore(new File(outputStoreBase, "arguments"),
+        AssessmentSpecFormats.openSystemOutputStore(new File(source, "arguments"),
             AssessmentSpecFormats.Format.KBP2015);
     final LinkingStore originalLinkingStore =
-        LinkingSpecFormats.openLinkingStore(new File(outputStoreBase, "linking"));
+        LinkingSpecFormats.openLinkingStore(new File(source, "linking"));
 
     final SystemOutputStore newOutput =
         SystemOutputLayout.KBP_EA_2015.openOrCreate(outputDirectory);

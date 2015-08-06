@@ -104,6 +104,15 @@
                         </program>
 
                         <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.ValidateSystemOutput2015</mainClass>
+                            <name>validateSystemOutput2015</name>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
+
+                        <program>
                             <mainClass>com.bbn.kbp.events2014.bin.NISTValidator</mainClass>
                             <name>NISTValidator</name>
                             <jvmSettings>
