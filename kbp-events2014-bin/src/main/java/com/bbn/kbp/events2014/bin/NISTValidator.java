@@ -37,7 +37,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public final class NISTValidator {
 
   private static final Logger log = LoggerFactory.getLogger(NISTValidator.class);
-  private static final int ERROR_CODE = 255;
+  static final int ERROR_CODE = 255;
   private static final int MAX_ERRORS = 10;
 
   public enum Verbosity {VERBOSE, COMPACT}
@@ -97,8 +97,11 @@ public final class NISTValidator {
     this.verbosity = checkNotNull(verbosity);
   }
 
-
   public void run(final Map<Symbol, File> docIdMap, File submitFile) throws IOException {
+    run(docIdMap, submitFile, SystemOutputLayout.KBP_EA_2014);
+  }
+
+  public void run(final Map<Symbol, File> docIdMap, File submitFile, SystemOutputLayout layout) throws IOException {
     final File workingDirectory = new File(System.getProperty("user.dir"));
     log.info("Got submission file {} and working directory {}", submitFile, workingDirectory);
     if (!workingDirectory.exists()) {
@@ -116,24 +119,13 @@ public final class NISTValidator {
       }
 
       File uncompressedDirectory = uncompressToTempDirectory(submitFile);
-      checkForCommonProblems(uncompressedDirectory);
       log.info("Uncompressed submission to {}", uncompressedDirectory);
 
       logErrorsAndExit(errorFile, validator.validateOnly(uncompressedDirectory, MAX_ERRORS,
-          docIdMap, SystemOutputLayout.KBP_EA_2014), verbosity);
+          docIdMap, layout), verbosity);
     } catch (Exception e) {
       logErrorsAndExit(errorFile, ValidateSystemOutput.Result.forErrors(ImmutableList.of(e)),
           verbosity);
-    }
-  }
-
-  private static void checkForCommonProblems(File dir) throws IOException {
-    for (final File f : dir.listFiles()) {
-      if (f.isDirectory()) {
-        throw new IOException(String.format(
-            "The supplied archive contains a sub-directory %s. This probably means your archive contains was created containing your system output directory. Instead, it should contain the *contents* of your system output directory.",
-            f.getName()));
-      }
     }
   }
 

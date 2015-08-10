@@ -92,7 +92,7 @@ public final class ValidateSystemOutput2015 {
     }
   }
 
-  private static final ValidateSystemOutput.Preprocessor CONVERT_TO_STANDARD_IDS =
+  static final ValidateSystemOutput.Preprocessor CONVERT_TO_STANDARD_IDS =
       new ValidateSystemOutput.Preprocessor() {
         @Override
         public File preprocess(final File uncompressedSubmissionDir) throws IOException {
