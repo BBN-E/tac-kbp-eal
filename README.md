@@ -23,19 +23,22 @@ Build steps:
 [![Build Status](https://semaphoreci.com/api/v1/projects/a11da8fb-4e16-48bf-af3a-a4e1680f161e/467466/badge.svg)](https://semaphoreci.com/rgabbard-bbn/kbp-2014-event-arguments)
 
 ## Using
-### System Output Stores and Annotation Stores
-A _system output store_ represents the output for a KBP Event Argument system on
+### Argument Stores, Linking Stores, System Output Stores, and Annotation Stores
+An _argument store_ represents the output for a KBP Event Argument system on
 a collection of documents. It consists of a directory containing exactly one
 file per input document, named by the docID. The internal format of these files
 is described in the task specification linked to above.
 
-An _annotation store_ contains assessments of the answers from a system output
-store.  Its format is the same as a system output store except within the files
-there are additional assessment columns, as described in the task specification.
-
 A _linking store_ groups arguments into event frames.  It consists of a directory
 containing exactly one file per input document, named by the docID. The internal format
 of these files is described in the task specification linked to above.
+
+A _sytem output store_ for 2015 is simple a directory which has an argument store in one subdirectory and a linking store in another.  For the 2014 evaluation, a system output store was an argument store alone, so you may sometimes
+see the terminology used in this older way.
+
+An _annotation store_ contains assessments of the answers from a system output
+store.  Its format is the same as a system output store except within the files
+there are additional assessment columns, as described in the task specification.
 
 ### Evaluation Workflow
 
@@ -44,7 +47,7 @@ either `kbp-events2014-bin/target/appassembler/bin` or `kbp-events-2014-scorer/t
 
 * a 'quote filter' to remove material with CAS and BF offsets in quoted regions
 will be built from the original text of the data set.
-* competitor submissions will be validated using `validateSystemOutput`.
+* competitor submissions will be validated using `validateSystemOutput2015`.
 * all material from quoted regions will be removed from competitor submissions.
 * all submissions will be combined into a single system output store using
 `poolSystemOutput`.
@@ -64,10 +67,11 @@ key1: value1
 key2: value2
 ```
 
-### `validateSystemOutput`
+### `validateSystemOutput2015`
 This program will check that your submission:
 * has the correct format
 * contains only legal event roles and types
+* has the correct relationship between the argument and linking stores.
 
 If either of these fail, the program will halt with an error message. In the future,
 we plan to add enforcement of rules concerning what portions of answers may
@@ -78,13 +82,12 @@ of your responses with all offsets resolved to strings from the original documen
 so that you can check for mistakes.
 
 This program takes the following parameters:
-* `systemOutputStore`: the path of the system output store to be validated
-* `validRoles`: is `data/2014.types.txt` (for KBP 2014)
+* `systemOutputStore`: the path of the system output store to be validated. This should contains an argument store and a linking store as sub-directories.
+* `validRoles`: is `data/2015.types.txt` (for KBP 2015)
 * `dump`: whether to dump response to `stdout` in a human readable format.
-* `docIDMap`: (required if `dump` is `true`) a list of tab-separated pairs of doc ID and path to the
-them to standard output.
-
-Note that this currently does not validate linkings.
+* `docIDMap`: (required if `dump` is `true`) a list of tab-separated pairs of doc ID and path to the corresponding original text.
+* `alwaysValidRoles`: Time,Place (for KBP 2015)
+* `outputLayout`: KBP_EA_2015
 
 ### `poolSystemOutput`
 Combines the system output from multiple systems into a single system output store.
