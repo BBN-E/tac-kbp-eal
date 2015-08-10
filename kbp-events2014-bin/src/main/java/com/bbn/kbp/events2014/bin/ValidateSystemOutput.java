@@ -173,6 +173,15 @@ public final class ValidateSystemOutput {
           assertValidTypes(response);
         }
 
+        for (final Response response : docOutput.responses()) {
+          // lets keep all hacks as high level as possible
+          // Movement.Transport-Place warning at Hoa's request
+          if (response.type().equalTo(MOVEMENTTRANSPORT) && response.role().equalTo(PLACE)) {
+            warnings.add("Response " + response
+                + " contains a Movement.Transport-Place argument. It will be ignored during scoring");
+          }
+        }
+
         if (docOutput.size() > 0 && dump) {
           dumpResponses(docIDMap, docOutput);
         }
@@ -305,11 +314,6 @@ public final class ValidateSystemOutput {
           response.docID(),
           StringUtils.CommaSpaceJoiner.join(typeAndRoleValidator.validEventTypes())));
     }
-    // lets keep all hacks as high level as possible
-    // Movement.Transport-Place warning
-    if(response.type().equalTo(MOVEMENTTRANSPORT) && response.role().equalTo(PLACE)) {
-      log.warn("Response {} contains a Movement.Tranposrt-Place arg!", response);
-    }
   }
 
   private static void dumpResponses(Map<Symbol, File> docIDMap, ArgumentOutput docOutput)
@@ -331,9 +335,7 @@ public final class ValidateSystemOutput {
     sb.append("\t");
     sb.append(response.type()).append("-").append(response.role()).append("-")
         .append(response.realis());
-    if(response.type().equalTo(MOVEMENTTRANSPORT) && response.role().equalTo(PLACE)) {
-      sb.append(":").append(" WARNING: OLD RESPONSE TYPE");
-    }
+
     sb.append("\n");
     final String CASFromOriginalText =
         resolveCharOffsets(response.canonicalArgument().charOffsetSpan(),
