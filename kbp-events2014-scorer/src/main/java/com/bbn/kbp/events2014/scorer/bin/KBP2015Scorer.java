@@ -83,7 +83,7 @@ public final class KBP2015Scorer {
     }
   }
 
-  private static void trueMain(String[] argv, Map<String, ResultWriter> additionalResultWriters)
+  public static void trueMain(String[] argv, Map<String, ResultWriter> additionalResultWriters)
       throws IOException {
     if (argv.length != 1) {
       usage();
