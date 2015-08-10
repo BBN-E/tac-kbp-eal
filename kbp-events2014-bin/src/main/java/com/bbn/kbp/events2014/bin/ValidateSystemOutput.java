@@ -149,7 +149,9 @@ public final class ValidateSystemOutput {
     try {
       assertAllOffsetsValid(outputStore, docIDMap);
       if (linkingStore.isPresent()) {
-        assertNoDocumentsOutsideCorpus(linkingStore.get().docIDs(), docIDMap.keySet(), "linking");
+        assertDocsAreContained(linkingStore.get().docIDs(), docIDMap.keySet(), "linking");
+        // check that no docids are missing
+        assertDocsAreContained(linkingStore.get().docIDs(), docIDs, "systemOutput");
       }
     } catch (Exception e) {
       // we can recover from invalid offsets and find more errors
@@ -240,9 +242,9 @@ public final class ValidateSystemOutput {
     }
   }
 
-  private void assertNoDocumentsOutsideCorpus(Set<Symbol> docsInStore,
+  private void assertDocsAreContained(Set<Symbol> docsInStore,
       Set<Symbol> docsInCorpus, String storeType) throws IOException {
-    final Set<Symbol> extraDocs = Sets.difference(docsInStore, docsInCorpus);
+    final Set<Symbol> extraDocs = Sets.symmetricDifference(docsInStore, docsInCorpus);
     if (!extraDocs.isEmpty()) {
       throw new RuntimeException(
           String.format(
@@ -254,7 +256,7 @@ public final class ValidateSystemOutput {
 
   private void assertAllOffsetsValid(SystemOutputStore outputStore, Map<Symbol, File> docIdMap)
       throws IOException {
-    assertNoDocumentsOutsideCorpus(outputStore.docIDs(), docIdMap.keySet(), "argument");
+    assertDocsAreContained(outputStore.docIDs(), docIdMap.keySet(), "argument");
 
     for (final Symbol docId : outputStore.docIDs()) {
       final String originalText = Files.asCharSource(docIdMap.get(docId), Charsets.UTF_8).read();
