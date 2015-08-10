@@ -47,6 +47,9 @@ public final class ValidateSystemOutput {
   private final TypeAndRoleValidator typeAndRoleValidator;
   private final Preprocessor preprocessor;
 
+  private static final Symbol MOVEMENTTRANSPORT = Symbol.from("Movement.Transport");
+  private static final Symbol PLACE = Symbol.from("Place");
+
   interface Preprocessor {
 
     File preprocess(File uncompressedSubmissionDir) throws IOException;
@@ -302,6 +305,11 @@ public final class ValidateSystemOutput {
           response.docID(),
           StringUtils.CommaSpaceJoiner.join(typeAndRoleValidator.validEventTypes())));
     }
+    // lets keep all hacks as high level as possible
+    // Movement.Transport-Place warning
+    if(response.type().equalTo(MOVEMENTTRANSPORT) && response.role().equalTo(PLACE)) {
+      log.warn("Response {} contains a Movement.Tranposrt-Place arg!", response);
+    }
   }
 
   private static void dumpResponses(Map<Symbol, File> docIDMap, ArgumentOutput docOutput)
@@ -322,7 +330,11 @@ public final class ValidateSystemOutput {
 
     sb.append("\t");
     sb.append(response.type()).append("-").append(response.role()).append("-")
-        .append(response.realis()).append("\n");
+        .append(response.realis());
+    if(response.type().equalTo(MOVEMENTTRANSPORT) && response.role().equalTo(PLACE)) {
+      sb.append(":").append(" WARNING: OLD RESPONSE TYPE");
+    }
+    sb.append("\n");
     final String CASFromOriginalText =
         resolveCharOffsets(response.canonicalArgument().charOffsetSpan(),
             response.docID(), originalText);
