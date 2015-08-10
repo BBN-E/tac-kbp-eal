@@ -24,7 +24,7 @@
         <maven.dependency.plugin.version>2.4</maven.dependency.plugin.version>
         <maven.compiler.source>1.6</maven.compiler.source>
         <maven.compiler.target>1.6</maven.compiler.target>
-        <appassembler.maven.plugin.version>1.2.2</appassembler.maven.plugin.version>
+        <appassembler.maven.plugin.version>1.10</appassembler.maven.plugin.version>
         <maven.surefire.plugin.version>2.12.2</maven.surefire.plugin.version>
         <maven.surefire.report.plugin.version>2.12.2</maven.surefire.report.plugin.version>
         <maven.failsafe.plugin.version>2.12.2</maven.failsafe.plugin.version>
