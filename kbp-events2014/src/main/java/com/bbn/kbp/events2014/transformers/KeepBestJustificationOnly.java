@@ -109,7 +109,7 @@ public final class KeepBestJustificationOnly {
       final Scored<Response> selected = input.arguments().score(input.arguments().selectFromMultipleSystemResponses(competitors).get());
       toKeep.add(selected.item());
     }
-    
+
     final ImmutableSet<Response> toDelete =
         Sets.difference(input.arguments().responses(), toKeep).immutableCopy();
     log.info(
@@ -123,8 +123,15 @@ public final class KeepBestJustificationOnly {
     if (input instanceof SystemOutput2015) {
       return ((SystemOutput2015) input).linking();
     } else {
-      return ResponseLinking.from(input.docID(), ImmutableSet.of(
-              ResponseSet.from(input.arguments().responses())),
+      final ImmutableSet<ResponseSet> responseSets;
+      if (!input.arguments().responses().isEmpty()) {
+        responseSets = ImmutableSet.of(
+            ResponseSet.from(input.arguments().responses()));
+      } else {
+        responseSets = ImmutableSet.of();
+      }
+
+      return ResponseLinking.from(input.docID(), responseSets,
           ImmutableSet.<Response>of());
     }
   }
