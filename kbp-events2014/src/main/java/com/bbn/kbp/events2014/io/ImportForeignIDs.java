@@ -63,11 +63,15 @@ public final class ImportForeignIDs {
       final Optional<ResponseLinking> transformedLinking = LinkingSpecFormats
           .readFromLinkingStoreTransformingIDs(originalLinkingStore, docid,
               originalArguments.responses(),
-              Optional.<ImmutableMap<String,String>>of(originalToSystem.build()));
-      // create system output
-      final SystemOutput2015 newSystemOutput =
-          SystemOutput2015.from(originalArguments, transformedLinking.get());
-      newOutput.write(newSystemOutput);
+              Optional.<ImmutableMap<String, String>>of(originalToSystem.build()));
+      if (transformedLinking.isPresent()) {
+        // create system output
+        final SystemOutput2015 newSystemOutput =
+            SystemOutput2015.from(originalArguments, transformedLinking.get());
+        newOutput.write(newSystemOutput);
+      } else {
+        throw new IOException("No linking found for " + docid);
+      }
     }
     originalArgumentStore.close();
     originalLinkingStore.close();
