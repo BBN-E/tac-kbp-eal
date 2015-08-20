@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Created by jdeyoung on 6/4/15.
  */
-abstract class ContainsStringWarningRule implements WarningRule {
+abstract class ContainsStringWarningRule implements WarningRule<Response> {
 
   private static final Logger log = LoggerFactory.getLogger(ContainsStringWarningRule.class);
 

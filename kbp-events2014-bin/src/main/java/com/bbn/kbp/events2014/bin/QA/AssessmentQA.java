@@ -49,7 +49,7 @@ public class AssessmentQA {
             AssessmentSpecFormats.Format.KBP2015);
     final File outputDir = params.getCreatableDirectory("outputDir");
 
-    final ImmutableList<WarningRule> warnings = ImmutableList.of(ConjunctionWarningRule.create(),
+    final ImmutableList<WarningRule<Response>> warnings = ImmutableList.of(ConjunctionWarningRule.create(),
 //        OverlapWarningRule.create(),
         ConflictingTypeWarningRule
             .create(params.getExistingFile("argFile"), params.getExistingFile("roleFile")),

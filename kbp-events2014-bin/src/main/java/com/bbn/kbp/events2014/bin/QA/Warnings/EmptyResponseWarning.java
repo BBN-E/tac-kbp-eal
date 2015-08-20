@@ -11,7 +11,7 @@ import com.google.common.collect.SetMultimap;
 /**
  * Created by jdeyoung on 6/4/15.
  */
-public final class EmptyResponseWarning implements WarningRule {
+public final class EmptyResponseWarning implements WarningRule<Response> {
 
   private EmptyResponseWarning() {
 

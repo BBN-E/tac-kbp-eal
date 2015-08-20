@@ -12,7 +12,7 @@ import com.google.common.collect.Multimaps;
 /**
  * Created by jdeyoung on 6/4/15.
  */
-abstract class TRFRWarning implements WarningRule {
+abstract class TRFRWarning implements WarningRule<Response> {
 
   protected Multimap<TypeRoleFillerRealis, Response> extractTRFRs(final AnswerKey answerKey) {
     return Multimaps.index(

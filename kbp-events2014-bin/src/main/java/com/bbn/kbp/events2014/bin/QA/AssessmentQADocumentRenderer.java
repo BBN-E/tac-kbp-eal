@@ -43,7 +43,7 @@ final class AssessmentQADocumentRenderer extends QADocumentRenderer {
   }
 
   public static AssessmentQADocumentRenderer createWithDefaultOrdering(
-      final ImmutableList<WarningRule> warnings) {
+      final ImmutableList<WarningRule<Response>> warnings) {
     final Map<String, String> warningToType =
         Maps.transformValues(Maps.uniqueIndex(warnings, new Function<WarningRule, String>() {
           @Override
