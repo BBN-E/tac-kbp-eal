@@ -3,17 +3,18 @@ Business.Merge-Org	Org
 Conflict.Attack	Attacker	Target	Instrument
 Conflict.Demonstrate	Entity
 Contact.Meet	Entity
-Contact.Phone-Write	Entity
+Contact.Correspondance	Entity
 Life.Marry	Person
 Life.Divorce	Person
 Life.Injure	Agent	Victim	Instrument
 Life.Die	Agent	Victim	Instrument
-Movement.Transport	Agent	Artifact	Vehicle	Price	Origin	Destination
+Movement.Transport-Person	Agent	Person	Instrument	Origin	Destination
+Movement.Transport-Artifact	Agent	Artifact	Instrument	Origin	Destination
 Personnel.Start-Position	Person	Entity	Position
 Personnel.End-Position	Person	Entity	Position
 Personnel.Nominate	Agent	Person	Position
 Personnel.Elect	Entity	Person	Position
-Transaction.Transfer-Ownership	Seller	Buyer	Beneficiary	Price	Artifact
+Transaction.Transfer-Ownership	Giver	Recipient	Beneficiary	Artifact
 Transaction.Transfer-Money	Giver	Recipient	Beneficiary	Money
 Justice.Arrest-Jail	Agent	Person	Crime
 Justice.Release-Parole	Entity	Person	Crime

@@ -5,13 +5,21 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.CharOffsetSpan;
+import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.io.ArgumentStore;
-import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
+import com.bbn.kbp.events2014.ResponseLinking;
+import com.bbn.kbp.events2014.SystemOutputLayout;
+import com.bbn.kbp.events2014.io.LinkingSpecFormats;
+import com.bbn.kbp.events2014.io.LinkingStore;
+import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
@@ -26,21 +34,43 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.bbn.bue.common.files.FileUtils.loadSymbolToFileMap;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Predicates.compose;
+import static com.google.common.base.Predicates.equalTo;
+import static com.google.common.base.Predicates.not;
 
 public final class ValidateSystemOutput {
 
   private static final Logger log = LoggerFactory.getLogger(ValidateSystemOutput.class);
 
   private final TypeAndRoleValidator typeAndRoleValidator;
+  private final Preprocessor preprocessor;
 
+  private static final Symbol MOVEMENTTRANSPORT = Symbol.from("Movement.Transport");
+  private static final Symbol PLACE = Symbol.from("Place");
 
-  private ValidateSystemOutput(TypeAndRoleValidator typeAndRoleValidator) {
-    this.typeAndRoleValidator = checkNotNull(typeAndRoleValidator);
+  interface Preprocessor {
+
+    File preprocess(File uncompressedSubmissionDir) throws IOException;
   }
 
-  public static ValidateSystemOutput create(TypeAndRoleValidator typeAndRoleValidator) {
-    return new ValidateSystemOutput(typeAndRoleValidator);
+  public static final Preprocessor NO_PREPROCESSING = new Preprocessor() {
+    @Override
+    public File preprocess(final File uncompressedSubmissionDir) {
+      return uncompressedSubmissionDir;
+    }
+  };
+
+  private ValidateSystemOutput(TypeAndRoleValidator typeAndRoleValidator,
+      Preprocessor preprocessor) {
+    this.typeAndRoleValidator = checkNotNull(typeAndRoleValidator);
+    this.preprocessor = checkNotNull(preprocessor);
+  }
+
+  public static ValidateSystemOutput create(TypeAndRoleValidator typeAndRoleValidator,
+      Preprocessor preprocessor) {
+    return new ValidateSystemOutput(typeAndRoleValidator, preprocessor);
   }
 
   private static void usage() {
@@ -65,45 +95,67 @@ public final class ValidateSystemOutput {
    * output store.  If the returned list is empty, the supplied output store is valid. Processing
    * will stop early if {@code maxErrors} errors are encountered.
    */
-  public List<Throwable> validateOnly(File systemOutputStoreFile, int maxErrors,
+  public Result validateOnly(File systemOutputStoreFile, int maxErrors,
       Map<Symbol, File> docIDMap,
-      AssessmentSpecFormats.Format fileFormat) throws IOException {
-    return validate(systemOutputStoreFile, maxErrors, docIDMap, fileFormat, false);
+      SystemOutputLayout layout) throws IOException {
+    return validate(systemOutputStoreFile, maxErrors, docIDMap, layout, false);
   }
 
   /**
-   * Like {@link #validateOnly(java.io.File, int, java.util.Map)} except it also logs the response
+   * Like {@link #validateOnly(File, int, Map, SystemOutputLayout)} except it also logs the response
    * in human readable format, using the supplied {@code docIDMap} to resolve offsets to strings.
    */
-  public List<Throwable> validateAndDump(File systemOutputStoreFile, int maxErrors,
-      Map<Symbol, File> docIDMap, AssessmentSpecFormats.Format fileFormat)
+  public Result validateAndDump(File systemOutputStoreFile, int maxErrors,
+      Map<Symbol, File> docIDMap, SystemOutputLayout layout)
       throws IOException {
-    return validate(systemOutputStoreFile, maxErrors, docIDMap, fileFormat, true);
+    return validate(systemOutputStoreFile, maxErrors, docIDMap, layout, true);
   }
 
 
-  private List<Throwable> validate(File systemOutputStoreFile, int maxErrors,
-      Map<Symbol, File> docIDMap, AssessmentSpecFormats.Format fileFormat,
+  private Result validate(File originalSystemOutputStoreFile, int maxErrors,
+      Map<Symbol, File> docIDMap, SystemOutputLayout outputLayout,
       boolean dump) throws IOException {
+    if (SystemOutputLayout.KBP_EA_2015.equals(outputLayout)) {
+      try {
+        assertExactlyTwoSubdirectories(originalSystemOutputStoreFile);
+      } catch (Exception e) {
+        return Result.forErrors(ImmutableList.of(e));
+      }
+    }
+
+    final File systemOutputStoreFile = preprocessor.preprocess(originalSystemOutputStoreFile);
+    final List<String> warnings = Lists.newArrayList();
     final List<Throwable> errors = Lists.newArrayList();
+
 
     log.info("Validating system output store {} with max errors {}", systemOutputStoreFile,
         maxErrors);
 
     // these are only non-final because the compiler isn't clever enough
     // to figure out they cannot fail to be initialized
-    ArgumentStore outputStore = null;
-    ImmutableSet<Symbol> docIDs = null;
+    SystemOutputStore outputStore = null;
+    Optional<LinkingStore> linkingStore = null;
+    Set<Symbol> docIDs = null;
     try {
-      outputStore = AssessmentSpecFormats.openSystemOutputStore(systemOutputStoreFile, fileFormat);
+      outputStore = outputLayout.open(systemOutputStoreFile);
+      if (SystemOutputLayout.KBP_EA_2015.equals(outputLayout)) {
+        linkingStore = Optional
+            .of(LinkingSpecFormats.openLinkingStore(new File(systemOutputStoreFile, "linking")));
+
+      }
       docIDs = outputStore.docIDs();
     } catch (Exception e) {
       errors.add(e);
-      return errors;
+      return new Result(errors, warnings);
     }
 
     try {
       assertAllOffsetsValid(outputStore, docIDMap);
+      if (linkingStore.isPresent()) {
+        assertDocsAreContained(linkingStore.get().docIDs(), docIDMap.keySet(), "linking");
+        // check that no docids are missing
+        assertDocsAreContained(linkingStore.get().docIDs(), docIDs, "systemOutput");
+      }
     } catch (Exception e) {
       // we can recover from invalid offsets and find more errors
       // this can cause some errors to be repeated more than once
@@ -113,50 +165,115 @@ public final class ValidateSystemOutput {
     int numErrors = 0;
     for (final Symbol docID : docIDs) {
       try {
-        final ArgumentOutput docOutput = outputStore.read(docID);
+        final ArgumentOutput docOutput = outputStore.read(docID).arguments();
         log.info("For document {} got {} responses", docID, docOutput.size());
+
 
         for (final Response response : docOutput.responses()) {
           assertValidTypes(response);
         }
 
+        for (final Response response : docOutput.responses()) {
+          // lets keep all hacks as high level as possible
+          // Movement.Transport-Place warning at Hoa's request
+          if (response.type().equalTo(MOVEMENTTRANSPORT) && response.role().equalTo(PLACE)) {
+            warnings.add("Response " + response
+                + " contains a Movement.Transport-Place argument. It will be ignored during scoring");
+          }
+        }
+
         if (docOutput.size() > 0 && dump) {
           dumpResponses(docIDMap, docOutput);
+        }
+
+        if (linkingStore.isPresent()) {
+          checkLinkingValidity(docID, docOutput, linkingStore);
         }
       } catch (Exception e) {
         errors.add(e);
         ++numErrors;
         if (numErrors > maxErrors) {
-          return errors;
+          return new Result(errors, warnings);
         }
       }
     }
 
+
     // this might not get called, but for read-only use with the default
     // implementation this is not a problem
     outputStore.close();
-    return errors;
+    return new Result(errors, warnings);
   }
 
-  private void assertNoDocumentsOutsideCorpus(ArgumentStore outputStore,
-      Set<Symbol> docsInCorpus) throws IOException {
-    final Set<Symbol> extraDocs = Sets.difference(outputStore.docIDs(), docsInCorpus);
+  private void checkLinkingValidity(final Symbol docID, final ArgumentOutput docOutput,
+      final Optional<LinkingStore> linkingStore) throws IOException {
+    final Optional<ResponseLinking> responseLinking = linkingStore.get().read(docOutput);
+    if (!responseLinking.isPresent()) {
+      throw new RuntimeException("Linking missing for " + docID);
+    }
+    final Set<Response> allLinkedResponses = ImmutableSet
+        .copyOf(Iterables.concat(responseLinking.get().responseSets()));
+    final Set<Response> nonGenericArgumentResponses = Sets
+        .filter(docOutput.responses(), NOT_GENERIC);
+    if (!allLinkedResponses.equals(nonGenericArgumentResponses)) {
+      final StringBuilder msg = new StringBuilder();
+      msg.append(
+          "The set of linked responses should exactly equal the set of non-generic argument responses. However, ");
+      final Set<Response> linkingOnly =
+          Sets.difference(allLinkedResponses, nonGenericArgumentResponses);
+      final Set<Response> argumentOnly =
+          Sets.difference(nonGenericArgumentResponses, allLinkedResponses);
+
+      if (!linkingOnly.isEmpty()) {
+        msg.append("\nThe following are in the linking only:\n ")
+            .append(StringUtils.NewlineJoiner.join(linkingOnly));
+      }
+      if (!argumentOnly.isEmpty()) {
+        msg.append("\nThe following are in the argument output only:\n")
+            .append(StringUtils.NewlineJoiner.join(argumentOnly));
+      }
+      throw new RuntimeException(msg.toString());
+    }
+  }
+
+  private static final Predicate<Response> NOT_GENERIC = compose(not(equalTo(
+      KBPRealis.Generic)), Response.realisFunction());
+
+  private void assertExactlyTwoSubdirectories(final File outputStoreDir) throws IOException {
+    checkArgument(outputStoreDir.isDirectory());
+    if (!new File(outputStoreDir, "arguments").isDirectory()) {
+      throw new IOException("Expected system output to be contain a subdirectory named 'arguments");
+    }
+    if (!new File(outputStoreDir, "linking").isDirectory()) {
+      throw new IOException("Expected system output to be contain a subdirectory named 'linking");
+    }
+    if (outputStoreDir.listFiles().length != 2) {
+      throw new IOException(
+          "Expected system output to contain exactly two sub-directories, but it contains "
+              + outputStoreDir.listFiles() + " things");
+    }
+  }
+
+  private void assertDocsAreContained(Set<Symbol> docsInStore,
+      Set<Symbol> docsInCorpus, String storeType) throws IOException {
+    final Set<Symbol> extraDocs = Sets.symmetricDifference(docsInStore, docsInCorpus);
     if (!extraDocs.isEmpty()) {
       throw new RuntimeException(
           String.format(
-              "The output store contains the following documents which are not in the target corpus: %s",
+              "The " + storeType
+                  + " store contains the following documents which are not in the target corpus: %s",
               extraDocs));
     }
   }
 
-  private void assertAllOffsetsValid(ArgumentStore outputStore, Map<Symbol, File> docIdMap)
+  private void assertAllOffsetsValid(SystemOutputStore outputStore, Map<Symbol, File> docIdMap)
       throws IOException {
-    assertNoDocumentsOutsideCorpus(outputStore, docIdMap.keySet());
+    assertDocsAreContained(outputStore.docIDs(), docIdMap.keySet(), "argument");
 
     for (final Symbol docId : outputStore.docIDs()) {
       final String originalText = Files.asCharSource(docIdMap.get(docId), Charsets.UTF_8).read();
       final int maxOffset = originalText.length() - 1;
-      for (final Response response : outputStore.read(docId).responses()) {
+      for (final Response response : outputStore.read(docId).arguments().responses()) {
         assertValidCharOffsetSpan(response.canonicalArgument().charOffsetSpan(),
             "canonical argument string", docId, maxOffset);
         assertValidCharOffsetSpan(response.baseFiller(), "base filler", docId, maxOffset);
@@ -217,7 +334,9 @@ public final class ValidateSystemOutput {
 
     sb.append("\t");
     sb.append(response.type()).append("-").append(response.role()).append("-")
-        .append(response.realis()).append("\n");
+        .append(response.realis());
+
+    sb.append("\n");
     final String CASFromOriginalText =
         resolveCharOffsets(response.canonicalArgument().charOffsetSpan(),
             response.docID(), originalText);
@@ -286,31 +405,59 @@ public final class ValidateSystemOutput {
 
       final TypeAndRoleValidator typeAndRoleValidator =
           TypeAndRoleValidator.createFromParameters(params);
-      final ValidateSystemOutput validator = create(typeAndRoleValidator);
+      final ValidateSystemOutput validator = create(typeAndRoleValidator, NO_PREPROCESSING);
 
       final File systemOutputStoreFile = params.getExistingFileOrDirectory("systemOutputStore");
-      final AssessmentSpecFormats.Format fileFormat =
-          params.getEnum("fileFormat", AssessmentSpecFormats.Format.class);
+      final SystemOutputLayout layout = params.getEnum("outputLayout", SystemOutputLayout.class);
 
       final File docIDMappingFile = params.getExistingFile("docIDMap");
       log.info("Using map from document IDs to original text: {}", docIDMappingFile);
       final Map<Symbol, File> docIDMap = loadSymbolToFileMap(docIDMappingFile);
 
-      final List<Throwable> errors;
+      final ValidateSystemOutput.Result validationResult;
       if (params.getBoolean("dump")) {
-        errors = validator
-            .validateAndDump(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap, fileFormat);
+        validationResult = validator
+            .validateAndDump(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap, layout);
       } else {
-        errors =
-            validator.validateOnly(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap, fileFormat);
+        validationResult =
+            validator.validateOnly(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap, layout);
       }
-      if (!errors.isEmpty()) {
-        throw errors.get(0);
+      if (!validationResult.wasSuccessful()) {
+        throw validationResult.errors().get(0);
       }
     } catch (Throwable t) {
       t.printStackTrace();
       System.exit(1);
     }
   }
+
+  public static final class Result {
+
+    private final ImmutableList<Throwable> errors;
+    private final ImmutableList<String> warnings;
+
+    private Result(final Iterable<? extends Throwable> errors,
+        final Iterable<String> warnings) {
+      this.errors = ImmutableList.copyOf(errors);
+      this.warnings = ImmutableList.copyOf(warnings);
+    }
+
+    public static Result forErrors(Iterable<? extends Throwable> errors) {
+      return new Result(errors, ImmutableList.<String>of());
+    }
+
+    public ImmutableList<Throwable> errors() {
+      return errors;
+    }
+
+    public ImmutableList<String> warnings() {
+      return warnings;
+    }
+
+    public boolean wasSuccessful() {
+      return errors.isEmpty();
+    }
+  }
+
 
 }

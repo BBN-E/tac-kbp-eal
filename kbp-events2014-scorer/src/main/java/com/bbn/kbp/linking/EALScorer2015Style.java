@@ -6,18 +6,22 @@ import com.bbn.bue.common.evaluation.FMeasureCounts;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.EventArgScoringAlignment;
 import com.bbn.kbp.events2014.EventArgumentLinking;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ScoringData;
+import com.bbn.kbp.events2014.SystemOutput2015;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.linking.EventArgumentLinkingAligner;
 import com.bbn.kbp.events2014.linking.ExactMatchEventArgumentLinkingAligner;
 import com.bbn.kbp.events2014.scorer.LinkingScore;
 import com.bbn.kbp.events2014.scorer.StandardScoringAligner;
 import com.bbn.kbp.events2014.scorer.bin.Preprocessors;
+import com.bbn.kbp.events2014.transformers.KeepBestJustificationOnly;
+import com.bbn.kbp.events2014.transformers.ResponseMapping;
 import com.bbn.kbp.events2014.transformers.ScoringDataTransformation;
 
 import com.google.common.annotations.Beta;
@@ -25,7 +29,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -78,48 +81,41 @@ public final class EALScorer2015Style {
   }
 
   public final class Result {
-    private final EventArgScoringAlignment<TypeRoleFillerRealis> argScoringAlignment;
-    private final LinkingScore linkingScore;
 
-    private Result(
-        final EventArgScoringAlignment<TypeRoleFillerRealis> argScoringAlignment,
-        final LinkingScore linkingScore) {
-      this.argScoringAlignment = checkNotNull(argScoringAlignment);
-      this.linkingScore = checkNotNull(linkingScore);
-    }
+    private final ArgResult argResult;
+    private final LinkResult linkResult;
 
-    public double scaledArgumentScore() {
-      return unscaledArgumentScore() / argumentNormalizer();
-    }
-
-    public double unscaledArgumentScore() {
-      final int truePositiveArgumentECs = argScoringAlignment.truePositiveEquivalenceClasses().size();
-      final int falsePositiveArgumentECs = argScoringAlignment.falsePositiveEquivalenceClasses().size();
-      return truePositiveArgumentECs - beta * falsePositiveArgumentECs;
-    }
-
-    public double unscaledLinkingScore() {
-      return linkingScore.F1()*linkingNormalizer();
-    }
-
-    public double scaledLinkingScore() {
-      return linkingScore.F1();
+    private Result(final ArgResult argResult, final LinkResult linkResult) {
+      this.argResult = checkNotNull(argResult);
+      this.linkResult = checkNotNull(linkResult);
+      checkArgument(argResult.docID().equalTo(linkResult.docID()));
     }
 
     public double scaledScore() {
-      return (1.0-lambda)*scaledArgumentScore()+lambda*scaledLinkingScore();
+      return (1.0 - lambda) * argResult.scaledArgumentScore() + lambda * linkResult
+          .scaledLinkingScore();
     }
 
-    public EventArgScoringAlignment<TypeRoleFillerRealis> argumentScoringAlignment() {
-      return argScoringAlignment;
+    public ArgResult argResult() {
+      return argResult;
     }
 
-    public LinkingScore linkingScore() {
-      return linkingScore;
+    public LinkResult linkResult() {
+      return linkResult;
     }
 
     public Symbol docID() {
-      return argScoringAlignment.docID();
+      return argResult.docID();
+    }
+  }
+
+  public final class ArgResult {
+
+    private final EventArgScoringAlignment<TypeRoleFillerRealis> argScoringAlignment;
+
+    private ArgResult(
+        final EventArgScoringAlignment<TypeRoleFillerRealis> argScoringAlignment) {
+      this.argScoringAlignment = checkNotNull(argScoringAlignment);
     }
 
     public double argumentNormalizer() {
@@ -128,8 +124,100 @@ public final class EALScorer2015Style {
           argScoringAlignment.falseNegativeEquivalenceClasses()).size();
     }
 
+    public Symbol docID() {
+      return argScoringAlignment.docID();
+    }
+
+    public EventArgScoringAlignment<TypeRoleFillerRealis> argumentScoringAlignment() {
+      return argScoringAlignment;
+    }
+
+    public double scaledArgumentScore() {
+      return unscaledArgumentScore() / argumentNormalizer();
+    }
+
+    public double unscaledArgumentScore() {
+      final int truePositiveArgumentECs =
+          argScoringAlignment.truePositiveEquivalenceClasses().size();
+      final int falsePositiveArgumentECs =
+          argScoringAlignment.falsePositiveEquivalenceClasses().size();
+      return truePositiveArgumentECs - beta * falsePositiveArgumentECs;
+    }
+
+    public double unscaledTruePositiveArguments() {
+      return argScoringAlignment.truePositiveEquivalenceClasses().size();
+    }
+
+    public double unscaledFalsePositiveArguments() {
+      return argScoringAlignment.falsePositiveEquivalenceClasses().size();
+    }
+
+    public double precision() {
+      return (unscaledTruePositiveArguments() > 0.0) ?
+             unscaledTruePositiveArguments() / (unscaledTruePositiveArguments()
+                                                    + unscaledFalsePositiveArguments())
+                                                     : 0.0;
+    }
+
+    public double recall() {
+      return (unscaledTruePositiveArguments() > 0.0) ?
+             unscaledTruePositiveArguments() / (unscaledTruePositiveArguments()
+                                                    + argScoringAlignment
+                 .falseNegativeEquivalenceClasses().size())
+                                                     : 0.0;
+    }
+
+    public ArgResult copyFiltered(final Predicate<TypeRoleFillerRealis> filter) {
+      return new ArgResult(argScoringAlignment.copyFiltered(filter));
+    }
+
+    public double unscaledFalseNegativeArguments() {
+      return argScoringAlignment.falseNegativeEquivalenceClasses().size();
+    }
+  }
+
+  public final class LinkResult {
+
+    private final LinkingScore linkingScore;
+
+    private LinkResult(final LinkingScore linkingScore) {
+      this.linkingScore = checkNotNull(linkingScore);
+    }
+
+    public Symbol docID() {
+      return linkingScore.docID();
+    }
+
     public double linkingNormalizer() {
-      return linkingScore.referenceArgumentLinking().allLinkedEquivalenceClasses().size();
+      return linkingScore.referenceLinkingSize();
+    }
+
+    public LinkingScore linkingScore() {
+      return linkingScore;
+    }
+
+    public double unscaledLinkingScore() {
+      return linkingScore.F1() * linkingNormalizer();
+    }
+
+    public double unscaledLinkingPrecision() {
+      return linkingScore.precision() * linkingNormalizer();
+    }
+
+    public double unscaledLinkingRecall() {
+      return linkingScore.recall() * linkingNormalizer();
+    }
+
+    public double scaledLinkingScore() {
+      return linkingScore.F1();
+    }
+
+    public double scaledLinkingPrecision() {
+      return linkingScore.precision();
+    }
+
+    public double scaledLinkingRecall() {
+      return linkingScore.recall();
     }
   }
 
@@ -138,7 +226,7 @@ public final class EALScorer2015Style {
 
   public Result score(ScoringData unpreprocessedScoringData) {
     checkArgument(unpreprocessedScoringData.answerKey().isPresent() && unpreprocessedScoringData
-        .systemOutput().isPresent()
+        .argumentOutput().isPresent()
         && unpreprocessedScoringData.referenceLinking().isPresent() && unpreprocessedScoringData
         .systemLinking().isPresent());
 
@@ -146,20 +234,21 @@ public final class EALScorer2015Style {
                                     preprocessor.get().transform(unpreprocessedScoringData)
                                                             :unpreprocessedScoringData;
 
-    final EventArgScoringAlignment<TypeRoleFillerRealis> scoringAlignment =
-        scoreEventArguments(scoringData);
+    // regardless of the preprocessing, we always filter down to having the smallest possible set
+    // of highest scoring responses which keeps at least one response in each event frame of the
+    // system linking.
+    final ResponseMapping keepBestResponseMapping =
+        KeepBestJustificationOnly.computeResponseMappingUsingProvidedCoref(
+            SystemOutput2015
+                .from(scoringData.argumentOutput().get(), scoringData.systemLinking().get()),
+            scoringData.answerKey().get().corefAnnotation());
+    final ScoringData bestOnlyScoringData = scoringData.modifiedCopy()
+        .withArgumentOutput(keepBestResponseMapping.apply(scoringData.argumentOutput().get()))
+        .withSystemLinking(keepBestResponseMapping.apply(scoringData.systemLinking().get()))
+        .build();
 
-    final ImmutableSet<TypeRoleFillerRealis> linkableEquivalenceClasses =
-        FluentIterable.from(scoringAlignment.truePositiveEquivalenceClasses())
-          .append(scoringAlignment.falseNegativeEquivalenceClasses())
-          .filter(REALIS_IS_NOT_GENERIC)
-        .toSet();
-
-    final LinkingScore linkingScore = scoreLinking(scoringData.answerKey().get(),
-        linkableEquivalenceClasses,
-        scoringData.referenceLinking().get(), scoringData.systemLinking().get());
-
-    return new Result(scoringAlignment, linkingScore);
+    return new Result(new ArgResult(scoreEventArguments(bestOnlyScoringData)),
+        new LinkResult(scoreLinking(bestOnlyScoringData)));
   }
 
   private EventArgScoringAlignment<TypeRoleFillerRealis> scoreEventArguments(ScoringData scoringData) {
@@ -169,19 +258,21 @@ public final class EALScorer2015Style {
 
     final StandardScoringAligner<TypeRoleFillerRealis> scoringAligner =
         StandardScoringAligner.forEquivalenceClassFunction(equivalenceClassFunction);
-    return scoringAligner.align(scoringData.answerKey().get(), scoringData.systemOutput().get());
+    return scoringAligner.align(scoringData.answerKey().get(), scoringData.argumentOutput().get());
   }
 
-  public LinkingScore scoreLinking(AnswerKey answerKey, Set<TypeRoleFillerRealis> linkableEquivalenceClasses,
-      ResponseLinking referenceLinking, ResponseLinking systemLinking) {
-    log.info("Scoring linking for {}", answerKey.docId());
-    checkArgument(answerKey.docId() == systemLinking.docID(), "System output has doc ID %s " +
-        "but answer key has doc ID %s", systemLinking.docID(), answerKey.docId());
-    checkArgument(answerKey.docId() == referenceLinking.docID(),
-        "Answer key docID %s does not match "
-            + "reference linking doc ID %s", answerKey.docId(), referenceLinking.docID());
-    checkArgument(systemLinking.docID() == systemLinking.docID(), "System output docID %s does "
-        + "not match system linking docID %s", systemLinking.docID(), systemLinking.docID());
+  public LinkingScore scoreLinking(ScoringData scoringData) {
+    log.info("Scoring linking for {}", scoringData.answerKey().get().docId());
+    checkArgument(scoringData.systemLinking().isPresent());
+    checkArgument(scoringData.referenceLinking().isPresent());
+    checkArgument(scoringData.answerKey().isPresent());
+
+    final ResponseLinking referenceLinking = scoringData.referenceLinking().get();
+    final AnswerKey answerKey = scoringData.answerKey().get();
+    // we need to remove all incorrectly assessed responses from the system linking
+    final ResponseLinking systemLinking =
+        deleteIncorrectResponses(scoringData.argumentOutput().get(),
+        answerKey).apply(scoringData.systemLinking().get());
 
     checkArgument(referenceLinking.incompleteResponses().isEmpty(),
         "Reference key for %s has %s responses whose linking has not been annotated",
@@ -196,24 +287,25 @@ public final class EALScorer2015Style {
         aligner.align(systemLinking, answerKey);
 
     final EventArgumentLinking filteredReferenceArgumentLinking = referenceArgumentLinking
-        .filteredCopy(in(linkableEquivalenceClasses));
-
-    // We disable this check because the scorer may have done additional filtering
-    // that was not in place in the assessment tool (e.g. remove Life.Injures for correct
-    //Life.Dies).
-    /*if (!referenceArgumentLinking.equals(filteredReferenceArgumentLinking)) {
-      throw new RuntimeException(
-          "Filtering the reference linking should have had no effect, but it deleted " +
-              Sets.difference(referenceArgumentLinking.allLinkedEquivalenceClasses(),
-                  filteredReferenceArgumentLinking.allLinkedEquivalenceClasses()));
-    }*/
+        .filteredCopy(REALIS_IS_NOT_GENERIC);
 
     final EventArgumentLinking filteredSystemArgumentLinking = systemArgumentLinking
-        .filteredCopy(in(linkableEquivalenceClasses));
+        .filteredCopy(REALIS_IS_NOT_GENERIC);
 
-    return LinkingScore.from(referenceLinking, referenceArgumentLinking, systemLinking, systemArgumentLinking,
+    return LinkingScore.from(referenceArgumentLinking,
         linkF1.score(filteredSystemArgumentLinking.linkedAsSetOfSets(),
             filteredReferenceArgumentLinking.linkedAsSetOfSets()));
+  }
+
+  private ResponseMapping deleteIncorrectResponses(final ArgumentOutput argumentOutput,
+      final AnswerKey answerKey) {
+    final ImmutableSet.Builder<Response> toDelete = ImmutableSet.builder();
+    for (final Response r : argumentOutput.responses()) {
+      if (!answerKey.assess(r).get().isCorrectUpToInexactJustifications()) {
+        toDelete.add(r);
+      }
+    }
+    return ResponseMapping.delete(toDelete.build());
   }
 }
 

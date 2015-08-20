@@ -160,6 +160,23 @@ public final class Response {
         additionalArgumentJustifications, predicateJustifications, alternateRealis);
   }
 
+  public Response copyWithSwappedType(final Symbol newType) {
+    if (type.equalTo(newType)) {
+      return this;
+    }
+    return Response.createFrom(docid, newType, role, canonicalArgumentString, baseFiller,
+        additionalArgumentJustifications, predicateJustifications, realis);
+  }
+
+  public Response copyWithSwappedRole(final Symbol newRole) {
+    if (role.equalTo(newRole)) {
+      return this;
+    }
+
+    return Response.createFrom(docid, type, newRole, canonicalArgumentString, baseFiller,
+        additionalArgumentJustifications, predicateJustifications, realis);
+  }
+
   private final Symbol docid;
   private final Symbol type;
   private final Symbol role;
@@ -293,7 +310,7 @@ public final class Response {
       public int compare(final Response left, final Response right) {
         CharOffsetSpan leftString = left.baseFiller();
         CharOffsetSpan rightString = right.baseFiller();
-        if(leftString.string().isPresent() && rightString.string().isPresent()) {
+        if (leftString.string().isPresent() && rightString.string().isPresent()) {
           return leftString.string().get().compareTo(rightString.string().get());
         }
         return leftString.compareTo(rightString);

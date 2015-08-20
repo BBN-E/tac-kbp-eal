@@ -1,7 +1,13 @@
 package com.bbn.kbp.events2014;
 
-import com.google.common.base.Optional;
+import com.bbn.bue.common.symbols.Symbol;
 
+import com.google.common.base.Optional;
+import com.google.common.collect.Sets;
+
+import java.util.Set;
+
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class ScoringData {
@@ -19,13 +25,14 @@ public final class ScoringData {
     this.systemLinking = systemLinking;
     // nullable
     this.referenceLinking = referenceLinking;
+    checkDocIDsMatch();
   }
 
   public Optional<AnswerKey> answerKey() {
     return Optional.fromNullable(answerKey);
   }
 
-  public Optional<ArgumentOutput> systemOutput() {
+  public Optional<ArgumentOutput> argumentOutput() {
     return Optional.fromNullable(argumentOutput);
   }
 
@@ -47,7 +54,7 @@ public final class ScoringData {
       ret. withAnswerKey(answerKey);
     }
     if (argumentOutput != null) {
-      ret.withSystemOutput(argumentOutput);
+      ret.withArgumentOutput(argumentOutput);
     }
     if (systemLinking != null) {
       ret.withSystemLinking(systemLinking);
@@ -72,7 +79,7 @@ public final class ScoringData {
       return this;
     }
 
-    public Builder withSystemOutput(ArgumentOutput argumentOutput) {
+    public Builder withArgumentOutput(ArgumentOutput argumentOutput) {
       this.argumentOutput = checkNotNull(argumentOutput);
       return this;
     }
@@ -90,5 +97,23 @@ public final class ScoringData {
     public ScoringData build() {
       return new ScoringData(argumentOutput, answerKey, systemLinking, referenceLinking);
     }
+  }
+
+
+  private void checkDocIDsMatch() {
+    final Set<Symbol> docIDsPresent = Sets.newHashSet();
+    if (answerKey != null) {
+      docIDsPresent.add(answerKey.docId());
+    }
+    if (argumentOutput != null) {
+      docIDsPresent.add(argumentOutput.docId());
+    }
+    if (systemLinking != null) {
+      docIDsPresent.add(systemLinking.docID());
+    }
+    if (referenceLinking != null) {
+      docIDsPresent.add(referenceLinking.docID());
+    }
+    checkArgument(docIDsPresent.size() < 2, "ScoringData has mixed docIDs: %s", docIDsPresent);
   }
 }

@@ -16,13 +16,10 @@ import com.bbn.kbp.events2014.io.LinkingStore;
 import com.bbn.kbp.events2014.linking.SameEventTypeLinker;
 import com.bbn.kbp.linking.EALScorer2015Style;
 
-import com.google.common.base.Charsets;
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.io.Files;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -38,12 +36,20 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public final class KBP2015Scorer {
   private static final Logger log = LoggerFactory.getLogger(KBP2015Scorer.class);
 
-  private KBP2015Scorer(final EALScorer2015Style documentScorer) {
+  private KBP2015Scorer(final EALScorer2015Style documentScorer,
+      Map<String, ResultWriter> additionalResultWriters) {
     this.documentScorer = checkNotNull(documentScorer);
+    this.additionalResultWriters = ImmutableMap.copyOf(additionalResultWriters);
   }
 
   public static KBP2015Scorer fromParameters(Parameters params) {
-    return new KBP2015Scorer(EALScorer2015Style.create(params));
+    return new KBP2015Scorer(EALScorer2015Style.create(params),
+        ImmutableMap.<String, ResultWriter>of());
+  }
+
+  public static KBP2015Scorer fromParameters(Parameters params,
+      Map<String, ResultWriter> additionalResultWriters) {
+    return new KBP2015Scorer(EALScorer2015Style.create(params), additionalResultWriters);
   }
 
   private static void usage() {
@@ -70,26 +76,27 @@ public final class KBP2015Scorer {
     // we wrap the main method in this way to
     // ensure a non-zero return value on failure
     try {
-      trueMain(argv);
+      trueMain(argv, ImmutableMap.<String, ResultWriter>of());
     } catch (Exception e) {
       e.printStackTrace();
       System.exit(1);
     }
   }
 
-  private static void trueMain(String[] argv) throws IOException {
+  public static void trueMain(String[] argv, Map<String, ResultWriter> additionalResultWriters)
+      throws IOException {
     if (argv.length != 1) {
       usage();
       System.exit(1);
     }
     final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
-    final KBP2015Scorer scorer = KBP2015Scorer.fromParameters(params);
+    log.info(params.dump());
+    final KBP2015Scorer scorer = KBP2015Scorer.fromParameters(params, additionalResultWriters);
 
     final AnnotationStore goldAnswerStore = AssessmentSpecFormats.openAnnotationStore(params
             .getExistingDirectory("answerKey"), AssessmentSpecFormats.Format.KBP2015);
     final Set<Symbol> docsToScore = loadDocumentsToScore(params);
-    final LinkingStore referenceLinkingStore = LinkingSpecFormats.openOrCreateLinkingStore(
-        params.getExistingDirectory("referenceLinking"));
+    final LinkingStore referenceLinkingStore = getReferenceLinkingStore(goldAnswerStore, params);
 
     checkArgument(
         params.isPresent(SYSTEM_OUTPUT_PARAM) != params.isPresent(SYSTEM_OUTPUTS_DIR_PARAM),
@@ -131,7 +138,20 @@ public final class KBP2015Scorer {
     }
   }
 
-  private EALScorer2015Style documentScorer;
+  private static LinkingStore getReferenceLinkingStore(AnnotationStore annStore,
+      final Parameters params)
+      throws IOException {
+    if (useDefaultLinkingHack(params)) {
+      return SameEventTypeLinker.create(
+          ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other)).wrap(annStore.docIDs());
+    } else {
+      return LinkingSpecFormats.openOrCreateLinkingStore(
+          params.getExistingDirectory("referenceLinking"));
+    }
+  }
+
+  private final EALScorer2015Style documentScorer;
+  private final ImmutableMap<String, ResultWriter> additionalResultWriters;
 
   private void score(final AnnotationStore goldAnswerStore,
       final LinkingStore referenceLinkingStore, final ArgumentStore argumentStore,
@@ -158,7 +178,7 @@ public final class KBP2015Scorer {
 
         final ScoringData scoringData = ScoringData.builder()
             .withAnswerKey(argumentKey)
-            .withSystemOutput(argumentOutput)
+            .withArgumentOutput(argumentOutput)
             .withReferenceLinking(referenceLinking.get())
             .withSystemLinking(systemLinking.get())
             .build();
@@ -169,45 +189,35 @@ public final class KBP2015Scorer {
       }
     }
 
-    final File perDocOutput = new File(outputDir, "scoresByDocument.txt");
-    Files.asCharSink(perDocOutput, Charsets.UTF_8).write(
-        String.format("%40s\t%10s\t%10s\t%10s\n", "Document", "Arg", "Link", "Combined") +
-        Joiner.on("\n").join(
-        Lists.transform(perDocResults, new Function<EALScorer2015Style.Result, String>() {
-          @Override
-          public String apply(final EALScorer2015Style.Result input) {
-            return String.format("%40s\t%10.2f\t%10.2f\t%10.2f", input.docID(),
-                100.0 * input.scaledArgumentScore(), 100.0 * input.scaledLinkingScore(),
-                100.0 * input.scaledScore());
-          }
-        })));
+    writeOutput(perDocResults, outputDir);
+  }
 
-    double rawArgScoreSum = 0.0;
-    double argNomralizerSum = 0.0;
-    double rawLinkScoreSum = 0.0;
-    double linkNormalizerSum = 0.0;
-    for (final EALScorer2015Style.Result perDocResult : perDocResults) {
-      rawArgScoreSum += Math.max(0.0, perDocResult.unscaledArgumentScore());
-      argNomralizerSum += perDocResult.argumentNormalizer();
-      rawLinkScoreSum += perDocResult.unscaledLinkingScore();
-      linkNormalizerSum += perDocResult.linkingNormalizer();
+  private void writeOutput(final List<EALScorer2015Style.Result> perDocResults,
+      final File baseOutputDir) throws IOException {
+
+    // write scores over everything
+    (new AggregateAndPerDocResultWriter(documentScorer.lambda())).writeResult(perDocResults,
+        baseOutputDir);
+
+    // write scores broken down by event type
+    (new ByEventTypeResultWriter())
+        .writeResult(perDocResults, new File(baseOutputDir, "byEventType"));
+
+    for (final Map.Entry<String, ResultWriter> additionalResultWriter : additionalResultWriters
+        .entrySet()) {
+      additionalResultWriter.getValue().writeResult(perDocResults,
+          new File(baseOutputDir, additionalResultWriter.getKey()));
     }
+  }
 
+  interface ResultWriter {
 
-    double aggregateArgScore = (argNomralizerSum > 0.0) ? rawArgScoreSum / argNomralizerSum : 0.0;
-    double aggregateLinkScore = (linkNormalizerSum > 0.0) ? rawLinkScoreSum / linkNormalizerSum : 0.0;
-    double aggregateScore = (1.0-documentScorer.lambda())*aggregateArgScore + documentScorer.lambda()*aggregateLinkScore;
-
-    Files.asCharSink(new File(outputDir, "aggregateScore.txt"), Charsets.UTF_8).write(
-        String.format("%30s:%8.2f\n", "Aggregate argument score", 100.0 * aggregateArgScore) +
-            String.format("%30s:%8.2f\n", "Aggregate linking score", 100.0 * aggregateLinkScore) +
-            String.format("%30s:%8.2f\n", "Overall score", 100.0 * aggregateScore));
-
+    void writeResult(final List<EALScorer2015Style.Result> perDocResults,
+        final File baseOutputDir) throws IOException;
   }
 
   private static final String SYSTEM_OUTPUT_PARAM = "systemOutput";
   private static final String SYSTEM_OUTPUTS_DIR_PARAM = "systemOutputsDir";
-
 
   private static ImmutableSet<Symbol> loadDocumentsToScore(Parameters params) throws IOException {
     final File docsToScoreList = params.getExistingFile("documentsToScore");
@@ -221,11 +231,11 @@ public final class KBP2015Scorer {
 
 
   private static LinkingStore getLinkingStore(final Parameters params, final File systemOutputDir,
-      final ArgumentStore argumentStore) {
+      final ArgumentStore argumentStore) throws IOException {
     final LinkingStore systemLinkingStore;
     if (useDefaultLinkingHack(params)) {
       systemLinkingStore = SameEventTypeLinker.create(
-          ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other)).wrap(argumentStore);
+          ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other)).wrap(argumentStore.docIDs());
     } else {
       systemLinkingStore = LinkingSpecFormats
           .openOrCreateLinkingStore(new File(systemOutputDir, "linking"));

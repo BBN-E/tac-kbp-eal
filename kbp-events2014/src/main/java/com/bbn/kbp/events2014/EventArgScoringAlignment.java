@@ -3,10 +3,13 @@ package com.bbn.kbp.events2014;
 import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 
 import java.util.Collection;
 import java.util.Map;
@@ -56,6 +59,11 @@ public final class EventArgScoringAlignment<EquivClassType> {
     return new EventArgScoringAlignment<EquivClassType>(docID, argumentOutput, answerKey,
         truePositiveECs,
         falsePositiveECs, falseNegativeECs, unassessed, ecsToAnswerKey, ecsToSystem);
+  }
+
+  public ImmutableSet<EquivClassType> allEquivalenceClassess() {
+    return ImmutableSet.copyOf(
+        Iterables.concat(truePositiveECs, falseNegativeECs, falseNegativeECs));
   }
 
   public Symbol docID() {
@@ -112,5 +120,16 @@ public final class EventArgScoringAlignment<EquivClassType> {
       }
     }
     return ret.build();
+  }
+
+  public EventArgScoringAlignment<EquivClassType> copyFiltered(
+      final Predicate<EquivClassType> filter) {
+    return new EventArgScoringAlignment<EquivClassType>(docID(), argumentOutput, answerKey,
+        Iterables.filter(truePositiveECs, filter),
+        Iterables.filter(falsePositiveECs, filter),
+        Iterables.filter(falseNegativeECs, filter),
+        Iterables.filter(unassessed, filter),
+        Multimaps.filterKeys(ecsToAnswerKey, filter),
+        Multimaps.filterKeys(ecsToSystem, filter));
   }
 }

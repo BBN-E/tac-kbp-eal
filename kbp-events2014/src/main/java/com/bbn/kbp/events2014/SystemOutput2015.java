@@ -14,6 +14,10 @@ public final class SystemOutput2015 implements SystemOutput {
     this.argumentOutput = checkNotNull(argumentOutput);
     this.linking = checkNotNull(linking);
     checkArgument(linking.docID().equals(argumentOutput.docId()));
+    for (final Response response : linking.allResponses()) {
+      checkArgument(argumentOutput.responses().contains(response), "Response %s in linking is not "
+          + "present in argument output", response);
+    }
   }
 
   public static SystemOutput2015 from(final ArgumentOutput argumentOutput, final ResponseLinking linking) {

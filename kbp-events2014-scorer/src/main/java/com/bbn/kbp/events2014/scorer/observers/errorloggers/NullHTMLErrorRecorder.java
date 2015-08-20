@@ -38,7 +38,7 @@ public final class NullHTMLErrorRecorder implements HTMLErrorRecorder {
 
   @Override
   public String vsAnnotated(String clazz, String title, Response headerResponse,
-      Iterable<Scored<Response>> scoredResponses, Iterable<AssessedResponse> annotatedResponses) {
+      Iterable<Response> scoredResponses, Iterable<AssessedResponse> annotatedResponses) {
     return "";
   }
 

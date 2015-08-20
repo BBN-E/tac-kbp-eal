@@ -1,0 +1,160 @@
+Business.Declare-Bankruptcy	Org	ORG
+Business.Declare-Bankruptcy	Time	Time
+Business.Declare-Bankruptcy	Place	GPE	FAC	LOC	VEH
+Business.Merge-Org	Org	ORG
+Business.Merge-Org	Time	Time
+Business.Merge-Org	Place	GPE	FAC	LOC	VEH
+Conflict.Attack	Attacker	PER	ORG	GPE
+Conflict.Attack	Target	PER	ORG	VEH	FAC	WEA
+Conflict.Attack	Instrument	WEA	VEH
+Conflict.Attack	Time	Time
+Conflict.Attack	Place	GPE	FAC	LOC	VEH
+Conflict.Demonstrate	Entity	PER	ORG
+Conflict.Demonstrate	Time	Time
+Conflict.Demonstrate	Place	GPE	FAC	LOC	VEH
+Contact.Meet	Entity	PER	ORG	GPE
+Contact.Meet	Time	Time
+Contact.Meet	Place	GPE	FAC	LOC	VEH
+Contact.Correspondance	Entity	PER	ORG	GPE
+Contact.Correspondance	Time	Time
+Contact.Correspondance	Place	GPE	FAC	LOC	VEH
+Life.Marry	Person	PER
+Life.Marry	Time	Time
+Life.Marry	Place	GPE	FAC	LOC	VEH
+Life.Divorce	Person	PER
+Life.Divorce	Time	Time
+Life.Divorce	Place	GPE	FAC	LOC	VEH
+Life.Injure	Agent	PER	ORG	GPE
+Life.Injure	Victim	PER
+Life.Injure	Instrument	WEA	VEH
+Life.Injure	Time	Time
+Life.Injure	Place	GPE	FAC	LOC	VEH
+Life.Die	Agent	PER	ORG	GPE
+Life.Die	Victim	PER
+Life.Die	Instrument	WEA	VEH
+Life.Die	Time	Time
+Life.Die	Place	GPE	FAC	LOC	VEH
+Movement.Transport-Person	Agent	PER	ORG	GPE
+Movement.Transport-Person	Person	PER
+Movement.Transport-Person	Instrument	WEA	VEH
+Movement.Transport-Person	Origin	GPE	LOC	FAC
+Movement.Transport-Person	Destination	GPE	LOC	FAC
+Movement.Transport-Person	Time	Time
+Movement.Transport-Person	Place	GPE	FAC	LOC	VEH
+Movement.Transport-Artifact	Agent	PER	ORG	GPE
+Movement.Transport-Artifact	Artifact	FAC	WEA	VEH	ORG	COM
+Movement.Transport-Artifact	Instrument	WEA	VEH
+Movement.Transport-Artifact	Origin	GPE	LOC	FAC
+Movement.Transport-Artifact	Destination	GPE	LOC	FAC
+Movement.Transport-Artifact	Time	Time
+Movement.Transport-Artifact	Place	GPE	FAC	LOC	VEH
+Personnel.Start-Position	Person	PER
+Personnel.Start-Position	Entity	ORG	GPE
+Personnel.Start-Position	Position	Job-Title
+Personnel.Start-Position	Time	Time
+Personnel.Start-Position	Place	GPE	FAC	LOC	VEH
+Personnel.End-Position	Person	PER
+Personnel.End-Position	Entity	ORG	GPE
+Personnel.End-Position	Position	Job-Title
+Personnel.End-Position	Time	Time
+Personnel.End-Position	Place	GPE	FAC	LOC	VEH
+Personnel.Nominate	Agent	PER	ORG	GPE	FAC
+Personnel.Nominate	Person	PER
+Personnel.Nominate	Position	Job-Title
+Personnel.Nominate	Time	Time
+Personnel.Nominate	Place	GPE	FAC	LOC	VEH
+Personnel.Elect	Entity	PER	ORG	GPE
+Personnel.Elect	Person	PER
+Personnel.Elect	Position	Job-Title
+Personnel.Elect	Time	Time
+Personnel.Elect	Place	GPE	FAC	LOC	VEH
+Transaction.Transfer-Ownership	Giver	PER	ORG	GPE
+Transaction.Transfer-Ownership	Recipient	PER	ORG	GPE
+Transaction.Transfer-Ownership	Beneficiary	PER	ORG	GPE
+Transaction.Transfer-Ownership	Artifact	FAC	WEA	VEH	ORG	COM
+Transaction.Transfer-Ownership	Time	Time
+Transaction.Transfer-Ownership	Place	GPE	FAC	LOC	VEH
+Transaction.Transfer-Money	Giver	PER	ORG	GPE
+Transaction.Transfer-Money	Recipient	PER	ORG	GPE
+Transaction.Transfer-Money	Beneficiary	PER	ORG	GPE
+Transaction.Transfer-Money	Money	MONEY
+Transaction.Transfer-Money	Time	Time
+Transaction.Transfer-Money	Place	GPE	FAC	LOC	VEH
+Justice.Arrest-Jail	Agent	PER	ORG	GPE
+Justice.Arrest-Jail	Person	PER
+Justice.Arrest-Jail	Crime	CRIME
+Justice.Arrest-Jail	Time	Time
+Justice.Arrest-Jail	Place	GPE	FAC	LOC	VEH
+Justice.Release-Parole	Entity	PER	ORG	GPE
+Justice.Release-Parole	Person	PER
+Justice.Release-Parole	Crime	CRIME
+Justice.Release-Parole	Time	Time
+Justice.Release-Parole	Place	GPE	FAC	LOC	VEH
+Justice.Trial-Hearing	Prosecutor	PER	ORG	GPE
+Justice.Trial-Hearing	Adjudicator	PER	ORG	GPE
+Justice.Trial-Hearing	Defendant	PER	ORG	GPE
+Justice.Trial-Hearing	Crime	CRIME
+Justice.Trial-Hearing	Time	Time
+Justice.Trial-Hearing	Place	GPE	FAC	LOC	VEH
+Justice.Sentence	Adjudicator	PER	ORG	GPE
+Justice.Sentence	Defendant	PER	ORG	GPE
+Justice.Sentence	Sentence	Sentence
+Justice.Sentence	Crime	CRIME
+Justice.Sentence	Time	Time
+Justice.Sentence	Place	GPE	FAC	LOC	VEH
+Justice.Fine	Adjudicator	PER	ORG	GPE
+Justice.Fine	Entity	PER	ORG	GPE
+Justice.Fine	Money	MONEY
+Justice.Fine	Crime	CRIME
+Justice.Fine	Time	Time
+Justice.Fine	Place	GPE	FAC	LOC	VEH
+Justice.Charge-Indict	Prosecutor	PER	ORG	GPE
+Justice.Charge-Indict	Adjudicator	PER	ORG	GPE
+Justice.Charge-Indict	Defendant	PER	ORG	GPE
+Justice.Charge-Indict	Crime	CRIME
+Justice.Charge-Indict	Time	Time
+Justice.Charge-Indict	Place	GPE	FAC	LOC	VEH
+Justice.Sue	Plaintiff	PER	ORG	GPE
+Justice.Sue	Adjudicator	PER	ORG	GPE
+Justice.Sue	Defendant	PER	ORG	GPE
+Justice.Sue	Crime	CRIME
+Justice.Sue	Time	Time
+Justice.Sue	Place	GPE	FAC	LOC	VEH
+Justice.Extradite	Agent	PER	ORG	GPE
+Justice.Extradite	Person	PER
+Justice.Extradite	Origin	GPE	LOC	FAC
+Justice.Extradite	Destination	GPE	LOC	FAC
+Justice.Extradite	Crime	CRIME
+Justice.Extradite	Time	Time
+Justice.Extradite	Place	GPE	FAC	LOC	VEH
+Justice.Acquit	Adjudicator	PER	ORG	GPE
+Justice.Acquit	Defendant	PER	ORG	GPE
+Justice.Acquit	Crime	CRIME
+Justice.Acquit	Time	Time
+Justice.Acquit	Place	GPE	FAC	LOC	VEH
+Justice.Convict	Adjudicator	PER	ORG	GPE
+Justice.Convict	Defendant	PER	ORG	GPE
+Justice.Convict	Crime	CRIME
+Justice.Convict	Time	Time
+Justice.Convict	Place	GPE	FAC	LOC	VEH
+Justice.Appeal	Prosecutor	PER	ORG	GPE
+Justice.Appeal	Adjudicator	PER	ORG	GPE
+Justice.Appeal	Defendant	PER	ORG	GPE
+Justice.Appeal	Crime	CRIME
+Justice.Appeal	Time	Time
+Justice.Appeal	Place	GPE	FAC	LOC	VEH
+Justice.Execute	Agent	PER	ORG	GPE
+Justice.Execute	Person	PER
+Justice.Execute	Crime	CRIME
+Justice.Execute	Time	Time
+Justice.Execute	Place	GPE	FAC	LOC	VEH
+Justice.Pardon	Adjudicator	PER	ORG	GPE
+Justice.Pardon	Defendant	PER	ORG	GPE
+Justice.Pardon	Crime	CRIME
+Justice.Pardon	Time	Time
+Justice.Pardon	Place	GPE	FAC	LOC	VEH
+Manufacture.Artifact	Agent	PER	ORG	GPE
+Manufacture.Artifact	Artifact	FAC	WEA	VEH	ORG	COM
+Manufacture.Artifact	Instrument	WEA	VEH
+Manufacture.Artifact	Time	Time
+Manufacture.Artifact	Place	GPE	FAC	LOC	VEH

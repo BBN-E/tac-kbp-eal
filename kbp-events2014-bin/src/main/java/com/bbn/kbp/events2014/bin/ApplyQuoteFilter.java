@@ -5,8 +5,6 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.SystemOutput;
 import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
-import com.bbn.kbp.events2014.io.SystemOutputStore2014;
-import com.bbn.kbp.events2014.io.SystemOutputStore2015;
 import com.bbn.kbp.events2014.transformers.QuoteFilter;
 
 import com.google.common.collect.ImmutableMap;
@@ -19,8 +17,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-
-import static com.google.common.base.Preconditions.checkState;
 
 public final class ApplyQuoteFilter {
 
@@ -125,14 +121,6 @@ public final class ApplyQuoteFilter {
 
   private static Map.Entry<SystemOutputStore, SystemOutputStore> storeFor(File inputPath,
       File outputPath, SystemOutputLayout layout) throws IOException {
-    if (layout.equals(SystemOutputLayout.KBP_EA_2014)) {
-      return Maps.<SystemOutputStore, SystemOutputStore>immutableEntry(SystemOutputStore2014.open(inputPath), SystemOutputStore2014.openOrCreate(outputPath));
-    } else if (layout.equals(SystemOutputLayout.KBP_EA_2015)) {
-      return Maps.<SystemOutputStore, SystemOutputStore>immutableEntry(SystemOutputStore2015.open(inputPath),
-          SystemOutputStore2015.openOrCreate(outputPath));
-    } else {
-      checkState(false, "Can't happen");
-      return null;
-    }
+    return Maps.immutableEntry(layout.open(inputPath), layout.openOrCreate(outputPath));
   }
 }

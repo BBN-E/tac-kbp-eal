@@ -1,9 +1,10 @@
 package com.bbn.kbp.events2014.bin;
 
+import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
-import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
+import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 
 import com.google.common.base.Charsets;
@@ -23,10 +24,10 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * This is a wrapper around the validator to make it work nicely for NIST's online submission
@@ -36,7 +37,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 public final class NISTValidator {
 
   private static final Logger log = LoggerFactory.getLogger(NISTValidator.class);
-  private static final int ERROR_CODE = 255;
+  static final int ERROR_CODE = 255;
   private static final int MAX_ERRORS = 10;
 
   public enum Verbosity {VERBOSE, COMPACT}
@@ -46,6 +47,7 @@ public final class NISTValidator {
         "usage: NISTValidator rolesFile docIdToOriginalTextMap [VERBOSE|COMPACT] submissionFile");
     System.exit(ERROR_CODE);
   }
+
 
   public static void main(String[] argv) throws IOException {
     if (argv.length != 4) {
@@ -67,7 +69,8 @@ public final class NISTValidator {
 
     final ValidateSystemOutput validator = ValidateSystemOutput.create(
         TypeAndRoleValidator.create(SymbolUtils.setFrom("Time", "Place"),
-            FileUtils.loadSymbolMultimap(Files.asCharSource(rolesFile, Charsets.UTF_8))));
+            FileUtils.loadSymbolMultimap(Files.asCharSource(rolesFile, Charsets.UTF_8))),
+        ValidateSystemOutput.NO_PREPROCESSING);
 
     Verbosity verbosity = null;
 
@@ -80,6 +83,25 @@ public final class NISTValidator {
     }
 
     final File submitFile = new File(argv[3]);
+
+    final NISTValidator nistValidator = new NISTValidator(validator, verbosity);
+    nistValidator.run(docIdMap, submitFile);
+  }
+
+  private final ValidateSystemOutput validator;
+  private final Verbosity verbosity;
+
+  NISTValidator(final ValidateSystemOutput validator,
+      final Verbosity verbosity) {
+    this.validator = checkNotNull(validator);
+    this.verbosity = checkNotNull(verbosity);
+  }
+
+  public void run(final Map<Symbol, File> docIdMap, File submitFile) throws IOException {
+    run(docIdMap, submitFile, SystemOutputLayout.KBP_EA_2014);
+  }
+
+  public void run(final Map<Symbol, File> docIdMap, File submitFile, SystemOutputLayout layout) throws IOException {
     final File workingDirectory = new File(System.getProperty("user.dir"));
     log.info("Got submission file {} and working directory {}", submitFile, workingDirectory);
     if (!workingDirectory.exists()) {
@@ -88,7 +110,7 @@ public final class NISTValidator {
     }
 
     final File errorFile = new File(workingDirectory, submitFile.getName() + ".errlog");
-    log.info("Will write errrors to {}", errorFile);
+    log.info("Will write errors to {}", errorFile);
 
     try {
       if (!submitFile.exists()) {
@@ -97,32 +119,22 @@ public final class NISTValidator {
       }
 
       File uncompressedDirectory = uncompressToTempDirectory(submitFile);
-      checkForCommonProblems(uncompressedDirectory);
       log.info("Uncompressed submission to {}", uncompressedDirectory);
 
       logErrorsAndExit(errorFile, validator.validateOnly(uncompressedDirectory, MAX_ERRORS,
-          docIdMap, AssessmentSpecFormats.Format.KBP2014), verbosity);
+          docIdMap, layout), verbosity);
     } catch (Exception e) {
-      logErrorsAndExit(errorFile, ImmutableList.of(e), verbosity);
+      logErrorsAndExit(errorFile, ValidateSystemOutput.Result.forErrors(ImmutableList.of(e)),
+          verbosity);
     }
   }
 
-  private static void checkForCommonProblems(File dir) throws IOException {
-    for (final File f : dir.listFiles()) {
-      if (f.isDirectory()) {
-        throw new IOException(String.format(
-            "The supplied archive contains a sub-directory %s. This probably means your archive contains was created containing your system output directory. Instead, it should contain the *contents* of your system output directory.",
-            f.getName()));
-      }
-    }
-  }
-
-  private static void logErrorsAndExit(File errorFile, List<? extends Throwable> errors,
+  private static void logErrorsAndExit(File errorFile, ValidateSystemOutput.Result validationResult,
       Verbosity verbosity) throws IOException {
     final StringBuilder sb = new StringBuilder();
     sb.append(
         "If you get any errors which are difficult to understand, please send the full stack trace to rgabbard@bbn.com for help.\n");
-    for (final Throwable error : errors) {
+    for (final Throwable error : validationResult.errors()) {
       if (verbosity == Verbosity.VERBOSE) {
         sb.append(Throwables.getStackTraceAsString(error)).append("\n");
       } else if (verbosity == Verbosity.COMPACT) {
@@ -137,11 +149,12 @@ public final class NISTValidator {
         throw new RuntimeException(String.format("Invalid verbosity %s", verbosity));
       }
     }
-    final String errorString = sb.toString();
+    final String errorString =
+        sb.toString() + StringUtils.NewlineJoiner.join(validationResult.warnings());
 
     Files.asCharSink(errorFile, Charsets.UTF_8).write(errorString);
 
-    if (errors.isEmpty()) {
+    if (validationResult.wasSuccessful()) {
       System.exit(0);
     } else {
       log.error(errorString);

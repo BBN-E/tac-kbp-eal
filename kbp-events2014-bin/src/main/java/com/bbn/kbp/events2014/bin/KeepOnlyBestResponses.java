@@ -2,16 +2,11 @@ package com.bbn.kbp.events2014.bin;
 
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.ResponseLinking;
-import com.bbn.kbp.events2014.ArgumentOutput;
-import com.bbn.kbp.events2014.io.ArgumentStore;
-import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
-import com.bbn.kbp.events2014.io.LinkingSpecFormats;
-import com.bbn.kbp.events2014.io.LinkingStore;
+import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.SystemOutputLayout;
+import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.transformers.KeepBestJustificationOnly;
 import com.bbn.kbp.events2014.transformers.ResponseMapping;
-
-import com.google.common.base.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,57 +38,28 @@ public final class KeepOnlyBestResponses {
 
     final File inputStoreLocation = params.getExistingDirectory("inputStore");
     final File outputStoreLocation = params.getCreatableDirectory("outputStore");
+    final SystemOutputLayout layout = params.getEnum("outputLayout", SystemOutputLayout.class);
 
+    final SystemOutputStore inputStore = layout.open(inputStoreLocation);
+    final SystemOutputStore outputStore = layout.openOrCreate(outputStoreLocation);
 
-    final boolean keepInferenceCases = params.getBoolean("keepInferenceCases");
-
-    final AssessmentSpecFormats.Format fileFormat =
-        params.getEnum("fileFormat", AssessmentSpecFormats.Format.class);
-    final ArgumentStore sourceStore =
-        AssessmentSpecFormats.openSystemOutputStore(inputStoreLocation, fileFormat);
-    final ArgumentStore destStore =
-        AssessmentSpecFormats.createSystemOutputStore(outputStoreLocation, fileFormat);
-
-    final Optional<LinkingStore> sourceLinkingStore;
-    final Optional<LinkingStore> destLinkingStore;
-    final Optional<File> inputLinkingStoreLocation = params.getOptionalExistingDirectory(
-        "linkingStore");
-    if (inputLinkingStoreLocation.isPresent()) {
-      log.info("Also applying keep best to linking");
-      final File outputLinkingStoreLocation = params.getExistingDirectory("outputLinkingStore");
-      sourceLinkingStore = Optional.of(LinkingSpecFormats.openLinkingStore(inputLinkingStoreLocation.get()));
-      destLinkingStore = Optional.of(LinkingSpecFormats.openOrCreateLinkingStore(outputLinkingStoreLocation));
-    } else {
-      sourceLinkingStore = Optional.absent();
-      destLinkingStore = Optional.absent();
-    }
-
-    log.info("Source store has {} documents", sourceStore.docIDs().size());
-    for (final Symbol docID : sourceStore.docIDs()) {
-      final ArgumentOutput original = sourceStore.read(docID);
+    log.info("Source store has {} documents", inputStore.docIDs().size());
+    for (final Symbol docID : inputStore.docIDs()) {
+      final SystemOutput original = inputStore.read(docID);
       final ResponseMapping responseMapping = KeepBestJustificationOnly.computeResponseMapping(
           original);
-      final ArgumentOutput filtered = responseMapping.apply(original);
-      int numFiltered = original.size() - filtered.size();
+      final SystemOutput filtered = original.copyTransformedBy(responseMapping);
+
+      int numFiltered = original.arguments().size() - filtered.arguments().size();
 
       log.info("For document {}, filtered out {} responses as duplicate justifications",
           docID, numFiltered);
 
-      destStore.write(filtered);
-
-      if (sourceLinkingStore.isPresent()) {
-        final Optional<ResponseLinking> originalLinking = sourceLinkingStore.get().read(original);
-        if (originalLinking.isPresent()) {
-          // .get() save because source and dest are set together
-          destLinkingStore.get().write(responseMapping.apply(originalLinking.get()));
-        } else {
-          throw new RuntimeException("No linking present for document " + docID);
-        }
-      }
+      outputStore.write(filtered);
     }
 
-    sourceStore.close();
-    destStore.close();
+    inputStore.close();
+    outputStore.close();
   }
 
 

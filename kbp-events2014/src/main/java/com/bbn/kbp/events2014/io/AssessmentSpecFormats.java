@@ -27,6 +27,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -182,6 +183,19 @@ public final class AssessmentSpecFormats {
     }
   }
 
+  /* package-private */ static ArgumentOutput uncachedReadFromArgumentStoreCachingOldIDS(
+      final ArgumentStore directoryArgumentStore, final Symbol docID,
+      final ImmutableBiMap.Builder<String, String> originalIDToSystem) throws IOException {
+    if (directoryArgumentStore instanceof DirectorySystemOutputStore) {
+      return ((DirectorySystemOutputStore) directoryArgumentStore).readAndCacheIDs(docID,
+          originalIDToSystem);
+    } else {
+      throw new RuntimeException(
+          "Invalid annotation store type, got " + directoryArgumentStore.getClass()
+              + " but expected DirectorySystemOutputStore");
+    }
+  }
+
   private static final class DirectorySystemOutputStore implements ArgumentStore {
 
     private static final Logger log = LoggerFactory.getLogger(DirectorySystemOutputStore.class);
@@ -200,10 +214,15 @@ public final class AssessmentSpecFormats {
 
     @Override
     public ArgumentOutput read(final Symbol docid) throws IOException {
+      return readAndCacheIDs(docid, ImmutableMap.<String, String>builder());
+    }
+
+    /* package-private */ ArgumentOutput readAndCacheIDs(final Symbol docid, final ImmutableMap.Builder<String, String> idMap) throws IOException {
       final File f = bareOrWithSuffix(directory, docid.asString(), ACCEPTABLE_SUFFIXES);
 
       final ImmutableList.Builder<Scored<Response>> ret = ImmutableList.builder();
-      final ImmutableMap.Builder<Response, String> responseToMetadata = new ImmutableMap.Builder<Response, String>();
+      final ImmutableMap.Builder<Response, String> responseToMetadata =
+          new ImmutableMap.Builder<Response, String>();
 
       int lineNo = 0;
       String lastLine = ArgumentOutput.DEFAULT_METADATA;
@@ -228,6 +247,7 @@ public final class AssessmentSpecFormats {
               responseToMetadata.put(response, ArgumentOutput.DEFAULT_METADATA);
             }
 
+            idMap.put(parts.get(0), response.uniqueIdentifier());
             ret.add(Scored.from(response, confidence));
             lastLine = line;
           } catch (IndexOutOfBoundsException iobe) {
@@ -261,7 +281,7 @@ public final class AssessmentSpecFormats {
       try {
         for (final Response response : format.responseOrdering().sortedCopy(output.responses())) {
           final String metadata = output.metadata(response);
-          if(!metadata.equals(ArgumentOutput.DEFAULT_METADATA)) {
+          if (!metadata.equals(ArgumentOutput.DEFAULT_METADATA)) {
             out.print(METADATA_MARKER + metadata + "\n");
           }
           //out.print(response.responseID());
@@ -561,6 +581,11 @@ public final class AssessmentSpecFormats {
       if (closed) {
         throw new RuntimeException("Illegal attempt to use a closed assessment store.");
       }
+    }
+
+    @Override
+    public String toString() {
+      return "AnnStore[" + directory + "]";
     }
   }
 

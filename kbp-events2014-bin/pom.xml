@@ -2,14 +2,14 @@
     <parent>
         <artifactId>kbp-events2014-all</artifactId>
         <groupId>com.bbn.kbp.events2014</groupId>
-        <version>2.2.1-SNAPSHOT</version>
+        <version>2.3.4-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>kbp-events2014-bin</artifactId>
-    <version>2.2.1-SNAPSHOT</version>
+    <version>2.3.4-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>2014 KBP Event Arguments Task Binaries</name>
@@ -33,6 +33,14 @@
                         </program>
 
                         <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.Convert2014TransportTo2015Variants</mainClass>
+                            <name>convert2014MovementTransports</name>
+                            <jvmSettings>
+                                <maxMemorySize>4G</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
+                        <program>
                             <mainClass>com.bbn.kbp.events2014.bin.ConvertTo2015Format</mainClass>
                             <name>convertTo2015Format</name>
                         </program>
@@ -40,6 +48,11 @@
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.ChangeDocIDToMatchFile</mainClass>
                             <name>changeDocIDToMatchFile</name>
+                        </program>
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.FilterOutUnannotated</mainClass>
+                            <name>filterOutUnannotated</name>
                         </program>
 
                         <program>
@@ -91,12 +104,29 @@
                         </program>
 
                         <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.ValidateSystemOutput2015</mainClass>
+                            <name>validateSystemOutput2015</name>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
+
+                        <program>
                             <mainClass>com.bbn.kbp.events2014.bin.NISTValidator</mainClass>
                             <name>NISTValidator</name>
                             <jvmSettings>
                                 <maxMemorySize>1g</maxMemorySize>
                             </jvmSettings>
                         </program>
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.NISTValidator2015</mainClass>
+                            <name>NISTValidator2015</name>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.BuildQuoteFilter</mainClass>
                             <name>buildQuoteFilter</name>
@@ -181,6 +211,12 @@
                             </jvmSettings>
                         </program>
 
+                        <program>
+                            <mainClass>
+                                com.bbn.kbp.events2014.bin.FilterAnswerKeyByTypeAndRole
+                            </mainClass>
+                            <name>FilterAnswerKeyByTypeAndRole</name>
+                        </program>
 			<program>
 			    <mainClass>com.bbn.kbp.events2014.bin.ExploreEALScorer</mainClass>
 			    <name>exploreEalScorer</name>
@@ -217,13 +253,13 @@
         <dependency>
             <groupId>com.bbn.kbp.events2014</groupId>
             <artifactId>kbp-events2014</artifactId>
-            <version>2.2.1-SNAPSHOT</version>
+            <version>2.3.4-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>com.bbn.kbp.events2014</groupId>
             <artifactId>kbp-events2014-scorer</artifactId>
-            <version>2.2.1-SNAPSHOT</version>
+            <version>2.3.4-SNAPSHOT</version>
         </dependency>
 
 

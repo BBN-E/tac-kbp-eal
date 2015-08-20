@@ -5,7 +5,6 @@ import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.io.LinkingStore;
-import com.bbn.kbp.events2014.io.ArgumentStore;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
@@ -14,22 +13,32 @@ import java.io.IOException;
 
 public abstract class AbstractLinkingStrategy implements LinkingStrategy {
   @Override
-  public LinkingStore wrap(final ArgumentStore argumentStore) {
-    return new LinkingStore() {
+  public LinkingStore wrap(final Iterable<Symbol> docIDs) {
+    final ImmutableSet<Symbol> docIdSet = ImmutableSet.copyOf(docIDs);
 
+    return new LinkingStore() {
       @Override
       public ImmutableSet<Symbol> docIDs() throws IOException {
-        return argumentStore.docIDs();
+        return docIdSet;
       }
 
       @Override
       public Optional<ResponseLinking> read(final ArgumentOutput argumentOutput) throws IOException {
-        return Optional.of(linkResponses(argumentOutput));
+        if (docIdSet.contains(argumentOutput.docId())) {
+          return Optional.of(linkResponses(argumentOutput));
+        } else {
+          return Optional.absent();
+        }
       }
 
       @Override
       public Optional<ResponseLinking> read(final AnswerKey answerKey) throws IOException {
-        throw new UnsupportedOperationException();
+
+        if (docIdSet.contains(answerKey.docId())) {
+          return Optional.of(linkResponses(answerKey));
+        } else {
+          return Optional.absent();
+        }
       }
 
       @Override
