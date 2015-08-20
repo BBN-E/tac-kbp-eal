@@ -57,6 +57,11 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
         ImmutableMultimap.builder();
     for (final Response a : first) {
       final Set<Symbol> possibleFillerTypesForFirst = eventToRoleToFillerType.get(a.type(), a.role());
+      if(possibleFillerTypesForFirst == null) {
+        log.error("invalid role for response {}, type {}, role {}", a, a.type(), a.role());
+        log.debug("map {}", eventToRoleToFillerType);
+        continue;
+      }
       checkNotNull(possibleFillerTypesForFirst);
       for (final Response b : second) {
         if (a.equals(b) || b.canonicalArgument().string().trim().isEmpty()) {
@@ -65,9 +70,15 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
         // changing this conditions means getTypeDescription must be updated as well
         if (a.canonicalArgument().equals(b.canonicalArgument())) {
           final Set<Symbol> possibleFillerTypesForSecond = eventToRoleToFillerType.get(b.type(), b.role());
+          if(possibleFillerTypesForSecond == null) {
+            log.error("invalid role for response {}, type {}, role {}", b, b.type(), b.role());
+            log.debug("map {}", eventToRoleToFillerType);
+            continue;
+          }
           checkNotNull(possibleFillerTypesForSecond);
           final boolean noRolesPossibleForBoth =
-              Sets.intersection(possibleFillerTypesForFirst, possibleFillerTypesForSecond).isEmpty();
+              Sets.intersection(possibleFillerTypesForFirst, possibleFillerTypesForSecond)
+                  .isEmpty();
           if (noRolesPossibleForBoth) {
             result.put(b, Warning.create(getTypeString(), String
                     .format(
