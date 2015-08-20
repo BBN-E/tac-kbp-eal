@@ -1,23 +1,21 @@
 package com.bbn.kbp.events2014.bin.QA;
 
-import com.bbn.bue.common.collections.MultimapUtils;
+import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
-import com.bbn.kbp.events2014.AssessedResponse;
+import com.bbn.kbp.events2014.CorefAnnotation;
+import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.bin.QA.Warnings.Warning;
 import com.bbn.kbp.events2014.bin.QA.Warnings.WarningRule;
 
 import com.google.common.base.Function;
-import com.google.common.base.Functions;
-import com.google.common.base.Optional;
+import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharSink;
@@ -38,7 +36,7 @@ final class CorefDocumentRenderer extends QADocumentRenderer {
   }
 
   public static CorefDocumentRenderer createWithDefaultOrdering(
-      final ImmutableList<WarningRule> warnings) {
+      final ImmutableList<WarningRule<Integer>> warnings) {
     final Map<String, String> warningToType =
         Maps.transformValues(Maps.uniqueIndex(warnings, new Function<WarningRule, String>() {
           @Override
@@ -51,12 +49,12 @@ final class CorefDocumentRenderer extends QADocumentRenderer {
             return input.getTypeDescription();
           }
         });
-    return new CorefDocumentRenderer(DEFAULT_OVERALL_ORDERING, DEFAULT_TRFR_ORDERING, warningToType);
+    return new CorefDocumentRenderer(DEFAULT_OVERALL_ORDERING, DEFAULT_TRFR_ORDERING,
+        warningToType);
   }
 
-  @Override
   public void renderTo(final CharSink sink, final AnswerKey answerKey,
-      final ImmutableMultimap<Response, Warning> warnings) throws IOException {
+      final ImmutableMultimap<Integer, Warning> warnings) throws IOException {
     final StringBuilder sb = new StringBuilder();
     sb.append(htmlHeader());
     sb.append(String.format("<title>%s</title>", answerKey.docId().asString()));
@@ -80,31 +78,151 @@ final class CorefDocumentRenderer extends QADocumentRenderer {
     sb.append("</div>");
     sb.append("</div>");
 
-    final Function<Response, TypeRoleFillerRealis> responseToTRFR = TypeRoleFillerRealis
-        .extractFromSystemResponse(answerKey.corefAnnotation().laxCASNormalizerFunction());
-    final ImmutableMultimap<TypeRoleFillerRealis, Response> trfrToAllResponses = Multimaps
-        .index(Iterables.transform(answerKey.annotatedResponses(), AssessedResponse.Response),
-            responseToTRFR);
-    final ImmutableMultimap<TypeRoleFillerRealis, Response> trfrToErrorfulReponses = Multimaps
-        .index(warnings.keySet(), responseToTRFR);
+    // begin bullets
+    sb.append("<div id=\"CASGroups\" style=\"display:block\">");
+    for (final Integer CASGroup : warnings.keySet()) {
+      addpendCASGroup(sb, CASGroup, answerKey, warnings);
+    }
+    sb.append("</div>");
 
-    final ImmutableMultimap<TypeRoleFillerRealis, Warning> trfrToWarning =
-        MultimapUtils.composeToSetMultimap(trfrToErrorfulReponses, warnings);
-    final Multimap<String, TypeRoleFillerRealis> typeToTRFR = Multimaps.index(
-        trfrToAllResponses.keySet(),
-        Functions.compose(Functions.toStringFunction(), TypeRoleFillerRealis.Type));
+    sink.write(sb.toString());
+  }
 
-    final ImmutableSetMultimap<String, Warning>
-        typesToWarnings = MultimapUtils.composeToSetMultimap(typeToTRFR, trfrToWarning);
-
-    for (final String type : Ordering.natural().sortedCopy(typeToTRFR.keySet())) {
-      final ImmutableSet<Warning> typeWarnings = typesToWarnings.get(type);
-      final Optional<Warning.Severity> typeWarning = extractWarningForType(typeWarnings,
-          typeToTRFR.get(type));
-      if (!typeWarning.isPresent()) {
-        // skip TRFR types without warnings
-        continue;
+  private static ImmutableSet<Response> responsesForKBPString(final KBPString kbpString,
+      final AnswerKey answerKey) {
+    final ImmutableSet.Builder<Response> responses = ImmutableSet.builder();
+    for (final Response r : answerKey.allResponses()) {
+      if (r.canonicalArgument().equals(kbpString)) {
+        responses.add(r);
       }
     }
+    return responses.build();
+  }
+
+  private static ImmutableSet<Response> responsesForCASGroup(final Integer CASGroup,
+      final AnswerKey answerKey) {
+    final ImmutableSet.Builder<Response> responses = ImmutableSet.builder();
+    for (final KBPString kbpString : answerKey.corefAnnotation().clusterIDToMembersMap()
+        .get(CASGroup)) {
+      responses.addAll(responsesForKBPString(kbpString, answerKey));
+    }
+    return responses.build();
+  }
+
+  private static void appendCASStringList(final StringBuilder sb,
+      final ImmutableCollection<KBPString> kbpStrings) {
+    sb.append("CAS String List\n");
+    sb.append("<ul>\n");
+    for (final KBPString kbpString : kbpStrings) {
+      sb.append("<li>");
+      sb.append(kbpString.string());
+      sb.append("</li>\n");
+    }
+    sb.append("</ul>\n");
+  }
+
+
+  private static void appendTypeAndRoleSummaryForCAS(final StringBuilder sb,
+      final Integer CASGroup, final AnswerKey answerKey) {
+    final ImmutableMultimap<Symbol, Response> eventTypeToResponse =
+        Multimaps.index(responsesForCASGroup(CASGroup, answerKey),
+            Response.typeFunction());
+    final ImmutableMultimap<Symbol, Symbol> eventTypeToRoles = ImmutableMultimap.copyOf(
+        Multimaps.transformValues(eventTypeToResponse, Response.roleFunction()));
+    final Joiner comma = Joiner.on(", ");
+
+    sb.append("Summary of event type, role for this CAS\n");
+    sb.append("<ul>\n");
+    for (final Symbol type : eventTypeToRoles.keySet()) {
+      sb.append("<li>");
+      sb.append(type);
+      sb.append(": ");
+      sb.append(comma.join(eventTypeToRoles.get(type)));
+      sb.append("</li>");
+    }
+    sb.append("</ul>");
+  }
+
+
+  private static void appendWarningsListForCAS(final StringBuilder sb,
+      final ImmutableCollection<Warning> warnings) {
+    final ImmutableMultimap<String, Warning> warningByType = Multimaps.index(warnings,
+        new Function<Warning, String>() {
+          @Override
+          public String apply(final Warning input) {
+            return input.typeString();
+          }
+        });
+    sb.append("Warning list\n");
+    sb.append("<ul>\n");
+
+    for(final String warningType: warningByType.keySet()) {
+      sb.append("<li>");
+      sb.append(warningType);
+      sb.append(" - ");
+      sb.append("<ul>");
+      for(final Warning warning: warningByType.get(warningType)) {
+        sb.append("<li>");
+        sb.append(warning.warningString());
+        sb.append("</li>\n");
+      }
+      sb.append("</ul>");
+      sb.append("</li>\n");
+    }
+    sb.append("</ul>");
+
+  }
+
+  private static void appendCASRoleList(final StringBuilder sb,
+      final Integer CASGroup, final AnswerKey answerKey) {
+    // TODO
+    sb.append("CAS with role list\n");
+    sb.append("<ul>");
+    for(final KBPString kbpString: answerKey.corefAnnotation().clusterIDToMembersMap().get(CASGroup)) {
+      sb.append("<li>");
+      sb.append(kbpString.string());
+      sb.append("<ul>\n");
+      for(final Response r: responsesForKBPString(kbpString, answerKey)) {
+        sb.append(r.type());
+        sb.append(", ");
+        sb.append(r.role());
+        sb.append(", ");
+        sb.append(r.realis());
+      }
+      sb.append("</ul>");
+      sb.append("</li>\n");
+    }
+    sb.append("</ul>");
+  }
+
+  private static void addpendCASGroup(final StringBuilder sb, final Integer CASGroup,
+      final AnswerKey answerKey, final ImmutableMultimap<Integer, Warning> warnings) {
+    final CorefAnnotation coref = answerKey.corefAnnotation();
+    sb.append("<div id=\"CASGroup-").append(CASGroup).append("\" style=\"display:inherit\"");
+    sb.append("<ul>");
+
+    //cas string list
+    sb.append("<li>");
+    appendCASStringList(sb, coref.clusterIDToMembersMap().get(CASGroup));
+    sb.append("</li>");
+
+    // summary of type and roles
+
+    sb.append("<li>");
+    appendTypeAndRoleSummaryForCAS(sb, CASGroup, answerKey);
+    sb.append("</li>");
+
+    // warnings list
+    sb.append("<li>");
+    appendWarningsListForCAS(sb, warnings.get(CASGroup));
+    sb.append("</li>");
+
+    // CAS with role list
+    sb.append("<li>");
+    appendCASRoleList(sb, CASGroup, answerKey);
+    sb.append("</li>");
+
+    sb.append("</ul>");
+    sb.append("</div>");
   }
 }
