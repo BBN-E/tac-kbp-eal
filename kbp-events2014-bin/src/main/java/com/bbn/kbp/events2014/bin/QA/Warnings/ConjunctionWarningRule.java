@@ -24,6 +24,8 @@ public final class ConjunctionWarningRule extends ContainsStringWarningRule {
 
   @Override
   public String getTypeDescription() {
-    return "The system has detected a conjunction in the CAS. This CAS should probably be marked as WRONG.  Its components would be marked as CORRECT.";
+    return "The system has detected a conjunction in the CAS. "
+        + "This CAS should probably be marked as WRONG.  "
+        + "Its components would be marked as CORRECT.";
   }
 }

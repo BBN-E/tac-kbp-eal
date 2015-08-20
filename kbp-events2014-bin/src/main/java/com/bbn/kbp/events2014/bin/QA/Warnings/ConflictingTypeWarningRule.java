@@ -147,6 +147,8 @@ public class ConflictingTypeWarningRule extends OverlapWarningRule {
 
   @Override
   public String getTypeDescription() {
-    return "The same CAS grouping has been marked as CORRECT/INEXACT for roles that conflict (e.g. a VICTIM and a PLACE). Most likely one of the responses is WRONG in one of the assessment categories. Alternatively, CAS’s have been incorrectly linked in the CAS coreference pane.";
+    return "The same CAS grouping has been marked as CORRECT/INEXACTfor roles that conflict (e.g. a VICTIM and a PLACE). "
+        + "Most likely one of the responses is WRONG in one of the assessment categories. "
+        + "Alternatively, CAS’s have been incorrectly linked in the CAS coreference pane.";
   }
 }

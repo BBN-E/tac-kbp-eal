@@ -38,7 +38,8 @@ public final class EmptyResponseWarning implements WarningRule {
 
   @Override
   public String getTypeDescription() {
-    return "The response has no content, it's probably an error";
+    return "The response has no content (no characters or all punctuation),"
+        + " it's probably an error";
   }
 
   public static EmptyResponseWarning create() {

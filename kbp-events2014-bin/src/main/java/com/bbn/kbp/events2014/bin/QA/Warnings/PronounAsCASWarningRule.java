@@ -30,7 +30,10 @@ public final class PronounAsCASWarningRule extends ContainsStringWarningRule {
 
   @Override
   public String getTypeDescription() {
-    return "The system has detected a CAS that consists entirely of a pronoun. If the pronoun can be resolved to a name or description (either in the correct set of responses, or earlier in the document), the CAS should be marked as WRONG";
+    return "The system has detected a CAS that consists entirely of a pronoun. "
+        + "If the pronoun can be resolved to a name or description "
+        + "(either in the correct set of responses, or earlier in the document), "
+        + "the CAS should be marked as WRONG";
   }
 
   public static PronounAsCASWarningRule create() {
