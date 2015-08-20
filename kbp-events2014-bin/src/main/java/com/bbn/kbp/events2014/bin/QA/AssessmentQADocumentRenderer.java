@@ -59,7 +59,6 @@ final class AssessmentQADocumentRenderer extends QADocumentRenderer {
     return new AssessmentQADocumentRenderer(DEFAULT_OVERALL_ORDERING, DEFAULT_TRFR_ORDERING, warningToType);
   }
 
-  @Override
   public void renderTo(final CharSink sink, final AnswerKey answerKey,
       final ImmutableMultimap<Response, Warning> warnings)
       throws IOException {

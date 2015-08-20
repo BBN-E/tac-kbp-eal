@@ -1,6 +1,5 @@
 package com.bbn.kbp.events2014.bin.QA;
 
-import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.bin.QA.Warnings.Warning;
@@ -12,12 +11,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Ordering;
-import com.google.common.io.CharSink;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -48,10 +45,6 @@ abstract class QADocumentRenderer {
     this.overallOrdering = overallOrdering;
     this.warningTypeToDescription = ImmutableMap.copyOf(warningTypeToDescription);
   }
-
-  abstract public void renderTo(final CharSink sink, final AnswerKey answerKey,
-      final ImmutableMultimap<Response, Warning> warnings)
-      throws IOException;
 
   /* html utilities */
 
