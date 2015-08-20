@@ -72,10 +72,10 @@ public class AssessmentQA {
   }
 
   static ImmutableMultimap<Response, Warning> generateWarnings(
-      AnswerKey answerKey, final Iterable<? extends WarningRule> warningRules) {
+      AnswerKey answerKey, final Iterable<? extends WarningRule<Response>> warningRules) {
     ImmutableMultimap.Builder<Response, Warning> warningResponseBuilder =
         ImmutableMultimap.builder();
-    for (WarningRule w : warningRules) {
+    for (WarningRule<Response> w : warningRules) {
       warningResponseBuilder.putAll(w.applyWarning(answerKey));
     }
     return warningResponseBuilder.build();
