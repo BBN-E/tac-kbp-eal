@@ -71,6 +71,12 @@ public class CASOverlapWarningRule implements CorefWarningRule<Integer> {
     for (final Integer key : casToOverlaps.keySet()) {
       for (final Integer overlappingCluster : casToOverlaps.get(key)) {
         final StringBuilder warningText = new StringBuilder();
+        // this is a hack to allow jumping in the browser to other CASGroups with which this might overlap, if any
+//        warningText.append("<a href=\"#CASGroup_").append(overlappingCluster).append("\" >");
+//        warningText.append("CASGroup-").append(overlappingCluster);
+//        warningText.append("</a>");
+        // end hack
+        warningText.append(" - ");
         warningText.append(comma.join(
             ImmutableSet.copyOf(
                 Iterables.transform(
