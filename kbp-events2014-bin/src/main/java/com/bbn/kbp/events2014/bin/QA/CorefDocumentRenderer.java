@@ -26,7 +26,7 @@ import java.util.Map;
 /**
  * Created by jdeyoung on 6/30/15.
  */
-final class CorefDocumentRenderer extends QADocumentRenderer {
+public final class CorefDocumentRenderer extends QADocumentRenderer {
 
   CorefDocumentRenderer(
       final Ordering<Response> overallOrdering,
@@ -88,7 +88,7 @@ final class CorefDocumentRenderer extends QADocumentRenderer {
     sink.write(sb.toString());
   }
 
-  private static ImmutableSet<Response> responsesForKBPString(final KBPString kbpString,
+  public static ImmutableSet<Response> responsesForKBPString(final KBPString kbpString,
       final AnswerKey answerKey) {
     final ImmutableSet.Builder<Response> responses = ImmutableSet.builder();
     for (final Response r : answerKey.allResponses()) {
@@ -99,7 +99,7 @@ final class CorefDocumentRenderer extends QADocumentRenderer {
     return responses.build();
   }
 
-  private static ImmutableSet<Response> responsesForCASGroup(final Integer CASGroup,
+  public static ImmutableSet<Response> responsesForCASGroup(final Integer CASGroup,
       final AnswerKey answerKey) {
     final ImmutableSet.Builder<Response> responses = ImmutableSet.builder();
     for (final KBPString kbpString : answerKey.corefAnnotation().clusterIDToMembersMap()
@@ -175,7 +175,6 @@ final class CorefDocumentRenderer extends QADocumentRenderer {
 
   private static void appendCASRoleList(final StringBuilder sb,
       final Integer CASGroup, final AnswerKey answerKey) {
-    // TODO
     sb.append("CAS with role list\n");
     sb.append("<ul>");
     for(final KBPString kbpString: answerKey.corefAnnotation().clusterIDToMembersMap().get(CASGroup)) {
