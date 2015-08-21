@@ -3,6 +3,7 @@ package com.bbn.kbp.events2014.bin.QA;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.bin.QA.Warnings.CASOverlapWarningRule;
 import com.bbn.kbp.events2014.bin.QA.Warnings.Warning;
 import com.bbn.kbp.events2014.bin.QA.Warnings.WarningRule;
 import com.bbn.kbp.events2014.io.AnnotationStore;
@@ -35,7 +36,7 @@ public class CorefQA {
     final File outputDir = params.getCreatableDirectory("outputDir");
 
     final ImmutableList<WarningRule<Integer>> warnings =
-        ImmutableList.of();
+        ImmutableList.<WarningRule<Integer>>of(CASOverlapWarningRule.create());
     final CorefDocumentRenderer
         htmlRenderer = CorefDocumentRenderer.createWithDefaultOrdering(warnings);
 
