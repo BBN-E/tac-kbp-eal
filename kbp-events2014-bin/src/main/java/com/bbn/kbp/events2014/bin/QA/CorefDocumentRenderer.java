@@ -81,7 +81,7 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
     // begin bullets
     sb.append("<div id=\"CASGroups\" style=\"display:block\">");
     for (final Integer CASGroup : warnings.keySet()) {
-      addpendCASGroup(sb, CASGroup, answerKey, warnings);
+      appendCASGroup(sb, CASGroup, answerKey, warnings);
     }
     sb.append("</div>");
 
@@ -194,7 +194,7 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
     sb.append("</ul>");
   }
 
-  private static void addpendCASGroup(final StringBuilder sb, final Integer CASGroup,
+  private static void appendCASGroup(final StringBuilder sb, final Integer CASGroup,
       final AnswerKey answerKey, final ImmutableMultimap<Integer, Warning> warnings) {
     final CorefAnnotation coref = answerKey.corefAnnotation();
     sb.append("<div id=\"CASGroup-").append(CASGroup).append("\" style=\"display:inherit\"");
