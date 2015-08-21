@@ -15,6 +15,8 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
@@ -88,23 +90,15 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
     sink.write(sb.toString());
   }
 
-  public static ImmutableSet<Response> responsesForKBPString(final KBPString kbpString,
-      final AnswerKey answerKey) {
-    final ImmutableSet.Builder<Response> responses = ImmutableSet.builder();
-    for (final Response r : answerKey.allResponses()) {
-      if (r.canonicalArgument().equals(kbpString)) {
-        responses.add(r);
-      }
-    }
-    return responses.build();
-  }
-
   public static ImmutableSet<Response> responsesForCASGroup(final Integer CASGroup,
       final AnswerKey answerKey) {
     final ImmutableSet.Builder<Response> responses = ImmutableSet.builder();
+    final ImmutableSetMultimap<KBPString, Response> kbpStringToResponse =
+        ImmutableSetMultimap.copyOf(
+            Multimaps.index(answerKey.allResponses(), Response.CASFunction()));
     for (final KBPString kbpString : answerKey.corefAnnotation().clusterIDToMembersMap()
         .get(CASGroup)) {
-      responses.addAll(responsesForKBPString(kbpString, answerKey));
+      responses.addAll(kbpStringToResponse.get(kbpString));
     }
     return responses.build();
   }
@@ -113,9 +107,10 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
       final ImmutableCollection<KBPString> kbpStrings) {
     sb.append("CAS String List\n");
     sb.append("<ul>\n");
-    for (final KBPString kbpString : kbpStrings) {
+    for (final String kbpString : ImmutableSet.copyOf(
+        Iterables.transform(kbpStrings, KBPString.Text))) {
       sb.append("<li>");
-      sb.append(kbpString.string());
+      sb.append(kbpString);
       sb.append("</li>\n");
     }
     sb.append("</ul>\n");
@@ -127,7 +122,7 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
     final ImmutableMultimap<Symbol, Response> eventTypeToResponse =
         Multimaps.index(responsesForCASGroup(CASGroup, answerKey),
             Response.typeFunction());
-    final ImmutableMultimap<Symbol, Symbol> eventTypeToRoles = ImmutableMultimap.copyOf(
+    final ImmutableSetMultimap<Symbol, Symbol> eventTypeToRoles = ImmutableSetMultimap.copyOf(
         Multimaps.transformValues(eventTypeToResponse, Response.roleFunction()));
     final Joiner comma = Joiner.on(", ");
 
@@ -146,22 +141,23 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
 
   private static void appendWarningsListForCAS(final StringBuilder sb,
       final ImmutableCollection<Warning> warnings) {
-    final ImmutableMultimap<String, Warning> warningByType = Multimaps.index(warnings,
-        new Function<Warning, String>() {
-          @Override
-          public String apply(final Warning input) {
-            return input.typeString();
-          }
-        });
+    final ImmutableSetMultimap<String, Warning> warningByType = ImmutableSetMultimap.copyOf(
+        Multimaps.index(warnings,
+            new Function<Warning, String>() {
+              @Override
+              public String apply(final Warning input) {
+                return input.typeString();
+              }
+            }));
     sb.append("Warning list\n");
     sb.append("<ul>\n");
 
-    for(final String warningType: warningByType.keySet()) {
+    for (final String warningType : warningByType.keySet()) {
       sb.append("<li>");
       sb.append(warningType);
       sb.append(" - ");
       sb.append("<ul>");
-      for(final Warning warning: warningByType.get(warningType)) {
+      for (final Warning warning : warningByType.get(warningType)) {
         sb.append("<li>");
         sb.append(warning.warningString());
         sb.append("</li>\n");
@@ -177,11 +173,13 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
       final Integer CASGroup, final AnswerKey answerKey) {
     sb.append("CAS with role list\n");
     sb.append("<ul>");
-    for(final KBPString kbpString: answerKey.corefAnnotation().clusterIDToMembersMap().get(CASGroup)) {
+    for (final KBPString kbpString : answerKey.corefAnnotation().clusterIDToMembersMap()
+        .get(CASGroup)) {
       sb.append("<li>");
       sb.append(kbpString.string());
       sb.append("<ul>\n");
-      for(final Response r: responsesForKBPString(kbpString, answerKey)) {
+      for (final Response r : ImmutableSet.copyOf(
+          Multimaps.index(answerKey.allResponses(), Response.CASFunction()).get(kbpString))) {
         sb.append(r.type());
         sb.append(", ");
         sb.append(r.role());
