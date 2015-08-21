@@ -17,10 +17,15 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.SetMultimap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Created by jdeyoung on 8/20/15.
  */
 public class CASOverlapWarningRule implements WarningRule<Integer> {
+
+  private static final Logger log = LoggerFactory.getLogger(CASOverlapWarningRule.class);
 
   private CASOverlapWarningRule() {
 
@@ -36,6 +41,7 @@ public class CASOverlapWarningRule implements WarningRule<Integer> {
     final ImmutableMultimap.Builder<Integer, Integer> casOverlapsWith = ImmutableMultimap.builder();
     final CorefAnnotation corefAnnotation = answerKey.corefAnnotation();
 
+    log.info("gathering overlapping coref sets");
     // gather all sets that overlap
     for (final Integer setA : corefAnnotation.clusterIDToMembersMap().keySet()) {
       for (final Integer setB : corefAnnotation.clusterIDToMembersMap().keySet()) {
@@ -50,6 +56,7 @@ public class CASOverlapWarningRule implements WarningRule<Integer> {
 
     // Warnings! Assemble!
     final ImmutableMultimap<Integer, Integer> casToOverlaps = casOverlapsWith.build();
+    log.info("finished gathering, now building warnings");
     final Joiner comma = Joiner.on(", ");
     for (final Integer key : casToOverlaps.keySet()) {
       for (final Integer overlappingCluster : casToOverlaps.get(key)) {
@@ -75,6 +82,7 @@ public class CASOverlapWarningRule implements WarningRule<Integer> {
       }
     }
 
+    log.info("done building warnings");
     return result.build();
   }
 
