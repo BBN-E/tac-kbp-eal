@@ -6,6 +6,7 @@ import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
+import com.bbn.kbp.events2014.bin.QA.Warnings.CorefWarningRule;
 import com.bbn.kbp.events2014.bin.QA.Warnings.Warning;
 import com.bbn.kbp.events2014.bin.QA.Warnings.WarningRule;
 
@@ -38,7 +39,7 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
   }
 
   public static CorefDocumentRenderer createWithDefaultOrdering(
-      final ImmutableList<WarningRule<Integer>> warnings) {
+      final ImmutableList<CorefWarningRule<Integer>> warnings) {
     final Map<String, String> warningToType =
         Maps.transformValues(Maps.uniqueIndex(warnings, new Function<WarningRule, String>() {
           @Override

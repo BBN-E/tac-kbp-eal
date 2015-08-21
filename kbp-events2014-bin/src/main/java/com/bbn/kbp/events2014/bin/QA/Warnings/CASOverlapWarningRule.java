@@ -10,6 +10,7 @@ import com.bbn.kbp.events2014.bin.QA.CorefDocumentRenderer;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
@@ -20,10 +21,12 @@ import com.google.common.collect.SetMultimap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Set;
+
 /**
  * Created by jdeyoung on 8/20/15.
  */
-public class CASOverlapWarningRule implements WarningRule<Integer> {
+public class CASOverlapWarningRule implements CorefWarningRule<Integer> {
 
   private static final Logger log = LoggerFactory.getLogger(CASOverlapWarningRule.class);
 
@@ -37,14 +40,21 @@ public class CASOverlapWarningRule implements WarningRule<Integer> {
 
   @Override
   public SetMultimap<Integer, Warning> applyWarning(final AnswerKey answerKey) {
+    return applyWarning(answerKey, answerKey.allResponses());
+  }
+
+  @Override
+  public SetMultimap<Integer, Warning> applyWarning(final AnswerKey answerKey,
+      final Set<Response> restrictWarningTo) {
     final ImmutableSetMultimap.Builder<Integer, Warning> result = ImmutableSetMultimap.builder();
     final ImmutableMultimap.Builder<Integer, Integer> casOverlapsWith = ImmutableMultimap.builder();
     final CorefAnnotation corefAnnotation = answerKey.corefAnnotation();
+    final ImmutableSet<Integer> CASGroupsOfConcern = CASGroupsForResponses(corefAnnotation, restrictWarningTo);
 
     log.info("gathering overlapping coref sets");
     // gather all sets that overlap
-    for (final Integer setA : corefAnnotation.clusterIDToMembersMap().keySet()) {
-      for (final Integer setB : corefAnnotation.clusterIDToMembersMap().keySet()) {
+    for (final Integer setA : CASGroupsOfConcern) {
+      for (final Integer setB : CASGroupsOfConcern) {
         if (setA.equals(setB)) {
           continue;
         }
@@ -86,7 +96,18 @@ public class CASOverlapWarningRule implements WarningRule<Integer> {
     return result.build();
   }
 
-  private boolean overlapsForPuposesofIncompleteCoref(final CorefAnnotation corefAnnotation,
+  private static ImmutableSet<Integer> CASGroupsForResponses(final CorefAnnotation corefAnnotation, final Iterable<Response> responses) {
+    final ImmutableSet.Builder<Integer> CASGroups = ImmutableSet.builder();
+    for(final KBPString kbpString: Iterables.transform(responses, Response.CASFunction())) {
+      final Optional<Integer> CASGroup = corefAnnotation.corefId(kbpString);
+      if(CASGroup.isPresent()) {
+        CASGroups.add(CASGroup.get());
+      }
+    }
+    return CASGroups.build();
+  }
+
+  private static boolean overlapsForPuposesofIncompleteCoref(final CorefAnnotation corefAnnotation,
       final Integer setA,
       final Integer setB) {
     if (setA.equals(setB)) {
