@@ -69,7 +69,8 @@ public final class KBP2015Scorer {
     final EALScorer2015Style documentScorer = EALScorer2015Style.create(params);
 
     final ImmutableMap.Builder<String, SimpleResultWriter> resultWriters = ImmutableMap.builder();
-    resultWriters.put("aggregate", new AggregateAndPerDocResultWriter(documentScorer.lambda()));
+    resultWriters.put("aggregate", new AggregateResultWriter(documentScorer.lambda()));
+    resultWriters.put("perDoc", new PerDocResultWriter(documentScorer.lambda()));
     resultWriters.put("byEventTypes", new ByEventTypeResultWriter());
     resultWriters.putAll(additionalResultWriters);
 
