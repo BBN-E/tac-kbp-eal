@@ -1,16 +1,16 @@
 package com.bbn.kbp.events2014.scorer.bin;
 
 import com.bbn.bue.common.serialization.jackson.JacksonSerializer;
+import com.bbn.kbp.events2014.scorer.ImmutableAggregate2015ArgScoringResult;
+import com.bbn.kbp.events2014.scorer.ImmutableAggregate2015LinkScoringResult;
+import com.bbn.kbp.events2014.scorer.ImmutableAggregate2015ScoringResult;
 import com.bbn.kbp.linking.EALScorer2015Style;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Charsets;
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
-
-import org.immutables.value.Value;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,21 +29,21 @@ final class AggregateResultWriter implements KBP2015Scorer.SimpleResultWriter {
   @Override
   public void writeResult(final List<EALScorer2015Style.Result> perDocResults,
       final File outputDir) throws IOException {
-    final ImmutableAggregateResult result = computeAggregateScore(perDocResults);
+    final ImmutableAggregate2015ScoringResult result = computeAggregateScore(perDocResults);
 
     Files.asCharSink(new File(outputDir, "aggregateScore.txt"), Charsets.UTF_8).write(
         String
-            .format("%30s:%8.2f\n", "Aggregate argument precision", result.argPrecision())
+            .format("%30s:%8.2f\n", "Aggregate argument precision", result.argument().precision())
             +
-            String.format("%30s:%8.2f\n", "Aggregate argument recall", result.argRecall())
+            String.format("%30s:%8.2f\n", "Aggregate argument recall", result.argument().recall())
             +
-            String.format("%30s:%8.2f\n\n", "Aggregate argument score", result.argOverall())
+            String.format("%30s:%8.2f\n\n", "Aggregate argument score", result.argument().overall())
             +
             String.format("%30s:%8.2f\n", "Aggregate linking precision",
-                result.linkPrecision()) +
-            String.format("%30s:%8.2f\n", "Aggregate linking recall", result.linkRecall())
+                result.linking().precision()) +
+            String.format("%30s:%8.2f\n", "Aggregate linking recall", result.linking().recall())
             +
-            String.format("%30s:%8.2f\n\n", "Aggregate linking score", result.linkOverall())
+            String.format("%30s:%8.2f\n\n", "Aggregate linking score", result.linking().overall())
             +
             String.format("%30s:%8.2f\n", "Overall score", result.overall()));
 
@@ -52,61 +52,94 @@ final class AggregateResultWriter implements KBP2015Scorer.SimpleResultWriter {
     jacksonSerializer.serializeTo(result, Files.asByteSink(jsonFile));
   }
 
-  private ImmutableAggregateResult computeAggregateScore(
+  private ImmutableAggregate2015ScoringResult computeAggregateScore(
       final List<EALScorer2015Style.Result> perDocResults) {
-    double rawArgScoreSum = 0.0;
-    double argNormalizerSum = 0.0;
-    double argTruePositives = 0.0;
-    double argFalsePositives = 0.0;
+    final ImmutableAggregate2015ArgScoringResult argScores = computeArgScores(perDocResults);
+    final ImmutableAggregate2015LinkScoringResult linkScores = computeLinkScores(perDocResults);
+
+    final double aggregateScore = (1.0 - lambda) * argScores.overall()
+        + lambda * linkScores.overall();
+
+    return ImmutableAggregate2015ScoringResult.builder()
+        .argument(argScores)
+        .linking(linkScores)
+        .overall(100.0 * aggregateScore)
+        .build();
+  }
+
+  private ImmutableAggregate2015LinkScoringResult computeLinkScores(
+      final List<EALScorer2015Style.Result> perDocResults) {
     double rawLinkScoreSum = 0.0;
     double linkNormalizerSum = 0.0;
     double rawLinkPrecisionSum = 0.0;
     double rawLinkRecallSum = 0.0;
-    double argTP = 0.0;
-    double argFP = 0.0;
-    double argFN = 0.0;
     for (final EALScorer2015Style.Result perDocResult : perDocResults) {
-      rawArgScoreSum += Math.max(0.0, perDocResult.argResult().unscaledArgumentScore());
-      argNormalizerSum += perDocResult.argResult().argumentNormalizer();
-      argTruePositives += perDocResult.argResult().unscaledTruePositiveArguments();
-      argFalsePositives += perDocResult.argResult().unscaledFalsePositiveArguments();
       rawLinkScoreSum += perDocResult.linkResult().unscaledLinkingScore();
       linkNormalizerSum += perDocResult.linkResult().linkingNormalizer();
       rawLinkPrecisionSum += perDocResult.linkResult().unscaledLinkingPrecision();
       rawLinkRecallSum += perDocResult.linkResult().unscaledLinkingRecall();
-      argTP += perDocResult.argResult().unscaledTruePositiveArguments();
-      argFP += perDocResult.argResult().unscaledFalsePositiveArguments();
-      argFN += perDocResult.argResult().unscaledFalseNegativeArguments();
     }
 
-    double aggregateArgScore = (argNormalizerSum > 0.0) ? rawArgScoreSum / argNormalizerSum : 0.0;
     double aggregateLinkScore =
         (linkNormalizerSum > 0.0) ? rawLinkScoreSum / linkNormalizerSum : 0.0;
-    double aggregateScore = (1.0 - lambda) * aggregateArgScore + lambda * aggregateLinkScore;
 
     double aggregateLinkPrecision =
         (linkNormalizerSum > 0.0) ? rawLinkPrecisionSum / linkNormalizerSum : 0.0;
     double aggregateLinkRecall =
         (linkNormalizerSum > 0.0) ? rawLinkRecallSum / linkNormalizerSum : 0.0;
 
+    return ImmutableAggregate2015LinkScoringResult.builder()
+        .precision(100.0 * aggregateLinkPrecision)
+        .recall(100.0 * aggregateLinkRecall)
+        .overall(100.0 * aggregateLinkScore).build();
+  }
+
+  static ImmutableAggregate2015ArgScoringResult computeArgScores(
+      final List<EALScorer2015Style.Result> perDocResults) {
+    return computeArgScoresFromArgResults(Lists.transform(perDocResults,
+        new Function<EALScorer2015Style.Result, EALScorer2015Style.ArgResult>() {
+          @Override
+          public EALScorer2015Style.ArgResult apply(final EALScorer2015Style.Result input) {
+            return input.argResult();
+          }
+        }));
+  }
+
+  static ImmutableAggregate2015ArgScoringResult computeArgScoresFromArgResults(
+      final List<EALScorer2015Style.ArgResult> perDocResults) {
+    double rawArgScoreSum = 0.0;
+    double argNormalizerSum = 0.0;
+    double argTruePositives = 0.0;
+    double argFalsePositives = 0.0;
+
+    double argTP = 0.0;
+    double argFP = 0.0;
+    double argFN = 0.0;
+    for (final EALScorer2015Style.ArgResult perDocResult : perDocResults) {
+      rawArgScoreSum += Math.max(0.0, perDocResult.unscaledArgumentScore());
+      argNormalizerSum += perDocResult.argumentNormalizer();
+      argTruePositives += perDocResult.unscaledTruePositiveArguments();
+      argFalsePositives += perDocResult.unscaledFalsePositiveArguments();
+
+      argTP += perDocResult.unscaledTruePositiveArguments();
+      argFP += perDocResult.unscaledFalsePositiveArguments();
+      argFN += perDocResult.unscaledFalseNegativeArguments();
+    }
+
     double aggregateArgPrecision = (argTruePositives > 0.0)
                                    ? (argTruePositives) / (argFalsePositives + argTruePositives)
                                    : 0.0;
     double aggregateArgRecall =
         (argTruePositives > 0.0) ? (argTruePositives / argNormalizerSum) : 0.0;
+    double aggregateArgScore = (argNormalizerSum > 0.0) ? rawArgScoreSum / argNormalizerSum : 0.0;
 
-    return ImmutableAggregateResult.builder()
-        .argPrecision(100.0 * aggregateArgPrecision)
-        .argRecall(100.0 * aggregateArgRecall)
-        .argOverall(100.0 * aggregateArgScore)
-        .linkPrecision(100.0 * aggregateLinkPrecision)
-        .linkRecall(100.0 * aggregateLinkRecall)
-        .linkOverall(100.0 * aggregateLinkScore)
-        .overall(100.0 * aggregateScore)
-        .argTruePositives(argTP)
-        .argFalsePositives(argFP)
-        .argFalseNegatives(argFN)
-        .build();
+    return ImmutableAggregate2015ArgScoringResult.builder()
+        .precision(100.0 * aggregateArgPrecision)
+        .recall(100.0 * aggregateArgRecall)
+        .overall(100.0 * aggregateArgScore)
+        .truePositives(argTP)
+        .falsePositives(argFP)
+        .falseNegatives(argFN).build();
   }
 
   public KBP2015Scorer.BootstrappedResultWriterSource asBootstrappedResultWriterSource() {
@@ -118,49 +151,10 @@ final class AggregateResultWriter implements KBP2015Scorer.SimpleResultWriter {
     };
   }
 
-  @Value.Immutable
-  @JsonSerialize(as = ImmutableAggregateResult.class)
-  @JsonDeserialize(as = ImmutableAggregateResult.class)
-  public static abstract class AggregateResult {
-
-    abstract double argPrecision();
-
-    abstract double argRecall();
-
-    abstract double argOverall();
-
-    abstract double linkPrecision();
-
-    abstract double linkRecall();
-
-    abstract double linkOverall();
-
-    abstract double overall();
-
-    abstract double argTruePositives();
-
-    abstract double argFalsePositives();
-
-    abstract double argFalseNegatives();
-
-    @Value.Check
-    protected void check() {
-      checkArgument(argPrecision() >= 0.0);
-      checkArgument(argRecall() >= 0.0);
-      checkArgument(linkPrecision() >= 0.0);
-      checkArgument(linkRecall() >= 0.0);
-      checkArgument(linkOverall() >= 0.0);
-      checkArgument(overall() >= 0.0);
-      checkArgument(argTruePositives() >= 0.0);
-      checkArgument(argFalsePositives() >= 0.0);
-      checkArgument(argFalseNegatives() >= 0.0);
-    }
-  }
-
   public final class BootstrappedAggregateResultWriter implements
       KBP2015Scorer.BootstrappedResultWriter {
 
-    private List<ImmutableAggregateResult> results = Lists.newArrayList();
+    private List<ImmutableAggregate2015ScoringResult> results = Lists.newArrayList();
 
     @Override
     public void observeSample(final Iterable<EALScorer2015Style.Result> perDocResults) {

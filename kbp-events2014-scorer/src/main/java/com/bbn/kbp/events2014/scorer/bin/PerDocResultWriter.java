@@ -27,7 +27,12 @@ final class PerDocResultWriter implements KBP2015Scorer.SimpleResultWriter {
   @Override
   public void writeResult(final List<EALScorer2015Style.Result> perDocResults,
       final File outputDir) throws IOException {
-    Files.asCharSink(new File(outputDir, "scoresByDocument.txt"), Charsets.UTF_8).write(
+    writePerDoc(perDocResults, new File(outputDir, "scoresByDocument.txt"));
+  }
+
+  static void writePerDoc(final List<EALScorer2015Style.Result> perDocResults, final File outFile)
+      throws IOException {
+    Files.asCharSink(outFile, Charsets.UTF_8).write(
         String.format("%40s\t%10s\t%10s\t%10s\t%10s\n", "Document", "Arg", "Link-P,R,F", "Link",
             "Combined") +
             Joiner.on("\n").join(
@@ -38,6 +43,49 @@ final class PerDocResultWriter implements KBP2015Scorer.SimpleResultWriter {
                         return String.format("%40s\t%10.2f\t%7s%7s%7s\t%10.2f\t%10.2f",
                             input.docID(),
                             100.0 * input.argResult().scaledArgumentScore(),
+                            String
+                                .format("%.1f",
+                                    100.0 * input.linkResult().linkingScore().precision()),
+                            String.format("%.1f",
+                                100.0 * input.linkResult().linkingScore().recall()),
+                            String.format("%.1f", 100.0 * input.linkResult().linkingScore().F1()),
+                            100.0 * input.linkResult().scaledLinkingScore(),
+                            100.0 * input.scaledScore());
+                      }
+                    })));
+  }
+
+
+  static void writeArgPerDoc(final List<EALScorer2015Style.ArgResult> perDocResults,
+      final File outFile)
+      throws IOException {
+    Files.asCharSink(outFile, Charsets.UTF_8).write(
+        String.format("%40s\t%10s\n", "Document", "Arg") +
+            Joiner.on("\n").join(
+                FluentIterable.from(perDocResults)
+                    .transform(new Function<EALScorer2015Style.ArgResult, String>() {
+                      @Override
+                      public String apply(final EALScorer2015Style.ArgResult input) {
+                        return String.format("%40s\t%10.2f",
+                            input.docID(),
+                            100.0 * input.scaledArgumentScore());
+                      }
+                    })));
+  }
+
+  static void writeLinkPerDoc(final List<EALScorer2015Style.Result> perDocResults,
+      final File outFile)
+      throws IOException {
+    Files.asCharSink(outFile, Charsets.UTF_8).write(
+        String.format("%40s\t%10s\t%10s\t%10s\n", "Document", "Link-P,R,F", "Link",
+            "Combined") +
+            Joiner.on("\n").join(
+                FluentIterable.from(perDocResults)
+                    .transform(new Function<EALScorer2015Style.Result, String>() {
+                      @Override
+                      public String apply(final EALScorer2015Style.Result input) {
+                        return String.format("%40s\t%7s%7s%7s\t%10.2f\t%10.2f",
+                            input.docID(),
                             String
                                 .format("%.1f",
                                     100.0 * input.linkResult().linkingScore().precision()),

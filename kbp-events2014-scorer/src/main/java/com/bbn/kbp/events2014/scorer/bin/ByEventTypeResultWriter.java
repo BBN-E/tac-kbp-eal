@@ -3,16 +3,15 @@ package com.bbn.kbp.events2014.scorer.bin;
 import com.bbn.bue.common.serialization.jackson.JacksonSerializer;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
+import com.bbn.kbp.events2014.scorer.ImmutableAggregate2015ArgScoringResult;
 import com.bbn.kbp.linking.EALScorer2015Style;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
-import com.google.common.base.Joiner;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Multisets;
 import com.google.common.io.Files;
@@ -48,7 +47,7 @@ public final class ByEventTypeResultWriter implements KBP2015Scorer.SimpleResult
           };
       final File eventTypeDir = new File(eventTypesDir, type.asString());
       eventTypeDir.mkdirs();
-      writeArgumentScoresForTransformedResults(perDocResults, filterFunction,
+      writeOverallArgumentScoresForTransformedResults(perDocResults, filterFunction,
           eventTypeDir);
     }
   }
@@ -65,78 +64,36 @@ public final class ByEventTypeResultWriter implements KBP2015Scorer.SimpleResult
     return eventTypesSeen;
   }
 
-  private void writeArgumentScoresForTransformedResults(
+
+  private void writeOverallArgumentScoresForTransformedResults(
       final List<EALScorer2015Style.Result> perDocResults,
       final Function<EALScorer2015Style.ArgResult, EALScorer2015Style.ArgResult> filterFunction,
       final File outputDir) throws IOException {
     // this has a lot of repetition with writeBothScores
     // we'd like to fix this eventually
-    final File perDocOutput = new File(outputDir, "scoresByDocument.txt");
     final ImmutableList<EALScorer2015Style.ArgResult> relevantArgumentScores =
         FluentIterable.from(perDocResults).transform(GET_ARG_SCORES_ONLY)
             .transform(filterFunction)
             .toList();
 
-    Files.asCharSink(perDocOutput, Charsets.UTF_8).write(
-        String.format("%40s\t%10s\t%10s\t%10s\t%10s\t%10s\t%10s\t", "Document", "ArgTP", "ArgFP",
-            "ArgFN", "ArgP", "ArgR", "Arg") +
-            Joiner.on("\n").join(
-                Lists.transform(relevantArgumentScores,
-                    new Function<EALScorer2015Style.ArgResult, String>() {
-                      @Override
-                      public String apply(final EALScorer2015Style.ArgResult input) {
-                        return String.format("%40s\t%10f\t%10f\t%10f\t%10.2f\t%10.2f\t%10.2f",
-                            input.docID(),
-                            input.unscaledTruePositiveArguments(),
-                            input.unscaledFalsePositiveArguments(),
-                            input.unscaledFalseNegativeArguments(),
-                            100.0 * input.precision(),
-                            100.0 * input.recall(),
-                            100.0 * input.scaledArgumentScore());
-                      }
-                    })));
+    PerDocResultWriter.writeArgPerDoc(relevantArgumentScores,
+        new File(outputDir, "scoresByDocument.txt"));
 
-    double rawArgScoreSum = 0.0;
-    double argNormalizerSum = 0.0;
-    double argTruePositives = 0.0;
-    double argFalsePositives = 0.0;
-    double argFalseNegatives = 0.0;
-    for (final EALScorer2015Style.ArgResult perDocResult : relevantArgumentScores) {
-      rawArgScoreSum += Math.max(0.0, perDocResult.unscaledArgumentScore());
-      argNormalizerSum += perDocResult.argumentNormalizer();
-      argTruePositives += perDocResult.unscaledTruePositiveArguments();
-      argFalsePositives += perDocResult.unscaledFalsePositiveArguments();
-      argFalseNegatives += perDocResult.unscaledFalseNegativeArguments();
-    }
-
-    double aggregateArgScore = (argNormalizerSum > 0.0) ? rawArgScoreSum / argNormalizerSum : 0.0;
-
-    double aggregateArgPrecision = (argTruePositives > 0.0)
-                                   ? (argTruePositives) / (argFalsePositives + argTruePositives)
-                                   : 0.0;
-    double aggregateArgRecall =
-        (argTruePositives > 0.0) ? (argTruePositives / argNormalizerSum) : 0.0;
+    final ImmutableAggregate2015ArgScoringResult argScores =
+        AggregateResultWriter.computeArgScoresFromArgResults(relevantArgumentScores);
 
     Files.asCharSink(new File(outputDir, "aggregateScore.txt"), Charsets.UTF_8).write(
         String
-            .format("%30s:%8.2f\n", "Aggregate argument precision", 100.0 * aggregateArgPrecision)
+            .format("%30s:%8.2f\n", "Aggregate argument precision", 100.0 * argScores.precision())
             +
-            String.format("%30s:%8.2f\n", "Aggregate argument recall", 100.0 * aggregateArgRecall)
+            String.format("%30s:%8.2f\n", "Aggregate argument recall", 100.0 * argScores.recall())
             +
             String
-                .format("%30s:%8.2f\n\n", "Aggregate argument score", 100.0 * aggregateArgScore));
-
-    final ImmutableMap<String, Double> resultsForJson = ImmutableMap.<String, Double>builder()
-        .put("argPrecision", 100.0 * aggregateArgPrecision)
-        .put("argRecall", 100.0 * aggregateArgRecall)
-        .put("argOverall", 100.0 * aggregateArgScore)
-        .put("argTP", argTruePositives)
-        .put("argFP", argFalsePositives)
-        .put("argFN", argFalseNegatives).build();
+                .format("%30s:%8.2f\n\n", "Aggregate argument score", 100.0 * argScores.overall()));
 
     final File jsonFile = new File(outputDir, "aggregateScore.json");
     final JacksonSerializer jacksonSerializer = JacksonSerializer.json().prettyOutput().build();
-    jacksonSerializer.serializeTo(resultsForJson, Files.asByteSink(jsonFile));
+    jacksonSerializer.serializeTo(argScores, Files.asByteSink(jsonFile));
   }
 
   private static final Function<EALScorer2015Style.Result, EALScorer2015Style.ArgResult>
