@@ -21,12 +21,10 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
-import com.google.common.collect.Sets;
 import com.google.common.io.CharSink;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Ugh these were not supposed to develop into objects that actually had real functionality Created
@@ -60,7 +58,7 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
   }
 
   public void renderTo(final CharSink sink, final AnswerKey answerKey,
-      final ImmutableMultimap<Integer, Warning> warnings) throws IOException {
+      final ImmutableSet<RenderableCorefEAType> corefWarnings) throws IOException {
     final StringBuilder sb = new StringBuilder();
     sb.append(htmlHeader());
     sb.append(String.format("<title>%s</title>", answerKey.docId().asString()));
@@ -90,24 +88,28 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
     sb.append(closehref());
     sb.append("<div id=\"CASGroupErrors\" style=\"display:block\">");
 
-    final ImmutableSetMultimap<TypeRole, Integer> typeRoleToCASGroup =
-        ImmutableSetMultimap.copyOf(TypeRole.buildMappingFromAnswerKey(answerKey).inverse());
-    for (final TypeRole typeRole : Ordering.<TypeRole>usingToString().sortedCopy(
-        typeRoleToCASGroup.keySet())) {
-      // append the type role
-      final Set<Integer> offendingCASIntersections = Sets.intersection(
-          typeRoleToCASGroup.get(typeRole), warnings.keySet());
-      final Set<Integer> allCASesForTypeRole = typeRoleToCASGroup.get(typeRole);
-      sb.append(href(typeRole.toString()));
-      sb.append("<h2>").append(typeRole.toString()).append("</h2>");
-      sb.append(closehref());
-      sb.append("<div id=\"").append(typeRole.toString()).append("\" style=\"display:block\">");
-      for (final Integer CASGroup : allCASesForTypeRole) {
-        final boolean isErrorFul = offendingCASIntersections.contains(CASGroup);
-        appendCASGroup(sb, typeRole.toString(), CASGroup, answerKey, warnings.get(CASGroup), isErrorFul);
-      }
-      sb.append("</div>");
+    for(final RenderableCorefEAType renderableCorefEAType: corefWarnings) {
+      sb.append(renderableCorefEAType.renderToHTML());
     }
+
+//    final ImmutableSetMultimap<TypeRole, Integer> typeRoleToCASGroup =
+//        ImmutableSetMultimap.copyOf(TypeRole.buildMappingFromAnswerKey(answerKey).inverse());
+//    for (final TypeRole typeRole : Ordering.<TypeRole>usingToString().sortedCopy(
+//        typeRoleToCASGroup.keySet())) {
+//      // append the type role
+//      final Set<Integer> offendingCASIntersections = Sets.intersection(
+//          typeRoleToCASGroup.get(typeRole), warnings.keySet());
+//      final Set<Integer> allCASesForTypeRole = typeRoleToCASGroup.get(typeRole);
+//      sb.append(href(typeRole.toString()));
+//      sb.append("<h2>").append(typeRole.toString()).append("</h2>");
+//      sb.append(closehref());
+//      sb.append("<div id=\"").append(typeRole.toString()).append("\" style=\"display:block\">");
+//      for (final Integer CASGroup : allCASesForTypeRole) {
+//        final boolean isErrorFul = offendingCASIntersections.contains(CASGroup);
+//        appendCASGroup(sb, typeRole.toString(), CASGroup, answerKey, warnings.get(CASGroup), isErrorFul);
+//      }
+//      sb.append("</div>");
+//    }
 
     sb.append("</div>");
 

@@ -81,7 +81,7 @@ abstract class QADocumentRenderer {
 
   protected static String defaultStyle() {
     return "body {\n"
-        + "background-color: rgb(128,128,128);\n"
+        + "background-color: rgb(200,200,200);\n"
         + "}\n"
         + "* {\n"
         + "\tvisibility: inherit;\n"
@@ -99,11 +99,11 @@ abstract class QADocumentRenderer {
     return sb.toString();
   }
 
-  protected static String href(final String id) {
+  static String href(final String id) {
     return String.format("<a href=\"javascript:toggle('%s')\">\n", id);
   }
 
-  protected static String closehref() {
+  static String closehref() {
     return "</a>";
   }
 

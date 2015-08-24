@@ -15,6 +15,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.io.Files;
 
@@ -49,6 +50,7 @@ public class CorefQA {
       final AnswerKey answerKey = MakeAllRealisActual.neutralizeAssessedResponsesAndAssessment(
           store.read(docID));
       log.info("serializing {}", docID.asString());
+
       htmlRenderer.renderTo(
           Files
               .asCharSink(new File(outputDir, docID.asString() + ".coref.html"),
@@ -57,16 +59,22 @@ public class CorefQA {
     }
   }
 
-  private static ImmutableMultimap<Integer, Warning> generateWarnings(final AnswerKey answerKey,
+  private static ImmutableSet<RenderableCorefEAType> generateWarnings(final AnswerKey answerKey,
       final ImmutableList<CorefWarningRule<Integer>> warnings) {
-    final ImmutableMultimap.Builder<Integer, Warning> result = ImmutableMultimap.builder();
+    final ImmutableSet.Builder<RenderableCorefEAType> result = ImmutableSet.builder();
 
     final ImmutableMultimap<TypeRoleTupleWorkAround, Response> typeRoleToResponse =
         Multimaps.index(answerKey.allResponses(), TypeRoleTupleWorkAround.createfromResponse());
 
-    for(final CorefWarningRule<Integer> w: warnings) {
-      for(final TypeRoleTupleWorkAround key: typeRoleToResponse.keySet()) {
-        result.putAll(w.applyWarning(answerKey, ImmutableSet.copyOf(typeRoleToResponse.get(key))));
+    for (final CorefWarningRule<Integer> w : warnings) {
+      for (final TypeRoleTupleWorkAround key : typeRoleToResponse.keySet()) {
+        final ImmutableSetMultimap<Integer, Warning> warningMap =
+            ImmutableSetMultimap.copyOf(w.applyWarning(answerKey,
+                ImmutableSet.copyOf(typeRoleToResponse.get(key))));
+        final RenderableCorefEAType corefEAType =
+            RenderableCorefEAType.createFromAnswerKeyAndWarnings(
+                key.type, key.role, answerKey, warningMap);
+        result.add(corefEAType);
       }
     }
     return result.build();
@@ -84,6 +92,7 @@ public class CorefQA {
 
   // another work around for want of a table, or tuples.
   private static class TypeRoleTupleWorkAround {
+
     final Symbol type;
     final Symbol role;
 
