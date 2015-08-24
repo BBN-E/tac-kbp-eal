@@ -6,16 +6,13 @@ import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.bin.QA.CorefDocumentRenderer;
 
 import com.google.common.base.Function;
-import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Ordering;
 import com.google.common.collect.SetMultimap;
 
 import org.slf4j.Logger;
@@ -65,7 +62,7 @@ public class CASOverlapWarningRule implements CorefWarningRule<Integer> {
 
     // Warnings! Assemble!
     final ImmutableMultimap<Integer, Integer> casToOverlaps = casOverlapsWith.build();
-    final Joiner comma = Joiner.on(", ");
+//    final Joiner comma = Joiner.on(", ");
     for (final Integer key : casToOverlaps.keySet()) {
       for (final Integer overlappingCluster : casToOverlaps.get(key)) {
         final StringBuilder warningText = new StringBuilder();
@@ -74,22 +71,23 @@ public class CASOverlapWarningRule implements CorefWarningRule<Integer> {
 //        warningText.append("CASGroup-").append(overlappingCluster);
 //        warningText.append("</a>");
         // end hack
-        warningText.append(" - ");
-        warningText.append(comma.join(
-            ImmutableSet.copyOf(
-                Iterables.transform(
-                    corefAnnotation.clusterIDToMembersMap().get(overlappingCluster),
-                    KBPString.Text))));
-        warningText.append("\n<ul>\n");
-        for (final TypeRoleRealis r : ImmutableSet.copyOf(
-            Ordering.<TypeRoleRealis>usingToString().sortedCopy(
-                Iterables.transform(CorefDocumentRenderer.responsesForCASGroup(overlappingCluster,
-                    answerKey), TypeRoleRealis.responseToTRR())))) {
-          warningText.append("<li>");
-          warningText.append(r.toString());
-          warningText.append("</li>\n");
-        }
-        warningText.append("</ul>\n");
+        warningText.append("Overlaps with <b>CASGroup-").append(overlappingCluster).append("</b>");
+//        warningText.append(" - ");
+//        warningText.append(comma.join(
+//            ImmutableSet.copyOf(
+//                Iterables.transform(
+//                    corefAnnotation.clusterIDToMembersMap().get(overlappingCluster),
+//                    KBPString.Text))));
+//        warningText.append("\n<ul>\n");
+//        for (final TypeRoleRealis r : ImmutableSet.copyOf(
+//            Ordering.<TypeRoleRealis>usingToString().sortedCopy(
+//                Iterables.transform(CorefDocumentRenderer.responsesForCASGroup(overlappingCluster,
+//                    answerKey), TypeRoleRealis.responseToTRR())))) {
+//          warningText.append("<li>");
+//          warningText.append(r.toString());
+//          warningText.append("</li>\n");
+//        }
+//        warningText.append("</ul>\n");
         final Warning w =
             Warning.create(getTypeString(), warningText.toString(), Warning.Severity.MINOR);
         result.put(key, w);
