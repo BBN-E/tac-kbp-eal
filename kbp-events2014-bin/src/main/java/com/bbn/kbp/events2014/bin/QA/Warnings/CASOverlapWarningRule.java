@@ -51,7 +51,6 @@ public class CASOverlapWarningRule implements CorefWarningRule<Integer> {
     final CorefAnnotation corefAnnotation = answerKey.corefAnnotation();
     final ImmutableSet<Integer> CASGroupsOfConcern = CASGroupsForResponses(corefAnnotation, restrictWarningTo);
 
-    log.info("gathering overlapping coref sets");
     // gather all sets that overlap
     for (final Integer setA : CASGroupsOfConcern) {
       for (final Integer setB : CASGroupsOfConcern) {
@@ -66,7 +65,6 @@ public class CASOverlapWarningRule implements CorefWarningRule<Integer> {
 
     // Warnings! Assemble!
     final ImmutableMultimap<Integer, Integer> casToOverlaps = casOverlapsWith.build();
-    log.info("finished gathering, now building warnings");
     final Joiner comma = Joiner.on(", ");
     for (final Integer key : casToOverlaps.keySet()) {
       for (final Integer overlappingCluster : casToOverlaps.get(key)) {
@@ -98,7 +96,6 @@ public class CASOverlapWarningRule implements CorefWarningRule<Integer> {
       }
     }
 
-    log.info("done building warnings");
     return result.build();
   }
 
