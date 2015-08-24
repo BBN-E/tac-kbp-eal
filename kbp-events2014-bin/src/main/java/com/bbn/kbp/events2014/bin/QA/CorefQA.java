@@ -48,7 +48,6 @@ public class CorefQA {
       log.info("processing document {}", docID.asString());
       final AnswerKey answerKey = MakeAllRealisActual.neutralizeAssessedResponsesAndAssessment(
           store.read(docID));
-      generateWarnings(answerKey, warnings);
       log.info("serializing {}", docID.asString());
       htmlRenderer.renderTo(
           Files
