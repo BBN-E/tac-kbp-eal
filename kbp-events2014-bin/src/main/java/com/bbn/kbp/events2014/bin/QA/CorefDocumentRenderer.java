@@ -84,24 +84,6 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
     sb.append("</div>");
     sb.append("</div>");
 
-    // put all the CAS groups here, just for reference
-//    sb.append(href("CASGroups"));
-//    sb.append("<h2>CASGroups</h2>");
-//    sb.append(closehref());
-//    sb.append("<div id=\"CASGroups\" style=\"display:none\"");
-//    for (final Integer CASGroup : answerKey.corefAnnotation().clusterIDToMembersMap().keySet()) {
-////      sb.append(href(String.format("CASGroup_%d", CASGroup)));
-//      sb.append("<h3>CASGroup-").append(CASGroup).append("</h3>");
-////      sb.append(closehref());
-//      sb.append("<div id=\"CASGroup_");
-//      sb.append(CASGroup);
-//      sb.append("\" style=\"display:inherit\" >");
-//      appendCASStringList(sb, answerKey.corefAnnotation().clusterIDToMembersMap().get(CASGroup),
-//          CASGroup);
-//      sb.append("</div>");
-//    }
-//    sb.append("</div>");
-
     // begin bullets
     sb.append(href("CASGroupErrors"));
     sb.append("<h2>CAS Group Analysis</h2>");
@@ -126,9 +108,7 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
       }
       sb.append("</div>");
     }
-//    for (final Integer CASGroup : warnings.keySet()) {
-//      appendCASGroup(sb, CASGroup, answerKey, warnings);
-//    }
+
     sb.append("</div>");
 
     sink.write(sb.toString());
@@ -149,51 +129,11 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
 
   private static void appendCASStringList(final StringBuilder sb,
       final ImmutableCollection<KBPString> kbpStrings, final Integer CASGroup) {
-//    sb.append(href(String.format("CASStringList_%d", CASGroup)));
-//    sb.append("CAS String List\n");
-//    sb.append(closehref());
-
-//    sb.append("<div id=\"CASStringList_").append(CASGroup).append("\" style=\"display:block\">");
-//    sb.append("<ul>\n");
     final Joiner semicolon = Joiner.on("; ");
     sb.append(semicolon.join(orderStringByLength().sortedCopy(ImmutableSet.copyOf(
         Iterables.transform(kbpStrings, KBPString.Text)))));
-//    for (final String kbpString : orderStringByLength().sortedCopy(ImmutableSet.copyOf(
-//        Iterables.transform(kbpStrings, KBPString.Text)))) {
-//      sb.append("<li>");
-//      sb.append(kbpString);
-//      sb.append("</li>\n");
-//    }
-//    sb.append("</ul>\n");
-//    sb.append("</div>");
   }
 
-
-  private static void appendTypeAndRoleSummaryForCAS(final StringBuilder sb,
-      final Integer CASGroup, final AnswerKey answerKey) {
-    final ImmutableMultimap<Symbol, Response> eventTypeToResponse =
-        Multimaps.index(responsesForCASGroup(CASGroup, answerKey),
-            Response.typeFunction());
-    final ImmutableSetMultimap<Symbol, Symbol> eventTypeToRoles = ImmutableSetMultimap.copyOf(
-        Multimaps.transformValues(eventTypeToResponse, Response.roleFunction()));
-    final Joiner comma = Joiner.on(", ");
-
-    sb.append(href(String.format("SummaryEventTypeRole_%d", CASGroup)));
-    sb.append("Summary of event type, role for this CAS\n");
-    sb.append(closehref());
-    sb.append("<div id=\"SummaryEventTypeRole_").append(CASGroup)
-        .append("\" style=\"display:none\">");
-    sb.append("<ul>\n");
-    for (final Symbol type : eventTypeToRoles.keySet()) {
-      sb.append("<li>");
-      sb.append(type);
-      sb.append(": ");
-      sb.append(comma.join(eventTypeToRoles.get(type)));
-      sb.append("</li>");
-    }
-    sb.append("</ul>");
-    sb.append("</div>");
-  }
 
 
   private static void appendWarningsListForCAS(final StringBuilder sb, final String typeRole,
@@ -206,12 +146,9 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
                 return input.typeString();
               }
             }));
-//    sb.append(href(String.format("Warnings_%d", CASGroup)));
-//    sb.append(closehref());
-
     sb.append("<div id=\"").append(String.format("%sCASGroupError_%d", typeRole, CASGroup)).append(
         "\" style=\"display:none\">");
-    sb.append("Warning list\n");
+    sb.append("<b>Warning list</b>\n");
 
     sb.append("<ul>\n");
     for (final String warningType : warningByType.keySet()) {
@@ -232,29 +169,6 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
 
   }
 
-  private static void appendCASRoleList(final StringBuilder sb,
-      final Integer CASGroup, final AnswerKey answerKey) {
-    sb.append("CAS with role list\n");
-    sb.append("<ul>");
-    for (final KBPString kbpString : answerKey.corefAnnotation().clusterIDToMembersMap()
-        .get(CASGroup)) {
-      sb.append("<li>");
-      sb.append(kbpString.string());
-      sb.append("<ul>\n");
-      for (final Response r : ImmutableSet.copyOf(
-          Multimaps.index(answerKey.allResponses(), Response.CASFunction()).get(kbpString))) {
-        sb.append(r.type());
-        sb.append(", ");
-        sb.append(r.role());
-        sb.append(", ");
-        sb.append(r.realis());
-      }
-      sb.append("</ul>");
-      sb.append("</li>\n");
-    }
-    sb.append("</ul>");
-  }
-
 
   private static void appendCASGroup(final StringBuilder sb, final String typeRole, final Integer CASGroup,
       final AnswerKey answerKey, final ImmutableCollection<Warning> warnings,
@@ -269,31 +183,11 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
       sb.append("<b>CASGroup-").append(CASGroup).append("</b> - ");
     }
     appendCASStringList(sb, coref.clusterIDToMembersMap().get(CASGroup), CASGroup);
-
-//    sb.append("<div id=\"CASGroupError_").append(CASGroup).append("\" style=\"display:inherit\" >");
-    sb.append("<ul>");
-
-
-    // summary of type and roles
-
-//    sb.append("<li>");
-//    appendTypeAndRoleSummaryForCAS(sb, CASGroup, answerKey);
-//    sb.append("</li>");
-
     // warnings list
     if(isErrorFul) {
-//      sb.append("<li>");
       appendWarningsListForCAS(sb, typeRole, warnings, CASGroup);
-//      sb.append("</li>");
     }
-
-//    // CAS with role list
-//    sb.append("<li>");
-//    appendCASRoleList(sb, CASGroup, answerKey);
-//    sb.append("</li>");
-
-    sb.append("</ul>");
-//    sb.append("</div>");
+    sb.append("<br/>");
   }
 
   private static final Ordering<String> orderStringByLength() {
