@@ -37,18 +37,18 @@ public final class KBP2015Scorer {
   private static final Logger log = LoggerFactory.getLogger(KBP2015Scorer.class);
 
   private KBP2015Scorer(final EALScorer2015Style documentScorer,
-      Map<String, ResultWriter> additionalResultWriters) {
+      Map<String, SimpleResultWriter> additionalResultWriters) {
     this.documentScorer = checkNotNull(documentScorer);
     this.additionalResultWriters = ImmutableMap.copyOf(additionalResultWriters);
   }
 
   public static KBP2015Scorer fromParameters(Parameters params) {
     return new KBP2015Scorer(EALScorer2015Style.create(params),
-        ImmutableMap.<String, ResultWriter>of());
+        ImmutableMap.<String, SimpleResultWriter>of());
   }
 
   public static KBP2015Scorer fromParameters(Parameters params,
-      Map<String, ResultWriter> additionalResultWriters) {
+      Map<String, SimpleResultWriter> additionalResultWriters) {
     return new KBP2015Scorer(EALScorer2015Style.create(params), additionalResultWriters);
   }
 
@@ -76,14 +76,15 @@ public final class KBP2015Scorer {
     // we wrap the main method in this way to
     // ensure a non-zero return value on failure
     try {
-      trueMain(argv, ImmutableMap.<String, ResultWriter>of());
+      trueMain(argv, ImmutableMap.<String, SimpleResultWriter>of());
     } catch (Exception e) {
       e.printStackTrace();
       System.exit(1);
     }
   }
 
-  public static void trueMain(String[] argv, Map<String, ResultWriter> additionalResultWriters)
+  public static void trueMain(String[] argv,
+      Map<String, SimpleResultWriter> additionalResultWriters)
       throws IOException {
     if (argv.length != 1) {
       usage();
@@ -151,7 +152,7 @@ public final class KBP2015Scorer {
   }
 
   private final EALScorer2015Style documentScorer;
-  private final ImmutableMap<String, ResultWriter> additionalResultWriters;
+  private final ImmutableMap<String, SimpleResultWriter> additionalResultWriters;
 
   private void score(final AnnotationStore goldAnswerStore,
       final LinkingStore referenceLinkingStore, final ArgumentStore argumentStore,
@@ -203,18 +204,25 @@ public final class KBP2015Scorer {
     (new ByEventTypeResultWriter())
         .writeResult(perDocResults, new File(baseOutputDir, "byEventType"));
 
-    for (final Map.Entry<String, ResultWriter> additionalResultWriter : additionalResultWriters
+    for (final Map.Entry<String, SimpleResultWriter> additionalResultWriter : additionalResultWriters
         .entrySet()) {
       additionalResultWriter.getValue().writeResult(perDocResults,
           new File(baseOutputDir, additionalResultWriter.getKey()));
     }
   }
 
-  interface ResultWriter {
-
+  interface SimpleResultWriter {
     void writeResult(final List<EALScorer2015Style.Result> perDocResults,
         final File baseOutputDir) throws IOException;
   }
+
+  interface BootstrappedResultWriter {
+
+    void observeSample(final Set<EALScorer2015Style.Result> perDocResults);
+
+    void writeResult(File baseOutputDir);
+  }
+
 
   private static final String SYSTEM_OUTPUT_PARAM = "systemOutput";
   private static final String SYSTEM_OUTPUTS_DIR_PARAM = "systemOutputsDir";

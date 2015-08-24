@@ -19,7 +19,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 /**
  * Created by rgabbard on 8/10/15.
  */
-final class AggregateAndPerDocResultWriter implements KBP2015Scorer.ResultWriter {
+final class AggregateAndPerDocResultWriter implements KBP2015Scorer.SimpleResultWriter {
 
   private final double lambda;
 

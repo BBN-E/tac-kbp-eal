@@ -27,7 +27,7 @@ import static com.google.common.base.Predicates.equalTo;
 /**
  * Created by rgabbard on 8/10/15.
  */
-public final class ByEventTypeResultWriter implements KBP2015Scorer.ResultWriter {
+public final class ByEventTypeResultWriter implements KBP2015Scorer.SimpleResultWriter {
 
   @Override
   public void writeResult(final List<EALScorer2015Style.Result> perDocResults,
