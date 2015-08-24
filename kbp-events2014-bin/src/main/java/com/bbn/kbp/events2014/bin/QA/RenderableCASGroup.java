@@ -70,9 +70,9 @@ public final class RenderableCASGroup {
     sb.append(" - ");
 
     final Joiner semicolon = Joiner.on("; ");
-    sb.append(semicolon.join(Iterables
+    sb.append(semicolon.join(ImmutableSet.copyOf(Iterables
         .transform(RenderableCorefResponse.byCASLength().sortedCopy(renderableResponses),
-            RenderableCorefResponse.corefResponseToHTMLString())));
+            RenderableCorefResponse.corefResponseToHTMLString()))));
     // warnings
     if (warnings.size() > 0) {
       sb.append("<div id=\"").append(id).append("\" style=\'display:none\' >");

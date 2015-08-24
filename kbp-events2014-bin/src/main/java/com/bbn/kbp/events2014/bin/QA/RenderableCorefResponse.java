@@ -6,7 +6,9 @@ import com.bbn.kbp.events2014.Response;
 
 import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -44,8 +46,18 @@ public final class RenderableCorefResponse {
 
   public String renderToHTMNL() {
     final StringBuilder sb = new StringBuilder();
+    final ImmutableList<AssessedResponse> mostlyCorrect = ImmutableList.copyOf(
+        Iterables.filter(sourceResponses, AssessedResponse.IsCorrectUpToInexactJustifications));
+    if(mostlyCorrect.size() > 0) {
+      sb.append("<b>");
+      sb.append(string);
+      sb.append("</b>");
+    } else {
+      sb.append(string);
+    }
 
-    return string;
+
+    return sb.toString();
   }
 
   public static Function<RenderableCorefResponse, String> corefResponseToHTMLString() {
@@ -65,4 +77,6 @@ public final class RenderableCorefResponse {
       }
     };
   }
+
+
 }

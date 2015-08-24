@@ -56,6 +56,9 @@ public final class RenderableCorefEAType {
   }
 
   public String renderToHTML() {
+    if(renderableCASGroups.size() == 0) {
+      return  "";
+    }
     final StringBuilder sb = new StringBuilder();
     sb.append("<div id=\"").append(type).append("/").append(role)
         .append("\" style=display:block >");
