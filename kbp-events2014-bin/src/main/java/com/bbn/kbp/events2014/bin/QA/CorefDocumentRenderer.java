@@ -21,13 +21,15 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.Sets;
 import com.google.common.io.CharSink;
 
 import java.io.IOException;
 import java.util.Map;
 
 /**
- * Created by jdeyoung on 6/30/15.
+ * Ugh these were not supposed to develop into objects that actually had real functionality Created
+ * by jdeyoung on 6/30/15.
  */
 public final class CorefDocumentRenderer extends QADocumentRenderer {
 
@@ -86,7 +88,7 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
     sb.append("<h2>CASGroups</h2>");
     sb.append(closehref());
     sb.append("<div id=\"CASGroups\" style=\"display:none\"");
-    for(final Integer CASGroup : answerKey.corefAnnotation().clusterIDToMembersMap().keySet()) {
+    for (final Integer CASGroup : answerKey.corefAnnotation().clusterIDToMembersMap().keySet()) {
 //      sb.append(href(String.format("CASGroup_%d", CASGroup)));
       sb.append("<h3>CASGroup-").append(CASGroup).append("</h3>");
 //      sb.append(closehref());
@@ -99,15 +101,29 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
     }
     sb.append("</div>");
 
-
     // begin bullets
     sb.append(href("CASGroupErrors"));
     sb.append("<h2>CAS Group Analysis</h2>");
     sb.append(closehref());
     sb.append("<div id=\"CASGroupErrors\" style=\"display:block\">");
-    for (final Integer CASGroup : warnings.keySet()) {
-      appendCASGroup(sb, CASGroup, answerKey, warnings);
+
+    final ImmutableSetMultimap<TypeRole, Integer> typeRoleToCASGroup =
+        ImmutableSetMultimap.copyOf(TypeRole.buildMappingFromAnswerKey(answerKey).inverse());
+    for (final TypeRole typeRole : Ordering.<TypeRole>usingToString().sortedCopy(
+        typeRoleToCASGroup.keySet())) {
+      // append the type role
+      sb.append(href(typeRole.toString()));
+      sb.append("<h2>").append(typeRole.toString()).append("</h2>");
+      sb.append(closehref());
+      sb.append("<div id=\"").append(typeRole.toString()).append("\" style=\"display:block\">");
+      for(final Integer CASGroup: Sets.intersection(typeRoleToCASGroup.get(typeRole), warnings.keySet())) {
+        appendCASGroup(sb, CASGroup, answerKey, warnings.get(CASGroup));
+      }
+      sb.append("</div>");
     }
+//    for (final Integer CASGroup : warnings.keySet()) {
+//      appendCASGroup(sb, CASGroup, answerKey, warnings);
+//    }
     sb.append("</div>");
 
     sink.write(sb.toString());
@@ -154,10 +170,11 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
         Multimaps.transformValues(eventTypeToResponse, Response.roleFunction()));
     final Joiner comma = Joiner.on(", ");
 
-    sb.append(href(String.format("SummaryEventTypeRole_%d",CASGroup)));
+    sb.append(href(String.format("SummaryEventTypeRole_%d", CASGroup)));
     sb.append("Summary of event type, role for this CAS\n");
     sb.append(closehref());
-    sb.append("<div id=\"SummaryEventTypeRole_").append(CASGroup).append("\" style=\"display:block\">");
+    sb.append("<div id=\"SummaryEventTypeRole_").append(CASGroup)
+        .append("\" style=\"display:none\">");
     sb.append("<ul>\n");
     for (final Symbol type : eventTypeToRoles.keySet()) {
       sb.append("<li>");
@@ -181,11 +198,11 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
                 return input.typeString();
               }
             }));
-    sb.append(href(String.format("Warnings_%d",CASGroup)));
+    sb.append(href(String.format("Warnings_%d", CASGroup)));
     sb.append("Warning list\n");
     sb.append(closehref());
 
-    sb.append("<div id=\"Warnings_").append(CASGroup).append("\" style=\"display:block\">");
+    sb.append("<div id=\"Warnings_").append(CASGroup).append("\" style=\"display:none\">");
     sb.append("<ul>\n");
     for (final String warningType : warningByType.keySet()) {
       sb.append("<li>");
@@ -228,8 +245,9 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
     sb.append("</ul>");
   }
 
+
   private static void appendCASGroup(final StringBuilder sb, final Integer CASGroup,
-      final AnswerKey answerKey, final ImmutableMultimap<Integer, Warning> warnings) {
+      final AnswerKey answerKey, final ImmutableCollection<Warning> warnings) {
     final CorefAnnotation coref = answerKey.corefAnnotation();
     sb.append(href(String.format("CASGroupError_%d", CASGroup)));
     sb.append("<h3>CASGroup-").append(CASGroup).append("</h3>");
@@ -250,7 +268,7 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
 
     // warnings list
     sb.append("<li>");
-    appendWarningsListForCAS(sb, warnings.get(CASGroup), CASGroup);
+    appendWarningsListForCAS(sb, warnings, CASGroup);
     sb.append("</li>");
 
 //    // CAS with role list
@@ -260,5 +278,76 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
 
     sb.append("</ul>");
     sb.append("</div>");
+  }
+
+  private final static class TypeRole {
+
+    final Symbol type;
+    final Symbol role;
+
+    private TypeRole(final Symbol type, final Symbol role) {
+      this.type = type;
+      this.role = role;
+    }
+
+    public static ImmutableMultimap<Integer, TypeRole> buildMappingFromAnswerKey(
+        final AnswerKey answerKey) {
+      final ImmutableMultimap.Builder<Integer, Response> responsesForCASGroupBuilder =
+          ImmutableMultimap.builder();
+      final ImmutableSetMultimap<KBPString, Response> kbpStringToResponse =
+          ImmutableSetMultimap.copyOf(
+              Multimaps.index(answerKey.allResponses(), Response.CASFunction()));
+      for (final Integer CASGroup : answerKey.corefAnnotation().clusterIDToMembersMap().keySet()) {
+        for (final KBPString kbpString : answerKey.corefAnnotation().clusterIDToMembersMap()
+            .get(CASGroup)) {
+          responsesForCASGroupBuilder.putAll(CASGroup, kbpStringToResponse.get(kbpString));
+        }
+      }
+
+      final ImmutableMultimap<Integer, Response> CASGroupToResponse =
+          responsesForCASGroupBuilder.build();
+      final ImmutableMultimap<Integer, TypeRole> CASGroupToTypeRole = ImmutableMultimap.copyOf(
+          Multimaps.transformValues(CASGroupToResponse, responseToTypeRole()));
+      return CASGroupToTypeRole;
+    }
+
+    public static Function<Response, TypeRole> responseToTypeRole() {
+      return new Function<Response, TypeRole>() {
+        @Override
+        public TypeRole apply(final Response input) {
+          return new TypeRole(input.type(), input.role());
+        }
+      };
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+
+      final TypeRole typeRole = (TypeRole) o;
+
+      if (!type.equals(typeRole.type)) {
+        return false;
+      }
+      return role.equals(typeRole.role);
+
+    }
+
+    @Override
+    public int hashCode() {
+      int result = type.hashCode();
+      result = 31 * result + role.hashCode();
+      return result;
+    }
+
+    @Override
+    public String toString() {
+      return type + "-" + role;
+    }
   }
 }
