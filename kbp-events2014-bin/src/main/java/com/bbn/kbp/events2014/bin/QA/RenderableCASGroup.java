@@ -51,7 +51,8 @@ public final class RenderableCASGroup {
         .copyOf(
             Multimaps.index(responses, compose(Response.CASFunction(), AssessedResponse.Response)));
     for (final KBPString string : stringToResponses.keySet()) {
-      corefResponses.add(RenderableCorefResponse.create(string, ImmutableSet.copyOf(stringToResponses.get(string))));
+      corefResponses.add(RenderableCorefResponse.create(string, ImmutableSet.copyOf(
+          stringToResponses.get(string))));
     }
 
     return create(casGroup, corefResponses.build());
@@ -118,5 +119,34 @@ public final class RenderableCASGroup {
     }
     sb.append("</div>");
     return sb.toString();
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final RenderableCASGroup that = (RenderableCASGroup) o;
+
+    if (CASGroup != that.CASGroup) {
+      return false;
+    }
+    if (!renderableResponses.equals(that.renderableResponses)) {
+      return false;
+    }
+    return warnings.equals(that.warnings);
+
+  }
+
+  @Override
+  public int hashCode() {
+    int result = CASGroup;
+    result = 31 * result + renderableResponses.hashCode();
+    result = 31 * result + warnings.hashCode();
+    return result;
   }
 }

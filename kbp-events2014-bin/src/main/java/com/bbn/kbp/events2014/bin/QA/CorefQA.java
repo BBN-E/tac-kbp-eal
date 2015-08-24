@@ -14,6 +14,8 @@ import com.bbn.kbp.events2014.transformers.MakeAllRealisActual;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
@@ -54,7 +56,17 @@ public class CorefQA {
     for (Symbol docID : store.docIDs()) {
       log.info("processing document {}", docID.asString());
       final AnswerKey answerKey = MakeAllRealisActual.neutralizeAssessedResponsesAndAssessment(
-          store.read(docID));
+          store.read(docID)).filter(new AnswerKey.Filter() {
+        @Override
+        public Predicate<AssessedResponse> assessedFilter() {
+          return AssessedResponse.IsCorrectUpToInexactJustifications;
+        }
+
+        @Override
+        public Predicate<Response> unassessedFilter() {
+          return Predicates.alwaysFalse();
+        }
+      });
       log.info("serializing {}", docID.asString());
 
       final ImmutableSet<RenderableCorefEAType> CASesWithWarnings = generateWarnings(answerKey,

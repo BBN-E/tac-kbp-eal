@@ -87,5 +87,28 @@ public final class RenderableCorefResponse {
     };
   }
 
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
 
+    final RenderableCorefResponse that = (RenderableCorefResponse) o;
+
+    if (!string.equals(that.string)) {
+      return false;
+    }
+    return sourceResponses.equals(that.sourceResponses);
+
+  }
+
+  @Override
+  public int hashCode() {
+    int result = string.hashCode();
+    result = 31 * result + sourceResponses.hashCode();
+    return result;
+  }
 }
