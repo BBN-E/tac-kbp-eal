@@ -119,7 +119,7 @@ public class CASOverlapWarningRule implements CorefWarningRule<Integer> {
         final String a = kbpStringA.string().toLowerCase();
         final String b = kbpStringB.string().toLowerCase();
         // no need to be symmetric about these concerns - each string will be looped over later by apply warning
-        if (a.contains(b)) {
+        if (a.contains(b) || b.contains(a)) {
           return true;
         }
       }
