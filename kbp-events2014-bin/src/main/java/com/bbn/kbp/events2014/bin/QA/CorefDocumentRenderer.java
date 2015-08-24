@@ -115,16 +115,16 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
       // append the type role
       final Set<Integer> offendingCASIntersections = Sets.intersection(
           typeRoleToCASGroup.get(typeRole), warnings.keySet());
-      if (offendingCASIntersections.size() > 1) {
-        sb.append(href(typeRole.toString()));
-        sb.append("<h2>").append(typeRole.toString()).append("</h2>");
-        sb.append(closehref());
-        sb.append("<div id=\"").append(typeRole.toString()).append("\" style=\"display:block\">");
-        for (final Integer CASGroup : offendingCASIntersections) {
-          appendCASGroup(sb, CASGroup, answerKey, warnings.get(CASGroup));
-        }
-        sb.append("</div>");
+      final Set<Integer> allCASesForTypeRole = typeRoleToCASGroup.get(typeRole);
+      sb.append(href(typeRole.toString()));
+      sb.append("<h2>").append(typeRole.toString()).append("</h2>");
+      sb.append(closehref());
+      sb.append("<div id=\"").append(typeRole.toString()).append("\" style=\"display:block\">");
+      for (final Integer CASGroup : allCASesForTypeRole) {
+        final boolean isErrorFul = offendingCASIntersections.contains(CASGroup);
+        appendCASGroup(sb, typeRole.toString(), CASGroup, answerKey, warnings.get(CASGroup), isErrorFul);
       }
+      sb.append("</div>");
     }
 //    for (final Integer CASGroup : warnings.keySet()) {
 //      appendCASGroup(sb, CASGroup, answerKey, warnings);
@@ -153,7 +153,7 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
 //    sb.append("CAS String List\n");
 //    sb.append(closehref());
 
-    sb.append("<div id=\"CASStringList_").append(CASGroup).append("\" style=\"display:block\">");
+//    sb.append("<div id=\"CASStringList_").append(CASGroup).append("\" style=\"display:block\">");
 //    sb.append("<ul>\n");
     final Joiner semicolon = Joiner.on("; ");
     sb.append(semicolon.join(orderStringByLength().sortedCopy(ImmutableSet.copyOf(
@@ -165,7 +165,7 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
 //      sb.append("</li>\n");
 //    }
 //    sb.append("</ul>\n");
-    sb.append("</div>");
+//    sb.append("</div>");
   }
 
 
@@ -196,7 +196,7 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
   }
 
 
-  private static void appendWarningsListForCAS(final StringBuilder sb,
+  private static void appendWarningsListForCAS(final StringBuilder sb, final String typeRole,
       final ImmutableCollection<Warning> warnings, final Integer CASGroup) {
     final ImmutableSetMultimap<String, Warning> warningByType = ImmutableSetMultimap.copyOf(
         Multimaps.index(warnings,
@@ -206,11 +206,13 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
                 return input.typeString();
               }
             }));
-    sb.append(href(String.format("Warnings_%d", CASGroup)));
-    sb.append("Warning list\n");
-    sb.append(closehref());
+//    sb.append(href(String.format("Warnings_%d", CASGroup)));
+//    sb.append(closehref());
 
-    sb.append("<div id=\"Warnings_").append(CASGroup).append("\" style=\"display:none\">");
+    sb.append("<div id=\"").append(String.format("%sCASGroupError_%d", typeRole, CASGroup)).append(
+        "\" style=\"display:none\">");
+    sb.append("Warning list\n");
+
     sb.append("<ul>\n");
     for (final String warningType : warningByType.keySet()) {
       sb.append("<li>");
@@ -254,19 +256,23 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
   }
 
 
-  private static void appendCASGroup(final StringBuilder sb, final Integer CASGroup,
-      final AnswerKey answerKey, final ImmutableCollection<Warning> warnings) {
+  private static void appendCASGroup(final StringBuilder sb, final String typeRole, final Integer CASGroup,
+      final AnswerKey answerKey, final ImmutableCollection<Warning> warnings,
+      final boolean isErrorFul) {
     final CorefAnnotation coref = answerKey.corefAnnotation();
-    sb.append(href(String.format("CASGroupError_%d", CASGroup)));
-    sb.append("<b>CASGroup-").append(CASGroup).append("</b>");
-    sb.append(closehref());
-    sb.append("<div id=\"CASGroupError_").append(CASGroup).append("\" style=\"display:inherit\" >");
+    if(isErrorFul) {
+      sb.append(href(String.format("%sCASGroupError_%d", typeRole, CASGroup)));
+      sb.append("<b>CASGroup-").append(CASGroup).append("</b>");
+      sb.append(closehref());
+      sb.append(" - ");
+    } else {
+      sb.append("<b>CASGroup-").append(CASGroup).append("</b> - ");
+    }
+    appendCASStringList(sb, coref.clusterIDToMembersMap().get(CASGroup), CASGroup);
+
+//    sb.append("<div id=\"CASGroupError_").append(CASGroup).append("\" style=\"display:inherit\" >");
     sb.append("<ul>");
 
-    //cas string list
-    sb.append("<li>");
-    appendCASStringList(sb, coref.clusterIDToMembersMap().get(CASGroup), CASGroup);
-    sb.append("</li>");
 
     // summary of type and roles
 
@@ -275,9 +281,11 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
 //    sb.append("</li>");
 
     // warnings list
-//    sb.append("<li>");
-//    appendWarningsListForCAS(sb, warnings, CASGroup);
-//    sb.append("</li>");
+    if(isErrorFul) {
+//      sb.append("<li>");
+      appendWarningsListForCAS(sb, typeRole, warnings, CASGroup);
+//      sb.append("</li>");
+    }
 
 //    // CAS with role list
 //    sb.append("<li>");
@@ -285,7 +293,7 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
 //    sb.append("</li>");
 
     sb.append("</ul>");
-    sb.append("</div>");
+//    sb.append("</div>");
   }
 
   private static final Ordering<String> orderStringByLength() {
