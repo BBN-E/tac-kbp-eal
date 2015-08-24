@@ -14,6 +14,7 @@ import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.io.LinkingSpecFormats;
 import com.bbn.kbp.events2014.io.LinkingStore;
 import com.bbn.kbp.events2014.linking.SameEventTypeLinker;
+import com.bbn.kbp.events2014.scorer.observers.BootstrapIterator;
 import com.bbn.kbp.linking.EALScorer2015Style;
 
 import com.google.common.base.Optional;
@@ -26,8 +27,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -37,19 +40,34 @@ public final class KBP2015Scorer {
   private static final Logger log = LoggerFactory.getLogger(KBP2015Scorer.class);
 
   private KBP2015Scorer(final EALScorer2015Style documentScorer,
-      Map<String, SimpleResultWriter> additionalResultWriters) {
+      Map<String, SimpleResultWriter> additionalResultWriters,
+      Map<String, BootstrappedResultWriter> bootstrappedResultWriters,
+      Optional<Integer> bootstrapSeed, Optional<Integer> bootstrapSamples) {
     this.documentScorer = checkNotNull(documentScorer);
     this.additionalResultWriters = ImmutableMap.copyOf(additionalResultWriters);
+    this.bootstrappedResultWriters = ImmutableMap.copyOf(bootstrappedResultWriters);
+    checkArgument(bootstrapSeed.isPresent() == bootstrapSamples.isPresent(),
+        "Bootstrapping parameters must both be specified if either is present");
+    this.doBootstrapping = bootstrapSeed.isPresent();
+    this.bootstrapSeed = bootstrapSeed.or(-1);
+    this.numBootstrapSamples = bootstrapSamples.or(0);
+    if (bootstrapSamples.isPresent()) {
+      checkArgument(bootstrapSamples.get() > 0, "Num bootstrap samples must be positive");
+    }
   }
 
   public static KBP2015Scorer fromParameters(Parameters params) {
-    return new KBP2015Scorer(EALScorer2015Style.create(params),
-        ImmutableMap.<String, SimpleResultWriter>of());
+    return fromParameters(params,
+        ImmutableMap.<String, SimpleResultWriter>of(),
+        ImmutableMap.<String, BootstrappedResultWriter>of());
   }
 
   public static KBP2015Scorer fromParameters(Parameters params,
-      Map<String, SimpleResultWriter> additionalResultWriters) {
-    return new KBP2015Scorer(EALScorer2015Style.create(params), additionalResultWriters);
+      Map<String, SimpleResultWriter> additionalResultWriters,
+      Map<String, BootstrappedResultWriter> additionalBootstrapWriters) {
+    return new KBP2015Scorer(EALScorer2015Style.create(params), additionalResultWriters,
+        additionalBootstrapWriters, params.getOptionalInteger("bootstrapSeed"),
+        params.getOptionalInteger("bootstrapSamples"));
   }
 
   private static void usage() {
@@ -76,7 +94,8 @@ public final class KBP2015Scorer {
     // we wrap the main method in this way to
     // ensure a non-zero return value on failure
     try {
-      trueMain(argv, ImmutableMap.<String, SimpleResultWriter>of());
+      trueMain(argv, ImmutableMap.<String, SimpleResultWriter>of(),
+          ImmutableMap.<String, BootstrappedResultWriter>of());
     } catch (Exception e) {
       e.printStackTrace();
       System.exit(1);
@@ -84,7 +103,8 @@ public final class KBP2015Scorer {
   }
 
   public static void trueMain(String[] argv,
-      Map<String, SimpleResultWriter> additionalResultWriters)
+      Map<String, SimpleResultWriter> additionalResultWriters,
+      Map<String, BootstrappedResultWriter> additionalBootstrapResultWriters)
       throws IOException {
     if (argv.length != 1) {
       usage();
@@ -92,7 +112,8 @@ public final class KBP2015Scorer {
     }
     final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
     log.info(params.dump());
-    final KBP2015Scorer scorer = KBP2015Scorer.fromParameters(params, additionalResultWriters);
+    final KBP2015Scorer scorer = KBP2015Scorer.fromParameters(params, additionalResultWriters,
+        additionalBootstrapResultWriters);
 
     final AnnotationStore goldAnswerStore = AssessmentSpecFormats.openAnnotationStore(params
             .getExistingDirectory("answerKey"), AssessmentSpecFormats.Format.KBP2015);
@@ -153,6 +174,10 @@ public final class KBP2015Scorer {
 
   private final EALScorer2015Style documentScorer;
   private final ImmutableMap<String, SimpleResultWriter> additionalResultWriters;
+  private final ImmutableMap<String, BootstrappedResultWriter> bootstrappedResultWriters;
+  private final boolean doBootstrapping;
+  private final int bootstrapSeed;
+  private final int numBootstrapSamples;
 
   private void score(final AnnotationStore goldAnswerStore,
       final LinkingStore referenceLinkingStore, final ArgumentStore argumentStore,
@@ -206,8 +231,37 @@ public final class KBP2015Scorer {
 
     for (final Map.Entry<String, SimpleResultWriter> additionalResultWriter : additionalResultWriters
         .entrySet()) {
+      final File outputDir = new File(baseOutputDir, additionalResultWriter.getKey());
+      outputDir.mkdirs();
       additionalResultWriter.getValue().writeResult(perDocResults,
-          new File(baseOutputDir, additionalResultWriter.getKey()));
+          outputDir);
+    }
+
+    doBoostrapping(perDocResults, baseOutputDir);
+  }
+
+  private void doBoostrapping(final List<EALScorer2015Style.Result> perDocResults,
+      final File baseOutputDir) {
+    if (doBootstrapping) {
+      // this will produce an infinite sequence of bootstrapped samples of the corpus
+      final Iterator<List<EALScorer2015Style.Result>>
+          bootstrapIt = BootstrapIterator.forData(perDocResults, new Random(bootstrapSeed));
+      // a bootstrap iterator always has .next()
+      for (int i = 0; i < numBootstrapSamples; ++i) {
+        // be sure to use the same sample for all observers
+        final List<EALScorer2015Style.Result> sample = bootstrapIt.next();
+        for (final KBP2015Scorer.BootstrappedResultWriter bootstrappedResultWriter : bootstrappedResultWriters
+            .values()) {
+          bootstrappedResultWriter.observeSample(sample);
+        }
+      }
+    }
+
+    for (final Map.Entry<String, BootstrappedResultWriter> resultWriterEntry : bootstrappedResultWriters
+        .entrySet()) {
+      final File outputDir = new File(baseOutputDir, resultWriterEntry.getKey());
+      outputDir.mkdirs();
+      resultWriterEntry.getValue().writeResult(outputDir);
     }
   }
 
@@ -218,7 +272,7 @@ public final class KBP2015Scorer {
 
   interface BootstrappedResultWriter {
 
-    void observeSample(final Set<EALScorer2015Style.Result> perDocResults);
+    void observeSample(final Iterable<EALScorer2015Style.Result> perDocResults);
 
     void writeResult(File baseOutputDir);
   }
