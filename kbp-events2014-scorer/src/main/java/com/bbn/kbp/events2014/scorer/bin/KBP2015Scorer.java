@@ -40,11 +40,11 @@ public final class KBP2015Scorer {
   private static final Logger log = LoggerFactory.getLogger(KBP2015Scorer.class);
 
   private KBP2015Scorer(final EALScorer2015Style documentScorer,
-      Map<String, SimpleResultWriter> additionalResultWriters,
+      Map<String, SimpleResultWriter> resultWriters,
       Map<String, BootstrappedResultWriter> bootstrappedResultWriters,
       Optional<Integer> bootstrapSeed, Optional<Integer> bootstrapSamples) {
     this.documentScorer = checkNotNull(documentScorer);
-    this.additionalResultWriters = ImmutableMap.copyOf(additionalResultWriters);
+    this.resultWriters = ImmutableMap.copyOf(resultWriters);
     this.bootstrappedResultWriters = ImmutableMap.copyOf(bootstrappedResultWriters);
     checkArgument(bootstrapSeed.isPresent() == bootstrapSamples.isPresent(),
         "Bootstrapping parameters must both be specified if either is present");
@@ -65,7 +65,15 @@ public final class KBP2015Scorer {
   public static KBP2015Scorer fromParameters(Parameters params,
       Map<String, SimpleResultWriter> additionalResultWriters,
       Map<String, BootstrappedResultWriter> additionalBootstrapWriters) {
-    return new KBP2015Scorer(EALScorer2015Style.create(params), additionalResultWriters,
+
+    final EALScorer2015Style documentScorer = EALScorer2015Style.create(params);
+
+    final ImmutableMap.Builder<String, SimpleResultWriter> resultWriters = ImmutableMap.builder();
+    resultWriters.put("aggregate", new AggregateAndPerDocResultWriter(documentScorer.lambda()));
+    resultWriters.put("byEventTypes", new ByEventTypeResultWriter());
+    resultWriters.putAll(additionalResultWriters);
+
+    return new KBP2015Scorer(documentScorer, resultWriters.build(),
         additionalBootstrapWriters, params.getOptionalInteger("bootstrapSeed"),
         params.getOptionalInteger("bootstrapSamples"));
   }
@@ -173,7 +181,7 @@ public final class KBP2015Scorer {
   }
 
   private final EALScorer2015Style documentScorer;
-  private final ImmutableMap<String, SimpleResultWriter> additionalResultWriters;
+  private final ImmutableMap<String, SimpleResultWriter> resultWriters;
   private final ImmutableMap<String, BootstrappedResultWriter> bootstrappedResultWriters;
   private final boolean doBootstrapping;
   private final int bootstrapSeed;
@@ -215,32 +223,22 @@ public final class KBP2015Scorer {
       }
     }
 
-    writeOutput(perDocResults, outputDir);
+    writeNormalOutput(perDocResults, outputDir);
+    writeBootstrappedOutput(perDocResults, outputDir);
   }
 
-  private void writeOutput(final List<EALScorer2015Style.Result> perDocResults,
+  private void writeNormalOutput(final List<EALScorer2015Style.Result> perDocResults,
       final File baseOutputDir) throws IOException {
-
-    // write scores over everything
-    (new AggregateAndPerDocResultWriter(documentScorer.lambda())).writeResult(perDocResults,
-        baseOutputDir);
-
-    // write scores broken down by event type
-    (new ByEventTypeResultWriter())
-        .writeResult(perDocResults, new File(baseOutputDir, "byEventType"));
-
-    for (final Map.Entry<String, SimpleResultWriter> additionalResultWriter : additionalResultWriters
+    for (final Map.Entry<String, SimpleResultWriter> additionalResultWriter : resultWriters
         .entrySet()) {
       final File outputDir = new File(baseOutputDir, additionalResultWriter.getKey());
       outputDir.mkdirs();
       additionalResultWriter.getValue().writeResult(perDocResults,
           outputDir);
     }
-
-    doBoostrapping(perDocResults, baseOutputDir);
   }
 
-  private void doBoostrapping(final List<EALScorer2015Style.Result> perDocResults,
+  private void writeBootstrappedOutput(final List<EALScorer2015Style.Result> perDocResults,
       final File baseOutputDir) {
     if (doBootstrapping) {
       // this will produce an infinite sequence of bootstrapped samples of the corpus
