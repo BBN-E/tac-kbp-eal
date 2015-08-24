@@ -3,6 +3,7 @@ package com.bbn.kbp.events2014.bin.QA;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
+import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.bin.QA.Warnings.CASOverlapWarningRule;
 import com.bbn.kbp.events2014.bin.QA.Warnings.CorefWarningRule;
@@ -12,11 +13,14 @@ import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.transformers.MakeAllRealisActual;
 
 import com.google.common.base.Function;
+import com.google.common.base.Functions;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimaps;
+import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
 import org.slf4j.Logger;
@@ -25,6 +29,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+
+import static com.google.common.base.Functions.compose;
 
 /**
  * Created by jdeyoung on 6/30/15.
@@ -51,12 +57,46 @@ public class CorefQA {
           store.read(docID));
       log.info("serializing {}", docID.asString());
 
+      final ImmutableSet<RenderableCorefEAType> CASesWithWarnings = generateWarnings(answerKey,
+          warnings);
+      final ImmutableSet<RenderableCorefEAType> CASesWithoutWarnings =
+          findCASesWithoutWarnings(CASesWithWarnings, answerKey);
       htmlRenderer.renderTo(
           Files
               .asCharSink(new File(outputDir, docID.asString() + ".coref.html"),
                   Charset.defaultCharset()),
-          answerKey, generateWarnings(answerKey, warnings));
+          answerKey, CASesWithWarnings, CASesWithoutWarnings);
     }
+  }
+
+  private static ImmutableSet<RenderableCorefEAType> findCASesWithoutWarnings(
+      final ImmutableSet<RenderableCorefEAType> caSesWithWarnings, final AnswerKey answerKey) {
+    final ImmutableSet.Builder<RenderableCorefEAType> withoutWarning = ImmutableSet.builder();
+    final ImmutableSet<AssessedResponse> responsesWithWarningss =
+        FluentIterable.from(caSesWithWarnings)
+            .transformAndConcat(RenderableCorefEAType.renderableCASGroupsAsFunction())
+            .transformAndConcat(RenderableCASGroup.renderableResponsesAsFunction())
+            .transformAndConcat(RenderableCorefResponse.sourceResponsesFunction()).toSet();
+    final ImmutableSet<AssessedResponse> responsesWithoutWarnings =
+        Sets.difference(answerKey.annotatedResponses(), responsesWithWarningss).immutableCopy();
+    final ImmutableMultimap<Integer, AssessedResponse> CASesWithoutWarnings =
+        Multimaps.index(responsesWithoutWarnings,
+            compose(Functions.forMap(answerKey.corefAnnotation().CASesToIDs()),
+                compose(Response.CASFunction(), AssessedResponse.Response)));
+    final ImmutableMultimap<Integer, TypeRoleTupleWorkAround> CASesWithoutWarningsToTypes =
+        ImmutableMultimap.copyOf(
+            Multimaps.transformValues(CASesWithoutWarnings,
+                TypeRoleTupleWorkAround.createFromAssessedResponse()));
+    for (final Integer noWarn : CASesWithoutWarnings.keySet()) {
+      for (final TypeRoleTupleWorkAround responseType : CASesWithoutWarningsToTypes.get(noWarn)) {
+        withoutWarning.add(
+            RenderableCorefEAType.create(responseType.type, responseType.role, ImmutableSet.of(
+                RenderableCASGroup
+                    .createFromResponsesWithoutWarnings(noWarn, ImmutableSet.copyOf(
+                        CASesWithoutWarnings.get(noWarn))))));
+      }
+    }
+    return withoutWarning.build();
   }
 
   private static ImmutableSet<RenderableCorefEAType> generateWarnings(final AnswerKey answerKey,
@@ -99,6 +139,10 @@ public class CorefQA {
     private TypeRoleTupleWorkAround(final Symbol type, final Symbol role) {
       this.type = type;
       this.role = role;
+    }
+
+    public static Function<AssessedResponse, TypeRoleTupleWorkAround> createFromAssessedResponse() {
+      return Functions.compose(createfromResponse(), AssessedResponse.Response);
     }
 
     public static Function<Response, TypeRoleTupleWorkAround> createfromResponse() {

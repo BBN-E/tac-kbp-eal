@@ -69,6 +69,15 @@ public final class RenderableCorefResponse {
     };
   }
 
+  public static Function<RenderableCorefResponse, ImmutableSet<AssessedResponse>> sourceResponsesFunction() {
+    return new Function<RenderableCorefResponse, ImmutableSet<AssessedResponse>>() {
+      @Override
+      public ImmutableSet<AssessedResponse> apply(final RenderableCorefResponse input) {
+        return input.sourceResponses;
+      }
+    };
+  }
+
   public static Ordering<RenderableCorefResponse> byCASLength() {
     return new Ordering<RenderableCorefResponse>() {
       @Override

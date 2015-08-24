@@ -58,7 +58,8 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
   }
 
   public void renderTo(final CharSink sink, final AnswerKey answerKey,
-      final ImmutableSet<RenderableCorefEAType> corefWarnings) throws IOException {
+      final ImmutableSet<RenderableCorefEAType> corefWarnings,
+      final ImmutableSet<RenderableCorefEAType> CASesWithoutWarnings) throws IOException {
     final StringBuilder sb = new StringBuilder();
     sb.append(htmlHeader());
     sb.append(String.format("<title>%s</title>", answerKey.docId().asString()));
@@ -88,7 +89,9 @@ public final class CorefDocumentRenderer extends QADocumentRenderer {
     sb.append(closehref());
     sb.append("<div id=\"CASGroupErrors\" style=\"display:block\">");
 
-    for(final RenderableCorefEAType renderableCorefEAType: corefWarnings) {
+    final ImmutableList<RenderableCorefEAType> allCorefFields = ImmutableList.copyOf(RenderableCorefEAType.byType().sortedCopy(
+        Iterables.concat(corefWarnings, CASesWithoutWarnings)));
+    for(final RenderableCorefEAType renderableCorefEAType: allCorefFields) {
       sb.append(renderableCorefEAType.renderToHTML());
     }
 

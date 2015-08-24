@@ -8,11 +8,13 @@ import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.bin.QA.Warnings.Warning;
 
+import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimaps;
+import com.google.common.collect.Ordering;
 
 /**
  * Created by jdeyoung on 8/24/15.
@@ -35,7 +37,6 @@ public final class RenderableCorefEAType {
       final ImmutableSet<RenderableCASGroup> renderableCASGroups) {
     return new RenderableCorefEAType(type, role, renderableCASGroups);
   }
-
 
   public static RenderableCorefEAType createFromAnswerKeyAndWarnings(final Symbol type,
       final Symbol role, final AnswerKey answerKey,
@@ -68,5 +69,31 @@ public final class RenderableCorefEAType {
     }
     sb.append("</div>");
     return sb.toString();
+  }
+
+  public ImmutableSet<RenderableCASGroup> renderableCASGroups() {
+    return renderableCASGroups;
+  }
+
+  public String typeAsString() {
+    return String.format("%s/%s", type, role);
+  }
+
+  public static Ordering<RenderableCorefEAType> byType() {
+    return new Ordering<RenderableCorefEAType>() {
+      @Override
+      public int compare(final RenderableCorefEAType left, final RenderableCorefEAType right) {
+        return left.typeAsString().compareTo(right.typeAsString());
+      }
+    };
+  }
+
+  public static Function<RenderableCorefEAType, ImmutableSet<RenderableCASGroup>> renderableCASGroupsAsFunction() {
+    return new Function<RenderableCorefEAType, ImmutableSet<RenderableCASGroup>>() {
+      @Override
+      public ImmutableSet<RenderableCASGroup> apply(final RenderableCorefEAType input) {
+        return input.renderableCASGroups();
+      }
+    };
   }
 }
