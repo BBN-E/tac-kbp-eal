@@ -1,5 +1,6 @@
 package com.bbn.kbp.events2014.scorer.bin;
 
+import com.bbn.bue.common.io.GZIPByteSink;
 import com.bbn.bue.common.serialization.jackson.JacksonSerializer;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
@@ -11,7 +12,6 @@ import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Multisets;
 import com.google.common.io.Files;
@@ -93,7 +93,7 @@ public final class ByEventTypeResultWriter implements KBP2015Scorer.SimpleResult
 
     final File jsonFile = new File(outputDir, "aggregateScore.json");
     final JacksonSerializer jacksonSerializer = JacksonSerializer.json().prettyOutput().build();
-    jacksonSerializer.serializeTo(argScores, Files.asByteSink(jsonFile));
+    jacksonSerializer.serializeTo(argScores, GZIPByteSink.gzipCompress(Files.asByteSink(jsonFile)));
   }
 
   private static final Function<EALScorer2015Style.Result, EALScorer2015Style.ArgResult>

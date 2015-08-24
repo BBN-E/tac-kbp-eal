@@ -1,5 +1,6 @@
 package com.bbn.kbp.events2014.scorer.bin;
 
+import com.bbn.bue.common.io.GZIPByteSink;
 import com.bbn.bue.common.serialization.jackson.JacksonSerializer;
 import com.bbn.kbp.events2014.scorer.ImmutableAggregate2015ArgScoringResult;
 import com.bbn.kbp.events2014.scorer.ImmutableAggregate2015LinkScoringResult;
@@ -49,7 +50,7 @@ final class AggregateResultWriter implements KBP2015Scorer.SimpleResultWriter {
 
     final File jsonFile = new File(outputDir, "aggregateScore.json");
     final JacksonSerializer jacksonSerializer = JacksonSerializer.json().prettyOutput().build();
-    jacksonSerializer.serializeTo(result, Files.asByteSink(jsonFile));
+    jacksonSerializer.serializeTo(result, GZIPByteSink.gzipCompress(Files.asByteSink(jsonFile)));
   }
 
   private ImmutableAggregate2015ScoringResult computeAggregateScore(
@@ -165,7 +166,8 @@ final class AggregateResultWriter implements KBP2015Scorer.SimpleResultWriter {
     public void writeResult(final File baseOutputDir) throws IOException {
       final JacksonSerializer jacksonSerializer = JacksonSerializer.json().prettyOutput().build();
       jacksonSerializer.serializeTo(results,
-          Files.asByteSink(new File(baseOutputDir, "aggregate.bootstrapped.json")));
+          GZIPByteSink.gzipCompress(
+              Files.asByteSink(new File(baseOutputDir, "aggregate.bootstrapped.json"))));
     }
   }
 }
