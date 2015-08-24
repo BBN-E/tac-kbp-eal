@@ -14,17 +14,17 @@ import static com.google.common.base.Preconditions.checkArgument;
 @JsonDeserialize(as = ImmutableAggregateResult.class)
 public abstract class Aggregate2015ArgScoringResult {
 
-  abstract double precision();
+  public abstract double precision();
 
-  abstract double recall();
+  public abstract double recall();
 
-  abstract double overall();
+  public abstract double overall();
 
-  abstract double truePositives();
+  public abstract double truePositives();
 
-  abstract double falsePositives();
+  public abstract double falsePositives();
 
-  abstract double falseNegatives();
+  public abstract double falseNegatives();
 
   protected void check() {
     checkArgument(precision() >= 0.0);

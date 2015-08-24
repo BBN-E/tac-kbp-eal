@@ -14,11 +14,11 @@ import static com.google.common.base.Preconditions.checkArgument;
 @JsonDeserialize(as = ImmutableAggregateResult.class)
 public abstract class Aggregate2015ScoringResult {
 
-  abstract ImmutableAggregate2015ArgScoringResult argument();
+  public abstract ImmutableAggregate2015ArgScoringResult argument();
 
-  abstract ImmutableAggregate2015LinkScoringResult linking();
+  public abstract ImmutableAggregate2015LinkScoringResult linking();
 
-  abstract double overall();
+  public abstract double overall();
 
   @Value.Check
   protected void check() {
