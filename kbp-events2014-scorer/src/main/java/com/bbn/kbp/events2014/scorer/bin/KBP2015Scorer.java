@@ -79,6 +79,7 @@ public final class KBP2015Scorer {
     final ImmutableMap.Builder<String, BootstrappedResultWriterSource> bootstrapWriters =
         ImmutableMap.builder();
     bootstrapWriters.put("aggregate", aggregateWriter.asBootstrappedResultWriterSource());
+    bootstrapWriters.put("byEventTypes", BootstrappedPerEventResultWriter.source());
     bootstrapWriters.putAll(additionalBootstrapWriters);
 
     return new KBP2015Scorer(documentScorer, resultWriters.build(),

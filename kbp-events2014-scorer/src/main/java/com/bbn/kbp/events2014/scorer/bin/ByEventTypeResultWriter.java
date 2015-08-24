@@ -52,8 +52,8 @@ public final class ByEventTypeResultWriter implements KBP2015Scorer.SimpleResult
     }
   }
 
-  private Multiset<Symbol> gatherEventTypesSeen(
-      final List<EALScorer2015Style.Result> perDocResults) {
+  static Multiset<Symbol> gatherEventTypesSeen(
+      final Iterable<EALScorer2015Style.Result> perDocResults) {
     final Multiset<Symbol> eventTypesSeen = HashMultiset.create();
     for (final EALScorer2015Style.Result perDocResult : perDocResults) {
       for (final TypeRoleFillerRealis trfr : perDocResult.argResult().argumentScoringAlignment()
@@ -96,7 +96,7 @@ public final class ByEventTypeResultWriter implements KBP2015Scorer.SimpleResult
     jacksonSerializer.serializeTo(argScores, GZIPByteSink.gzipCompress(Files.asByteSink(jsonFile)));
   }
 
-  private static final Function<EALScorer2015Style.Result, EALScorer2015Style.ArgResult>
+  static final Function<EALScorer2015Style.Result, EALScorer2015Style.ArgResult>
       GET_ARG_SCORES_ONLY =
       new Function<EALScorer2015Style.Result, EALScorer2015Style.ArgResult>() {
         @Override
@@ -105,4 +105,6 @@ public final class ByEventTypeResultWriter implements KBP2015Scorer.SimpleResult
           return input.argResult();
         }
       };
+
+
 }
