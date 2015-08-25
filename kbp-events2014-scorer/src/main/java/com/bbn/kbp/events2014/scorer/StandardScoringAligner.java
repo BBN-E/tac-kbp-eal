@@ -28,7 +28,7 @@ public final class StandardScoringAligner<EquivClassType> implements ScoringAlig
     this.equivClassFunction = checkNotNull(equivClassFunction);
   }
 
-  public static <EquivClassType> StandardScoringAligner forEquivalenceClassFunction(
+  public static <EquivClassType> StandardScoringAligner<EquivClassType> forEquivalenceClassFunction(
       Function<Response, EquivClassType> equivClassFunction) {
     return new StandardScoringAligner(equivClassFunction);
   }
