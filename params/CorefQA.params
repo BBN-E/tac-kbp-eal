@@ -1,6 +1,0 @@
-sourceDir: /d4m/home/jdeyoung/repos/kbp-annotation/datasets
-annotationStore: /d4m/home/jdeyoung/repos/kbp-annotation/annotation
-outputDir: /d4m/home/jdeyoung/tmp/corefQA
-kbp.open.root: /home/jdeyoung/workspace/kbp-2014-event-arguments/
-#roleFile: %kbp.open.root%/params/role.args.tsv
-#argFile: %kbp.open.root%/params/table.args.tsv
