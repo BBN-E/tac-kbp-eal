@@ -1,14 +1,15 @@
 package com.bbn.kbp.events2014.bin.QA;
 
 import com.bbn.kbp.events2014.AssessedResponse;
+import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
 
 import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.base.Predicates;
 import com.google.common.collect.FluentIterable;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -17,7 +18,7 @@ import static com.google.common.base.Preconditions.checkArgument;
  * Created by jdeyoung on 8/24/15.
  */
 public final class RenderableCorefResponse {
-
+  
   private final String string;
   private final ImmutableSet<AssessedResponse> sourceResponses;
 
@@ -45,18 +46,22 @@ public final class RenderableCorefResponse {
   }
 
   public String renderToHTMNL() {
+    final ImmutableSet<String> pjs = FluentIterable.from(sourceResponses).transform(AssessedResponse.Response)
+        .transformAndConcat(Response.predicateJustificationsFunction()).transform(
+        new Function<CharOffsetSpan, String>() {
+          @Override
+          public String apply(final CharOffsetSpan input) {
+            return input.string().orNull();
+          }
+        }).filter(Predicates.notNull()).toSet();
+    final Joiner semicolon = Joiner.on("; ");
     final StringBuilder sb = new StringBuilder();
-    final ImmutableList<AssessedResponse> mostlyCorrect = ImmutableList.copyOf(
-        Iterables.filter(sourceResponses, AssessedResponse.IsCorrectUpToInexactJustifications));
-    if(mostlyCorrect.size() > 0) {
-      sb.append("<b>");
-      sb.append(string);
-      sb.append("</b>");
-    } else {
-      sb.append(string);
-    }
+    sb.append("<span title=\"");
+    sb.append(semicolon.join(pjs));
+    sb.append("\">");
+    sb.append(string);
 
-
+    sb.append("</span>");
     return sb.toString();
   }
 
