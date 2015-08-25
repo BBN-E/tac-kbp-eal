@@ -107,7 +107,7 @@ public final class RenderableCASGroup {
     sb.append("<br/>");
     // warnings
     if (warnings.size() > 0) {
-      sb.append("<div id=\"").append(id).append("\" style=\'display:none\' >");
+      sb.append("<div id=\"").append(id).append("\" style=\'display:block\' >");
       sb.append("<ul>");
       for (final Warning w : warnings) {
         sb.append("<li>");
