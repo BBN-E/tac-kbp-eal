@@ -425,4 +425,13 @@ public final class Response {
       }
     };
   }
+
+  public static Function<Response, ImmutableSet<CharOffsetSpan>> predicateJustificationsFunction() {
+    return new Function<Response, ImmutableSet<CharOffsetSpan>>() {
+      @Override
+      public ImmutableSet<CharOffsetSpan> apply(final Response input) {
+        return ImmutableSet.copyOf(input.predicateJustifications());
+      }
+    };
+  }
 }
