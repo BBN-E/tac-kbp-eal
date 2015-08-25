@@ -8,8 +8,8 @@ import org.immutables.value.Value;
 import static com.google.common.base.Preconditions.checkArgument;
 
 @Value.Immutable
-@JsonSerialize(as = com.bbn.kbp.events2014.scorer.bin.ImmutableAggregateResult.class)
-@JsonDeserialize(as = com.bbn.kbp.events2014.scorer.bin.ImmutableAggregateResult.class)
+@JsonSerialize(as = ImmutableAggregate2015LinkScoringResult.class)
+@JsonDeserialize(as = ImmutableAggregate2015LinkScoringResult.class)
 public abstract class Aggregate2015LinkScoringResult {
 
   abstract double precision();

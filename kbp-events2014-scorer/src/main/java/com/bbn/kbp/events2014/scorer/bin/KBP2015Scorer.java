@@ -82,8 +82,14 @@ public final class KBP2015Scorer {
     bootstrapWriters.put("byEventTypes", BootstrappedPerEventResultWriter.source());
     bootstrapWriters.putAll(additionalBootstrapWriters);
 
+    final Optional<Integer> bootstrapSeed = params.getOptionalInteger("bootstrapSeed");
+
+    if (bootstrapSeed.isPresent()) {
+      log.info("Bootstrap scoring enabled");
+    }
+
     return new KBP2015Scorer(documentScorer, resultWriters.build(),
-        additionalBootstrapWriters, params.getOptionalInteger("bootstrapSeed"),
+        bootstrapWriters.build(), bootstrapSeed,
         params.getOptionalInteger("bootstrapSamples"));
   }
 

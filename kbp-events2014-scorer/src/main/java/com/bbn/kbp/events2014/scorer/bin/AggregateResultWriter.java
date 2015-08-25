@@ -64,7 +64,7 @@ final class AggregateResultWriter implements KBP2015Scorer.SimpleResultWriter {
     return ImmutableAggregate2015ScoringResult.builder()
         .argument(argScores)
         .linking(linkScores)
-        .overall(100.0 * aggregateScore)
+        .overall(aggregateScore)
         .build();
   }
 

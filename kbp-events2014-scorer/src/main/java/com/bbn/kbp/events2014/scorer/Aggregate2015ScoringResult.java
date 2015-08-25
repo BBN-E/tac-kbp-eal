@@ -1,17 +1,25 @@
 package com.bbn.kbp.events2014.scorer;
 
-import com.bbn.kbp.events2014.scorer.bin.ImmutableAggregateResult;
-
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
+import com.google.common.primitives.Doubles;
 
 import org.immutables.value.Value;
 
+import java.util.Collection;
+
+import javax.annotation.Generated;
+
 import static com.google.common.base.Preconditions.checkArgument;
 
-@Value.Immutable
-@JsonSerialize(as = ImmutableAggregateResult.class)
-@JsonDeserialize(as = ImmutableAggregateResult.class)
+@JsonSerialize(as = ImmutableAggregate2015ScoringResult.class)
+@JsonDeserialize(as = ImmutableAggregate2015ScoringResult.class)
 public abstract class Aggregate2015ScoringResult {
 
   public abstract ImmutableAggregate2015ArgScoringResult argument();
@@ -25,3 +33,4 @@ public abstract class Aggregate2015ScoringResult {
     checkArgument(overall() >= 0.0);
   }
 }
+
