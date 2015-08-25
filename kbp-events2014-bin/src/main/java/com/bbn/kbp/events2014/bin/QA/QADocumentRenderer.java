@@ -81,10 +81,12 @@ abstract class QADocumentRenderer {
 
   protected static String defaultStyle() {
     return "body {\n"
-        + "background-color: rgb(200,200,200);\n"
+        + "\tbackground-color: rgb(200,200,200);\n"
+        + "\tfont-family: Sans-Serif;\n"
         + "}\n"
         + "* {\n"
         + "\tvisibility: inherit;\n"
+        + "\tfont-family: Sans-Serif;\n"
         + "}\n";
   }
 
