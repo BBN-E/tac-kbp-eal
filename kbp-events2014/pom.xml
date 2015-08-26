@@ -17,7 +17,19 @@
 
     <build>
         <plugins>
-
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>appassembler-maven-plugin</artifactId>
+                <version>${appassembler.maven.plugin.version}</version>
+                <configuration>
+                    <programs>
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.io.ImportForeignIDs</mainClass>
+                            <name>importForeignIDs</name>
+                        </program>
+                    </programs>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
