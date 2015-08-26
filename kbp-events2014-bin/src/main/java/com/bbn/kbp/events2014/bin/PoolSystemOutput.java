@@ -9,6 +9,7 @@ import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.ArgumentStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.events2014.transformers.KeepBestJustificationOnly;
 import com.bbn.kbp.events2014.transformers.QuoteFilter;
 
 import com.google.common.base.Optional;
@@ -79,8 +80,12 @@ public final class PoolSystemOutput {
       final StringBuilder sb = new StringBuilder();
 
       for (final Map.Entry<String, SystemOutputStore> storeEntry : storesToCombine.entrySet()) {
-        final SystemOutput responses = quoteFilter.get().transform(
-            storeEntry.getValue().read(docId));
+        final SystemOutput quoteFiltered =
+            quoteFilter.get().transform(storeEntry.getValue().read(docId));
+        // if there are multiple responses which we know will end up in the same
+        // equivalence class even without knowing coref, drop the lower scoring ones
+        final SystemOutput responses = KeepBestJustificationOnly.asFunctionOnSystemOutput()
+            .apply(quoteFiltered);
         responseSets.add(responses.arguments());
         sb.append(String
             .format("\t%5d response from %s\n", responses.arguments().size(), storeEntry.getKey()));
