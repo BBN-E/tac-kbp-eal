@@ -4,12 +4,18 @@ import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
+import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.ArgumentStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
+import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.events2014.transformers.QuoteFilter;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.io.Files;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +30,6 @@ public final class PoolSystemOutput {
 
   private static final Logger log = LoggerFactory.getLogger(PoolSystemOutput.class);
 
-  private enum AddMode {CREATE, APPEND}
-
   private static void trueMain(String[] argv) throws IOException {
     if (argv.length != 1) {
       usage();
@@ -34,24 +38,33 @@ public final class PoolSystemOutput {
     final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
     final List<File> storesToPool = FileUtils.loadFileList(params.getExistingFile("storesToPool"));
     final File outputStorePath = params.getCreatableDirectory("pooledStore");
-    final AddMode addMode = params.getEnum("addMode", AddMode.class);
-    final AssessmentSpecFormats.Format fileFormat =
-        params.getEnum("fileFormat", AssessmentSpecFormats.Format.class);
+    final SystemOutputLayout systemOutputLayout = params.getEnum("systemOutputLayout",
+        SystemOutputLayout.class);
 
-    final ArgumentStore outputStore = getOutputStore(outputStorePath, addMode, fileFormat);
+    final Optional<QuoteFilter> quoteFilter;
+    if (params.isPresent("quoteFilter")) {
+      final File quoteFilterFile = params.getExistingFile("quoteFilter");
+      log.info("Will apply quote filter {} to all responses", quoteFilterFile);
+      quoteFilter = Optional.of(QuoteFilter.loadFrom(
+          Files.asByteSource(quoteFilterFile)));
+    } else {
+      quoteFilter = Optional.absent();
+    }
+
+    final ArgumentStore outputStore =
+        AssessmentSpecFormats.openOrCreateSystemOutputStore(outputStorePath,
+            AssessmentSpecFormats.Format.KBP2015);
 
     // gather all our input, which includes anything currently in the output store
     final Set<Symbol> allDocIds = Sets.newHashSet();
-    final Map<String, ArgumentStore> storesToCombine = Maps.newHashMap();
+    final Map<String, SystemOutputStore> storesToCombine = Maps.newHashMap();
 
     log.info("Output store currently contains responses for {} documents",
         outputStore.docIDs().size());
-    storesToCombine.put(outputStorePath.getAbsolutePath(), outputStore);
     allDocIds.addAll(outputStore.docIDs());
 
     for (final File inputStoreFile : storesToPool) {
-      final ArgumentStore inputStore =
-          AssessmentSpecFormats.openSystemOutputStore(inputStoreFile, fileFormat);
+      final SystemOutputStore inputStore = systemOutputLayout.open(inputStoreFile);
       log.info("Importing responses for {} documents from {} to {}",
           inputStore.docIDs().size(), inputStoreFile,
           outputStorePath);
@@ -65,10 +78,12 @@ public final class PoolSystemOutput {
 
       final StringBuilder sb = new StringBuilder();
 
-      for (final Map.Entry<String, ArgumentStore> storeEntry : storesToCombine.entrySet()) {
-        final ArgumentOutput responses = storeEntry.getValue().readOrEmpty(docId);
-        responseSets.add(responses);
-        sb.append(String.format("\t%5d response from %s\n", responses.size(), storeEntry.getKey()));
+      for (final Map.Entry<String, SystemOutputStore> storeEntry : storesToCombine.entrySet()) {
+        final SystemOutput responses = quoteFilter.get().transform(
+            storeEntry.getValue().read(docId));
+        responseSets.add(responses.arguments());
+        sb.append(String
+            .format("\t%5d response from %s\n", responses.arguments().size(), storeEntry.getKey()));
       }
 
       final ArgumentOutput combinedOutput = ArgumentOutput.unionKeepingMaximumScore(responseSets);
@@ -78,22 +93,10 @@ public final class PoolSystemOutput {
     }
 
     // storesToCombine.values() includes the output store
-    for (final ArgumentStore store : storesToCombine.values()) {
+    for (final SystemOutputStore store : storesToCombine.values()) {
       store.close();
     }
-  }
-
-  private static ArgumentStore getOutputStore(File outputStorePath, AddMode addMode,
-      AssessmentSpecFormats.Format fileFormat) throws IOException {
-    final ArgumentStore outputStore;
-    if (addMode == AddMode.CREATE) {
-      outputStore = AssessmentSpecFormats.createSystemOutputStore(outputStorePath, fileFormat);
-    } else if (addMode == AddMode.APPEND) {
-      outputStore = AssessmentSpecFormats.openSystemOutputStore(outputStorePath, fileFormat);
-    } else {
-      throw new RuntimeException(String.format("Unknown add mode %s", addMode));
-    }
-    return outputStore;
+    outputStore.close();
   }
 
   private static void usage() {
@@ -101,9 +104,8 @@ public final class PoolSystemOutput {
         "where the parameters are:\n" +
         "\tstoresToPool: file listing paths to stores to pool\n" +
         "\tpooledStore: directory of system output store for pooling results\n" +
-        "\taddMode: one of \n" +
-        "\t\tCREATE: create a new repository\n" +
-        "\t\tAPPEND: append to an existing repository, or create one if none exists");
+        "\tsystemOutputLayout: KBP_EA_2014 or KBP_EA_2015\n" +
+        "\t(optional) quoteFilter: quote filter to apply to all responses");
     System.exit(1);
   }
 
