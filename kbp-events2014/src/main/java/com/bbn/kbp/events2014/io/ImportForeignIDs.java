@@ -1,5 +1,6 @@
 package com.bbn.kbp.events2014.io;
 
+import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.ResponseLinking;
@@ -37,9 +38,27 @@ public final class ImportForeignIDs {
   }
 
   private static void trueMain(final String[] args) throws IOException {
-    final File outputStoreBase = new File(args[0]);
-    final File outputDirectory = new File(args[1]);
-    importForeignIDs(outputStoreBase, outputDirectory);
+    final Parameters params = Parameters.loadSerifStyle(new File(args[0]));
+
+    if (params.getBoolean("doMultipleStores")) {
+      processMultipleStores(params);
+    } else {
+      File outputStoreBase = params.getExistingDirectory("input");
+      final File outputDirectory = params.getCreatableDirectory("output");
+      importForeignIDs(outputStoreBase, outputDirectory);
+    }
+  }
+
+  private static void processMultipleStores(Parameters params) throws IOException {
+    final File inputBase = params.getExistingDirectory("inputBase");
+    final File outputBase = params.getCreatableFile("outputBase");
+    for (final File f : inputBase.listFiles()) {
+      if (f.isDirectory()) {
+        final File outputDir = new File(outputBase, f.getName());
+        outputDir.mkdirs();
+        importForeignIDs(f, outputDir);
+      }
+    }
   }
 
   public static void importForeignIDs(final File source, final File outputDirectory)
