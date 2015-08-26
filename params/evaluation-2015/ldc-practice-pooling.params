@@ -1,0 +1,4 @@
+storesToPool: /d4m/home/rgabbard/repos/kbp-2014-event-arguments/params/evaluation-2015/ldc-training-stores.list
+pooledStore: /nfs/mercury-06/u14/kbp/eval2015/ldc-training-pool
+systemOutputLayout: KBP_EA_2015
+quoteFilter: /nfs/mercury-06/u14/repos/kbp-2014-event-arguments/data/evaluation.2015.quoteFilter
