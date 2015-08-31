@@ -80,6 +80,10 @@ public final class QuoteFilter{
     return input.copyTransformedBy(computeResponseMapping(input.arguments()));
   }
 
+  public ArgumentOutput transform(final ArgumentOutput argOutput) {
+    return computeResponseMapping(argOutput).apply(argOutput);
+  }
+
 
   public boolean isInQuote(Symbol docId, CharOffsetSpan span) {
     final ImmutableRangeSet<Integer> bannedRegions = docIdToBannedRegions.get(docId);
