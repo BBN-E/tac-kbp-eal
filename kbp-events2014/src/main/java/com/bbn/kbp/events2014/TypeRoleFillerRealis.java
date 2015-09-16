@@ -219,6 +219,24 @@ public final class TypeRoleFillerRealis implements Comparable<TypeRoleFillerReal
     };
   }
 
+  public static Function<TypeRoleFillerRealis, KBPString> argumentFunction() {
+    return new Function<TypeRoleFillerRealis, KBPString>() {
+      @Override
+      public KBPString apply(final TypeRoleFillerRealis input) {
+        return input.argumentCanonicalString();
+      }
+    };
+  }
+
+  public static Function<TypeRoleFillerRealis, Symbol> roleFunction() {
+    return new Function<TypeRoleFillerRealis, Symbol>() {
+      @Override
+      public Symbol apply(final TypeRoleFillerRealis input) {
+        return input.role();
+      }
+    };
+  }
+
   public static Ordering<TypeRoleFillerRealis> byType() {
     return new Ordering<TypeRoleFillerRealis>() {
       @Override
