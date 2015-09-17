@@ -244,7 +244,7 @@
 
 
     <scm>
-        <developerConnection>scm:git:ssh://d225/d4m/ears/git/kbp-2014-event-arguments.git</developerConnection>
+        <developerConnection>scm:git:http://e-gitlab.bbn.com/text-group/kbp-2014-event-arguments.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 </project>
