@@ -78,9 +78,6 @@ public final class MakeAllRealisActual implements ScoringDataTransformation {
 
   @Override
   public ScoringData transform(final ScoringData scoringData) {
-    checkArgument(!scoringData.referenceLinking().isPresent()
-        && !scoringData.systemLinking().isPresent(), "Realis neutralization is not currently compatible with "
-        + "linking scoring");
     checkArgument(scoringData.answerKey().isPresent(), "Answer key must be present to neutralize realis");
 
     final ScoringData.Builder ret = scoringData.modifiedCopy();
@@ -90,11 +87,20 @@ public final class MakeAllRealisActual implements ScoringDataTransformation {
       log.info("Realis neutralization resulting in {}", responseMapping.summaryString());
     }
 
-    AnswerKey newAnswerKey = neutralizeAssessments(responseMapping.apply(scoringData.answerKey().get()));
+    AnswerKey newAnswerKey = neutralizeAssessments(
+        responseMapping.apply(scoringData.answerKey().get()));
     ret.withAnswerKey(newAnswerKey);
 
     if (scoringData.argumentOutput().isPresent()) {
       ret.withArgumentOutput(responseMapping.apply(scoringData.argumentOutput().get()));
+    }
+
+    if(scoringData.referenceLinking().isPresent()) {
+      ret.withReferenceLinking(responseMapping.apply(scoringData.referenceLinking().get()));
+    }
+
+    if(scoringData.systemLinking().isPresent()) {
+      ret.withSystemLinking(responseMapping.apply(scoringData.systemLinking().get()));
     }
 
     return ret.build();

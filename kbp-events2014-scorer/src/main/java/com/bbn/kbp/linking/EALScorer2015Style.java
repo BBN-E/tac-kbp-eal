@@ -289,8 +289,22 @@ public final class EALScorer2015Style {
     final EventArgumentLinking filteredReferenceArgumentLinking = referenceArgumentLinking
         .filteredCopy(REALIS_IS_NOT_GENERIC);
 
+    /*
+      Remove system TRFR that are not in reference TRFR.
+      Just removing incorrectly assessed responses is not sufficient, because:
+      Assume we have a Response that is correct except for its Realis: its prediction is Actual
+      when correct is Generic.
+      After neutralize -realis, this Response is treated as correct.
+
+      During linking scoring, we remove all incorrectly assessed responses from system linking.
+      But since this Response is now 'correct', it will pass through.
+      However, this Response will not be present in the Reference-linking, since it is Generic.
+    */
+    final Predicate<TypeRoleFillerRealis> inReferenceArgumentLinking = in(
+        filteredReferenceArgumentLinking.allLinkedEquivalenceClasses());
+
     final EventArgumentLinking filteredSystemArgumentLinking = systemArgumentLinking
-        .filteredCopy(REALIS_IS_NOT_GENERIC);
+        .filteredCopy(REALIS_IS_NOT_GENERIC).filteredCopy(inReferenceArgumentLinking);
 
     return LinkingScore.from(referenceArgumentLinking,
         linkF1.score(filteredSystemArgumentLinking.linkedAsSetOfSets(),
