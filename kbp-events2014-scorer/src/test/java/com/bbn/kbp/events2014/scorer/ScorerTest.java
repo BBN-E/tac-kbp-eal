@@ -572,10 +572,6 @@ public class ScorerTest {
         scorer.score(commonBuilder.withAnswerKey(aCorrect).build());
     assertEquals((3.0 / 2.0) / 4.0, scoreACorrect.linkResult().scaledLinkingScore(), .0001);
 
-    /*
-      The following 2 tests are disabled. By definition, reference linking should contain all correct EAs.
-      The tests below assume aPrime is correct. But, aPrime is not in the reference linking.
-
     final EALScorer2015Style.Result scoreAPrimeCorrect =
         scorer.score(commonBuilder.withAnswerKey(aPrimeCorrect).build());
     assertEquals((2.0 / 3.0), scoreAPrimeCorrect.linkResult().scaledLinkingScore(), .0001);
@@ -583,7 +579,6 @@ public class ScorerTest {
     final EALScorer2015Style.Result scoreBothCorrect =
         scorer.score(commonBuilder.withAnswerKey(bothCorrect).build());
     assertEquals(0.7, scoreBothCorrect.linkResult().scaledLinkingScore(), .0001);
-    */
   }
 
   // utility methods

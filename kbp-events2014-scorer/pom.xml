@@ -39,6 +39,12 @@
                             </mainClass>
                             <name>KBP2015Scorer</name>
                         </program>
+
+			<program>
+				<mainClass>com.bbn.kbp.events2014.scorer.bin.KBP2014ScorerBin</mainClass>
+				<name>KBP2014ScorerBin</name>
+			</program>
+
                     </programs>
                 </configuration>
             </plugin>
