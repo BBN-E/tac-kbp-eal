@@ -29,6 +29,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -247,8 +248,29 @@ public final class EALScorer2015Style {
         .withSystemLinking(keepBestResponseMapping.apply(scoringData.systemLinking().get()))
         .build();
 
-    return new Result(new ArgResult(scoreEventArguments(bestOnlyScoringData)),
-        new LinkResult(scoreLinking(bestOnlyScoringData)));
+    /*
+        We need to explicitly remove Responses from system linking, that are not in Reference linking, and here's why.
+
+        Assume we have a Response that is correct except for its Realis: its prediction is Actual when correct is Generic.
+        After neutralize-realis, this Response is treated as correct.
+
+        During linking scoring, we remove all incorrectly assessed responses from system linking.
+        But since this Response is now 'correct', it will pass through.
+        However, this Response will not be present in the Reference-linking, since it is Generic.
+    */
+    final Predicate<Response> notInOriginalRefLinking = not(
+        in(bestOnlyScoringData.referenceLinking().get().allResponses()));
+
+    final ResponseMapping delNotInRefLinkingMapping = ResponseMapping.delete(
+        FluentIterable.from(bestOnlyScoringData.systemLinking().get().allResponses())
+            .filter(notInOriginalRefLinking).toSet());
+
+    final ScoringData consistentLinkingScoringData = bestOnlyScoringData.modifiedCopy()
+        .withSystemLinking(delNotInRefLinkingMapping.apply(bestOnlyScoringData.systemLinking().get()))
+        .build();
+
+    return new Result(new ArgResult(scoreEventArguments(consistentLinkingScoringData)),
+        new LinkResult(scoreLinking(consistentLinkingScoringData)));
   }
 
   private EventArgScoringAlignment<TypeRoleFillerRealis> scoreEventArguments(ScoringData scoringData) {

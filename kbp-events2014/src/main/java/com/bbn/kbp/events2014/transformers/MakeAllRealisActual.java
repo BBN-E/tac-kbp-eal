@@ -5,12 +5,9 @@ import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
-import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ScoringData;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -20,8 +17,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Random;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Predicates.in;
-import static com.google.common.base.Predicates.not;
 
 public final class MakeAllRealisActual implements ScoringDataTransformation {
 
@@ -83,9 +78,6 @@ public final class MakeAllRealisActual implements ScoringDataTransformation {
 
   @Override
   public ScoringData transform(final ScoringData scoringData) {
-    //checkArgument(!scoringData.referenceLinking().isPresent()
-    //    && !scoringData.systemLinking().isPresent(), "Realis neutralization is not currently compatible with "
-    //    + "linking scoring");
     checkArgument(scoringData.answerKey().isPresent(), "Answer key must be present to neutralize realis");
 
     final ScoringData.Builder ret = scoringData.modifiedCopy();
@@ -103,33 +95,12 @@ public final class MakeAllRealisActual implements ScoringDataTransformation {
       ret.withArgumentOutput(responseMapping.apply(scoringData.argumentOutput().get()));
     }
 
-    if(scoringData.referenceLinking().isPresent() && scoringData.systemLinking().isPresent()) {
-      /*
-        We need to explicitly remove Responses from system linking, that are not in Reference linking, and here's why.
+    if(scoringData.referenceLinking().isPresent()) {
+      ret.withReferenceLinking(responseMapping.apply(scoringData.referenceLinking().get()));
+    }
 
-        Assume we have a Response that is correct except for its Realis: its prediction is Actual when correct is Generic.
-        After neutralize-realis, this Response is treated as correct.
-
-        During linking scoring, we remove all incorrectly assessed responses from system linking.
-        But since this Response is now 'correct', it will pass through.
-        However, this Response will not be present in the Reference-linking, since it is Generic.
-       */
-
-      final Predicate<Response> notInOriginalRefLinking = not(
-          in(scoringData.referenceLinking().get().allResponses()));
-
-      final ResponseLinking referenceLinking =
-          responseMapping.apply(scoringData.referenceLinking().get());
-      ret.withReferenceLinking(referenceLinking);
-
-      final ResponseMapping delNotInRefLinkingMapping = ResponseMapping.delete(
-          FluentIterable.from(scoringData.systemLinking().get().allResponses())
-              .filter(notInOriginalRefLinking).toSet());
-
-        ret.withSystemLinking(
-            responseMapping.apply(
-                delNotInRefLinkingMapping.apply(scoringData.systemLinking().get()))
-        );
+    if(scoringData.systemLinking().isPresent()) {
+      ret.withSystemLinking(responseMapping.apply(scoringData.systemLinking().get()));
     }
 
     return ret.build();
