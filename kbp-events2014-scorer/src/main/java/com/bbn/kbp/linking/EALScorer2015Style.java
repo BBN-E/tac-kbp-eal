@@ -306,7 +306,7 @@ public final class EALScorer2015Style {
     final EventArgumentLinking filteredSystemArgumentLinking = systemArgumentLinking
         .filteredCopy(REALIS_IS_NOT_GENERIC).filteredCopy(inReferenceArgumentLinking);
 
-    return LinkingScore.from(referenceArgumentLinking,
+    return LinkingScore.from(filteredReferenceArgumentLinking,
         linkF1.score(filteredSystemArgumentLinking.linkedAsSetOfSets(),
             filteredReferenceArgumentLinking.linkedAsSetOfSets()));
   }
