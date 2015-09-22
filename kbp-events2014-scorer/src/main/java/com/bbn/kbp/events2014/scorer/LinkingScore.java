@@ -13,15 +13,19 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public final class LinkingScore {
 
   private final Symbol docID;
+  private final EventArgumentLinking referenceArgumentLinking;
   private final ExplicitFMeasureInfo scores;
   private final int referenceLinkingSize;
 
-  private LinkingScore(final Symbol docID, int referenceLinkingSize,
+  private LinkingScore(final Symbol docID,
+      final EventArgumentLinking referenceArgumentLinking,
+      int referenceLinkingSize,
       final ExplicitFMeasureInfo scores) {
     checkArgument(referenceLinkingSize >= 0);
     this.referenceLinkingSize = referenceLinkingSize;
     this.scores = checkNotNull(scores);
     this.docID = checkNotNull(docID);
+    this.referenceArgumentLinking = referenceArgumentLinking;
   }
 
   public int referenceLinkingSize() {
@@ -44,6 +48,10 @@ public final class LinkingScore {
     return docID;
   }
 
+  public EventArgumentLinking referenceArgumentLinking() {
+    return referenceArgumentLinking;
+  }
+
   @Override
   public String toString() {
     return String.format("LinkingScore[%.2f/%.2f/%.2f]",
@@ -54,6 +62,7 @@ public final class LinkingScore {
       final EventArgumentLinking referenceArgumentLinking,
       final ExplicitFMeasureInfo scores) {
     return new LinkingScore(referenceArgumentLinking.docID(),
+        referenceArgumentLinking,
         referenceArgumentLinking.allLinkedEquivalenceClasses().size(), scores);
   }
 }
