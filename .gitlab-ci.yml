@@ -1,0 +1,2 @@
+maven-build:
+  script: mvn compile test package verify
