@@ -4,7 +4,6 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.EventArgumentLinking;
 import com.bbn.kbp.linking.ExplicitFMeasureInfo;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
@@ -12,20 +11,17 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public final class LinkingScore {
 
-  private final Symbol docID;
+  private final EventArgumentLinking referenceArgumentLinking;
   private final ExplicitFMeasureInfo scores;
-  private final int referenceLinkingSize;
 
-  private LinkingScore(final Symbol docID, int referenceLinkingSize,
+  private LinkingScore(final EventArgumentLinking referenceArgumentLinking,
       final ExplicitFMeasureInfo scores) {
-    checkArgument(referenceLinkingSize >= 0);
-    this.referenceLinkingSize = referenceLinkingSize;
     this.scores = checkNotNull(scores);
-    this.docID = checkNotNull(docID);
+    this.referenceArgumentLinking = checkNotNull(referenceArgumentLinking);
   }
 
   public int referenceLinkingSize() {
-    return referenceLinkingSize;
+    return referenceArgumentLinking.allLinkedEquivalenceClasses().size();
   }
 
   public double precision() {
@@ -41,7 +37,11 @@ public final class LinkingScore {
   }
 
   public Symbol docID() {
-    return docID;
+    return referenceArgumentLinking.docID();
+  }
+
+  public EventArgumentLinking referenceArgumentLinking() {
+    return referenceArgumentLinking;
   }
 
   @Override
@@ -53,7 +53,6 @@ public final class LinkingScore {
   public static LinkingScore from(
       final EventArgumentLinking referenceArgumentLinking,
       final ExplicitFMeasureInfo scores) {
-    return new LinkingScore(referenceArgumentLinking.docID(),
-        referenceArgumentLinking.allLinkedEquivalenceClasses().size(), scores);
+    return new LinkingScore(referenceArgumentLinking, scores);
   }
 }
