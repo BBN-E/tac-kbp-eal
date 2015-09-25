@@ -256,7 +256,7 @@ public final class ValidateSystemOutput {
 
   private void assertDocsAreContained(Set<Symbol> docsInStore,
       Set<Symbol> docsInCorpus, String storeType) throws IOException {
-    final Set<Symbol> extraDocs = Sets.symmetricDifference(docsInStore, docsInCorpus);
+    final Set<Symbol> extraDocs = Sets.difference(docsInStore, docsInCorpus);
     if (!extraDocs.isEmpty()) {
       throw new RuntimeException(
           String.format(
