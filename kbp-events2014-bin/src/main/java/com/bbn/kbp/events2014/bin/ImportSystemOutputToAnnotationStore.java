@@ -58,7 +58,9 @@ public final class ImportSystemOutputToAnnotationStore {
             "Parameters are:\n" +
             "\tsystemOutput: system output store to import\n" +
             "\tannotationStore: destination annotation store (existing or new)\n" +
-            "\timportOnlyBestAnswers: imports only the answer the score would select (recommended: true)"
+            "\timportOnlyBestAnswers: imports only the answer the score would select (recommended: true)" +
+            "\tannStore.fileFormat: KBP201{4,5}\n" +
+            "\toutputLayout: KBP_EA_201{4,5}\n"
     );
   }
 
