@@ -3,7 +3,7 @@ INCLUDE root.params
 sequence.runName: graphLinking
 batchQueue: nongale
 
-systemOutputsDir: %quoteFiltered%
+systemOutputsDir: %keepBest%
 
 answerKey: %expanded%/annotation
 referenceLinking: %expanded%/linkingStore
