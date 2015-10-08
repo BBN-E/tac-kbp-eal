@@ -17,7 +17,7 @@ answerKey: %expanded%/annotation
 referenceLinking: %expanded%/linkingStore
 createDefaultLinking: false
 
-documentsToScore: /nfs/mercury-04/u22/kbp-2015/eval_analysis/interim_2015/lists/EAL_docs_with_completed_linking-1.txt
+documentsToScore: %documentsList%
 
 # - and each subdir of systemOutputsDir should be a 'system' with subdirs 'arguments' and 'linking'
 systemOutputsDir: %keepBest%

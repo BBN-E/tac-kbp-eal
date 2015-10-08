@@ -10,3 +10,6 @@ quoteFiltered: %outputDir%/quoteFiltered
 keepBest: %outputDir%/keepBest
 scoreOutput: %outputDir%/scoreOutput
 fileFormat: KBP2015
+
+documentsList: /nfs/mercury-04/u22/kbp-2015/eval_analysis/interim_2015/lists/EAL_docs_with_completed_linking-1.txt
+
