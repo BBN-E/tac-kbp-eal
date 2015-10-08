@@ -1,0 +1,4 @@
+inputStore: /home/ychan/repos/kbp-2014-event-arguments/output/interim_2015/quoteFiltered/BBN3
+outputStore: /home/ychan/repos/kbp-2014-event-arguments/output/interim_2015/keepBest/BBN3
+keepInferenceCases: false
+outputLayout: KBP_EA_2015

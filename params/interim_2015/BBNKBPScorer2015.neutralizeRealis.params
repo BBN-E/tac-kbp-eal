@@ -1,0 +1,25 @@
+INCLUDE root.params
+
+gnuplot.binary: /nfs/mercury-06/u14/apps/bin/gnuplot
+
+# required by Preprocessors.for2014FromParameters, which will perform the following transformations as well:
+# makeBrokenTimesWrong, DeleteInjureForCorrectDie, OnlyMostSpecificTemporal
+neutralizeRealis: true
+attemptToNeutralizeCoref: false
+
+# read by KBP2015Scorer
+bootstrapSeed: 0
+bootstrapSamples: 1000
+
+answerKey: %expanded%/annotation
+
+# if createDefaultLinking is not true, then we'll require:
+referenceLinking: %expanded%/linkingStore
+createDefaultLinking: false
+
+documentsToScore: /nfs/mercury-04/u22/kbp-2015/eval_analysis/interim_2015/lists/EAL_docs_with_completed_linking-1.txt
+
+# - and each subdir of systemOutputsDir should be a 'system' with subdirs 'arguments' and 'linking'
+systemOutputsDir: %keepBest%
+scoringOutputRoot: %outputDir%/score/neutralizeRealis
+
