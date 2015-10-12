@@ -1,0 +1,6 @@
+INCLUDE root.params
+
+inputStoresDir: %participantDir%
+outputStoresDir: %quoteFiltered%
+quoteFilter: %kbpOpenRepo%/data/evaluation.2015.quoteFilter
+outputLayout: KBP_EA_2015
