@@ -73,10 +73,12 @@ if [ "$KEEPBEST" = true ] ; then
         sysId=$(basename $f)
         mkdir -p $EVALDIR/keepBest/$sysId
 
-        echo "inputStore: $f" > $KBPOPENREPO/params/interim_2015/generated/keepBest_${sysId}.params
-	echo "outputStore: $EVALDIR/keepBest/$sysId" >> $KBPOPENREPO/params/interim_2015/generated/keepBest_${sysId}.params
-	echo "keepInferenceCases: false" >> $KBPOPENREPO/params/interim_2015/generated/keepBest_${sysId}.params
-	echo "outputLayout: KBP_EA_2015" >> $KBPOPENREPO/params/interim_2015/generated/keepBest_${sysId}.params
+	cat <<EOF > $KBPOPENREPO/params/interim_2015/generated/keepBest_${sysId}.params
+	inputStore: $f
+	outputStore: $EVALDIR/keepBest/$sysId
+	keepInferenceCases: false
+	outputLayout: KBP_EA_2015
+	EOF
 
         $KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/keepOnlyBestResponses $KBPOPENREPO/params/interim_2015/generated/keepBest_${sysId}.params > $LOG.keepBest_${sysId}.log
       fi
