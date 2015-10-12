@@ -1,4 +1,0 @@
-inputStore: /home/ychan/repos/kbp-2014-event-arguments/output/interim_2015/quoteFiltered/BUPT_PRIS4
-outputStore: /home/ychan/repos/kbp-2014-event-arguments/output/interim_2015/keepBest/BUPT_PRIS4
-keepInferenceCases: false
-outputLayout: KBP_EA_2015
