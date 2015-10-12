@@ -1,4 +1,3 @@
-INCLUDE root.params
 INCLUDE BBNKBPScorer2015.params
 
 OVERRIDE neutralizeRealis: true
