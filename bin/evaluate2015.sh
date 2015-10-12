@@ -74,11 +74,11 @@ if [ "$KEEPBEST" = true ] ; then
         mkdir -p $EVALDIR/keepBest/$sysId
 
 	cat <<EOF > $KBPOPENREPO/params/interim_2015/generated/keepBest_${sysId}.params
-	inputStore: $f
-	outputStore: $EVALDIR/keepBest/$sysId
-	keepInferenceCases: false
-	outputLayout: KBP_EA_2015
-	EOF
+inputStore: $f
+outputStore: $EVALDIR/keepBest/$sysId
+keepInferenceCases: false
+outputLayout: KBP_EA_2015
+EOF
 
         $KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/keepOnlyBestResponses $KBPOPENREPO/params/interim_2015/generated/keepBest_${sysId}.params > $LOG.keepBest_${sysId}.log
       fi
