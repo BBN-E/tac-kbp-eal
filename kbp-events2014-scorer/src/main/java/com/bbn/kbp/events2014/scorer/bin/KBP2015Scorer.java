@@ -1,5 +1,6 @@
 package com.bbn.kbp.events2014.scorer.bin;
 
+import com.bbn.bue.common.collections.BootstrapIterator;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
@@ -14,7 +15,6 @@ import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.io.LinkingSpecFormats;
 import com.bbn.kbp.events2014.io.LinkingStore;
 import com.bbn.kbp.events2014.linking.SameEventTypeLinker;
-import com.bbn.kbp.events2014.scorer.observers.BootstrapIterator;
 import com.bbn.kbp.linking.EALScorer2015Style;
 
 import com.google.common.base.Optional;
@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -266,12 +267,12 @@ public final class KBP2015Scorer {
       final ImmutableMap<String, BootstrappedResultWriter> bootstrappedWriters = builder.build();
 
       // this will produce an infinite sequence of bootstrapped samples of the corpus
-      final Iterator<List<EALScorer2015Style.Result>>
+      final Iterator<Collection<EALScorer2015Style.Result>>
           bootstrapIt = BootstrapIterator.forData(perDocResults, new Random(bootstrapSeed));
       // a bootstrap iterator always has .next()
       for (int i = 0; i < numBootstrapSamples; ++i) {
         // be sure to use the same sample for all observers
-        final List<EALScorer2015Style.Result> sample = bootstrapIt.next();
+        final Collection<EALScorer2015Style.Result> sample = bootstrapIt.next();
         for (final KBP2015Scorer.BootstrappedResultWriter bootstrappedResultWriter : bootstrappedWriters
             .values()) {
           bootstrappedResultWriter.observeSample(sample);

@@ -1,6 +1,7 @@
 package com.bbn.kbp.events2014.scorer.observers;
 
 import com.bbn.bue.common.annotations.MoveToBUECommon;
+import com.bbn.bue.common.collections.BootstrapIterator;
 import com.bbn.bue.common.collections.MapUtils;
 import com.bbn.bue.common.diff.FMeasureTableRenderer;
 import com.bbn.bue.common.evaluation.BrokenDownSummaryConfusionMatrix;
@@ -404,7 +405,7 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
       // now we compute many "samples" of possible corpora based on our existing corpus. We score each of
       // these samples and compute confidence intervals from them
       final Random rng = new Random(bootstrapSeed);
-      final Iterator<List<DocumentResult>> bootstrappedResults =
+      final Iterator<Collection<DocumentResult>> bootstrappedResults =
           Iterators.limit(BootstrapIterator.forData(documentResults, rng), numBootstrapSamples);
 
       final List<Map<String, BrokenDownSummaryConfusionMatrix<Symbol>>> resultsForSamples =
