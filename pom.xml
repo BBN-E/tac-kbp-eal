@@ -28,11 +28,11 @@
         <maven.surefire.plugin.version>2.12.2</maven.surefire.plugin.version>
         <maven.surefire.report.plugin.version>2.12.2</maven.surefire.report.plugin.version>
         <maven.failsafe.plugin.version>2.12.2</maven.failsafe.plugin.version>
-
+        <guava.version>18.0</guava.version>
         <skipITs>true</skipITs>
 
         <junit.version>4.11</junit.version>
-	<bueopen.version>2.20.2</bueopen.version>
+        <bueopen.version>2.22.1-SNAPSHOT</bueopen.version>
 
         <!-- Sonar server properties. These only work BBN-internally -->
         <sonar.host.url>http://e-apache-2.bbn.com:9000</sonar.host.url>
@@ -211,7 +211,7 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>18.0</version>
+                <version>${guava.version}</version>
             </dependency>
 
             <dependency>
