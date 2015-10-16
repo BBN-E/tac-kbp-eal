@@ -84,12 +84,12 @@ public final class ByEventTypeResultWriter implements KBP2015Scorer.SimpleResult
 
     Files.asCharSink(new File(outputDir, "aggregateScore.txt"), Charsets.UTF_8).write(
         String
-            .format("%30s:%8.2f\n", "Aggregate argument precision", 100.0 * argScores.precision())
+            .format("%30s:%8.2f\n", "Aggregate argument precision", argScores.precision())
             +
-            String.format("%30s:%8.2f\n", "Aggregate argument recall", 100.0 * argScores.recall())
+            String.format("%30s:%8.2f\n", "Aggregate argument recall", argScores.recall())
             +
             String
-                .format("%30s:%8.2f\n\n", "Aggregate argument score", 100.0 * argScores.overall()));
+                .format("%30s:%8.2f\n\n", "Aggregate argument score", argScores.overall()));
 
     final File jsonFile = new File(outputDir, "aggregateScore.json");
     final JacksonSerializer jacksonSerializer = JacksonSerializer.json().prettyOutput().build();
