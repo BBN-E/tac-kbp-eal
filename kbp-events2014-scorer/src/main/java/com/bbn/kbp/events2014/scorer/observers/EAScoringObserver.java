@@ -1,6 +1,8 @@
 package com.bbn.kbp.events2014.scorer.observers;
 
+import com.bbn.bue.common.OptionalUtils;
 import com.bbn.bue.common.annotations.MoveToBUECommon;
+import com.bbn.bue.common.collections.BootstrapIterator;
 import com.bbn.bue.common.collections.MapUtils;
 import com.bbn.bue.common.diff.FMeasureTableRenderer;
 import com.bbn.bue.common.evaluation.BrokenDownSummaryConfusionMatrix;
@@ -9,6 +11,7 @@ import com.bbn.bue.common.evaluation.ProvenancedConfusionMatrix;
 import com.bbn.bue.common.evaluation.SummaryConfusionMatrices;
 import com.bbn.bue.common.evaluation.SummaryConfusionMatrix;
 import com.bbn.bue.common.io.GZIPByteSink;
+import com.bbn.bue.common.math.PercentileComputer;
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.scoring.Scoreds;
 import com.bbn.bue.common.serialization.jackson.JacksonSerializer;
@@ -404,7 +407,7 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
       // now we compute many "samples" of possible corpora based on our existing corpus. We score each of
       // these samples and compute confidence intervals from them
       final Random rng = new Random(bootstrapSeed);
-      final Iterator<List<DocumentResult>> bootstrappedResults =
+      final Iterator<Collection<DocumentResult>> bootstrappedResults =
           Iterators.limit(BootstrapIterator.forData(documentResults, rng), numBootstrapSamples);
 
       final List<Map<String, BrokenDownSummaryConfusionMatrix<Symbol>>> resultsForSamples =
@@ -510,7 +513,8 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
       for (final Map.Entry<String, PercentileComputer.Percentiles> percentileEntry : percentiles
           .entrySet()) {
         output.append(renderLine(percentileEntry.getKey(),
-            percentileEntry.getValue().percentiles(PERCENTILES_TO_PRINT)));
+            Lists.transform(percentileEntry.getValue().percentiles(PERCENTILES_TO_PRINT),
+                OptionalUtils.deoptionalizeFunction(Double.NaN))));
       }
       output.append("\n\n\n");
     }
