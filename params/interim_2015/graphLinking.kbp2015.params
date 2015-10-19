@@ -1,6 +1,6 @@
 INCLUDE root.params
 
-sequence.runName: graphLinking
+sequence.runName: graphLinking_%config%
 batchQueue: nongale
 
 systemOutputsDir: %keepBest%
