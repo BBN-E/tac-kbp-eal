@@ -10,6 +10,7 @@ QUOTEFILTER=true
 KEEPBEST=true
 
 # should be one of: interim_2015_EA_exclude_ZJU  interim_2015_EA_include_ZJU  interim_2015_EAL_exclude_ZJU  interim_2015_EAL_include_ZJU
+# interim_2015_EAul_exclude_ZJU  interim_2015_EAul_include_ZJU
 CONFIG=$1
 
 
