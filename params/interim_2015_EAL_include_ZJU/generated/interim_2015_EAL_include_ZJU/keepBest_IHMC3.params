@@ -1,4 +1,0 @@
-inputStore: /home/ychan/repos/kbp-2014-event-arguments/output/interim_2015_EAL_include_ZJU/quoteFiltered/IHMC3
-outputStore: /home/ychan/repos/kbp-2014-event-arguments/output/interim_2015_EAL_include_ZJU/keepBest/IHMC3
-keepInferenceCases: false
-outputLayout: KBP_EA_2015
