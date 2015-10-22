@@ -1,4 +1,0 @@
-inputStore: /home/ychan/repos/kbp-2014-event-arguments/output/interim_2015_EA_include_ZJU/quoteFiltered/ZJU_fixed-ZJU_Insight1
-outputStore: /home/ychan/repos/kbp-2014-event-arguments/output/interim_2015_EA_include_ZJU/keepBest/ZJU_fixed-ZJU_Insight1
-keepInferenceCases: false
-outputLayout: KBP_EA_2015
