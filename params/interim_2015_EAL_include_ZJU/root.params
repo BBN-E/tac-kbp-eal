@@ -1,5 +1,5 @@
 INCLUDE ../kbpRepoPath.params
-INCLUDE generated/config.params
+INCLUDE config.params
 
 outputDir: %kbpOpenRepo%/output/%config%
 participantDir: %outputDir%/systemsOutput
