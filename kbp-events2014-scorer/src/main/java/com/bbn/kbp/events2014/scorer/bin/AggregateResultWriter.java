@@ -1,6 +1,7 @@
 package com.bbn.kbp.events2014.scorer.bin;
 
 import com.bbn.bue.common.io.GZIPByteSink;
+import com.bbn.bue.common.math.PercentileComputer;
 import com.bbn.bue.common.serialization.jackson.JacksonSerializer;
 import com.bbn.kbp.events2014.scorer.ImmutableAggregate2015ArgScoringResult;
 import com.bbn.kbp.events2014.scorer.ImmutableAggregate2015LinkScoringResult;
@@ -9,10 +10,10 @@ import com.bbn.kbp.linking.EALScorer2015Style;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
-import com.google.common.collect.Ordering;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
+import com.google.common.primitives.Doubles;
 
 import java.io.File;
 import java.io.IOException;
@@ -165,6 +166,15 @@ final class AggregateResultWriter implements KBP2015Scorer.SimpleResultWriter {
 
     @Override
     public void writeResult(final File baseOutputDir) throws IOException {
+      writePercentiles(baseOutputDir);
+      
+      final JacksonSerializer jacksonSerializer = JacksonSerializer.json().prettyOutput().build();
+      jacksonSerializer.serializeTo(results,
+          GZIPByteSink.gzipCompress(
+              Files.asByteSink(new File(baseOutputDir, "aggregate.bootstrapped.json"))));
+    }
+
+    private void writePercentiles(final File baseOutputDir) throws IOException {
       final ImmutableList.Builder<Double> ealScoresBuilder = ImmutableList.builder();
       final ImmutableList.Builder<Double> f1ScoresBuilder = ImmutableList.builder();
 
@@ -175,37 +185,22 @@ final class AggregateResultWriter implements KBP2015Scorer.SimpleResultWriter {
         f1ScoresBuilder.add((2*p*r)/(p+r));
       }
 
-      final ImmutableList<Double> sortedEalScores = Ordering.natural().immutableSortedCopy(ealScoresBuilder.build());
-      final ImmutableList<Double> sortedF1Scores = Ordering.natural().immutableSortedCopy(f1ScoresBuilder.build());
+      final PercentileComputer percentileComputer = PercentileComputer.nistPercentileComputer();
+      final PercentileComputer.Percentiles ealPercentiles = percentileComputer.calculatePercentilesAdoptingData(
+          Doubles.toArray(ealScoresBuilder.build()));
+      final PercentileComputer.Percentiles f1Percentiles = percentileComputer.calculatePercentilesAdoptingData(
+          Doubles.toArray(f1ScoresBuilder.build()));
 
       Files.asCharSink(new File(baseOutputDir, "aggregate.bootstrapped.txt"), Charsets.UTF_8).write(
           String
-              .format("%45s:%8.2f\n", "Aggregate argument F1 25th-percentile", percentileScore(sortedF1Scores, 0.25))
+              .format("%45s:%8.2f\n", "Aggregate argument F1 25th-percentile", f1Percentiles.percentile(0.25).get())
               +
-              String.format("%45s:%8.2f\n\n", "Aggregate argument F1 75th-percentile", percentileScore(sortedF1Scores, 0.75))
+              String.format("%45s:%8.2f\n\n", "Aggregate argument F1 75th-percentile", f1Percentiles.percentile(0.75))
               +
-              String.format("%45s:%8.2f\n", "Aggregate linking score 25th-percentile", percentileScore(
-                  sortedEalScores, 0.25))
+              String.format("%45s:%8.2f\n", "Aggregate linking score 25th-percentile", ealPercentiles.percentile(0.25))
               +
               String.format("%45s:%8.2f\n", "Aggregate linking score 75th-percentile",
-                  percentileScore(sortedEalScores, 0.75)));
-
-
-      final JacksonSerializer jacksonSerializer = JacksonSerializer.json().prettyOutput().build();
-      jacksonSerializer.serializeTo(results,
-          GZIPByteSink.gzipCompress(
-              Files.asByteSink(new File(baseOutputDir, "aggregate.bootstrapped.json"))));
-    }
-
-    private double percentileScore(final ImmutableList<Double> sortedScores, final double percentile) {
-      final int index = (int)Math.floor(percentile*(sortedScores.size()-1));
-      if(index < 0) {
-        return sortedScores.get(0);
-      }
-      if(index >= sortedScores.size()-1) {
-        return sortedScores.get(sortedScores.size()-1);
-      }
-      return sortedScores.get(index);
+                  ealPercentiles.percentile(0.75)));
     }
   }
 }
