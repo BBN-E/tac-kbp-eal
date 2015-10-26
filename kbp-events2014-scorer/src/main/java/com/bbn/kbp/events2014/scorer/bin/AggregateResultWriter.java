@@ -167,7 +167,7 @@ final class AggregateResultWriter implements KBP2015Scorer.SimpleResultWriter {
     @Override
     public void writeResult(final File baseOutputDir) throws IOException {
       writePercentiles(baseOutputDir);
-      
+
       final JacksonSerializer jacksonSerializer = JacksonSerializer.json().prettyOutput().build();
       jacksonSerializer.serializeTo(results,
           GZIPByteSink.gzipCompress(
@@ -195,12 +195,12 @@ final class AggregateResultWriter implements KBP2015Scorer.SimpleResultWriter {
           String
               .format("%45s:%8.2f\n", "Aggregate argument F1 25th-percentile", f1Percentiles.percentile(0.25).get())
               +
-              String.format("%45s:%8.2f\n\n", "Aggregate argument F1 75th-percentile", f1Percentiles.percentile(0.75))
+              String.format("%45s:%8.2f\n\n", "Aggregate argument F1 75th-percentile", f1Percentiles.percentile(0.75).get())
               +
-              String.format("%45s:%8.2f\n", "Aggregate linking score 25th-percentile", ealPercentiles.percentile(0.25))
+              String.format("%45s:%8.2f\n", "Aggregate linking score 25th-percentile", ealPercentiles.percentile(0.25).get())
               +
               String.format("%45s:%8.2f\n", "Aggregate linking score 75th-percentile",
-                  ealPercentiles.percentile(0.75)));
+                  ealPercentiles.percentile(0.75).get()));
     }
   }
 }
