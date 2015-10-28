@@ -5,6 +5,7 @@ import com.bbn.bue.common.annotations.MoveToBUECommon;
 import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
@@ -288,6 +289,51 @@ public final class AnswerKey {
         CorefAnnotation.createEmpty(docid));
   }
 
+  /**
+   * Takes this AnswerKey as ground truth, and takes unannotated or assessed Responses in fallback
+   * and adds them to the AnswerKey.
+   *
+   * If the CAS for an AssessedResponse is known, prefer that CAS to the CAS in fallback.
+   *
+   * Does not handle the case where the fallback AnswerKey has an Assessment that this AnswerKey
+   * does not.
+   */
+  public AnswerKey copyFallingBackTo(AnswerKey fallback) {
+    final Builder ret = modifiedCopyBuilder();
+
+    final ImmutableMap<String, Response> unannotatedHere = Maps.uniqueIndex(unannotatedResponses(),
+        Response.uniqueIdFunction());
+    final ImmutableMap<String, AssessedResponse> idToAssessedHere =
+        Maps.uniqueIndex(annotatedResponses(),
+            Functions.compose(Response.uniqueIdFunction(), AssessedResponse.Response));
+    final Set<String> idsHere = Sets.union(unannotatedHere.keySet(), idToAssessedHere.keySet());
+
+    final ImmutableMap<String, Response> unannotatedThere = Maps.uniqueIndex(
+        fallback.unannotatedResponses(), Response.uniqueIdFunction());
+    final ImmutableMap<String, AssessedResponse> idToAssessedThere =
+        Maps.uniqueIndex(fallback.annotatedResponses(),
+            Functions.compose(Response.uniqueIdFunction(), AssessedResponse.Response));
+    final Set<String> idsThere = Sets.union(unannotatedThere.keySet(), idToAssessedThere.keySet());
+
+    final Set<String> idsOnlyInFallback = Sets.difference(idsThere, idsHere);
+    for (final String id : idsOnlyInFallback) {
+      if (unannotatedThere.containsKey(id)) {
+        ret.addUnannotated(unannotatedThere.get(id));
+      }
+      if (idToAssessedThere.containsKey(id)) {
+        final AssessedResponse r = idToAssessedThere.get(id);
+        final int CASGroup;
+        if (corefAnnotation().CASesToIDs().containsKey(r.response().canonicalArgument())) {
+          CASGroup = corefAnnotation().CASesToIDs().get(r.response().canonicalArgument());
+        } else {
+          CASGroup = fallback.corefAnnotation().CASesToIDs().get(r.response().canonicalArgument());
+        }
+        ret.addAnnotated(r, CASGroup);
+      }
+    }
+    return ret.build();
+  }
+
   public AnswerKey copyMerging(AnswerKey toMerge) {
     // (1) determine which responses are newly assessed
     final Set<Response> alreadyAssessedInBaseline = FluentIterable.from(annotatedResponses())
@@ -377,6 +423,18 @@ public final class AnswerKey {
     public Builder addUnannotated(Iterable<Response> responses) {
       for (final Response r : responses) {
         addUnannotated(r);
+      }
+      return this;
+    }
+
+    /**
+     * Adds the specified response as an assessed response to the answer key. Refuses to add if
+     * there is already an assessed response. Removes from the unannotated responses if necessary,
+     */
+    public Builder addAnnotated(AssessedResponse r, int CASGroup) {
+      if (!annotatedArgs.containsKey(r.response())) {
+        corefAnnotation.corefCAS(r.response().canonicalArgument(), CASGroup);
+        annotatedArgs.put(r.response(), r);
       }
       return this;
     }
