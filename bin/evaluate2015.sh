@@ -105,8 +105,8 @@ fi
 mkdir -p $EVALDIR/score/withRealis
 $KBPREPO/kbp-scorer-bbn/target/appassembler/bin/kbpScorer2015 $PARAMSDIR/BBNKBPScorer2015.params > $LOG/scorer2015.log
 
-mkdir -p $EVALDIR/score/neutralizeRealis
-$KBPREPO/kbp-scorer-bbn/target/appassembler/bin/kbpScorer2015 $PARAMSDIR/BBNKBPScorer2015.neutralizeRealis.params > $LOG/scorer2015_neutralizeRealis.log
+#mkdir -p $EVALDIR/score/neutralizeRealis
+#$KBPREPO/kbp-scorer-bbn/target/appassembler/bin/kbpScorer2015 $PARAMSDIR/BBNKBPScorer2015.neutralizeRealis.params > $LOG/scorer2015_neutralizeRealis.log
 
 
 

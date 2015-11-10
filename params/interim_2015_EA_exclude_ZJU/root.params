@@ -13,6 +13,8 @@ scoreOutput: %outputDir%/scoreOutput
 fileFormat: KBP2015
 
 documentsList: %outputDir%/lists/docs.txt
+nwList: %outputDir%/lists/nw.txt
+dfList: %outputDir%/lists/df.txt
 
 gnuplot: /nfs/mercury-06/u14/apps/bin/gnuplot
 
