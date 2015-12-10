@@ -32,7 +32,7 @@
         <skipITs>true</skipITs>
 
         <junit.version>4.11</junit.version>
-        <bueopen.version>2.23.3</bueopen.version>
+        <bueopen.version>2.27.1-SNAPSHOT</bueopen.version>
 
         <!-- Sonar server properties. These only work BBN-internally -->
         <sonar.host.url>http://e-apache-2.bbn.com:9000</sonar.host.url>
