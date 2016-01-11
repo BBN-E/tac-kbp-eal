@@ -44,6 +44,11 @@ public class CharOffsetSpan implements Comparable<CharOffsetSpan> {
     return new CharOffsetSpan(startInclusive, endInclusive, null);
   }
 
+  public static CharOffsetSpan of(final OffsetRange<CharOffset> charOffsetRange) {
+    return fromOffsetsOnly(charOffsetRange.startInclusive().asInt(),
+        charOffsetRange.endInclusive().asInt());
+  }
+
   public int startInclusive() {
     return start;
   }
