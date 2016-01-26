@@ -1,0 +1,6 @@
+INCLUDE BBNKBPScorer2015.df.params
+
+OVERRIDE neutralizeRealis: true
+
+OVERRIDE scoringOutputRoot: %outputDir%/score_df/neutralizeRealis
+

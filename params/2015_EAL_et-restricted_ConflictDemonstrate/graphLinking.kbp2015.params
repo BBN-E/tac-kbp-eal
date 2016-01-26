@@ -1,0 +1,16 @@
+INCLUDE root.params
+
+sequence.runName: graphLinking_%config%
+batchQueue: nongale
+
+systemOutputsDir: %keepBest%
+
+answerKey: %expanded%/annotation
+referenceLinking: %expanded%/linkingStore
+
+neutralizeRealis: false
+attemptToNeutralizeCoref: false
+createDefaultLinking: false
+
+documentsToScore: %documentsList%
+

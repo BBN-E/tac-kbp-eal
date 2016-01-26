@@ -1,0 +1,5 @@
+INCLUDE BBNKBPScorer2015.params
+
+OVERRIDE documentsToScore: %nwList%
+OVERRIDE scoringOutputRoot: %outputDir%/score_nw/withRealis
+

@@ -1,0 +1,6 @@
+INCLUDE ../root.params
+
+gnuplotBin: %gnuplot%
+scoringDirectory: %outputDir%/score_nw/withRealis
+OVERRIDE outputDir: %outputDir%/graphAnalyses_nw/withRealis/perEvent
+scoreType: PER_EVENT
