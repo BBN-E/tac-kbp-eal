@@ -150,7 +150,10 @@ public final class ScoreKBPAgainstERE {
       final Optional<CoreNLPDocument> coreNLPDoc;
       if(coreNLPProcessedRawDocs.containsKey(docID)) {
         coreNLPDoc = Optional.of(coreNLPXMLLoader.loadFrom(coreNLPProcessedRawDocs.get(docID)));
-      } 
+      } else {
+        log.warn("no corenlp doc found for " + docID);
+        coreNLPDoc = Optional.absent();
+      }
       // feed this ERE doc/ KBP output pair to the scoring network
       input
           .inspect(EvalPair.of(ereDoc, new EREDocAndAnswerKey(ereDoc, answerKey, coreNLPDoc)));
@@ -329,15 +332,13 @@ public final class ScoreKBPAgainstERE {
                           .charOffsetRange(ereEntityMention.getHead().get().getStart(),
                               ereEntityMention.getHead().get().getEnd());
                       if(ereHead.equals(terminalHead.get().span())) {
-                        log.info("found a match via heads");
                         matchingEntity = entity;
                         break;
                       }
-                    } 
+                    }
                   }
                 }
               }
-
             }
           }
         }
