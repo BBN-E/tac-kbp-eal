@@ -23,6 +23,7 @@ import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
+import com.bbn.nlp.corenlp.CoreNLPConstituencyParse;
 import com.bbn.nlp.corenlp.CoreNLPDocument;
 import com.bbn.nlp.corenlp.CoreNLPParseNode;
 import com.bbn.nlp.corenlp.CoreNLPSentence;
@@ -109,7 +110,11 @@ public final class ScoreKBPAgainstERE {
         params.getExistingDirectory("annotationStore"), AssessmentSpecFormats.Format.KBP2015);
     final ImmutableMap<Symbol, File> coreNLPProcessedRawDocs = FileUtils.loadSymbolToFileMap(
         Files.asCharSource(params.getExistingFile("coreNLPDocIDMap"), Charsets.UTF_8));
-    final CoreNLPXMLLoader coreNLPXMLLoader = CoreNLPXMLLoader.builder(HeadFinders.<CoreNLPParseNode>getEnglishPTBHeadFinder()).build();
+    final boolean relaxUsingCORENLP = params.getBoolean("relaxUsingCoreNLP");
+    final boolean useExactMatchForCoreNLPRelaxation =
+        params.getBoolean("useExactMatchForCoreNLPRelaxation");
+    final CoreNLPXMLLoader coreNLPXMLLoader =
+        CoreNLPXMLLoader.builder(HeadFinders.<CoreNLPParseNode>getEnglishPTBHeadFinder()).build();
 
     log.info("Scoring over {} documents", docIDsToScore.size());
 
@@ -130,7 +135,7 @@ public final class ScoreKBPAgainstERE {
     // at the end to record some statistics about alignment failures,
     // so we need to keep references to them
     final DocLevelArgsFromKBPExtractor docLevelArgsFromKBPExtractor =
-        new DocLevelArgsFromKBPExtractor();
+        new DocLevelArgsFromKBPExtractor(relaxUsingCORENLP, useExactMatchForCoreNLPRelaxation);
     final DocLevelArgsFromEREExtractor docLevelArgsFromEREExtractor =
         new DocLevelArgsFromEREExtractor();
 
@@ -148,7 +153,7 @@ public final class ScoreKBPAgainstERE {
       final AnswerKey answerKey = annStore.read(docID).filter(
           KEEP_CORRECT_ANSWERS_OF_RELEVANT_ROLES_ONLY);
       final Optional<CoreNLPDocument> coreNLPDoc;
-      if(coreNLPProcessedRawDocs.containsKey(docID)) {
+      if (coreNLPProcessedRawDocs.containsKey(docID)) {
         coreNLPDoc = Optional.of(coreNLPXMLLoader.loadFrom(coreNLPProcessedRawDocs.get(docID)));
       } else {
         log.warn("no corenlp doc found for " + docID);
@@ -283,8 +288,13 @@ public final class ScoreKBPAgainstERE {
 
     private Multiset<String> mentionAlignmentFailures = HashMultiset.create();
     private Multiset<String> numResponses = HashMultiset.create();
+    private final boolean relaxUsingCORENLP;
+    private final boolean useExactMatchForCoreNLPRelaxation;
 
-    public DocLevelArgsFromKBPExtractor() {
+    public DocLevelArgsFromKBPExtractor(final boolean relaxUsingCORENLP,
+        final boolean useExactMatchForCoreNLPRelaxation) {
+      this.relaxUsingCORENLP = relaxUsingCORENLP;
+      this.useExactMatchForCoreNLPRelaxation = useExactMatchForCoreNLPRelaxation;
     }
 
     public ImmutableSet<DocLevelEventArg> apply(final EREDocAndAnswerKey input) {
@@ -317,7 +327,7 @@ public final class ScoreKBPAgainstERE {
                 matchingEntity = entity;
                 break;
               }
-              if (input.coreNLPDocument().isPresent()) {
+              if (input.coreNLPDocument().isPresent() && relaxUsingCORENLP) {
                 final Optional<CoreNLPSentence> sent =
                     input.coreNLPDocument().get().sentenceForCharOffsets(baseFillerOffsets);
                 if (sent.isPresent()) {
@@ -331,7 +341,10 @@ public final class ScoreKBPAgainstERE {
                       final OffsetRange<CharOffset> ereHead = OffsetRange
                           .charOffsetRange(ereEntityMention.getHead().get().getStart(),
                               ereEntityMention.getHead().get().getEnd());
-                      if(ereHead.equals(terminalHead.get().span())) {
+                      if ((useExactMatchForCoreNLPRelaxation &&
+                               ereHead.equals(terminalHead.get().span()))
+                          || (!useExactMatchForCoreNLPRelaxation &&
+                                  ereHead.contains(terminalHead.get().span()))) {
                         matchingEntity = entity;
                         break;
                       }
