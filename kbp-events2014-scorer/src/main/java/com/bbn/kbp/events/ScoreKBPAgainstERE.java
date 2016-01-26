@@ -359,6 +359,24 @@ public final class ScoreKBPAgainstERE {
         if (matchingEntity != null) {
           ret.add(DocLevelEventArg.create(Symbol.from(doc.getDocId()), response.type(),
               response.role(), matchingEntity.getID()));
+        } else if (input.coreNLPDocument().isPresent()) {
+          final String parseString;
+          final Optional<CoreNLPSentence> sent =
+              input.coreNLPDocument().get().sentenceForCharOffsets(baseFillerOffsets);
+          if (sent.isPresent()) {
+            final Optional<CoreNLPConstituencyParse> parse = sent.get().parse();
+            if (parse.isPresent()) {
+              parseString = parse.get().coreNLPString();
+            } else {
+              parseString = "no parse found!";
+            }
+          } else {
+            parseString = "no sentence found!";
+          }
+          log.info(
+              "Failed to align base filler with offsets {} to an ERE mention for response {}, parse tree is {}",
+              baseFillerOffsets, response, parseString);
+          mentionAlignmentFailures.add(errKey(response));
         } else {
           log.info("Failed to align base filler with offsets {} to an ERE mention for response {}",
               baseFillerOffsets, response);
