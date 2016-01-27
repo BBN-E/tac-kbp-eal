@@ -1,0 +1,80 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <parent>
+        <artifactId>kbp-events2014-all</artifactId>
+        <groupId>com.bbn.kbp.events2014</groupId>
+        <version>2.4.6-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>kbp-events2014-nlp</artifactId>
+    <groupId>com.bbn.nlp</groupId>
+    <packaging>jar</packaging>
+    <version>2.4.6-SNAPSHOT</version>
+
+    <name>BBN BUE NLP Utilities (open source)</name>
+    <url>http://www.bbn.com/</url>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>appassembler-maven-plugin</artifactId>
+                <configuration>
+                    <programs>
+                        <program>
+                            <mainClass>com.bbn.nlp.corpora.ere.BuildRichEREDocIDToFileList
+                            </mainClass>
+                            <id>BuildRichEREDocIDToFileList</id>
+                        </program>
+                    </programs>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+
+    <dependencies>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.bbn.bue</groupId>
+            <artifactId>common-core-open</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>2.4.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <optional>true</optional>
+            <version>1.1.2</version>
+        </dependency>
+
+        <!-- nullable annotations -->
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+            <version>3.0.0</version>
+        </dependency>
+
+    </dependencies>
+
+</project>

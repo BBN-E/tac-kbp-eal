@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="CoreNLP-to-HTML.xsl" type="text/xsl"?>
+<root>
+  <document>
+    <sentences>
+      <sentence id="1">
+        <tokens>
+          <token id="1">
+            <word>BBN</word>
+            <CharacterOffsetBegin>0</CharacterOffsetBegin>
+            <CharacterOffsetEnd>3</CharacterOffsetEnd>
+            <POS>NNP</POS>
+          </token>
+          <token id="2">
+            <word>is</word>
+            <CharacterOffsetBegin>4</CharacterOffsetBegin>
+            <CharacterOffsetEnd>6</CharacterOffsetEnd>
+            <POS>VBZ</POS>
+          </token>
+          <token id="3">
+            <word>located</word>
+            <CharacterOffsetBegin>7</CharacterOffsetBegin>
+            <CharacterOffsetEnd>14</CharacterOffsetEnd>
+            <POS>VBN</POS>
+          </token>
+          <token id="4">
+            <word>in</word>
+            <CharacterOffsetBegin>15</CharacterOffsetBegin>
+            <CharacterOffsetEnd>17</CharacterOffsetEnd>
+            <POS>IN</POS>
+          </token>
+          <token id="5">
+            <word>Taxachusetts</word>
+            <CharacterOffsetBegin>18</CharacterOffsetBegin>
+            <CharacterOffsetEnd>30</CharacterOffsetEnd>
+            <POS>NNP</POS>
+          </token>
+          <token id="6">
+            <word>.</word>
+            <CharacterOffsetBegin>30</CharacterOffsetBegin>
+            <CharacterOffsetEnd>31</CharacterOffsetEnd>
+            <POS>.</POS>
+          </token>
+        </tokens>
+        <parse>(ROOT (S (NP (NNP BBN)) (VP (VBZ is) (VP (VBN located) (PP (IN in) (NP (NNP Taxachusetts))))) (. .))) </parse>
+        <dependencies type="basic-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="3">located</dependent>
+          </dep>
+          <dep type="nsubjpass">
+            <governor idx="3">located</governor>
+            <dependent idx="1">BBN</dependent>
+          </dep>
+          <dep type="auxpass">
+            <governor idx="3">located</governor>
+            <dependent idx="2">is</dependent>
+          </dep>
+          <dep type="case">
+            <governor idx="5">Taxachusetts</governor>
+            <dependent idx="4">in</dependent>
+          </dep>
+          <dep type="nmod">
+            <governor idx="3">located</governor>
+            <dependent idx="5">Taxachusetts</dependent>
+          </dep>
+          <dep type="punct">
+            <governor idx="3">located</governor>
+            <dependent idx="6">.</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="3">located</dependent>
+          </dep>
+          <dep type="nsubjpass">
+            <governor idx="3">located</governor>
+            <dependent idx="1">BBN</dependent>
+          </dep>
+          <dep type="auxpass">
+            <governor idx="3">located</governor>
+            <dependent idx="2">is</dependent>
+          </dep>
+          <dep type="case">
+            <governor idx="5">Taxachusetts</governor>
+            <dependent idx="4">in</dependent>
+          </dep>
+          <dep type="nmod:in">
+            <governor idx="3">located</governor>
+            <dependent idx="5">Taxachusetts</dependent>
+          </dep>
+          <dep type="punct">
+            <governor idx="3">located</governor>
+            <dependent idx="6">.</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-ccprocessed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="3">located</dependent>
+          </dep>
+          <dep type="nsubjpass">
+            <governor idx="3">located</governor>
+            <dependent idx="1">BBN</dependent>
+          </dep>
+          <dep type="auxpass">
+            <governor idx="3">located</governor>
+            <dependent idx="2">is</dependent>
+          </dep>
+          <dep type="case">
+            <governor idx="5">Taxachusetts</governor>
+            <dependent idx="4">in</dependent>
+          </dep>
+          <dep type="nmod:in">
+            <governor idx="3">located</governor>
+            <dependent idx="5">Taxachusetts</dependent>
+          </dep>
+          <dep type="punct">
+            <governor idx="3">located</governor>
+            <dependent idx="6">.</dependent>
+          </dep>
+        </dependencies>
+      </sentence>
+      <sentence id="2">
+        <tokens>
+          <token id="1">
+            <word>This</word>
+            <CharacterOffsetBegin>38</CharacterOffsetBegin>
+            <CharacterOffsetEnd>42</CharacterOffsetEnd>
+            <POS>DT</POS>
+          </token>
+          <token id="2">
+            <word>sentence</word>
+            <CharacterOffsetBegin>43</CharacterOffsetBegin>
+            <CharacterOffsetEnd>51</CharacterOffsetEnd>
+            <POS>NN</POS>
+          </token>
+          <token id="3">
+            <word>has</word>
+            <CharacterOffsetBegin>59</CharacterOffsetBegin>
+            <CharacterOffsetEnd>62</CharacterOffsetEnd>
+            <POS>VBZ</POS>
+          </token>
+          <token id="4">
+            <word>miscellaneous</word>
+            <CharacterOffsetBegin>63</CharacterOffsetBegin>
+            <CharacterOffsetEnd>76</CharacterOffsetEnd>
+            <POS>RB</POS>
+          </token>
+          <token id="5">
+            <word>interspersed</word>
+            <CharacterOffsetBegin>84</CharacterOffsetBegin>
+            <CharacterOffsetEnd>96</CharacterOffsetEnd>
+            <POS>VBN</POS>
+          </token>
+          <token id="6">
+            <word>throughout</word>
+            <CharacterOffsetBegin>105</CharacterOffsetBegin>
+            <CharacterOffsetEnd>115</CharacterOffsetEnd>
+            <POS>IN</POS>
+          </token>
+          <token id="7">
+            <word>it</word>
+            <CharacterOffsetBegin>116</CharacterOffsetBegin>
+            <CharacterOffsetEnd>118</CharacterOffsetEnd>
+            <POS>PRP</POS>
+          </token>
+          <token id="8">
+            <word>,</word>
+            <CharacterOffsetBegin>118</CharacterOffsetBegin>
+            <CharacterOffsetEnd>119</CharacterOffsetEnd>
+            <POS>,</POS>
+          </token>
+          <token id="9">
+            <word>with</word>
+            <CharacterOffsetBegin>120</CharacterOffsetBegin>
+            <CharacterOffsetEnd>124</CharacterOffsetEnd>
+            <POS>IN</POS>
+          </token>
+          <token id="10">
+            <word>no</word>
+            <CharacterOffsetBegin>128</CharacterOffsetBegin>
+            <CharacterOffsetEnd>130</CharacterOffsetEnd>
+            <POS>DT</POS>
+          </token>
+          <token id="11">
+            <word>regard</word>
+            <CharacterOffsetBegin>134</CharacterOffsetBegin>
+            <CharacterOffsetEnd>140</CharacterOffsetEnd>
+            <POS>NN</POS>
+          </token>
+          <token id="12">
+            <word>for</word>
+            <CharacterOffsetBegin>141</CharacterOffsetBegin>
+            <CharacterOffsetEnd>144</CharacterOffsetEnd>
+            <POS>IN</POS>
+          </token>
+          <token id="13">
+            <word>spelling</word>
+            <CharacterOffsetBegin>145</CharacterOffsetBegin>
+            <CharacterOffsetEnd>153</CharacterOffsetEnd>
+            <POS>NN</POS>
+          </token>
+          <token id="14">
+            <word>.</word>
+            <CharacterOffsetBegin>153</CharacterOffsetBegin>
+            <CharacterOffsetEnd>154</CharacterOffsetEnd>
+            <POS>.</POS>
+          </token>
+        </tokens>
+        <parse>(ROOT (S (NP (DT This) (NN sentence)) (VP (VBZ has) (ADVP (RB miscellaneous)) (VP (VBN interspersed) (PP (IN throughout) (NP (PRP it))) (, ,) (PP (IN with) (NP (NP (DT no) (NN regard)) (PP (IN for) (NP (NN spelling))))))) (. .))) </parse>
+        <dependencies type="basic-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="5">interspersed</dependent>
+          </dep>
+          <dep type="det">
+            <governor idx="2">sentence</governor>
+            <dependent idx="1">This</dependent>
+          </dep>
+          <dep type="nsubj">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="2">sentence</dependent>
+          </dep>
+          <dep type="aux">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="3">has</dependent>
+          </dep>
+          <dep type="advmod">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="4">miscellaneous</dependent>
+          </dep>
+          <dep type="case">
+            <governor idx="7">it</governor>
+            <dependent idx="6">throughout</dependent>
+          </dep>
+          <dep type="nmod">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="7">it</dependent>
+          </dep>
+          <dep type="punct">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="8">,</dependent>
+          </dep>
+          <dep type="case">
+            <governor idx="11">regard</governor>
+            <dependent idx="9">with</dependent>
+          </dep>
+          <dep type="neg">
+            <governor idx="11">regard</governor>
+            <dependent idx="10">no</dependent>
+          </dep>
+          <dep type="nmod">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="11">regard</dependent>
+          </dep>
+          <dep type="case">
+            <governor idx="13">spelling</governor>
+            <dependent idx="12">for</dependent>
+          </dep>
+          <dep type="nmod">
+            <governor idx="11">regard</governor>
+            <dependent idx="13">spelling</dependent>
+          </dep>
+          <dep type="punct">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="14">.</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="5">interspersed</dependent>
+          </dep>
+          <dep type="det">
+            <governor idx="2">sentence</governor>
+            <dependent idx="1">This</dependent>
+          </dep>
+          <dep type="nsubj">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="2">sentence</dependent>
+          </dep>
+          <dep type="aux">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="3">has</dependent>
+          </dep>
+          <dep type="advmod">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="4">miscellaneous</dependent>
+          </dep>
+          <dep type="case">
+            <governor idx="7">it</governor>
+            <dependent idx="6">throughout</dependent>
+          </dep>
+          <dep type="nmod:throughout">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="7">it</dependent>
+          </dep>
+          <dep type="punct">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="8">,</dependent>
+          </dep>
+          <dep type="case">
+            <governor idx="11">regard</governor>
+            <dependent idx="9">with</dependent>
+          </dep>
+          <dep type="neg">
+            <governor idx="11">regard</governor>
+            <dependent idx="10">no</dependent>
+          </dep>
+          <dep type="nmod:with">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="11">regard</dependent>
+          </dep>
+          <dep type="case">
+            <governor idx="13">spelling</governor>
+            <dependent idx="12">for</dependent>
+          </dep>
+          <dep type="nmod:for">
+            <governor idx="11">regard</governor>
+            <dependent idx="13">spelling</dependent>
+          </dep>
+          <dep type="punct">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="14">.</dependent>
+          </dep>
+        </dependencies>
+        <dependencies type="collapsed-ccprocessed-dependencies">
+          <dep type="root">
+            <governor idx="0">ROOT</governor>
+            <dependent idx="5">interspersed</dependent>
+          </dep>
+          <dep type="det">
+            <governor idx="2">sentence</governor>
+            <dependent idx="1">This</dependent>
+          </dep>
+          <dep type="nsubj">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="2">sentence</dependent>
+          </dep>
+          <dep type="aux">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="3">has</dependent>
+          </dep>
+          <dep type="advmod">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="4">miscellaneous</dependent>
+          </dep>
+          <dep type="case">
+            <governor idx="7">it</governor>
+            <dependent idx="6">throughout</dependent>
+          </dep>
+          <dep type="nmod:throughout">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="7">it</dependent>
+          </dep>
+          <dep type="punct">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="8">,</dependent>
+          </dep>
+          <dep type="case">
+            <governor idx="11">regard</governor>
+            <dependent idx="9">with</dependent>
+          </dep>
+          <dep type="neg">
+            <governor idx="11">regard</governor>
+            <dependent idx="10">no</dependent>
+          </dep>
+          <dep type="nmod:with">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="11">regard</dependent>
+          </dep>
+          <dep type="case">
+            <governor idx="13">spelling</governor>
+            <dependent idx="12">for</dependent>
+          </dep>
+          <dep type="nmod:for">
+            <governor idx="11">regard</governor>
+            <dependent idx="13">spelling</dependent>
+          </dep>
+          <dep type="punct">
+            <governor idx="5">interspersed</governor>
+            <dependent idx="14">.</dependent>
+          </dep>
+        </dependencies>
+      </sentence>
+    </sentences>
+  </document>
+</root>
