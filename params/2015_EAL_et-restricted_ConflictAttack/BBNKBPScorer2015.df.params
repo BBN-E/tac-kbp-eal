@@ -1,5 +1,0 @@
-INCLUDE BBNKBPScorer2015.params
-
-OVERRIDE documentsToScore: %dfList%
-OVERRIDE scoringOutputRoot: %outputDir%/score_df/withRealis
-

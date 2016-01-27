@@ -1,6 +1,0 @@
-INCLUDE ../root.params
-
-gnuplotBin: %gnuplot%
-scoringDirectory: %outputDir%/score/withRealis
-OVERRIDE outputDir: %outputDir%/graphAnalyses/withRealis
-scoreType: ARGUMENT

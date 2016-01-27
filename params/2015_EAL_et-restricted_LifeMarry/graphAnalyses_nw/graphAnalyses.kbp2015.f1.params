@@ -1,6 +1,0 @@
-INCLUDE ../root.params
-
-gnuplotBin: %gnuplot%
-scoringDirectory: %outputDir%/score_nw/withRealis
-OVERRIDE outputDir: %outputDir%/graphAnalyses_nw/withRealis
-scoreType: F1

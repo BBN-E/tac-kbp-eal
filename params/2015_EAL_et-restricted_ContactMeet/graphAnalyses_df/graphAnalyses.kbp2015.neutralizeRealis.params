@@ -1,7 +1,0 @@
-INCLUDE ../root.params
-
-gnuplotBin: %gnuplot%
-scoreDirectory.withRealis: %outputDir%/score_df/withRealis
-scoreDirectory.neutralizeRealis: %outputDir%/score_df/neutralizeRealis
-OVERRIDE outputDir: %outputDir%/graphAnalyses_df/withRealis
-scoreType: NEUTRALIZE_REALIS

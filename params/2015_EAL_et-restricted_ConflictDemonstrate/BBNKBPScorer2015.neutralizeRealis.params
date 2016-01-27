@@ -1,6 +1,0 @@
-INCLUDE BBNKBPScorer2015.params
-
-OVERRIDE neutralizeRealis: true
-
-OVERRIDE scoringOutputRoot: %outputDir%/score/neutralizeRealis
-

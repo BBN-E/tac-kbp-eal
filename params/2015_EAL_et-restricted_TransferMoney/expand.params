@@ -1,4 +1,0 @@
-INCLUDE root.params
-
-inputStore: %assessmentDir%/annotation
-outputStore: %expanded%/annotation
