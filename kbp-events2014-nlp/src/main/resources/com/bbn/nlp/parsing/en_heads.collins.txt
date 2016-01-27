@@ -1,0 +1,33 @@
+# see Implements the head rules as found in: Three Generative, Lexicalised Models for Statistical
+# Parsing  (ACL/EACL97) A New Statistical Parser Based on Bigram Lexical Dependencies (ACL96)
+#
+# Derived from the email archived at http://www.cs.columbia.edu/~mcollins/papers/heads
+ADJP    0   % QP JJ VBN VBG ADJP $ JJR JJS DT FW **** RBR RBS RB
+ADVP    1    RBR RB RBS FW ADVP CD **** JJR JJS JJ
+CONJP   1    CC RB IN
+FRAG    1    **
+INTJ    0   **
+LST 1    LS :
+NAC 0   NN NNS NNP NNPS NP NAC EX $ CD QP PRP VBG JJ JJS JJR ADJP FW
+#NP  0   EX $ CD QP PRP VBG JJ JJS JJR ADJP DT FW RB SYM PRP$
+NP$ 0   NN NNS NNP NNPS NP NAC EX $ CD QP PRP VBG JJ JJS JJR ADJP FW SYM
+PNP 0   **
+PP  1    IN TO FW
+PRN 1    **
+PRT 1    RP
+QP  0   CD NCD % QP JJ JJR JJS DT
+RRC 1    VP NP ADVP ADJP PP
+S   0   VP SBAR ADJP UCP NP
+SBAR    0   S SQ SINV SBAR FRAG X
+SBARQ   0   SQ S SINV SBARQ FRAG X
+SINV    0   S VP VBZ VBD VBP VB SINV ADJP NP
+SQ  0   VP VBZ VBD VBP VB MD SQ
+UCP 1    **
+VP  1    VBD VBN MD VBZ TO VB VP VBG VBP ADJP NP
+WHADJP  0   JJ ADJP
+WHADVP  1    WRB
+WHNP    0   WDT WP WP$ WHADJP WHPP WHNP
+WHPP    1    IN TO FW
+X   1    **
+# added because ROOT -> S
+ROOT    0   S
