@@ -112,7 +112,7 @@ public final class ScoreKBPAgainstERE {
         Files.asCharSource(params.getExistingFile("coreNLPDocIDMap"), Charsets.UTF_8));
     final boolean relaxUsingCORENLP = params.getBoolean("relaxUsingCoreNLP");
     final boolean useExactMatchForCoreNLPRelaxation =
-        params.getBoolean("useExactMatchForCoreNLPRelaxation");
+        relaxUsingCORENLP && params.getBoolean("useExactMatchForCoreNLPRelaxation");
     final CoreNLPXMLLoader coreNLPXMLLoader =
         CoreNLPXMLLoader.builder(HeadFinders.<CoreNLPParseNode>getEnglishPTBHeadFinder()).build();
 
@@ -153,10 +153,12 @@ public final class ScoreKBPAgainstERE {
       final AnswerKey answerKey = annStore.read(docID).filter(
           KEEP_CORRECT_ANSWERS_OF_RELEVANT_ROLES_ONLY);
       final Optional<CoreNLPDocument> coreNLPDoc;
-      if (coreNLPProcessedRawDocs.containsKey(docID)) {
+      if (relaxUsingCORENLP && coreNLPProcessedRawDocs.containsKey(docID)) {
         coreNLPDoc = Optional.of(coreNLPXMLLoader.loadFrom(coreNLPProcessedRawDocs.get(docID)));
       } else {
-        log.warn("no corenlp doc found for " + docID);
+        if(relaxUsingCORENLP) {
+          log.warn("no corenlp doc found for " + docID);
+        }
         coreNLPDoc = Optional.absent();
       }
       // feed this ERE doc/ KBP output pair to the scoring network
@@ -359,7 +361,7 @@ public final class ScoreKBPAgainstERE {
         if (matchingEntity != null) {
           ret.add(DocLevelEventArg.create(Symbol.from(doc.getDocId()), response.type(),
               response.role(), matchingEntity.getID()));
-        } else if (input.coreNLPDocument().isPresent()) {
+        } else if (input.coreNLPDocument().isPresent() && relaxUsingCORENLP) {
           final String parseString;
           final Optional<CoreNLPSentence> sent =
               input.coreNLPDocument().get().sentenceForCharOffsets(baseFillerOffsets);
