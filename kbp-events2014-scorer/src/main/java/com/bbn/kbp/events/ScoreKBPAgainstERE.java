@@ -339,7 +339,7 @@ public final class ScoreKBPAgainstERE {
               }
               if (coreNLPDoc.isPresent() && relaxUsingCORENLP) {
                 final Optional<CoreNLPSentence> sent =
-                    coreNLPDoc.get().sentenceForCharOffsets(baseFillerOffsets);
+                    coreNLPDoc.get().firstSentenceContaining(baseFillerOffsets);
                 if (sent.isPresent()) {
                   final Optional<CoreNLPParseNode> node =
                       sent.get().nodeForOffsets(baseFillerOffsets);
@@ -372,7 +372,7 @@ public final class ScoreKBPAgainstERE {
         } else if (coreNLPDoc.isPresent() && relaxUsingCORENLP) {
           final String parseString;
           final Optional<CoreNLPSentence> sent =
-              coreNLPDoc.get().sentenceForCharOffsets(baseFillerOffsets);
+              coreNLPDoc.get().firstSentenceContaining(baseFillerOffsets);
           if (sent.isPresent()) {
             final Optional<CoreNLPConstituencyParse> parse = sent.get().parse();
             if (parse.isPresent()) {
