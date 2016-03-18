@@ -27,6 +27,10 @@
                             <mainClass>com.bbn.kbp.events2014.io.ImportForeignIDs</mainClass>
                             <name>importForeignIDs</name>
                         </program>
+                        <program>
+                            <mainClass>com.bbn.nlp.corpora.ere.BuildRichEREDocIDToFileList</mainClass>
+                            <name>BuildRichEREDocIDToFileList</name>
+                        </program>
                     </programs>
                 </configuration>
             </plugin>
