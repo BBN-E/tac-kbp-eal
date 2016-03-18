@@ -59,6 +59,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Random;
 
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.inspect;
@@ -135,7 +136,9 @@ public final class ScoreKBPAgainstERE {
     // at the end to record some statistics about alignment failures,
     // so we need to keep references to them
     final DocLevelArgsFromKBPExtractor docLevelArgsFromKBPExtractor =
-        new DocLevelArgsFromKBPExtractor(relaxUsingCORENLP, useExactMatchForCoreNLPRelaxation);
+        new DocLevelArgsFromKBPExtractor(coreNLPProcessedRawDocs,
+            coreNLPXMLLoader, relaxUsingCORENLP,
+            useExactMatchForCoreNLPRelaxation);
     final DocLevelArgsFromEREExtractor docLevelArgsFromEREExtractor =
         new DocLevelArgsFromEREExtractor();
 
@@ -150,20 +153,12 @@ public final class ScoreKBPAgainstERE {
         throw new RuntimeException("Missing key file for " + docID);
       }
       final EREDocument ereDoc = loader.loadFrom(ereFileName);
+      checkState(ereDoc.getDocId().equals(docID.asString()),
+          "fetched document ID must be equal to stored");
       final AnswerKey answerKey = annStore.read(docID).filter(
           KEEP_CORRECT_ANSWERS_OF_RELEVANT_ROLES_ONLY);
-      final Optional<CoreNLPDocument> coreNLPDoc;
-      if (relaxUsingCORENLP && coreNLPProcessedRawDocs.containsKey(docID)) {
-        coreNLPDoc = Optional.of(coreNLPXMLLoader.loadFrom(coreNLPProcessedRawDocs.get(docID)));
-      } else {
-        if(relaxUsingCORENLP) {
-          log.warn("no corenlp doc found for " + docID);
-        }
-        coreNLPDoc = Optional.absent();
-      }
       // feed this ERE doc/ KBP output pair to the scoring network
-      input
-          .inspect(EvalPair.of(ereDoc, new EREDocAndAnswerKey(ereDoc, answerKey, coreNLPDoc)));
+      input.inspect(EvalPair.of(ereDoc, new EREDocAndAnswerKey(ereDoc, answerKey)));
     }
 
     // trigger the scoring network to write its summary files
@@ -216,8 +211,7 @@ public final class ScoreKBPAgainstERE {
 
     // overall F score
     final AggregateBinaryFScoresInspector<Object, Object> scoreAndWriteOverallFScore =
-        AggregateBinaryFScoresInspector.createOutputtingTo(
-            Files.asCharSink(new File(outputDir, "aggregateF.txt"), Charsets.UTF_8));
+        AggregateBinaryFScoresInspector.createOutputtingTo("aggregateF.txt", outputDir);
     inspect(alignmentNode).with(scoreAndWriteOverallFScore);
 
     // log errors
@@ -290,11 +284,16 @@ public final class ScoreKBPAgainstERE {
 
     private Multiset<String> mentionAlignmentFailures = HashMultiset.create();
     private Multiset<String> numResponses = HashMultiset.create();
+    private final ImmutableMap<Symbol, File> ereMapping;
+    private final CoreNLPXMLLoader coreNLPXMLLoader;
     private final boolean relaxUsingCORENLP;
     private final boolean useExactMatchForCoreNLPRelaxation;
 
-    public DocLevelArgsFromKBPExtractor(final boolean relaxUsingCORENLP,
+    public DocLevelArgsFromKBPExtractor(final Map<Symbol, File> ereMapping,
+        final CoreNLPXMLLoader coreNLPXMLLoader, final boolean relaxUsingCORENLP,
         final boolean useExactMatchForCoreNLPRelaxation) {
+      this.ereMapping = ImmutableMap.copyOf(ereMapping);
+      this.coreNLPXMLLoader = coreNLPXMLLoader;
       this.relaxUsingCORENLP = relaxUsingCORENLP;
       this.useExactMatchForCoreNLPRelaxation = useExactMatchForCoreNLPRelaxation;
     }
@@ -303,6 +302,15 @@ public final class ScoreKBPAgainstERE {
       final ImmutableSet.Builder<DocLevelEventArg> ret = ImmutableSet.builder();
       final AnswerKey answerKey = input.answerKey();
       final EREDocument doc = input.ereDoc();
+      final Symbol ereID = Symbol.from(doc.getDocId());
+      final Optional<CoreNLPDocument> coreNLPDoc;
+      try {
+        coreNLPDoc = Optional.fromNullable(ereMapping.get(ereID)).isPresent() ? Optional
+            .of(coreNLPXMLLoader.loadFrom(ereMapping.get(ereID)))
+                                                                              : Optional.<CoreNLPDocument>absent();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
       for (final AssessedResponse annResponse : answerKey.annotatedResponses()) {
         // we try to align a system response to an ERE entity by exact offset match of the
         // basefiller against one of an entity's mentions
@@ -329,9 +337,9 @@ public final class ScoreKBPAgainstERE {
                 matchingEntity = entity;
                 break;
               }
-              if (input.coreNLPDocument().isPresent() && relaxUsingCORENLP) {
+              if (coreNLPDoc.isPresent() && relaxUsingCORENLP) {
                 final Optional<CoreNLPSentence> sent =
-                    input.coreNLPDocument().get().sentenceForCharOffsets(baseFillerOffsets);
+                    coreNLPDoc.get().sentenceForCharOffsets(baseFillerOffsets);
                 if (sent.isPresent()) {
                   final Optional<CoreNLPParseNode> node =
                       sent.get().nodeForOffsets(baseFillerOffsets);
@@ -361,10 +369,10 @@ public final class ScoreKBPAgainstERE {
         if (matchingEntity != null) {
           ret.add(DocLevelEventArg.create(Symbol.from(doc.getDocId()), response.type(),
               response.role(), matchingEntity.getID()));
-        } else if (input.coreNLPDocument().isPresent() && relaxUsingCORENLP) {
+        } else if (coreNLPDoc.isPresent() && relaxUsingCORENLP) {
           final String parseString;
           final Optional<CoreNLPSentence> sent =
-              input.coreNLPDocument().get().sentenceForCharOffsets(baseFillerOffsets);
+              coreNLPDoc.get().sentenceForCharOffsets(baseFillerOffsets);
           if (sent.isPresent()) {
             final Optional<CoreNLPConstituencyParse> parse = sent.get().parse();
             if (parse.isPresent()) {
@@ -410,11 +418,8 @@ final class EREDocAndAnswerKey {
 
   private final EREDocument ereDoc;
   private final AnswerKey anwerKey;
-  private final Optional<CoreNLPDocument> coreNLPDocument;
 
-  public EREDocAndAnswerKey(final EREDocument ereDoc, final AnswerKey anwerKey,
-      final Optional<CoreNLPDocument> coreNLPDocument) {
-    this.coreNLPDocument = coreNLPDocument;
+  public EREDocAndAnswerKey(final EREDocument ereDoc, final AnswerKey anwerKey) {
     this.ereDoc = checkNotNull(ereDoc);
     this.anwerKey = checkNotNull(anwerKey);
   }
@@ -425,9 +430,5 @@ final class EREDocAndAnswerKey {
 
   public AnswerKey answerKey() {
     return anwerKey;
-  }
-
-  public Optional<CoreNLPDocument> coreNLPDocument() {
-    return coreNLPDocument;
   }
 }
