@@ -83,7 +83,7 @@ public final class FMeasureTableRenderer {
       new Function<FMeasureCounts, Float>() {
         @Override
         public Float apply(FMeasureCounts input) {
-          return input.falsePositives() + input.falseNegatives();
+          return (float) (input.falsePositives() + input.falseNegatives());
         }
       };
 

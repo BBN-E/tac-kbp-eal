@@ -23,6 +23,11 @@ import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
+import com.bbn.nlp.corenlp.CoreNLPConstituencyParse;
+import com.bbn.nlp.corenlp.CoreNLPDocument;
+import com.bbn.nlp.corenlp.CoreNLPParseNode;
+import com.bbn.nlp.corenlp.CoreNLPSentence;
+import com.bbn.nlp.corenlp.CoreNLPXMLLoader;
 import com.bbn.nlp.corpora.ere.EREArgument;
 import com.bbn.nlp.corpora.ere.EREDocument;
 import com.bbn.nlp.corpora.ere.EREEntity;
@@ -34,6 +39,7 @@ import com.bbn.nlp.corpora.ere.EREFillerArgument;
 import com.bbn.nlp.corpora.ere.ERELoader;
 import com.bbn.nlp.events.HasEventType;
 import com.bbn.nlp.events.scoring.DocLevelEventArg;
+import com.bbn.nlp.parsing.HeadFinders;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
@@ -53,6 +59,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Random;
 
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.inspect;
@@ -102,6 +109,13 @@ public final class ScoreKBPAgainstERE {
     final File outputDir = params.getCreatableDirectory("outputDir");
     final AnnotationStore annStore = AssessmentSpecFormats.openAnnotationStore(
         params.getExistingDirectory("annotationStore"), AssessmentSpecFormats.Format.KBP2015);
+    final ImmutableMap<Symbol, File> coreNLPProcessedRawDocs = FileUtils.loadSymbolToFileMap(
+        Files.asCharSource(params.getExistingFile("coreNLPDocIDMap"), Charsets.UTF_8));
+    final boolean relaxUsingCORENLP = params.getBoolean("relaxUsingCoreNLP");
+    final boolean useExactMatchForCoreNLPRelaxation =
+        relaxUsingCORENLP && params.getBoolean("useExactMatchForCoreNLPRelaxation");
+    final CoreNLPXMLLoader coreNLPXMLLoader =
+        CoreNLPXMLLoader.builder(HeadFinders.<CoreNLPParseNode>getEnglishPTBHeadFinder()).build();
 
     log.info("Scoring over {} documents", docIDsToScore.size());
 
@@ -122,7 +136,9 @@ public final class ScoreKBPAgainstERE {
     // at the end to record some statistics about alignment failures,
     // so we need to keep references to them
     final DocLevelArgsFromKBPExtractor docLevelArgsFromKBPExtractor =
-        new DocLevelArgsFromKBPExtractor();
+        new DocLevelArgsFromKBPExtractor(coreNLPProcessedRawDocs,
+            coreNLPXMLLoader, relaxUsingCORENLP,
+            useExactMatchForCoreNLPRelaxation);
     final DocLevelArgsFromEREExtractor docLevelArgsFromEREExtractor =
         new DocLevelArgsFromEREExtractor();
 
@@ -137,9 +153,10 @@ public final class ScoreKBPAgainstERE {
         throw new RuntimeException("Missing key file for " + docID);
       }
       final EREDocument ereDoc = loader.loadFrom(ereFileName);
+      checkState(ereDoc.getDocId().equals(docID.asString()),
+          "fetched document ID must be equal to stored");
       final AnswerKey answerKey = annStore.read(docID).filter(
           KEEP_CORRECT_ANSWERS_OF_RELEVANT_ROLES_ONLY);
-
       // feed this ERE doc/ KBP output pair to the scoring network
       input.inspect(EvalPair.of(ereDoc, new EREDocAndAnswerKey(ereDoc, answerKey)));
     }
@@ -194,8 +211,7 @@ public final class ScoreKBPAgainstERE {
 
     // overall F score
     final AggregateBinaryFScoresInspector<Object, Object> scoreAndWriteOverallFScore =
-        AggregateBinaryFScoresInspector.createOutputtingTo(
-            Files.asCharSink(new File(outputDir, "aggregateF.txt"), Charsets.UTF_8));
+        AggregateBinaryFScoresInspector.createOutputtingTo("aggregateF.txt", outputDir);
     inspect(alignmentNode).with(scoreAndWriteOverallFScore);
 
     // log errors
@@ -268,15 +284,33 @@ public final class ScoreKBPAgainstERE {
 
     private Multiset<String> mentionAlignmentFailures = HashMultiset.create();
     private Multiset<String> numResponses = HashMultiset.create();
+    private final ImmutableMap<Symbol, File> ereMapping;
+    private final CoreNLPXMLLoader coreNLPXMLLoader;
+    private final boolean relaxUsingCORENLP;
+    private final boolean useExactMatchForCoreNLPRelaxation;
 
-    public DocLevelArgsFromKBPExtractor() {
+    public DocLevelArgsFromKBPExtractor(final Map<Symbol, File> ereMapping,
+        final CoreNLPXMLLoader coreNLPXMLLoader, final boolean relaxUsingCORENLP,
+        final boolean useExactMatchForCoreNLPRelaxation) {
+      this.ereMapping = ImmutableMap.copyOf(ereMapping);
+      this.coreNLPXMLLoader = coreNLPXMLLoader;
+      this.relaxUsingCORENLP = relaxUsingCORENLP;
+      this.useExactMatchForCoreNLPRelaxation = useExactMatchForCoreNLPRelaxation;
     }
 
     public ImmutableSet<DocLevelEventArg> apply(final EREDocAndAnswerKey input) {
       final ImmutableSet.Builder<DocLevelEventArg> ret = ImmutableSet.builder();
       final AnswerKey answerKey = input.answerKey();
       final EREDocument doc = input.ereDoc();
-
+      final Symbol ereID = Symbol.from(doc.getDocId());
+      final Optional<CoreNLPDocument> coreNLPDoc;
+      try {
+        coreNLPDoc = Optional.fromNullable(ereMapping.get(ereID)).isPresent() ? Optional
+            .of(coreNLPXMLLoader.loadFrom(ereMapping.get(ereID)))
+                                                                              : Optional.<CoreNLPDocument>absent();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
       for (final AssessedResponse annResponse : answerKey.annotatedResponses()) {
         // we try to align a system response to an ERE entity by exact offset match of the
         // basefiller against one of an entity's mentions
@@ -303,6 +337,31 @@ public final class ScoreKBPAgainstERE {
                 matchingEntity = entity;
                 break;
               }
+              if (coreNLPDoc.isPresent() && relaxUsingCORENLP) {
+                final Optional<CoreNLPSentence> sent =
+                    coreNLPDoc.get().firstSentenceContaining(baseFillerOffsets);
+                if (sent.isPresent()) {
+                  final Optional<CoreNLPParseNode> node =
+                      sent.get().nodeForOffsets(baseFillerOffsets);
+                  if (node.isPresent()) {
+                    final Optional<CoreNLPParseNode> terminalHead = node.get().terminalHead();
+                    if (terminalHead.isPresent()) {
+                      // how strict do we want this to be?
+                      terminalHead.get().span();
+                      final OffsetRange<CharOffset> ereHead = OffsetRange
+                          .charOffsetRange(ereEntityMention.getHead().get().getStart(),
+                              ereEntityMention.getHead().get().getEnd());
+                      if ((useExactMatchForCoreNLPRelaxation &&
+                               ereHead.equals(terminalHead.get().span()))
+                          || (!useExactMatchForCoreNLPRelaxation &&
+                                  ereHead.contains(terminalHead.get().span()))) {
+                        matchingEntity = entity;
+                        break;
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -310,6 +369,24 @@ public final class ScoreKBPAgainstERE {
         if (matchingEntity != null) {
           ret.add(DocLevelEventArg.create(Symbol.from(doc.getDocId()), response.type(),
               response.role(), matchingEntity.getID()));
+        } else if (coreNLPDoc.isPresent() && relaxUsingCORENLP) {
+          final String parseString;
+          final Optional<CoreNLPSentence> sent =
+              coreNLPDoc.get().firstSentenceContaining(baseFillerOffsets);
+          if (sent.isPresent()) {
+            final Optional<CoreNLPConstituencyParse> parse = sent.get().parse();
+            if (parse.isPresent()) {
+              parseString = parse.get().coreNLPString();
+            } else {
+              parseString = "no parse found!";
+            }
+          } else {
+            parseString = "no sentence found!";
+          }
+          log.info(
+              "Failed to align base filler with offsets {} to an ERE mention for response {}, parse tree is {}",
+              baseFillerOffsets, response, parseString);
+          mentionAlignmentFailures.add(errKey(response));
         } else {
           log.info("Failed to align base filler with offsets {} to an ERE mention for response {}",
               baseFillerOffsets, response);
