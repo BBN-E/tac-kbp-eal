@@ -1,0 +1,8 @@
+INCLUDE ../root.params
+
+gnuplotBin: %gnuplot%
+linking.system.scoreDirectory: %outputDir%/score_nw/withRealis
+linking.baseline.scoreDirectory: %kbpRepo%/expts/graphLinking_%config%/score2015_nw/baselineLinking
+linking.max.scoreDirectory: %kbpRepo%/expts/graphLinking_%config%/score2015_nw/maxLinking
+OVERRIDE outputDir: %outputDir%/graphAnalyses_nw/withRealis
+scoreType: LINKING
