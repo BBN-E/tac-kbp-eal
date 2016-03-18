@@ -207,11 +207,11 @@ public final class DualAnnotationAgreement {
       final Collection<Collection<KBPString>> leftAsClusters = asCollectionOfCollections(left);
       final Collection<Collection<KBPString>> rightAsClusters = asCollectionOfCollections(right);
 
-      b3Scores.add(b3Scorer.score(rightAsClusters, leftAsClusters).F1());
+      b3Scores.add((float) b3Scorer.score(rightAsClusters, leftAsClusters).F1());
       blancScores.add(blancScorer.score(rightAsClusters, leftAsClusters).blancScore());
       final Optional<FMeasureInfo> mucScore = mucScorer.score(rightAsClusters, leftAsClusters);
       if (mucScore.isPresent()) {
-        mucScores.add(mucScore.get().F1());
+        mucScores.add((float) mucScore.get().F1());
       } else {
         log.warn(
             "No valid MUC score can be computer for {}; it will not be included in the MUC score average",
