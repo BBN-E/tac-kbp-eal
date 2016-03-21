@@ -53,8 +53,8 @@ public final class DeleteInjureForCorrectDie implements AnswerKeyToResponseMappi
     for (final AssessedResponse assessedResponse : answerKey.annotatedResponses()) {
       if (assessedResponse.response().type() == LIFE_DIE
           && assessedResponse.isCorrectUpToInexactJustifications()) {
-        ret.add(normalizedFingerprintExtractor.apply(assessedResponse.response()).
-            copyWithModifiedType(LIFE_INJURE));
+        ret.add(normalizedFingerprintExtractor.apply(assessedResponse.response())
+            .withType(LIFE_INJURE));
       }
     }
     return ret.build();

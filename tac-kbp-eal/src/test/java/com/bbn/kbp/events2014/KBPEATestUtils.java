@@ -23,7 +23,7 @@ public final class KBPEATestUtils {
 
 
   public static TypeRoleFillerRealis dummyTRFR(Symbol docid, KBPString CAS) {
-    return TypeRoleFillerRealis.create(docid, Symbol.from("dummyType"),
+    return TypeRoleFillerRealis.of(docid, Symbol.from("dummyType"),
         Symbol.from("dummyRole"), KBPRealis.Actual, CAS);
   }
 

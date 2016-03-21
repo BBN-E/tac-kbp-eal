@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.Set;
 
+import static com.bbn.kbp.events2014.TypeRoleFillerRealisFunctions.realis;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.compose;
@@ -222,7 +223,7 @@ public final class EALScorer2015Style {
   }
 
   private static final Predicate<TypeRoleFillerRealis> REALIS_IS_NOT_GENERIC =
-      compose(not(equalTo(KBPRealis.Generic)), TypeRoleFillerRealis.realisFunction());
+      compose(not(equalTo(KBPRealis.Generic)), realis());
 
   public Result score(ScoringData unpreprocessedScoringData) {
     checkArgument(unpreprocessedScoringData.answerKey().isPresent() && unpreprocessedScoringData

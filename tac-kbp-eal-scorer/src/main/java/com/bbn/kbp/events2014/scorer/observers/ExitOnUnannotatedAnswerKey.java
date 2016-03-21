@@ -2,6 +2,7 @@ package com.bbn.kbp.events2014.scorer.observers;
 
 import com.bbn.kbp.events2014.EventArgScoringAlignment;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
+import com.bbn.kbp.events2014.TypeRoleFillerRealisFunctions;
 
 import com.google.common.collect.Iterables;
 
@@ -24,7 +25,8 @@ public final class ExitOnUnannotatedAnswerKey extends KBPScoringObserver<TypeRol
 
       throw new RuntimeException(String.format(
           "All answer keys required to be completely annotated, but these %s are not",
-          Iterables.transform(scoringAlignment.unassessed(), TypeRoleFillerRealis.DocID)));
+          Iterables
+              .transform(scoringAlignment.unassessed(), TypeRoleFillerRealisFunctions.docID())));
     }
   }
 
