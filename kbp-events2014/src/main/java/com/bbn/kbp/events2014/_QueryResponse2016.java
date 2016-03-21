@@ -13,7 +13,7 @@ import java.util.SortedSet;
 @TextGroupPublicImmutable
 @Value.Immutable
 @Functional
-public abstract class _Query2016 {
+public abstract class _QueryResponse2016 {
 
   public abstract Symbol queryID();
 

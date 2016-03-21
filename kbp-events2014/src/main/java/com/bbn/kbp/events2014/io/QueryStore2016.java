@@ -3,8 +3,8 @@ package com.bbn.kbp.events2014.io;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AssessedQuery2016;
 import com.bbn.kbp.events2014.CharOffsetSpan;
-import com.bbn.kbp.events2014.Query2016;
-import com.bbn.kbp.events2014.QueryAssessment;
+import com.bbn.kbp.events2014.QueryAssessment2016;
+import com.bbn.kbp.events2014.QueryResponse2016;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
@@ -46,17 +46,17 @@ public final class QueryStore2016 {
   private final static Joiner dashJoiner = Joiner.on("-");
   private final static Joiner tabJoiner = Joiner.on("\t");
 
-  private final Set<Query2016> queries;
-  private final Map<Query2016, String> metadata;
-  private final Multimap<Symbol, Query2016> bySystemID;
-  private final Multimap<Symbol, Query2016> byDocID;
-  private final Multimap<Symbol, Query2016> byQueryID;
-  // may never contain an AssessedQuery2016 with an assessment of QueryAssessment.UNASSASSED
-  private final Map<Query2016, AssessedQuery2016> assessments;
+  private final Set<QueryResponse2016> queries;
+  private final Map<QueryResponse2016, String> metadata;
+  private final Multimap<Symbol, QueryResponse2016> bySystemID;
+  private final Multimap<Symbol, QueryResponse2016> byDocID;
+  private final Multimap<Symbol, QueryResponse2016> byQueryID;
+  // may never contain an AssessedQuery2016 with an assessment of QueryAssessment2016.UNASSASSED
+  private final Map<QueryResponse2016, AssessedQuery2016> assessments;
 
 
-  private QueryStore2016(final Iterable<Query2016> queries,
-      final Map<Query2016, String> metadata, final Map<Query2016, AssessedQuery2016> assessments) {
+  private QueryStore2016(final Iterable<QueryResponse2016> queries,
+      final Map<QueryResponse2016, String> metadata, final Map<QueryResponse2016, AssessedQuery2016> assessments) {
     this.assessments = checkNotNull(assessments);
     this.metadata = checkNotNull(metadata);
     checkNotNull(queries);
@@ -72,7 +72,7 @@ public final class QueryStore2016 {
     this.byDocID = TreeMultimap.create(Ordering.usingToString(), by2016Ordering());
     this.bySystemID = TreeMultimap.create(Ordering.usingToString(), by2016Ordering());
 
-    for (final Query2016 q : this.queries) {
+    for (final QueryResponse2016 q : this.queries) {
       byQueryID.put(q.queryID(), q);
       byDocID.put(q.docID(), q);
       bySystemID.put(q.systemID(), q);
@@ -91,15 +91,15 @@ public final class QueryStore2016 {
     return ImmutableSet.copyOf(bySystemID.keySet());
   }
 
-  public ImmutableSet<Query2016> queries() {
+  public ImmutableSet<QueryResponse2016> queries() {
     return ImmutableSet.copyOf(queries);
   }
 
   /**
    * Adds a new query {@code q} to the Store, overwriting any metadata or assessments.
    */
-  public void addQuery(final Query2016 q, final Optional<String> metadata,
-      final Optional<QueryAssessment> assessment) {
+  public void addQuery(final QueryResponse2016 q, final Optional<String> metadata,
+      final Optional<QueryAssessment2016> assessment) {
     queries.add(q);
     if (metadata.isPresent()) {
       this.metadata.put(q, metadata.get());
@@ -107,7 +107,7 @@ public final class QueryStore2016 {
       this.metadata.remove(q);
     }
     if (assessment.isPresent()) {
-      if (assessment.get().equals(QueryAssessment.UNASSASSED)) {
+      if (assessment.get().equals(QueryAssessment2016.UNASSASSED)) {
         this.assessments.remove(q);
       } else {
         this.assessments
@@ -121,18 +121,18 @@ public final class QueryStore2016 {
 
   public void saveTo(final File f) throws FileNotFoundException {
     final PrintWriter out = new PrintWriter(f);
-    for (final Query2016 q : queries) {
+    for (final QueryResponse2016 q : queries) {
       final Optional<String> metadata = Optional.fromNullable(this.metadata.get(q));
       if (metadata.isPresent()) {
         out.println("#" + metadata.get());
       }
       final Optional<AssessedQuery2016> assessmentOpt =
           Optional.fromNullable(this.assessments.get(q));
-      final QueryAssessment assessment;
+      final QueryAssessment2016 assessment;
       if (assessmentOpt.isPresent()) {
         assessment = assessmentOpt.get().assessment();
       } else {
-        assessment = QueryAssessment.UNASSASSED;
+        assessment = QueryAssessment2016.UNASSASSED;
       }
       final ImmutableList.Builder<String> pjStrings = ImmutableList.builder();
       for (final CharOffsetSpan pj : q.predicateJustifications()) {
@@ -148,9 +148,9 @@ public final class QueryStore2016 {
 
   public static QueryStore2016 open(final File f) throws IOException {
     final List<String> lines = Files.readLines(f, Charsets.UTF_8);
-    final List<Query2016> queries = Lists.newArrayList();
-    final Map<Query2016, String> metadata = Maps.newHashMap();
-    final Map<Query2016, AssessedQuery2016> assessments = Maps.newHashMap();
+    final List<QueryResponse2016> queries = Lists.newArrayList();
+    final Map<QueryResponse2016, String> metadata = Maps.newHashMap();
+    final Map<QueryResponse2016, AssessedQuery2016> assessments = Maps.newHashMap();
     Optional<String> lastMetadata = Optional.absent();
     for (final String line : lines) {
       if (line.startsWith("#")) {
@@ -162,11 +162,11 @@ public final class QueryStore2016 {
         final Symbol docID = Symbol.from(parts[1]);
         final Symbol systemID = Symbol.from(parts[2]);
         final ImmutableSortedSet<CharOffsetSpan> spans = extractPJSpans(parts[3]);
-        final QueryAssessment assessment = QueryAssessment.valueOf(parts[4]);
-        final Query2016 query = Query2016.builder().queryID(queryID).docID(docID).systemID(systemID)
+        final QueryAssessment2016 assessment = QueryAssessment2016.valueOf(parts[4]);
+        final QueryResponse2016 query = QueryResponse2016.builder().queryID(queryID).docID(docID).systemID(systemID)
             .addAllPredicateJustifications(spans).build();
         queries.add(query);
-        if (!assessment.equals(QueryAssessment.UNASSASSED)) {
+        if (!assessment.equals(QueryAssessment2016.UNASSASSED)) {
           assessments
               .put(query, AssessedQuery2016.builder().query(query).assessment(assessment).build());
         }
@@ -182,8 +182,8 @@ public final class QueryStore2016 {
 
 
   public static QueryStore2016 createEmpty() {
-    return new QueryStore2016(Lists.<Query2016>newArrayList(), Maps.<Query2016, String>newHashMap(),
-        Maps.<Query2016, AssessedQuery2016>newHashMap());
+    return new QueryStore2016(Lists.<QueryResponse2016>newArrayList(), Maps.<QueryResponse2016, String>newHashMap(),
+        Maps.<QueryResponse2016, AssessedQuery2016>newHashMap());
   }
 
   private static ImmutableSortedSet<CharOffsetSpan> extractPJSpans(final String part) {
@@ -200,10 +200,10 @@ public final class QueryStore2016 {
   }
 
 
-  private static Ordering<Query2016> byQueryID() {
-    return new Ordering<Query2016>() {
+  private static Ordering<QueryResponse2016> byQueryID() {
+    return new Ordering<QueryResponse2016>() {
       @Override
-      public int compare(@Nullable final Query2016 left, @Nullable final Query2016 right) {
+      public int compare(@Nullable final QueryResponse2016 left, @Nullable final QueryResponse2016 right) {
         checkNotNull(left);
         checkNotNull(right);
         return left.queryID().asString().compareTo(right.queryID().asString());
@@ -211,10 +211,10 @@ public final class QueryStore2016 {
     };
   }
 
-  private static Ordering<Query2016> byDocID() {
-    return new Ordering<Query2016>() {
+  private static Ordering<QueryResponse2016> byDocID() {
+    return new Ordering<QueryResponse2016>() {
       @Override
-      public int compare(@Nullable final Query2016 left, @Nullable final Query2016 right) {
+      public int compare(@Nullable final QueryResponse2016 left, @Nullable final QueryResponse2016 right) {
         checkNotNull(left);
         checkNotNull(right);
         return left.docID().asString().compareTo(right.docID().asString());
@@ -222,10 +222,10 @@ public final class QueryStore2016 {
     };
   }
 
-  private static Ordering<Query2016> bySystemID() {
-    return new Ordering<Query2016>() {
+  private static Ordering<QueryResponse2016> bySystemID() {
+    return new Ordering<QueryResponse2016>() {
       @Override
-      public int compare(@Nullable final Query2016 left, @Nullable final Query2016 right) {
+      public int compare(@Nullable final QueryResponse2016 left, @Nullable final QueryResponse2016 right) {
         checkNotNull(left);
         checkNotNull(right);
         return left.systemID().asString().compareTo(right.systemID().asString());
@@ -233,10 +233,10 @@ public final class QueryStore2016 {
     };
   }
 
-  private static Ordering<Query2016> byPJOffsets() {
-    return new Ordering<Query2016>() {
+  private static Ordering<QueryResponse2016> byPJOffsets() {
+    return new Ordering<QueryResponse2016>() {
       @Override
-      public int compare(@Nullable final Query2016 left, @Nullable final Query2016 right) {
+      public int compare(@Nullable final QueryResponse2016 left, @Nullable final QueryResponse2016 right) {
         checkNotNull(left);
         checkNotNull(right);
         checkArgument(left.docID() == right.docID(),
@@ -263,25 +263,25 @@ public final class QueryStore2016 {
     };
   }
 
-  private static Ordering<Query2016> by2016Ordering() {
+  private static Ordering<QueryResponse2016> by2016Ordering() {
     return Orderings.byQueryID.ordering().compound(Orderings.byDocID.ordering())
         .compound(Orderings.bySystemID.ordering()).compound(Orderings.byPJOffsets.ordering());
   }
 
   enum Orderings {
-    byQueryID(QueryStore2016.<Query2016>byQueryID()),
-    byDocID(QueryStore2016.<Query2016>byDocID()),
-    bySystemID(QueryStore2016.<Query2016>bySystemID()),
+    byQueryID(QueryStore2016.<QueryResponse2016>byQueryID()),
+    byDocID(QueryStore2016.<QueryResponse2016>byDocID()),
+    bySystemID(QueryStore2016.<QueryResponse2016>bySystemID()),
     byPJOffsets(QueryStore2016.byPJOffsets()),
     by2016Ordering(QueryStore2016.by2016Ordering());
 
-    private final Ordering<Query2016> ordering;
+    private final Ordering<QueryResponse2016> ordering;
 
-    Orderings(final Ordering<Query2016> ordering) {
+    Orderings(final Ordering<QueryResponse2016> ordering) {
       this.ordering = ordering;
     }
 
-    public final Ordering<Query2016> ordering() {
+    public final Ordering<QueryResponse2016> ordering() {
       return ordering;
     }
   }
