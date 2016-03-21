@@ -110,7 +110,8 @@ public final class QueryStore2016 {
       if (assessment.get().equals(QueryAssessment.UNASSASSED)) {
         this.assessments.remove(q);
       } else {
-        this.assessments.put(q, AssessedQuery2016.create(q, assessment.get()));
+        this.assessments
+            .put(q, AssessedQuery2016.builder().assessment(assessment.get()).query(q).build());
       }
     } else {
       this.assessments.remove(q);
@@ -166,7 +167,8 @@ public final class QueryStore2016 {
             .addAllPredicateJustifications(spans).build();
         queries.add(query);
         if (!assessment.equals(QueryAssessment.UNASSASSED)) {
-          assessments.put(query, AssessedQuery2016.create(query, assessment));
+          assessments
+              .put(query, AssessedQuery2016.builder().query(query).assessment(assessment).build());
         }
         if (lastMetadata.isPresent()) {
           metadata.put(query, lastMetadata.get());
