@@ -65,7 +65,8 @@ public final class SingleFileQueryStoreLoader {
         }
       }
     }
-    return QueryStore2016.create(queries, metadata, assessments);
+    return QueryStore2016.builder().addAllQueries(queries).assessments(assessments)
+        .metadata(metadata).build();
   }
 
   private static ImmutableSortedSet<CharOffsetSpan> extractPJSpans(final String part) {
