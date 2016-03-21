@@ -1,18 +1,18 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.bbn.kbp.events2014</groupId>
-    <artifactId>kbp-events2014-all</artifactId>
+    <groupId>com.bbn.kbp.eal</groupId>
+    <artifactId>tac-kbp-eal-all</artifactId>
     <version>2.4.6-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>KBP 2014 Event Argument Shared Task</name>
+    <name>TAC KBP Event Argument and Linking Shared Task</name>
     <url>http://www.bbn.com/</url>
 
     <modules>
-        <module>kbp-events2014</module>
-        <module>kbp-events2014-scorer</module>
-        <module>kbp-events2014-bin</module>
+        <module>tac-kbp-eal</module>
+        <module>tac-kbp-eal-scorer</module>
+        <module>tac-kbp-eal-bin</module>
     </modules>
 
     <properties>
