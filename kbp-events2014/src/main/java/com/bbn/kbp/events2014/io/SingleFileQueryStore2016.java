@@ -3,27 +3,17 @@ package com.bbn.kbp.events2014.io;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AssessedQuery2016;
 import com.bbn.kbp.events2014.CharOffsetSpan;
-import com.bbn.kbp.events2014.QueryAssessment2016;
 import com.bbn.kbp.events2014.QueryResponse2016;
 import com.bbn.kbp.events2014.QueryResponse2016Functions;
 
-import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
-import com.google.common.base.Splitter;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
-import com.google.common.io.Files;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,18 +23,12 @@ import javax.annotation.Nullable;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 
 /**
  * A store for 2016 Queries, supporting reading/writing to/from a single file
  */
 public final class SingleFileQueryStore2016 implements QueryStore2016 {
 
-  private final static Splitter commaSplitter = Splitter.on(",");
-  private final static Splitter dashSplitter = Splitter.on("-");
-  private final static Joiner commaJoiner = Joiner.on(",");
-  private final static Joiner dashJoiner = Joiner.on("-");
-  private final static Joiner tabJoiner = Joiner.on("\t");
 
   private final Set<QueryResponse2016> queries;
   private final Map<QueryResponse2016, String> metadata;
@@ -53,7 +37,8 @@ public final class SingleFileQueryStore2016 implements QueryStore2016 {
 
 
   private SingleFileQueryStore2016(final Iterable<QueryResponse2016> queries,
-      final Map<QueryResponse2016, String> metadata, final Map<QueryResponse2016, AssessedQuery2016> assessments) {
+      final Map<QueryResponse2016, String> metadata,
+      final Map<QueryResponse2016, AssessedQuery2016> assessments) {
     this.assessments = checkNotNull(assessments);
     this.metadata = checkNotNull(metadata);
     checkNotNull(queries);
@@ -64,6 +49,12 @@ public final class SingleFileQueryStore2016 implements QueryStore2016 {
         "Assessments have an unknown query!");
     checkArgument(this.queries.containsAll(metadata.keySet()), "Metadata has an unknown query!");
 
+  }
+
+  public static SingleFileQueryStore2016 create(final Iterable<QueryResponse2016> queries,
+      final Map<QueryResponse2016, String> metadata,
+      final Map<QueryResponse2016, AssessedQuery2016> assessments) {
+    return new SingleFileQueryStore2016(queries, metadata, assessments);
   }
 
   public ImmutableSet<Symbol> queryIDs() {
@@ -78,95 +69,30 @@ public final class SingleFileQueryStore2016 implements QueryStore2016 {
     return FluentIterable.from(queries).index(QueryResponse2016Functions.systemID()).keySet();
   }
 
+  public ImmutableMap<QueryResponse2016, String> metadata() {
+    return ImmutableMap.copyOf(metadata);
+  }
+
+  public ImmutableMap<QueryResponse2016, AssessedQuery2016> assessments() {
+    return ImmutableMap.copyOf(assessments);
+  }
+
   public ImmutableSet<QueryResponse2016> queries() {
     return ImmutableSet.copyOf(queries);
   }
 
-  public void saveTo(final File f) throws FileNotFoundException {
-    final PrintWriter out = new PrintWriter(f);
-    for (final QueryResponse2016 q : queries) {
-      final Optional<String> metadata = Optional.fromNullable(this.metadata.get(q));
-      if (metadata.isPresent()) {
-        out.println("#" + metadata.get());
-      }
-      final Optional<AssessedQuery2016> assessmentOpt =
-          Optional.fromNullable(this.assessments.get(q));
-      final QueryAssessment2016 assessment;
-      if (assessmentOpt.isPresent()) {
-        assessment = assessmentOpt.get().assessment();
-      } else {
-        assessment = QueryAssessment2016.UNASSASSED;
-      }
-      final ImmutableList.Builder<String> pjStrings = ImmutableList.builder();
-      for (final CharOffsetSpan pj : q.predicateJustifications()) {
-        pjStrings.add(dashJoiner.join(pj.startInclusive(), pj.endInclusive()));
-      }
-      final String pjString = commaJoiner.join(pjStrings.build());
-      final String line =
-          tabJoiner.join(q.queryID(), q.docID(), q.systemID(), pjString, assessment.name());
-      out.println(line);
-    }
-    out.close();
-  }
-
-  public static SingleFileQueryStore2016 open(final File f) throws IOException {
-    final List<String> lines = Files.readLines(f, Charsets.UTF_8);
-    final List<QueryResponse2016> queries = Lists.newArrayList();
-    final Map<QueryResponse2016, String> metadata = Maps.newHashMap();
-    final Map<QueryResponse2016, AssessedQuery2016> assessments = Maps.newHashMap();
-    Optional<String> lastMetadata = Optional.absent();
-    for (final String line : lines) {
-      if (line.startsWith("#")) {
-        lastMetadata = Optional.of(line.trim().substring(1));
-      } else {
-        final String[] parts = line.trim().split("\t");
-        checkArgument(parts.length == 5, "expected five columns, but got " + parts.length);
-        final Symbol queryID = Symbol.from(parts[0]);
-        final Symbol docID = Symbol.from(parts[1]);
-        final Symbol systemID = Symbol.from(parts[2]);
-        final ImmutableSortedSet<CharOffsetSpan> spans = extractPJSpans(parts[3]);
-        final QueryAssessment2016 assessment = QueryAssessment2016.valueOf(parts[4]);
-        final QueryResponse2016 query = QueryResponse2016.builder().queryID(queryID).docID(docID).systemID(systemID)
-            .addAllPredicateJustifications(spans).build();
-        queries.add(query);
-        if (!assessment.equals(QueryAssessment2016.UNASSASSED)) {
-          assessments
-              .put(query, AssessedQuery2016.builder().query(query).assessment(assessment).build());
-        }
-        if (lastMetadata.isPresent()) {
-          metadata.put(query, lastMetadata.get());
-          lastMetadata = Optional.absent();
-        }
-      }
-    }
-
-    return new SingleFileQueryStore2016(queries, metadata, assessments);
-  }
-
-
   public static SingleFileQueryStore2016 createEmpty() {
-    return new SingleFileQueryStore2016(Lists.<QueryResponse2016>newArrayList(), Maps.<QueryResponse2016, String>newHashMap(),
+    return new SingleFileQueryStore2016(Lists.<QueryResponse2016>newArrayList(),
+        Maps.<QueryResponse2016, String>newHashMap(),
         Maps.<QueryResponse2016, AssessedQuery2016>newHashMap());
-  }
-
-  private static ImmutableSortedSet<CharOffsetSpan> extractPJSpans(final String part) {
-    final ImmutableSortedSet.Builder<CharOffsetSpan> spans = ImmutableSortedSet.naturalOrder();
-    for (final String spanString : commaSplitter.split(part.trim())) {
-      final List<String> spanParts = ImmutableList.copyOf(dashSplitter.split(spanString));
-      checkState(spanParts.size() == 2,
-          "Expected two components to the span, but got " + spanParts.size());
-      final int start = Integer.parseInt(spanParts.get(0));
-      final int end = Integer.parseInt(spanParts.get(1));
-      spans.add(CharOffsetSpan.fromOffsetsOnly(start, end));
-    }
-    return spans.build();
   }
 
 
   private static Ordering<QueryResponse2016> byQueryID() {
     return new Ordering<QueryResponse2016>() {
       @Override
-      public int compare(@Nullable final QueryResponse2016 left, @Nullable final QueryResponse2016 right) {
+      public int compare(@Nullable final QueryResponse2016 left,
+          @Nullable final QueryResponse2016 right) {
         checkNotNull(left);
         checkNotNull(right);
         return left.queryID().asString().compareTo(right.queryID().asString());
@@ -177,7 +103,8 @@ public final class SingleFileQueryStore2016 implements QueryStore2016 {
   private static Ordering<QueryResponse2016> byDocID() {
     return new Ordering<QueryResponse2016>() {
       @Override
-      public int compare(@Nullable final QueryResponse2016 left, @Nullable final QueryResponse2016 right) {
+      public int compare(@Nullable final QueryResponse2016 left,
+          @Nullable final QueryResponse2016 right) {
         checkNotNull(left);
         checkNotNull(right);
         return left.docID().asString().compareTo(right.docID().asString());
@@ -188,7 +115,8 @@ public final class SingleFileQueryStore2016 implements QueryStore2016 {
   private static Ordering<QueryResponse2016> bySystemID() {
     return new Ordering<QueryResponse2016>() {
       @Override
-      public int compare(@Nullable final QueryResponse2016 left, @Nullable final QueryResponse2016 right) {
+      public int compare(@Nullable final QueryResponse2016 left,
+          @Nullable final QueryResponse2016 right) {
         checkNotNull(left);
         checkNotNull(right);
         return left.systemID().asString().compareTo(right.systemID().asString());
@@ -199,7 +127,8 @@ public final class SingleFileQueryStore2016 implements QueryStore2016 {
   private static Ordering<QueryResponse2016> byPJOffsets() {
     return new Ordering<QueryResponse2016>() {
       @Override
-      public int compare(@Nullable final QueryResponse2016 left, @Nullable final QueryResponse2016 right) {
+      public int compare(@Nullable final QueryResponse2016 left,
+          @Nullable final QueryResponse2016 right) {
         checkNotNull(left);
         checkNotNull(right);
         checkArgument(left.docID() == right.docID(),
