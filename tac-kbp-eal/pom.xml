@@ -31,6 +31,204 @@
                             <mainClass>com.bbn.nlp.corpora.ere.BuildRichEREDocIDToFileList</mainClass>
                             <name>BuildRichEREDocIDToFileList</name>
                         </program>
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.scorer.bin.KBP2014ScorerBin</mainClass>
+                            <name>kbpScorer</name>
+                            <jvmSettings>
+                                <maxMemorySize>4G</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.Convert2014TransportTo2015Variants</mainClass>
+                            <name>convert2014MovementTransports</name>
+                            <jvmSettings>
+                                <maxMemorySize>4G</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.ConvertTo2015Format</mainClass>
+                            <name>convertTo2015Format</name>
+                        </program>
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.ChangeDocIDToMatchFile</mainClass>
+                            <name>changeDocIDToMatchFile</name>
+                        </program>
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.FilterOutUnannotated</mainClass>
+                            <name>filterOutUnannotated</name>
+                        </program>
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.SplitAnnStoreBySuffixes
+                            </mainClass>
+                            <name>splitAnnStoreBySuffixes</name>
+                        </program>
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.transformers.MergeAssessmentStores
+                            </mainClass>
+                            <name>mergeAssessmentStores</name>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
+
+                        <program>
+                            <mainClass>
+                                com.bbn.kbp.events2014.bin.ImportSystemOutputToAnnotationStore
+                            </mainClass>
+                            <name>importSystemOutputToAnnotationStore</name>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.PoolSystemOutput</mainClass>
+                            <name>poolSystemOutput</name>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.DualAnnotationAgreement</mainClass>
+                            <name>dualAgreeement</name>
+                        </program>
+
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.ValidateSystemOutput</mainClass>
+                            <name>validateSystemOutput</name>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.ValidateSystemOutput2015</mainClass>
+                            <name>validateSystemOutput2015</name>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.NISTValidator</mainClass>
+                            <name>NISTValidator</name>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.NISTValidator2015</mainClass>
+                            <name>NISTValidator2015</name>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.BuildQuoteFilter</mainClass>
+                            <name>buildQuoteFilter</name>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.ApplyQuoteFilter</mainClass>
+                            <name>applyQuoteFilter</name>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.KeepOnlyBestResponses</mainClass>
+                            <name>keepOnlyBestResponses</name>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.RepairAnnotationStore</mainClass>
+                            <name>repairAnnotationStore</name>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.transformers.ExpandFromRealis
+                            </mainClass>
+                            <name>expandByRealis</name>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.KeepAnnotatedTuples</mainClass>
+                            <name>keepAnnotatedTuples</name>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.ApplyLinkingStrategy</mainClass>
+                            <name>applyLinkingStrategy</name>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.SecondPhaseAssessmentPooler
+                            </mainClass>
+                            <name>secondPhaseAssessmentPooler</name>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+                        <program>
+                            <mainClass>
+                                com.bbn.kbp.events2014.bin.ConvertToAndWriteEquivalenceClass
+                            </mainClass>
+                            <name>convertToAndWriteEquivalenceClass</name>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
+                        <program>
+                            <mainClass>
+                                com.bbn.kbp.events2014.linking.NaiveResponseLinkingProjector
+                            </mainClass>
+                            <name>naiveLinkingProject</name>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
+
+                        <program>
+                            <mainClass>
+                                com.bbn.kbp.events2014.bin.FilterAnswerKeyByTypeAndRole
+                            </mainClass>
+                            <name>FilterAnswerKeyByTypeAndRole</name>
+                        </program>
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.ExploreEALScorer</mainClass>
+                            <name>exploreEalScorer</name>
+                        </program>
+
                     </programs>
                 </configuration>
             </plugin>
@@ -75,12 +273,26 @@
             <optional>true</optional>
         </dependency>
 
+
+        <dependency>
+            <groupId>org.codehaus.plexus</groupId>
+            <artifactId>plexus-archiver</artifactId>
+            <version>2.4.4</version>
+            <!-- don't propagate this dependency; it is for a single local executable only -->
+            <optional>true</optional>
+        </dependency>
+
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
             <version>2.3.1</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.bbn.kbp.eal</groupId>
+            <artifactId>bue-common-awaiting-review</artifactId>
+            <version>2.4.6-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
 

@@ -1,7 +1,5 @@
-package com.bbn.kbp.events2014.bin;
+package com.bbn.bue.common.evaluation;
 
-import com.bbn.bue.common.evaluation.SummaryConfusionMatrices;
-import com.bbn.bue.common.evaluation.SummaryConfusionMatrix;
 import com.bbn.bue.common.symbols.Symbol;
 
 import org.junit.Test;

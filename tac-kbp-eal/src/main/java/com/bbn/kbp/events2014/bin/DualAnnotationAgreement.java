@@ -1,6 +1,7 @@
 package com.bbn.kbp.events2014.bin;
 
 import com.bbn.bue.common.evaluation.FMeasureInfo;
+import com.bbn.bue.common.evaluation.KappaCalculator;
 import com.bbn.bue.common.evaluation.SummaryConfusionMatrices;
 import com.bbn.bue.common.evaluation.SummaryConfusionMatrix;
 import com.bbn.bue.common.files.FileUtils;

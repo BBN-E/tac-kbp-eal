@@ -12,7 +12,7 @@
     <modules>
         <module>tac-kbp-eal</module>
         <module>tac-kbp-eal-scorer</module>
-        <module>tac-kbp-eal-bin</module>
+        <module>bue-common-awaiting-review</module>
     </modules>
 
     <properties>
