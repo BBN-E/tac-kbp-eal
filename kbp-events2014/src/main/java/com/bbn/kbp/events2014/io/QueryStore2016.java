@@ -92,6 +92,28 @@ public final class QueryStore2016 {
     return ImmutableSet.copyOf(queries);
   }
 
+  /**
+   * Adds a new query {@code q} to the Store, overwriting any metadata or assessments.
+   */
+  public void addQuery(final Query2016 q, final Optional<String> metadata,
+      final Optional<QueryAssessment> assessment) {
+    queries.add(q);
+    if (metadata.isPresent()) {
+      this.metadata.put(q, metadata.get());
+    } else {
+      this.metadata.remove(q);
+    }
+    if (assessment.isPresent()) {
+      if (assessment.get().equals(QueryAssessment.UNASSASSED)) {
+        this.assessments.remove(q);
+      } else {
+        this.assessments.put(q, AssessedQuery2016.create(q, assessment.get()));
+      }
+    } else {
+      this.assessments.remove(q);
+    }
+  }
+
 
   public void saveTo(final File f) throws FileNotFoundException {
     final PrintWriter out = new PrintWriter(f);
