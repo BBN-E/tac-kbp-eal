@@ -23,7 +23,7 @@ import static com.google.common.base.Preconditions.checkState;
 @TextGroupPublicImmutable
 @Value.Immutable
 @Functional
-public abstract class _QueryStore2016 {
+public abstract class _QueryAssessnentStore2016 {
 
   /**
    * @return A derived set from {@link #queries()} of query IDs

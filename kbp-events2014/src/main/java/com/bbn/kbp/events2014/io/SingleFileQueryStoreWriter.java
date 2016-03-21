@@ -34,7 +34,7 @@ public final class SingleFileQueryStoreWriter {
 
   }
 
-  public void saveTo(final QueryStore2016 store, final CharSink sink)
+  public void saveTo(final QueryAssessnentStore2016 store, final CharSink sink)
       throws IOException {
     final Writer out = sink.openStream();
     for (final QueryResponse2016 q : by2016Ordering().immutableSortedCopy(store.queries())) {

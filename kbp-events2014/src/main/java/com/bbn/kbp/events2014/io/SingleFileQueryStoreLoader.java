@@ -23,7 +23,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
- * Supports reading/writing {@link QueryStore2016} which contain newline separated {@link
+ * Supports reading/writing {@link QueryAssessnentStore2016} which contain newline separated {@link
  * QueryResponse2016}'s , where a line is composed of the following tab-separated fields:
  *
  * <ul>
@@ -60,7 +60,7 @@ public final class SingleFileQueryStoreLoader {
 
   }
 
-  public QueryStore2016 open2016(final CharSource source) throws IOException {
+  public QueryAssessnentStore2016 open2016(final CharSource source) throws IOException {
     final List<String> lines = source.readLines();
     final List<QueryResponse2016> queries = Lists.newArrayList();
     final Map<QueryResponse2016, String> metadata = Maps.newHashMap();
@@ -91,7 +91,7 @@ public final class SingleFileQueryStoreLoader {
         }
       }
     }
-    return QueryStore2016.builder().addAllQueries(queries).assessments(assessments)
+    return QueryAssessnentStore2016.builder().addAllQueries(queries).assessments(assessments)
         .metadata(metadata).build();
   }
 
