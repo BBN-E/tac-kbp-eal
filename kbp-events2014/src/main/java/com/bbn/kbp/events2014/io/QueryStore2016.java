@@ -177,8 +177,8 @@ public final class QueryStore2016 {
 
 
   public static QueryStore2016 createEmpty() {
-    // TODO should this take a file?
-    return null;
+    return new QueryStore2016(Lists.<Query2016>newArrayList(), Maps.<Query2016, String>newHashMap(),
+        Maps.<Query2016, AssessedQuery2016>newHashMap());
   }
 
   private static ImmutableSortedSet<CharOffsetSpan> extractPJSpans(final String part) {
