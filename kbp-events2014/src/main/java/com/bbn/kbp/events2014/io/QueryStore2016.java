@@ -35,6 +35,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+/**
+ * A store for 2016 Queries, supporting reading/writing to/from a single file
+ */
 public final class QueryStore2016 {
 
   private final static Splitter commaSplitter = Splitter.on(",");
@@ -262,7 +265,6 @@ public final class QueryStore2016 {
     return Orderings.byQueryID.ordering().compound(Orderings.byDocID.ordering())
         .compound(Orderings.bySystemID.ordering()).compound(Orderings.byPJOffsets.ordering());
   }
-
 
   enum Orderings {
     byQueryID(QueryStore2016.<Query2016>byQueryID()),
