@@ -5,19 +5,19 @@ import com.bbn.kbp.events2014.AssessedQuery2016;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.QueryAssessment2016;
 import com.bbn.kbp.events2014.QueryResponse2016;
+import com.bbn.kbp.events2014.QueryResponse2016Functions;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
-import com.google.common.collect.TreeMultimap;
 import com.google.common.io.Files;
 
 import java.io.File;
@@ -48,9 +48,6 @@ public final class SingleFileQueryStore2016 implements QueryStore2016 {
 
   private final Set<QueryResponse2016> queries;
   private final Map<QueryResponse2016, String> metadata;
-  private final Multimap<Symbol, QueryResponse2016> bySystemID;
-  private final Multimap<Symbol, QueryResponse2016> byDocID;
-  private final Multimap<Symbol, QueryResponse2016> byQueryID;
   // may never contain an AssessedQuery2016 with an assessment of QueryAssessment2016.UNASSASSED
   private final Map<QueryResponse2016, AssessedQuery2016> assessments;
 
@@ -67,28 +64,18 @@ public final class SingleFileQueryStore2016 implements QueryStore2016 {
         "Assessments have an unknown query!");
     checkArgument(this.queries.containsAll(metadata.keySet()), "Metadata has an unknown query!");
 
-    // keep these sorted
-    this.byQueryID = TreeMultimap.create(Ordering.usingToString(), by2016Ordering());
-    this.byDocID = TreeMultimap.create(Ordering.usingToString(), by2016Ordering());
-    this.bySystemID = TreeMultimap.create(Ordering.usingToString(), by2016Ordering());
-
-    for (final QueryResponse2016 q : this.queries) {
-      byQueryID.put(q.queryID(), q);
-      byDocID.put(q.docID(), q);
-      bySystemID.put(q.systemID(), q);
-    }
   }
 
   public ImmutableSet<Symbol> queryIDs() {
-    return ImmutableSet.copyOf(byQueryID.keySet());
+    return FluentIterable.from(queries).index(QueryResponse2016Functions.queryID()).keySet();
   }
 
   public ImmutableSet<Symbol> docIDs() {
-    return ImmutableSet.copyOf(byDocID.keySet());
+    return FluentIterable.from(queries).index(QueryResponse2016Functions.docID()).keySet();
   }
 
   public ImmutableSet<Symbol> systemIDs() {
-    return ImmutableSet.copyOf(bySystemID.keySet());
+    return FluentIterable.from(queries).index(QueryResponse2016Functions.systemID()).keySet();
   }
 
   public ImmutableSet<QueryResponse2016> queries() {
