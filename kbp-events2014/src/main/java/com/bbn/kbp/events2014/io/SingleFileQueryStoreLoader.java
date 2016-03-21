@@ -22,6 +22,34 @@ import java.util.Map;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
+/**
+ * Supports reading/writing {@link QueryStore2016} which contain newline separated {@link
+ * QueryResponse2016}'s , where a line is composed of the following tab-separated fields:
+ *
+ * <ul>
+ *
+ * <li>query ID</li>
+ *
+ * <li>document ID</li>
+ *
+ * <li>system ID</li>
+ *
+ * <li>comma-separated list of (fused) PJ character offset spans (offsets are inclusive) e.g.
+ * "42-56,60-67,145-200" the intervals shall be non-overlapping and sorted into ascending
+ * order</li>
+ *
+ * <li>assessment: one of UNASSESSED, CORRECT, ET_MATCH, WRONG</li>
+ *
+ * </ul>
+ *
+ * Lines shall be sorted alphabetically by query ID, then document Id, then system ID, then
+ * lexicographically by ordered offset spans, where offset spans are themselves ordered by their
+ * first coordinate, then the second.
+ *
+ * The absolute ordering is imposed because it allows (a) easy diffing and (b) merging with git.
+ *
+ * Support for reading out of order stores MAY BE REMOVED AT ANY TIME.
+ */
 public final class SingleFileQueryStoreLoader {
 
   private final static Splitter commaSplitter = Splitter.on(",");
