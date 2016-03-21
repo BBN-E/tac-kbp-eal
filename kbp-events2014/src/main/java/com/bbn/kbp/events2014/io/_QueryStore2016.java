@@ -28,6 +28,7 @@ public abstract class _QueryStore2016 {
   /**
    * @return A derived set from {@link #queries()} of query IDs
    */
+  @Value.Derived
   public ImmutableSet<Symbol> queryIDs() {
     return FluentIterable.from(queries()).index(QueryResponse2016Functions.queryID()).keySet();
   }
@@ -35,6 +36,7 @@ public abstract class _QueryStore2016 {
   /**
    * @return A derived set from {@link #queries()} of Document IDs
    */
+  @Value.Derived
   public ImmutableSet<Symbol> docIDs() {
     return FluentIterable.from(queries()).index(QueryResponse2016Functions.docID()).keySet();
   }
@@ -42,6 +44,7 @@ public abstract class _QueryStore2016 {
   /**
    * @return A derived set from {@link #queries()} of System IDs
    */
+  @Value.Derived
   public ImmutableSet<Symbol> systemIDs() {
     return FluentIterable.from(queries()).index(QueryResponse2016Functions.systemID()).keySet();
   }
