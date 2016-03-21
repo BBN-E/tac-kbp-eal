@@ -28,6 +28,9 @@ public abstract class _QueryResponse2016 {
 
   @Value.Check
   protected void check() {
+    checkState(!queryID().asString().isEmpty(), "Empty query IDs not allowed!");
+    checkState(!docID().asString().isEmpty(), "Empty doc IDs not allowed!");
+    checkState(!systemID().asString().isEmpty(), "Empty system IDs not allowed!");
     checkState(predicateJustifications().size() > 0, "Must provide PredicateJustifications!");
   }
 }
