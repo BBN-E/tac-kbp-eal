@@ -141,12 +141,7 @@ public final class SingleFileQueryStoreWriter {
         }
       }
       // if everything has been the same, the shorter list appears earlier
-      if (leftSpans.size() < rightSpans.size()) {
-        return -1;
-      } else if (leftSpans.size() > rightSpans.size()) {
-        return 1;
-      }
-      return 0;
+      return new Integer(leftSpans.size()).compareTo(rightSpans.size());
     }
   };
 
