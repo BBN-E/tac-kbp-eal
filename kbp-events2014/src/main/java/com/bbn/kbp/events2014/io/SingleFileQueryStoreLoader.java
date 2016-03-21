@@ -7,16 +7,14 @@ import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.QueryAssessment2016;
 import com.bbn.kbp.events2014.QueryResponse2016;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
+import com.google.common.io.CharSource;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -34,8 +32,8 @@ public final class SingleFileQueryStoreLoader {
 
   }
 
-  public QueryStore2016 open2016(final File f) throws IOException {
-    final List<String> lines = Files.readLines(f, Charsets.UTF_8);
+  public QueryStore2016 open2016(final CharSource source) throws IOException {
+    final List<String> lines = source.readLines();
     final List<QueryResponse2016> queries = Lists.newArrayList();
     final Map<QueryResponse2016, String> metadata = Maps.newHashMap();
     final Map<QueryResponse2016, AssessedQuery2016> assessments = Maps.newHashMap();

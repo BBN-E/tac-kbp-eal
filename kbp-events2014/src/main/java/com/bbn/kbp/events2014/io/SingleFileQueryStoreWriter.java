@@ -10,10 +10,10 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
+import com.google.common.io.CharSink;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
+import java.io.IOException;
+import java.io.Writer;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -31,13 +31,13 @@ public final class SingleFileQueryStoreWriter {
 
   }
 
-  public void saveTo(final QueryStore2016 store, final File f)
-      throws FileNotFoundException {
-    final PrintWriter out = new PrintWriter(f);
+  public void saveTo(final QueryStore2016 store, final CharSink sink)
+      throws IOException {
+    final Writer out = sink.openStream();
     for (final QueryResponse2016 q : by2016Ordering().immutableSortedCopy(store.queries())) {
       final Optional<String> metadata = Optional.fromNullable(store.metadata().get(q));
       if (metadata.isPresent()) {
-        out.println("#" + metadata.get());
+        out.write("#" + metadata.get() + "\n");
       }
       final Optional<AssessedQuery2016> assessmentOpt =
           Optional.fromNullable(store.assessments().get(q));
@@ -55,7 +55,7 @@ public final class SingleFileQueryStoreWriter {
       final String pjString = commaJoiner.join(pjStrings.build());
       final String line =
           tabJoiner.join(q.queryID(), q.docID(), q.systemID(), pjString, assessment.name());
-      out.println(line);
+      out.write(line + "\n");
     }
     out.close();
   }
