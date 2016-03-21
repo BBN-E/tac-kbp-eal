@@ -7,6 +7,7 @@ import com.bbn.kbp.events2014.Query2016;
 import com.bbn.kbp.events2014.QueryAssessment;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
@@ -20,7 +21,9 @@ import com.google.common.collect.TreeMultimap;
 import com.google.common.io.Files;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,6 +39,9 @@ public final class QueryStore2016 {
 
   private final static Splitter commaSplitter = Splitter.on(",");
   private final static Splitter dashSplitter = Splitter.on("-");
+  private final static Joiner commaJoiner = Joiner.on(",");
+  private final static Joiner dashJoiner = Joiner.on("-");
+  private final static Joiner tabJoiner = Joiner.on("\t");
 
   private final Set<Query2016> queries;
   private final Map<Query2016, String> metadata;
@@ -87,8 +93,31 @@ public final class QueryStore2016 {
   }
 
 
-  public void saveTo(final File f) {
-    // TODO
+  public void saveTo(final File f) throws FileNotFoundException {
+    final PrintWriter out = new PrintWriter(f);
+    for (final Query2016 q : queries) {
+      final Optional<String> metadata = Optional.fromNullable(this.metadata.get(q));
+      if (metadata.isPresent()) {
+        out.println("#" + metadata.get());
+      }
+      final Optional<AssessedQuery2016> assessmentOpt =
+          Optional.fromNullable(this.assessments.get(q));
+      final QueryAssessment assessment;
+      if (assessmentOpt.isPresent()) {
+        assessment = assessmentOpt.get().assessment();
+      } else {
+        assessment = QueryAssessment.UNASSASSED;
+      }
+      final ImmutableList.Builder<String> pjStrings = ImmutableList.builder();
+      for (final CharOffsetSpan pj : q.predicateJustifications()) {
+        pjStrings.add(dashJoiner.join(pj.startInclusive(), pj.endInclusive()));
+      }
+      final String pjString = commaJoiner.join(pjStrings.build());
+      final String line =
+          tabJoiner.join(q.queryID(), q.docID(), q.systemID(), pjString, assessment.name());
+      out.println(line);
+    }
+    out.close();
   }
 
   public static QueryStore2016 open(final File f) throws IOException {
@@ -99,7 +128,7 @@ public final class QueryStore2016 {
     Optional<String> lastMetadata = Optional.absent();
     for (final String line : lines) {
       if (line.startsWith("#")) {
-        lastMetadata = Optional.of(line.trim());
+        lastMetadata = Optional.of(line.trim().substring(1));
       } else {
         final String[] parts = line.trim().split("\t");
         checkArgument(parts.length == 5, "expected five columns, but got " + parts.length);
@@ -110,8 +139,10 @@ public final class QueryStore2016 {
         final QueryAssessment assessment = QueryAssessment.valueOf(parts[4]);
         final Query2016 query = Query2016.builder().queryID(queryID).docID(docID).systemID(systemID)
             .addAllPredicateJustifications(spans).build();
-        assessments.put(query, AssessedQuery2016.create(query, assessment));
         queries.add(query);
+        if (!assessment.equals(QueryAssessment.UNASSASSED)) {
+          assessments.put(query, AssessedQuery2016.create(query, assessment));
+        }
         if (lastMetadata.isPresent()) {
           metadata.put(query, lastMetadata.get());
           lastMetadata = Optional.absent();
