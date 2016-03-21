@@ -9,6 +9,8 @@ import org.immutables.value.Value;
 
 import java.util.SortedSet;
 
+import static com.google.common.base.Preconditions.checkState;
+
 
 @TextGroupPublicImmutable
 @Value.Immutable
@@ -24,4 +26,8 @@ public abstract class _QueryResponse2016 {
   @Value.NaturalOrder
   public abstract SortedSet<CharOffsetSpan> predicateJustifications();
 
+  @Value.Check
+  protected void check() {
+    checkState(predicateJustifications().size() > 0, "Must provide PredicateJustifications!");
+  }
 }
