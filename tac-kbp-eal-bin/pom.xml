@@ -238,7 +238,7 @@
 
         <dependency>
             <groupId>com.bbn.kbp.eal</groupId>
-            <artifactId>tac-kbp-eap-scorer</artifactId>
+            <artifactId>tac-kbp-eal-scorer</artifactId>
             <version>2.4.6-SNAPSHOT</version>
         </dependency>
 
