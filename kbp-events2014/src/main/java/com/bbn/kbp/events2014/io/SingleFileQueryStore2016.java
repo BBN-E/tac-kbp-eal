@@ -95,30 +95,6 @@ public final class SingleFileQueryStore2016 implements QueryStore2016 {
     return ImmutableSet.copyOf(queries);
   }
 
-  /**
-   * Adds a new query {@code q} to the Store, overwriting any metadata or assessments.
-   */
-  public void addQuery(final QueryResponse2016 q, final Optional<String> metadata,
-      final Optional<QueryAssessment2016> assessment) {
-    queries.add(q);
-    if (metadata.isPresent()) {
-      this.metadata.put(q, metadata.get());
-    } else {
-      this.metadata.remove(q);
-    }
-    if (assessment.isPresent()) {
-      if (assessment.get().equals(QueryAssessment2016.UNASSASSED)) {
-        this.assessments.remove(q);
-      } else {
-        this.assessments
-            .put(q, AssessedQuery2016.builder().assessment(assessment.get()).query(q).build());
-      }
-    } else {
-      this.assessments.remove(q);
-    }
-  }
-
-
   public void saveTo(final File f) throws FileNotFoundException {
     final PrintWriter out = new PrintWriter(f);
     for (final QueryResponse2016 q : queries) {
