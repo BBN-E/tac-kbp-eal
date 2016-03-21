@@ -31,6 +31,9 @@ public abstract class _QueryResponse2016 {
     checkState(!queryID().asString().isEmpty(), "Empty query IDs not allowed!");
     checkState(!docID().asString().isEmpty(), "Empty doc IDs not allowed!");
     checkState(!systemID().asString().isEmpty(), "Empty system IDs not allowed!");
+    checkState(!queryID().asString().contains("\t"), "Tabs disallowed from query IDs");
+    checkState(!docID().asString().contains("\t"), "Tabs disallowed from doc IDs");
+    checkState(!systemID().asString().contains("\t"), "Tabs disallowed from system IDs");
     checkState(predicateJustifications().size() > 0, "Must provide PredicateJustifications!");
   }
 }
