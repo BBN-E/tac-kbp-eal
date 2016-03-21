@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import javax.annotation.Nullable;
 
@@ -41,6 +42,7 @@ public final class QueryStore2016 {
   private final Multimap<Symbol, Query2016> bySystemID;
   private final Multimap<Symbol, Query2016> byDocID;
   private final Multimap<Symbol, Query2016> byQueryID;
+  // may never contain an AssessedQuery2016 with an assessment of QueryAssessment.UNASSASSED
   private final Map<Query2016, AssessedQuery2016> assessments;
 
 
@@ -48,7 +50,13 @@ public final class QueryStore2016 {
       final Map<Query2016, String> metadata, final Map<Query2016, AssessedQuery2016> assessments) {
     this.assessments = checkNotNull(assessments);
     this.metadata = checkNotNull(metadata);
-    this.queries = ImmutableSet.copyOf(queries);
+    checkNotNull(queries);
+    this.queries = new TreeSet<>(Orderings.by2016Ordering.ordering());
+    this.queries.addAll(ImmutableList.copyOf(queries));
+
+    checkArgument(this.queries.containsAll(assessments.keySet()),
+        "Assessments have an unknown query!");
+    checkArgument(this.queries.containsAll(metadata.keySet()), "Metadata has an unknown query!");
 
     // keep these sorted
     this.byQueryID = TreeMultimap.create(Ordering.usingToString(), by2016Ordering());
