@@ -24,7 +24,7 @@ public final class SingleFileQueryStoreWriter {
 
   }
 
-  public void saveTo(final SingleFileQueryStore2016 store, final File f)
+  public void saveTo(final QueryStore2016 store, final File f)
       throws FileNotFoundException {
     final PrintWriter out = new PrintWriter(f);
     for (final QueryResponse2016 q : store.queries()) {

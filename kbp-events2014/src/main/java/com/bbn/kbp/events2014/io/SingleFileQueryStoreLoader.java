@@ -34,7 +34,7 @@ public final class SingleFileQueryStoreLoader {
 
   }
 
-  public SingleFileQueryStore2016 open2016(final File f) throws IOException {
+  public QueryStore2016 open2016(final File f) throws IOException {
     final List<String> lines = Files.readLines(f, Charsets.UTF_8);
     final List<QueryResponse2016> queries = Lists.newArrayList();
     final Map<QueryResponse2016, String> metadata = Maps.newHashMap();
@@ -65,7 +65,7 @@ public final class SingleFileQueryStoreLoader {
         }
       }
     }
-    return SingleFileQueryStore2016.create(queries, metadata, assessments);
+    return QueryStore2016.create(queries, metadata, assessments);
   }
 
   private static ImmutableSortedSet<CharOffsetSpan> extractPJSpans(final String part) {
