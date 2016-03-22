@@ -12,8 +12,8 @@ import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.TypeRoleFillerRealisSet;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
-import com.bbn.kbp.events2014.io.LinkingSpecFormats;
 import com.bbn.kbp.events2014.io.LinkingStore;
+import com.bbn.kbp.events2014.io.LinkingStoreSource;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
@@ -132,11 +132,12 @@ public final class NaiveResponseLinkingProjector {
   private static void trueMain(String[] argv) throws IOException {
     final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
 
-    final LinkingStore sourceLinkingStore = LinkingSpecFormats.openOrCreateLinkingStore(
+    final LinkingStoreSource linkingStoreSource = LinkingStoreSource.createFor2015();
+    final LinkingStore sourceLinkingStore = linkingStoreSource.openOrCreateLinkingStore(
         params.getExistingDirectory("sourceLinkingStore"));
     final AnnotationStore sourceAnnotationStore = AssessmentSpecFormats.openAnnotationStore(
         params.getExistingDirectory("sourceAnnotationStore"), AssessmentSpecFormats.Format.KBP2015);
-    final LinkingStore targetLinkingStore = LinkingSpecFormats.openOrCreateLinkingStore(
+    final LinkingStore targetLinkingStore = linkingStoreSource.openOrCreateLinkingStore(
         params.getCreatableDirectory("targetLinkingStore"));
     final AnnotationStore targetAnnotationStore = AssessmentSpecFormats.openAnnotationStore(
         params.getExistingDirectory("targetAnnotationStore"), AssessmentSpecFormats.Format.KBP2015);

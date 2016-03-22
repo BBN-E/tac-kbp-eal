@@ -117,7 +117,9 @@ public final class ResponseMapping {
             .filter(notDeleted)
             .filter(notLinked)
             .toSet();
-    return ResponseLinking.from(responseLinking.docID(), newResponseSets, newIncompletes);
+
+    return ResponseLinking.builder().docID(responseLinking.docID())
+      .responseSets(newResponseSets).incompleteResponses(newIncompletes).build();
   }
 
   public String summaryString() {

@@ -67,7 +67,7 @@ public final class ImportForeignIDs {
         AssessmentSpecFormats.openSystemOutputStore(new File(source, "arguments"),
             AssessmentSpecFormats.Format.KBP2015);
     final LinkingStore originalLinkingStore =
-        LinkingSpecFormats.openLinkingStore(new File(source, "linking"));
+        LinkingStoreSource.createFor2015().openLinkingStore(new File(source, "linking"));
 
     final SystemOutputStore newOutput =
         SystemOutputLayout.KBP_EA_2015.openOrCreate(outputDirectory);
@@ -79,8 +79,7 @@ public final class ImportForeignIDs {
           .uncachedReadFromArgumentStoreCachingOldIDS(originalArgumentStore, docid,
               originalToSystem);
 
-      final Optional<ResponseLinking> transformedLinking = LinkingSpecFormats
-          .readFromLinkingStoreTransformingIDs(originalLinkingStore, docid,
+      final Optional<ResponseLinking> transformedLinking = originalLinkingStore.readTransformingIDs(docid,
               originalArguments.responses(),
               Optional.<ImmutableMap<String, String>>of(originalToSystem.build()));
       if (transformedLinking.isPresent()) {

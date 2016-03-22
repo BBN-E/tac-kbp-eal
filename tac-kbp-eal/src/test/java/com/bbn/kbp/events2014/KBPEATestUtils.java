@@ -91,7 +91,8 @@ public final class KBPEATestUtils {
     }
     final Set<Response> incompletes = FluentIterable.from(linking.incomplete())
         .transform(canonicalResponseFunction).toSet();
-    return ResponseLinking.from(linking.docID(), responseSets.build(), incompletes);
+    return ResponseLinking.builder().docID(linking.docID()).responseSets(responseSets.build())
+      .incompleteResponses(incompletes).build();
   }
 
   public static class DummyResponseGenerator {

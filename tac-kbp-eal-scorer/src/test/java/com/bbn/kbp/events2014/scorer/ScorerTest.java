@@ -59,9 +59,9 @@ public class ScorerTest {
       ImmutableSet.<Response>of());
   */
   final ArgumentOutput output_ABCD = systemOutputFromResponses(ImmutableSet.of(a, b, c, d));
-  final ResponseLinking linking_A_B_C_D = ResponseLinking.from(output_ABCD.docId(),
-      ImmutableSet.of(ResponseSet.from(a), ResponseSet.from(b), ResponseSet.from(c), ResponseSet.from(d)),
-      ImmutableSet.<Response>of());
+  final ResponseLinking linking_A_B_C_D = ResponseLinking.builder().docID(output_ABCD.docId())
+      .responseSets(ImmutableSet.of(ResponseSet.from(a), ResponseSet.from(b), ResponseSet.from(c)
+          , ResponseSet.from(d))).build();
   /*
   final ResponseLinking linking_AB = ResponseLinking.from(output_AB.docId(),
       ImmutableSet.of(ResponseSet.from(a,b)),
@@ -71,17 +71,15 @@ public class ScorerTest {
       ImmutableSet.of(ResponseSet.from(a,b,c)),
       ImmutableSet.<Response>of());
   */
-  final ResponseLinking linking_AB_CD = ResponseLinking.from(output_ABCD.docId(),
-      ImmutableSet.of(ResponseSet.from(a,b),ResponseSet.from(c,d)),
-      ImmutableSet.<Response>of());
+  final ResponseLinking linking_AB_CD = ResponseLinking.builder().docID(output_ABCD.docId())
+      .responseSets(ImmutableSet.of(ResponseSet.from(a,b),ResponseSet.from(c,d))).build();
 
-  final ResponseLinking linking_ABCD = ResponseLinking.from(output_ABCD.docId(),
-      ImmutableSet.of(ResponseSet.from(a,b,c,d)),
-      ImmutableSet.<Response>of());
+  final ResponseLinking linking_ABCD = ResponseLinking.builder().docID(output_ABCD.docId())
+      .responseSets(ImmutableSet.of(ResponseSet.from(a,b,c,d))).build();
 
-  final ResponseLinking linking_AC_BD = ResponseLinking.from(output_ABCD.docId(),
-      ImmutableSet.of(ResponseSet.from(a,c),ResponseSet.from(b,d)),
-      ImmutableSet.<Response>of());
+  final ResponseLinking linking_AC_BD = ResponseLinking.builder().docID(output_ABCD.docId())
+      .responseSets(ImmutableSet.of(ResponseSet.from(a,c),ResponseSet.from(b,d))).build();
+
   /*
   final ArgumentOutput output_ABCDEF = systemOutputFromResponses(ImmutableSet.of(a, b, c, d, e, f));
   final ResponseLinking linking_ABCD_E_F = ResponseLinking.from(output_ABCDEF.docId(),
@@ -106,31 +104,29 @@ public class ScorerTest {
       ImmutableSet.<Response>of());
   */
   final ArgumentOutput output_ABDG = systemOutputFromResponses(ImmutableSet.of(a, b, d, g));
-  final ResponseLinking linking_ABD_G = ResponseLinking.from(output_ABDG.docId(),
-      ImmutableSet.of(ResponseSet.from(a,b,d),ResponseSet.from(g)),
-      ImmutableSet.<Response>of());
+  final ResponseLinking linking_ABD_G = ResponseLinking.builder().docID(output_ABDG.docId())
+      .responseSets(ImmutableSet.of(ResponseSet.from(a,b,d),ResponseSet.from(g)))
+      .build();
 
   final ArgumentOutput output_ABCG = systemOutputFromResponses(ImmutableSet.of(a,b,c,g));
-  final ResponseLinking linking_AB_C_G = ResponseLinking.from(output_ABCG.docId(),
-      ImmutableSet.of(ResponseSet.from(a,b),ResponseSet.from(c),ResponseSet.from(g)),
-      ImmutableSet.<Response>of());
+  final ResponseLinking linking_AB_C_G = ResponseLinking.builder().docID(output_ABCG.docId())
+      .responseSets(ImmutableSet.of(ResponseSet.from(a,b),ResponseSet.from(c),ResponseSet.from(g)))
+      .build();
 
   final ArgumentOutput output_GHI = systemOutputFromResponses(ImmutableSet.of(g,h,i));
-  final ResponseLinking linking_G_H_I = ResponseLinking.from(output_GHI.docId(),
-      ImmutableSet.of(ResponseSet.from(g),ResponseSet.from(h),ResponseSet.from(i)),
-      ImmutableSet.<Response>of());
+  final ResponseLinking linking_G_H_I = ResponseLinking.builder().docID(output_GHI.docId())
+      .responseSets(ImmutableSet.of(ResponseSet.from(g),ResponseSet.from(h),ResponseSet.from(i))).build();
 
   final ArgumentOutput output_DEA = systemOutputFromResponses(ImmutableSet.of(d,e,a));
-  final ResponseLinking linking_DE_DEA = ResponseLinking.from(output_DEA.docId(),
-      ImmutableSet.of(ResponseSet.from(d,e),ResponseSet.from(d,e,a)),
-      ImmutableSet.<Response>of());
+  final ResponseLinking linking_DE_DEA = ResponseLinking.builder().docID(output_DEA.docId())
+      .responseSets(ImmutableSet.of(ResponseSet.from(d,e),ResponseSet.from(d,e,a))).build();
 
   ////////////////////
 
   final ArgumentOutput output_C = systemOutputFromResponses(ImmutableSet.of(c));
-  final ResponseLinking linking_C = ResponseLinking.from(output_C.docId(),
-      ImmutableSet.of(ResponseSet.from(c)),
-      ImmutableSet.<Response>of());
+  final ResponseLinking linking_C = ResponseLinking.builder().docID(output_C.docId())
+      .responseSets(ImmutableSet.of(ResponseSet.from(c))).build();
+
   /*
   final ArgumentOutput output_ABCE = systemOutputFromResponses(ImmutableSet.of(a,b,c,e));
   final ResponseLinking linking_ABCE = ResponseLinking.from(output_ABCE.docId(),
@@ -140,10 +136,8 @@ public class ScorerTest {
   ////////////////////
 
   final ArgumentOutput output_AGeneric_BCE = systemOutputFromResponses(ImmutableSet.of(aGeneric,b,c,e));
-  final ResponseLinking linking_AGenericBCE = ResponseLinking.from(output_AGeneric_BCE.docId(),
-      ImmutableSet.of(ResponseSet.from(aGeneric,b,c,e)),
-      ImmutableSet.<Response>of());
-
+  final ResponseLinking linking_AGenericBCE = ResponseLinking.builder().docID(output_AGeneric_BCE.docId())
+      .responseSets(ImmutableSet.of(ResponseSet.from(aGeneric,b,c,e))).build();
 
   @Before
   public void setUp() {
@@ -165,10 +159,10 @@ public class ScorerTest {
     final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(
         ImmutableSet.of(x, y, a), ImmutableSet.of(z), coref);
 
-    final ResponseLinking systemResponseLinking = ResponseLinking.from(argumentOutput.docId(),
-        ImmutableSet.of(ResponseSet.from(x, y, z)), ImmutableSet.<Response>of());
-    final ResponseLinking goldResponseLinking = ResponseLinking.from(answerKey.docId(),
-        ImmutableSet.of(ResponseSet.from(x, y, a)), ImmutableSet.<Response>of());
+    final ResponseLinking systemResponseLinking = ResponseLinking.builder().docID(argumentOutput.docId())
+        .responseSets(ImmutableSet.of(ResponseSet.from(x, y, z))).build();
+    final ResponseLinking goldResponseLinking = ResponseLinking.builder().docID(answerKey.docId())
+        .responseSets(ImmutableSet.of(ResponseSet.from(x, y, a))).build();
 
     final EALScorer2015Style.Result score =
         scorer.score(ScoringData.builder().answerKey(answerKey)
@@ -204,9 +198,9 @@ public class ScorerTest {
     final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(ImmutableSet.of(a, b, c, d),
         ImmutableSet.<Response>of(), coref);
 
-    final ResponseLinking goldResponseLinking = ResponseLinking.from(answerKey.docId(),
-        ImmutableSet.of(ResponseSet.from(a),ResponseSet.from(b),ResponseSet.from(c),ResponseSet.from(d)),
-        ImmutableSet.<Response>of());
+    final ResponseLinking goldResponseLinking = ResponseLinking.builder().docID(answerKey.docId())
+        .responseSets(ImmutableSet.of(ResponseSet.from(a),ResponseSet.from(b),ResponseSet.from(c),ResponseSet.from(d)))
+        .build();
 
     //final ResponseLinking l1 = this.linking_A;
     //final ResponseLinking l2 = this.linking_A_B;
@@ -264,9 +258,8 @@ public class ScorerTest {
     final CorefAnnotation coref = allSingletonsCoref(ImmutableSet.of(a,b,c,d));
     final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(ImmutableSet.of(a,b,c,d), ImmutableSet.<Response>of(), coref);
 
-    final ResponseLinking goldResponseLinking = ResponseLinking.from(answerKey.docId(),
-        ImmutableSet.of(ResponseSet.from(a,b,c,d)),
-        ImmutableSet.<Response>of());
+    final ResponseLinking goldResponseLinking = ResponseLinking.builder().docID(answerKey.docId())
+        .responseSets(ImmutableSet.of(ResponseSet.from(a,b,c,d))).build();
 
     //final ResponseLinking l1 = this.linking_A;
     //final ResponseLinking l2 = this.linking_A_B;
@@ -325,9 +318,8 @@ public class ScorerTest {
     final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(ImmutableSet.of(a, b, c, d),
         ImmutableSet.<Response>of(), coref);
 
-    final ResponseLinking goldResponseLinking = ResponseLinking.from(answerKey.docId(),
-        ImmutableSet.of(ResponseSet.from(a, b), ResponseSet.from(c, d)),
-        ImmutableSet.<Response>of());
+    final ResponseLinking goldResponseLinking = ResponseLinking.builder().docID(answerKey.docId())
+        .responseSets(ImmutableSet.of(ResponseSet.from(a, b), ResponseSet.from(c, d))).build();
 
     //final ResponseLinking l1 = this.linking_A;
     //final ResponseLinking l2 = this.linking_A_B;
@@ -422,9 +414,8 @@ public class ScorerTest {
     final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(
         ImmutableSet.of(a, b, c, d, e, f), ImmutableSet.<Response>of(g, h, i), coref);
 
-    final ResponseLinking goldResponseLinking = ResponseLinking.from(answerKey.docId(),
-        ImmutableSet.of(ResponseSet.from(a, b, c), ResponseSet.from(d, e), ResponseSet.from(f)),
-        ImmutableSet.<Response>of());
+    final ResponseLinking goldResponseLinking = ResponseLinking.builder().docID(answerKey.docId())
+        .responseSets(ImmutableSet.of(ResponseSet.from(a, b, c), ResponseSet.from(d, e), ResponseSet.from(f))).build();
 
     //final ResponseLinking l14 = this.linking_AB_G;
     //final ResponseLinking l15 = this.linking_ABD_G;    // overlink { {a,b,d} {g} }
@@ -496,9 +487,9 @@ public class ScorerTest {
     final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(ImmutableSet.of(a,b,c,e), ImmutableSet.<Response>of(), coref);
 
     // c is involved in multiple clusters
-    final ResponseLinking goldResponseLinking = ResponseLinking.from(answerKey.docId(),
-        ImmutableSet.of(ResponseSet.from(a,b,c),ResponseSet.from(c,e),ResponseSet.from(c)),
-        ImmutableSet.<Response>of());
+    final ResponseLinking goldResponseLinking = ResponseLinking.builder().docID(answerKey.docId())
+        .responseSets(ImmutableSet.of(ResponseSet.from(a,b,c),ResponseSet.from(c,e),ResponseSet.from(c)))
+        .build();
 
     final ResponseLinking l19 = this.linking_C;     // although C is duplicated in key, but TP should just be 1
     final EALScorer2015Style.Result score_C =
@@ -523,9 +514,9 @@ public class ScorerTest {
     final AnswerKey answerKey = makeAnswerKeyFromCorrectAndIncorrect(ImmutableSet.of(aGeneric, b,c,d,e),
         ImmutableSet.<Response>of(), coref);
 
-    final ResponseLinking goldResponseLinking = ResponseLinking.from(answerKey.docId(),
-        ImmutableSet.of(ResponseSet.from(b,c),ResponseSet.from(c,d),ResponseSet.from(d,e)),
-        ImmutableSet.<Response>of());
+    final ResponseLinking goldResponseLinking = ResponseLinking.builder().docID(answerKey.docId())
+        .responseSets(ImmutableSet.of(ResponseSet.from(b,c),ResponseSet.from(c,d),ResponseSet.from(d,e)))
+        .build();
 
     final ResponseLinking l21 = this.linking_AGenericBCE;    // { {aGeneric,b,c,e} } , aGeneric should be removed/ignored? by scorer
     final EALScorer2015Style.Result score_AGenericBCE =
@@ -553,13 +544,11 @@ public class ScorerTest {
         ImmutableSet.of(a, aPrime, b, c, f),
         ImmutableSet.<Response>of(), coref);
 
-    final ResponseLinking referenceLinking = ResponseLinking.from(neitherCorrect.docId(),
-        ImmutableSet.of(ResponseSet.from(a, b), ResponseSet.from(a, c), ResponseSet.from(f)),
-        ImmutableSet.<Response>of());
-    final ResponseLinking systemLinking = ResponseLinking.from(neitherCorrect.docId(),
-        ImmutableSet
-            .of(ResponseSet.from(a, b), ResponseSet.from(aPrime, c), ResponseSet.from(a, f)),
-        ImmutableSet.<Response>of());
+    final ResponseLinking referenceLinking = ResponseLinking.builder().docID(neitherCorrect.docId())
+        .responseSets(ImmutableSet.of(ResponseSet.from(a, b), ResponseSet.from(a, c), ResponseSet.from(f))).build();
+    final ResponseLinking systemLinking = ResponseLinking.builder().docID(neitherCorrect.docId())
+        .responseSets(ImmutableSet
+            .of(ResponseSet.from(a, b), ResponseSet.from(aPrime, c), ResponseSet.from(a, f))).build();
 
     final ScoringData.Builder commonBuilder = ScoringData.builder().argumentOutput(argOutput)
         .systemLinking(systemLinking).referenceLinking(referenceLinking);

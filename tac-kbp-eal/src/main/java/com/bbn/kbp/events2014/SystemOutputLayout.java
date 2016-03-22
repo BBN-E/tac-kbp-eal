@@ -43,7 +43,7 @@ public enum SystemOutputLayout {
     public SystemOutput emptyOutput(final Symbol docID) {
       return SystemOutput2015
           .from(ArgumentOutput.from(docID, ImmutableSet.<Scored<Response>>of()),
-              ResponseLinking.createEmpty(docID));
+              ResponseLinking.builder().docID(docID).build());
     }
   };
 

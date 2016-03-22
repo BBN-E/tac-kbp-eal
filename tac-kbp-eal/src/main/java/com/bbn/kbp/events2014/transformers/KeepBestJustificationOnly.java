@@ -134,8 +134,7 @@ public final class KeepBestJustificationOnly {
         responseSets = ImmutableSet.of();
       }
 
-      return ResponseLinking.from(input.docID(), responseSets,
-          ImmutableSet.<Response>of());
+      return ResponseLinking.builder().docID(input.docID()).responseSets(responseSets).build();
     }
   }
 }

@@ -12,8 +12,8 @@ import com.bbn.kbp.events2014.ScoringData;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.ArgumentStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
-import com.bbn.kbp.events2014.io.LinkingSpecFormats;
 import com.bbn.kbp.events2014.io.LinkingStore;
+import com.bbn.kbp.events2014.io.LinkingStoreSource;
 import com.bbn.kbp.events2014.linking.SameEventTypeLinker;
 import com.bbn.kbp.linking.EALScorer2015Style;
 
@@ -191,7 +191,7 @@ public final class KBP2015Scorer {
       return SameEventTypeLinker.create(
           ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other)).wrap(annStore.docIDs());
     } else {
-      return LinkingSpecFormats.openOrCreateLinkingStore(
+      return LinkingStoreSource.createFor2015().openOrCreateLinkingStore(
           params.getExistingDirectory("referenceLinking"));
     }
   }
@@ -327,7 +327,7 @@ public final class KBP2015Scorer {
       systemLinkingStore = SameEventTypeLinker.create(
           ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other)).wrap(argumentStore.docIDs());
     } else {
-      systemLinkingStore = LinkingSpecFormats
+      systemLinkingStore = LinkingStoreSource.createFor2015()
           .openOrCreateLinkingStore(new File(systemOutputDir, "linking"));
     }
     return systemLinkingStore;
