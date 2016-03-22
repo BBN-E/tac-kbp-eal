@@ -60,8 +60,8 @@ public class ExactMatchEventArgumentLinkingAligner implements EventArgumentLinki
     final ImmutableSet<TypeRoleFillerRealis> incompleteResponses = canonicalizeResponseSet(
         responseLinking.incompleteResponses(), canonicalToResponses, responsesToCanonical);
 
-    return EventArgumentLinking.create(responseLinking.docID(), coreffedArgs.build(),
-        incompleteResponses);
+    return EventArgumentLinking.builder().docID(responseLinking.docID())
+        .eventFrames(coreffedArgs.build()).incomplete(incompleteResponses).build();
   }
 
   private void assertLinkingSubsetOfAnswerKey(ResponseLinking responseLinking, AnswerKey answerKey)
@@ -91,7 +91,7 @@ public class ExactMatchEventArgumentLinkingAligner implements EventArgumentLinki
     }
 
     final ImmutableSet.Builder<ResponseSet> responseSets = ImmutableSet.builder();
-    for (final TypeRoleFillerRealisSet equivClassSet : eventArgumentLinking.linkedAsSet()) {
+    for (final TypeRoleFillerRealisSet equivClassSet : eventArgumentLinking.eventFrames()) {
       final ImmutableSet.Builder<Response> setBuilder = ImmutableSet.builder();
       for (final TypeRoleFillerRealis trfr : equivClassSet.asSet()) {
         setBuilder.addAll(canonicalToResponses.get(trfr));
@@ -125,12 +125,12 @@ public class ExactMatchEventArgumentLinkingAligner implements EventArgumentLinki
 
     final ImmutableSet<TypeRoleFillerRealis> ret =
         canonicalizationsWithResponsesInGroupBuilder.build();
- 
+
     // It is reasonable to expect that 2 Responses with the same TypeRoleFillerRealis might end up in different ResponseSet
     // For example: Bush went to a meeting in Ireland. Bush went to a meeting in Denmark.
     // In the above, both Responses have TypeRoleFillerRealis as (Contact.Meet, Entity, George Bush, Actual), but belong in different EventFrame/ResponseSet
     // (btw, the 'Filler' is TypeRoleFillerRealis is somewhat confusing (I had to remind myself that it is CAS, and not base-filler)
-    
+
     return ret;
   }
 }

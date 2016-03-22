@@ -57,7 +57,7 @@ public final class EventArgumentEquivalenceSpecFormats {
     public void write(EventArgumentLinking toWrite) throws IOException {
       final List<String> lines = Lists.newArrayList();
 
-      for (final TypeRoleFillerRealisSet trfrSet : toWrite.linkedAsSet()) {
+      for (final TypeRoleFillerRealisSet trfrSet : toWrite.eventFrames()) {
         lines.add(TAB_JOINER.join(
             transform(trfrSet.asSet(), uniqueIdentifier())));
       }

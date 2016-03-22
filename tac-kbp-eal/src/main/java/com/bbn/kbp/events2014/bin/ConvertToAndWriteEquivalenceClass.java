@@ -121,7 +121,7 @@ public final class ConvertToAndWriteEquivalenceClass {
             aligner.align(responseLinking.get(), answerKey.filter(answerKeyFilter));
 
         System.out.println("== LINKED Equivalence classes ==");
-        for (final TypeRoleFillerRealisSet eqSet : equivalenceLinking.linkedAsSet()) {
+        for (final TypeRoleFillerRealisSet eqSet : equivalenceLinking.eventFrames()) {
           for (final TypeRoleFillerRealis eq : eqSet.asSet()) {
             System.out.println(eq.uniqueIdentifier() + " " + eq);
           }

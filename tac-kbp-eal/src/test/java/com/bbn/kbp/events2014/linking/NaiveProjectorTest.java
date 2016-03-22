@@ -51,8 +51,9 @@ public class NaiveProjectorTest {
 
     // source event frames. We only have one response for each CAS, all types, roles, etc.
     // the same, for simplicity.  {1,4}, {2,4}, {3,4}, {4}, {5}
-    final EventArgumentLinking sourceArgumentLinking = EventArgumentLinking.create(
-        docID, ImmutableSet.of(
+    final EventArgumentLinking sourceArgumentLinking = EventArgumentLinking.builder()
+        .docID(docID)
+        .eventFrames(ImmutableSet.of(
             TypeRoleFillerRealisSet.from(ImmutableSet.of(
                 dummyTRFR(docID, sourceCoref.normalizeStrictly(J)))),
             TypeRoleFillerRealisSet.from(ImmutableSet.of(
@@ -65,8 +66,8 @@ public class NaiveProjectorTest {
                 dummyTRFR(docID, sourceCoref.normalizeStrictly(F)),
                 dummyTRFR(docID, sourceCoref.normalizeStrictly(H)))),
             TypeRoleFillerRealisSet.from(ImmutableSet.of(
-                dummyTRFR(docID, sourceCoref.normalizeStrictly(H))))),
-        ImmutableSet.<TypeRoleFillerRealis>of());
+                dummyTRFR(docID, sourceCoref.normalizeStrictly(H))))))
+        .incomplete(ImmutableSet.<TypeRoleFillerRealis>of()).build();
 
     final ResponseLinking sourceResponseLinking =
         EventArgumentLinkingAligners.getExactMatchEventArgumentLinkingAligner()
@@ -91,8 +92,9 @@ public class NaiveProjectorTest {
         .corefCAS(I, 4)
         .corefCAS(K, 5).build();
 
-    final EventArgumentLinking referenceArgumentLinking = EventArgumentLinking.create(
-        docID, ImmutableSet.of(
+    final EventArgumentLinking referenceArgumentLinking = EventArgumentLinking.builder()
+        .docID(docID)
+        .eventFrames(ImmutableSet.of(
             TypeRoleFillerRealisSet.from(ImmutableSet.of(
                 dummyTRFR(docID, targetCoref.normalizeStrictly(A)),
                 dummyTRFR(docID, targetCoref.normalizeStrictly(C)),
@@ -101,8 +103,8 @@ public class NaiveProjectorTest {
                 dummyTRFR(docID, targetCoref.normalizeStrictly(D)),
                 dummyTRFR(docID, targetCoref.normalizeStrictly(H)))),
             TypeRoleFillerRealisSet.from(ImmutableSet.of(
-                dummyTRFR(docID, targetCoref.normalizeStrictly(H))))),
-        ImmutableSet.of(dummyTRFR(docID, targetCoref.normalizeStrictly(K))));
+                dummyTRFR(docID, targetCoref.normalizeStrictly(H))))))
+        .incomplete(ImmutableSet.of(dummyTRFR(docID, targetCoref.normalizeStrictly(K)))).build();
 
     final AnswerKey targetAnswerKey = minimalAnswerKeyFor(targetCoref);
     final ResponseLinking referenceResponseLinking =

@@ -76,7 +76,7 @@ public final class KBPEATestUtils {
     final Map<TypeRoleFillerRealis, Response> canonicalResponses = Maps.newHashMap();
 
     final Iterable<TypeRoleFillerRealis> allTRFRs = ImmutableSet.copyOf(
-        concat(concat(linking.linkedAsSet()), linking.incomplete()));
+        concat(concat(linking.eventFrames()), linking.incomplete()));
 
     for (final TypeRoleFillerRealis trfr : allTRFRs) {
       canonicalResponses.put(trfr, responseGenerator.responseFor(trfr));
@@ -86,7 +86,7 @@ public final class KBPEATestUtils {
         Functions.forMap(canonicalResponses);
 
     final ImmutableSet.Builder<ResponseSet> responseSets = ImmutableSet.builder();
-    for (final TypeRoleFillerRealisSet trfrSet : linking.linkedAsSet()) {
+    for (final TypeRoleFillerRealisSet trfrSet : linking.eventFrames()) {
       responseSets.add(ResponseSet.from(transform(trfrSet, canonicalResponseFunction)));
     }
     final Set<Response> incompletes = FluentIterable.from(linking.incomplete())

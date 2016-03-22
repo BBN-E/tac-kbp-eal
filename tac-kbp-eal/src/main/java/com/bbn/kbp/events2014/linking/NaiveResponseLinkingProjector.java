@@ -110,8 +110,9 @@ public final class NaiveResponseLinkingProjector {
     final Set<TypeRoleFillerRealis> projectedIncompletesNotFoundElsewhere =
         Sets.difference(allTargetTRFRs, TRFRsInProjection);
 
-    final EventArgumentLinking projectedEventArgumentLinking = EventArgumentLinking.create(
-        targetAnswerKey.docId(), projectedSets, projectedIncompletesNotFoundElsewhere);
+    final EventArgumentLinking projectedEventArgumentLinking = EventArgumentLinking.builder()
+        .docID(targetAnswerKey.docId()).eventFrames(projectedSets)
+        .incomplete(projectedIncompletesNotFoundElsewhere).build();
 
     return EventArgumentLinkingAligners.getExactMatchEventArgumentLinkingAligner().alignToResponseLinking(
         projectedEventArgumentLinking, targetAnswerKey);
