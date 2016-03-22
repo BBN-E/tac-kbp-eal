@@ -36,16 +36,16 @@ public class ApplyAnswerKeyToResponseMappingRuleToAll implements ScoringDataTran
     if (!responseMapping.isIdentity()) {
       log.info("Rule {} resulted in {}", rule, responseMapping.summaryString());
 
-      ScoringData.Builder ret = input.modifiedCopy()
-          .withAnswerKey(responseMapping.apply(input.answerKey().get()));
+      ScoringData.Builder ret = ScoringData.builder().from(input)
+          .answerKey(responseMapping.apply(input.answerKey().get()));
       if (input.argumentOutput().isPresent()) {
-        ret.withArgumentOutput(responseMapping.apply(input.argumentOutput().get()));
+        ret.argumentOutput(responseMapping.apply(input.argumentOutput().get()));
       }
       if (input.systemLinking().isPresent()) {
-        ret.withSystemLinking(responseMapping.apply(input.systemLinking().get()));
+        ret.systemLinking(responseMapping.apply(input.systemLinking().get()));
       }
       if (input.referenceLinking().isPresent()) {
-        ret.withReferenceLinking(responseMapping.apply(input.referenceLinking().get()));
+        ret.referenceLinking(responseMapping.apply(input.referenceLinking().get()));
       }
 
       return ret.build();

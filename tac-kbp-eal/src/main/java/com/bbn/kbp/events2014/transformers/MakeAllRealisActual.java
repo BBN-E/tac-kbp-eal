@@ -80,7 +80,7 @@ public final class MakeAllRealisActual implements ScoringDataTransformation {
   public ScoringData transform(final ScoringData scoringData) {
     checkArgument(scoringData.answerKey().isPresent(), "Answer key must be present to neutralize realis");
 
-    final ScoringData.Builder ret = scoringData.modifiedCopy();
+    final ScoringData.Builder ret = ScoringData.builder().from(scoringData);
 
     final ResponseMapping responseMapping = responseMapping(scoringData.answerKey().get());
     if (!responseMapping.isIdentity()) {
@@ -89,18 +89,18 @@ public final class MakeAllRealisActual implements ScoringDataTransformation {
 
     AnswerKey newAnswerKey = neutralizeAssessments(
         responseMapping.apply(scoringData.answerKey().get()));
-    ret.withAnswerKey(newAnswerKey);
+    ret.answerKey(newAnswerKey);
 
     if (scoringData.argumentOutput().isPresent()) {
-      ret.withArgumentOutput(responseMapping.apply(scoringData.argumentOutput().get()));
+      ret.argumentOutput(responseMapping.apply(scoringData.argumentOutput().get()));
     }
 
     if(scoringData.referenceLinking().isPresent()) {
-      ret.withReferenceLinking(responseMapping.apply(scoringData.referenceLinking().get()));
+      ret.referenceLinking(responseMapping.apply(scoringData.referenceLinking().get()));
     }
 
     if(scoringData.systemLinking().isPresent()) {
-      ret.withSystemLinking(responseMapping.apply(scoringData.systemLinking().get()));
+      ret.systemLinking(responseMapping.apply(scoringData.systemLinking().get()));
     }
 
     return ret.build();

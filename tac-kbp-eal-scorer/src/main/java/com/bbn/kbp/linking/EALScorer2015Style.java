@@ -243,9 +243,9 @@ public final class EALScorer2015Style {
             SystemOutput2015
                 .from(scoringData.argumentOutput().get(), scoringData.systemLinking().get()),
             scoringData.answerKey().get().corefAnnotation());
-    final ScoringData bestOnlyScoringData = scoringData.modifiedCopy()
-        .withArgumentOutput(keepBestResponseMapping.apply(scoringData.argumentOutput().get()))
-        .withSystemLinking(keepBestResponseMapping.apply(scoringData.systemLinking().get()))
+    final ScoringData bestOnlyScoringData = ScoringData.builder().from(scoringData)
+        .argumentOutput(keepBestResponseMapping.apply(scoringData.argumentOutput().get()))
+        .systemLinking(keepBestResponseMapping.apply(scoringData.systemLinking().get()))
         .build();
 
     return new Result(new ArgResult(scoreEventArguments(bestOnlyScoringData)),
