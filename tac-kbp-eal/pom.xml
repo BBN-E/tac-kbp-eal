@@ -322,7 +322,7 @@
 
         <dependency>
             <groupId>org.immutables</groupId>
-            <artifactId>functional</artifactId>
+            <artifactId>func</artifactId>
             <version>2.1.14</version>
             <scope>provided</scope>
         </dependency>
