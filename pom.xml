@@ -3,7 +3,7 @@
 
     <groupId>com.bbn.kbp.eal</groupId>
     <artifactId>tac-kbp-eal-all</artifactId>
-    <version>2.4.7-SNAPSHOT</version>
+    <version>3.0.0</version>
     <packaging>pom</packaging>
 
     <name>TAC KBP Event Argument and Linking Shared Task</name>
