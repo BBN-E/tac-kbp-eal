@@ -115,6 +115,7 @@ public final class ResponseMapping {
     final ImmutableSet<Response> newIncompletes =
         FluentIterable.from(responseLinking.incompleteResponses())
             .filter(notDeleted)
+            .transform(responseMapping)
             .filter(notLinked)
             .toSet();
 

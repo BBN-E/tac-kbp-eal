@@ -99,7 +99,8 @@ public class ExactMatchEventArgumentLinkingAligner implements EventArgumentLinki
       responseSets.add(ResponseSet.from(setBuilder.build()));
     }
 
-    return ResponseLinking.builder().docID(answerKey.docId()).responseSets(responseSets.build()).build();
+    return ResponseLinking.builder().docID(answerKey.docId()).responseSets(responseSets.build())
+        .incompleteResponses(incompletes.build()).build();
   }
 
   /**
