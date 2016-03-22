@@ -61,13 +61,13 @@ public final class KBPEATestUtils {
       new Function<Response, AssessedResponse>() {
         @Override
         public AssessedResponse apply(Response input) {
-          return AssessedResponse.of(input, ResponseAssessment.create(
+          return AssessedResponse.of(input, ResponseAssessment.of(
               Optional.of(FieldAssessment.CORRECT),
               Optional.of(FieldAssessment.CORRECT),
               Optional.of(FieldAssessment.CORRECT),
               Optional.of(KBPRealis.Actual),
               Optional.of(FieldAssessment.CORRECT),
-              Optional.of(ResponseAssessment.MentionType.NOMINAL)));
+              Optional.of(FillerMentionType.NOMINAL)));
         }
       };
 

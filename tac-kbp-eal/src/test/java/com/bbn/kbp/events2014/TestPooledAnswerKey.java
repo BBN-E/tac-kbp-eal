@@ -2,7 +2,6 @@ package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.ResponseAssessment.MentionType;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -38,11 +37,11 @@ public final class TestPooledAnswerKey {
   final FieldAssessment C = FieldAssessment.CORRECT;
 
   final ResponseAssessment correct =
-      ResponseAssessment.create(Optional.of(C), Optional.of(C), Optional.of(C),
-          Optional.of(KBPRealis.Actual), Optional.of(C), Optional.of(MentionType.NAME));
+      ResponseAssessment.of(Optional.of(C), Optional.of(C), Optional.of(C),
+          Optional.of(KBPRealis.Actual), Optional.of(C), Optional.of(FillerMentionType.NAME));
   final ResponseAssessment unreal =
-      ResponseAssessment.create(Optional.of(C), Optional.of(C), Optional.of(C),
-          Optional.of(KBPRealis.Other), Optional.of(C), Optional.of(MentionType.NAME));
+      ResponseAssessment.of(Optional.of(C), Optional.of(C), Optional.of(C),
+          Optional.of(KBPRealis.Other), Optional.of(C), Optional.of(FillerMentionType.NAME));
   private Symbol DOCID = Symbol.from("foo");
 
   final CorefAnnotation corefAnnotation1 = CorefAnnotation.strictBuilder(DOCID)

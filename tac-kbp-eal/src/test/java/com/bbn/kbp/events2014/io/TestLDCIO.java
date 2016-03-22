@@ -8,11 +8,11 @@ import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.FieldAssessment;
+import com.bbn.kbp.events2014.FillerMentionType;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
-import com.bbn.kbp.events2014.ResponseAssessment.MentionType;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
@@ -50,11 +50,11 @@ public class TestLDCIO extends TestCase {
         ImmutableSet.of(CharOffsetSpan.fromOffsetsOnly(373, 383)),
         KBPRealis.Actual), 0.5465980768203735);
     ann = ResponseAssessment
-        .create(Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.CORRECT),
+        .of(Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.CORRECT),
             Optional.of(FieldAssessment.CORRECT),
             Optional.of(KBPRealis.Actual),
             Optional.of(FieldAssessment.CORRECT),
-            Optional.of(MentionType.NAME));
+            Optional.of(FillerMentionType.NAME));
     argMetadata = "metadata";
     annArg = AssessedResponse.of(arg.item(), ann);
   }

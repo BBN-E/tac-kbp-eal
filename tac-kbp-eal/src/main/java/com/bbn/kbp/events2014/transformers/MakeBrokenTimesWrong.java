@@ -35,8 +35,7 @@ public final class MakeBrokenTimesWrong implements ScoringDataTransformation {
               "Response with illegal temporal expression {} had correct CAS assessment. Changing it to incorrect.",
               cas);
           ret.replaceAssessment(assessedResponse.response(),
-              assessedResponse.assessment().copyWithModifiedCASAssessment(
-                  FieldAssessment.INCORRECT));
+              assessedResponse.assessment().withEntityCorrectFiller(FieldAssessment.INCORRECT));
         }
       }
     }

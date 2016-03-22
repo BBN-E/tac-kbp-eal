@@ -5,6 +5,7 @@ import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.FieldAssessment;
+import com.bbn.kbp.events2014.FillerMentionType;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
@@ -27,8 +28,8 @@ public final class StrictAssessmentCreator implements AssessmentCreator {
       Optional<FieldAssessment> aer, Optional<FieldAssessment> casAssessment,
       Optional<KBPRealis> realis,
       Optional<FieldAssessment> baseFillerAssessment, Optional<Integer> coreference,
-      Optional<ResponseAssessment.MentionType> mentionTypeOfCAS) {
-    return new AssessmentParseResult(ResponseAssessment.create(aet, aer, casAssessment, realis,
+      Optional<FillerMentionType> mentionTypeOfCAS) {
+    return new AssessmentParseResult(ResponseAssessment.of(aet, aer, casAssessment, realis,
         baseFillerAssessment, mentionTypeOfCAS), coreference.orNull());
   }
 

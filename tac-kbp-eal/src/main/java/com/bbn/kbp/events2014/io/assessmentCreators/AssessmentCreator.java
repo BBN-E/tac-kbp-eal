@@ -5,6 +5,7 @@ import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.FieldAssessment;
+import com.bbn.kbp.events2014.FillerMentionType;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
@@ -19,7 +20,7 @@ public interface AssessmentCreator {
       final Optional<FieldAssessment> aer, final Optional<FieldAssessment> casAssessment,
       final Optional<KBPRealis> realis, final Optional<FieldAssessment> baseFillerAssessment,
       final Optional<Integer> coreference,
-      final Optional<ResponseAssessment.MentionType> mentionTypeOfCAS);
+      final Optional<FillerMentionType> mentionTypeOfCAS);
 
   public AnswerKey createAnswerKey(Symbol docID, List<AssessedResponse> assessedResponses,
       List<Response> unassessedResponses, CorefAnnotation corefAnnotation);

@@ -113,8 +113,8 @@ abstract class _AssessedResponse {
    * and marks it with the given mention type. This is useful for tests and not much else.
    */
   public static AssessedResponse assessCorrectly(Response r,
-      ResponseAssessment.MentionType mentionType) {
-    return AssessedResponse.of(r, ResponseAssessment.create(Optional.of(FieldAssessment.CORRECT),
+      FillerMentionType mentionType) {
+    return AssessedResponse.of(r, ResponseAssessment.of(Optional.of(FieldAssessment.CORRECT),
         Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.CORRECT),
         Optional.of(r.realis()), Optional.of(FieldAssessment.CORRECT),
         Optional.of(mentionType)));
@@ -125,10 +125,10 @@ abstract class _AssessedResponse {
    * tests.
    */
   public static AssessedResponse assessWithIncorrectEventType(final Response response) {
-    return AssessedResponse.of(response, ResponseAssessment.create(Optional.of(
+    return AssessedResponse.of(response, ResponseAssessment.of(Optional.of(
             FieldAssessment.INCORRECT),
         Optional.<FieldAssessment>absent(), Optional.<FieldAssessment>absent(),
         Optional.<KBPRealis>absent(), Optional.<FieldAssessment>absent(),
-        Optional.<ResponseAssessment.MentionType>absent()));
+        Optional.<FillerMentionType>absent()));
   }
 }

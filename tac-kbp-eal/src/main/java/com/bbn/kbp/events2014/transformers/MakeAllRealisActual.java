@@ -7,7 +7,6 @@ import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
 import com.bbn.kbp.events2014.ScoringData;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -33,7 +32,7 @@ public final class MakeAllRealisActual implements ScoringDataTransformation {
   private static ResponseAssessment neutralizeResponseAssessment(
       ResponseAssessment responseAssessment) {
     if (responseAssessment.realis().isPresent()) {
-      return responseAssessment.copyWithModifiedRealisAssessment(Optional.of(KBPRealis.Actual));
+      return responseAssessment.withRealis(KBPRealis.Actual);
     } else {
       return responseAssessment;
     }

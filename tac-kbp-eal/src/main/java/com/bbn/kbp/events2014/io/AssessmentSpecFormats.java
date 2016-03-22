@@ -10,11 +10,11 @@ import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.FieldAssessment;
+import com.bbn.kbp.events2014.FillerMentionType;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
-import com.bbn.kbp.events2014.ResponseAssessment.MentionType;
 import com.bbn.kbp.events2014.io.assessmentCreators.AssessmentCreator;
 import com.bbn.kbp.events2014.io.assessmentCreators.RecoveryAssessmentCreator;
 import com.bbn.kbp.events2014.io.assessmentCreators.StrictAssessmentCreator;
@@ -538,7 +538,8 @@ public final class AssessmentSpecFormats {
           FieldAssessment.parseOptional(parts.get(3));
 
       final Optional<KBPRealis> realis = KBPRealis.parseOptional(parts.get(5));
-      final Optional<MentionType> mentionTypeOfCAS = MentionType.parseOptional(parts.get(6));
+      final Optional<FillerMentionType> mentionTypeOfCAS = FillerMentionType
+          .parseOptional(parts.get(6));
 
       return assessmentCreator.createAssessmentFromFields(AET, AER, casAssessment,
           realis, baseFillerAssessment, coreference, mentionTypeOfCAS);
@@ -560,7 +561,7 @@ public final class AssessmentSpecFormats {
         parts.add("NIL");
       }
       parts.add(KBPRealis.asString(ann.realis()));
-      parts.add(MentionType.stringOrNil(ann.mentionTypeOfCAS()));
+      parts.add(FillerMentionType.stringOrNil(ann.mentionTypeOfCAS()));
     }
 
     private static final String UNANNOTATED = "UNANNOTATED";

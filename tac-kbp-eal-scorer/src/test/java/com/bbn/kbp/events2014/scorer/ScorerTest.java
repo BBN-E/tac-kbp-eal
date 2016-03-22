@@ -7,10 +7,10 @@ import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.CorefAnnotation;
+import com.bbn.kbp.events2014.FillerMentionType;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.ResponseAssessment;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
 import com.bbn.kbp.events2014.ScoringData;
@@ -611,7 +611,7 @@ public class ScorerTest {
     final ImmutableSet.Builder<AssessedResponse> correctAssessedResponses = ImmutableSet.builder();
     for (final Response correctResponse : correct) {
       correctAssessedResponses.add(
-          AssessedResponse.assessCorrectly(correctResponse, ResponseAssessment.MentionType.NAME));
+          AssessedResponse.assessCorrectly(correctResponse, FillerMentionType.NAME));
     }
     final ImmutableSet.Builder<AssessedResponse> incorrectAssessedResponses =
         ImmutableSet.builder();

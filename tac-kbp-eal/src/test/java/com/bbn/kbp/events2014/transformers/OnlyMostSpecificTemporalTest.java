@@ -8,6 +8,7 @@ import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.FieldAssessment;
+import com.bbn.kbp.events2014.FillerMentionType;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
@@ -69,16 +70,16 @@ public class OnlyMostSpecificTemporalTest {
         ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj2), KBPRealis.Actual);
 
     final ResponseAssessment correctAssessment =
-        ResponseAssessment.create(Optional.of(FieldAssessment.CORRECT),
+        ResponseAssessment.of(Optional.of(FieldAssessment.CORRECT),
             Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.CORRECT),
             Optional.of(KBPRealis.Actual), Optional.of(FieldAssessment.CORRECT),
-            Optional.of(ResponseAssessment.MentionType.NOMINAL));
+            Optional.of(FillerMentionType.NOMINAL));
 
     final ResponseAssessment incorrectAssessment =
-        ResponseAssessment.create(Optional.of(FieldAssessment.CORRECT),
+        ResponseAssessment.of(Optional.of(FieldAssessment.CORRECT),
             Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.INCORRECT),
             Optional.of(KBPRealis.Actual), Optional.of(FieldAssessment.CORRECT),
-            Optional.of(ResponseAssessment.MentionType.NOMINAL));
+            Optional.of(FillerMentionType.NOMINAL));
 
 
     final AnswerKey answerKey = AnswerKey.from(d,
