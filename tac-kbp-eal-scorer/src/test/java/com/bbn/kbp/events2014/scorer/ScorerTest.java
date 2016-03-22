@@ -7,10 +7,10 @@ import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.CorefAnnotation;
+import com.bbn.kbp.events2014.FillerMentionType;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.ResponseAssessment;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
 import com.bbn.kbp.events2014.ScoringData;
@@ -171,10 +171,10 @@ public class ScorerTest {
         ImmutableSet.of(ResponseSet.from(x, y, a)), ImmutableSet.<Response>of());
 
     final EALScorer2015Style.Result score =
-        scorer.score(ScoringData.builder().withAnswerKey(answerKey)
-            .withReferenceLinking(goldResponseLinking)
-            .withArgumentOutput(argumentOutput)
-            .withSystemLinking(systemResponseLinking).build());
+        scorer.score(ScoringData.builder().answerKey(answerKey)
+            .referenceLinking(goldResponseLinking)
+            .argumentOutput(argumentOutput)
+            .systemLinking(systemResponseLinking).build());
 
     assertEquals(1.75, score.argResult().unscaledArgumentScore(), .001);
     assertEquals(4.0 / 3, score.linkResult().unscaledLinkingScore(), .001);
@@ -214,10 +214,10 @@ public class ScorerTest {
 
     //final ResponseLinking l4 = this.linking_A_B_C_D;
     final EALScorer2015Style.Result score_A_B_C_D =
-        scorer.score(ScoringData.builder().withAnswerKey(answerKey)
-            .withReferenceLinking(goldResponseLinking)
-            .withArgumentOutput(this.output_ABCD)
-            .withSystemLinking(this.linking_A_B_C_D).build()); // singleton key, singleton system
+        scorer.score(ScoringData.builder().answerKey(answerKey)
+            .referenceLinking(goldResponseLinking)
+            .argumentOutput(this.output_ABCD)
+            .systemLinking(this.linking_A_B_C_D).build()); // singleton key, singleton system
     assertEquals(4.0, score_A_B_C_D.argResult().unscaledArgumentScore(), .001);
     assertEquals(4.0, score_A_B_C_D.linkResult().unscaledLinkingScore(), .001);
     assertEquals(1.0, score_A_B_C_D.scaledScore(), .001);
@@ -228,10 +228,10 @@ public class ScorerTest {
 
     //final ResponseLinking l8 = this.linking_ABCD;
     final EALScorer2015Style.Result score_ABCD =
-        scorer.score(ScoringData.builder().withAnswerKey(answerKey)
-            .withReferenceLinking(goldResponseLinking)
-            .withArgumentOutput(this.output_ABCD)
-            .withSystemLinking(this.linking_ABCD).build()); // singleton key, group system
+        scorer.score(ScoringData.builder().answerKey(answerKey)
+            .referenceLinking(goldResponseLinking)
+            .argumentOutput(this.output_ABCD)
+            .systemLinking(this.linking_ABCD).build()); // singleton key, group system
     assertEquals(4.0, score_ABCD.argResult().unscaledArgumentScore(), .001);
     assertEquals(0, score_ABCD.linkResult().unscaledLinkingScore(), .001);
     assertEquals(0.5, score_ABCD.scaledScore(), .001);
@@ -274,9 +274,9 @@ public class ScorerTest {
 
     //final ResponseLinking l4 = this.linking_A_B_C_D;
     final EALScorer2015Style.Result score_A_B_C_D =
-        scorer.score(ScoringData.builder().withAnswerKey(answerKey)
-            .withReferenceLinking(goldResponseLinking)
-            .withArgumentOutput(this.output_ABCD).withSystemLinking(this.linking_A_B_C_D)
+        scorer.score(ScoringData.builder().answerKey(answerKey)
+            .referenceLinking(goldResponseLinking)
+            .argumentOutput(this.output_ABCD).systemLinking(this.linking_A_B_C_D)
             .build()); // group key, singleton system
     assertEquals(4.0, score_A_B_C_D.argResult().unscaledArgumentScore(), .001);
     assertEquals(0, score_A_B_C_D.linkResult().unscaledLinkingScore(), .001);
@@ -288,10 +288,10 @@ public class ScorerTest {
 
     //final ResponseLinking l8 = this.linking_ABCD;
     final EALScorer2015Style.Result score_ABCD =
-        scorer.score(ScoringData.builder().withAnswerKey(answerKey)
-            .withReferenceLinking(goldResponseLinking)
-            .withArgumentOutput(this.output_ABCD)
-            .withSystemLinking(this.linking_ABCD).build()); // group key, group system
+        scorer.score(ScoringData.builder().answerKey(answerKey)
+            .referenceLinking(goldResponseLinking)
+            .argumentOutput(this.output_ABCD)
+            .systemLinking(this.linking_ABCD).build()); // group key, group system
     assertEquals(4.0, score_ABCD.argResult().unscaledArgumentScore(), .001);
     assertEquals(4.0, score_ABCD.linkResult().unscaledLinkingScore(), .001);
     assertEquals(1.0, score_ABCD.scaledScore(), .001);
@@ -338,10 +338,10 @@ public class ScorerTest {
 
     //final ResponseLinking l7 = this.linking_AB_CD;
     final EALScorer2015Style.Result score_AB_CD =
-        scorer.score(ScoringData.builder().withAnswerKey(answerKey)
-            .withReferenceLinking(goldResponseLinking)
-            .withArgumentOutput(this.output_ABCD)
-            .withSystemLinking(this.linking_AB_CD).build()); // tuples all correct, and clustering all correct
+        scorer.score(ScoringData.builder().answerKey(answerKey)
+            .referenceLinking(goldResponseLinking)
+            .argumentOutput(this.output_ABCD)
+            .systemLinking(this.linking_AB_CD).build()); // tuples all correct, and clustering all correct
     assertEquals(4.0, score_AB_CD.argResult().unscaledArgumentScore(), .001);
     assertEquals(4.0, score_AB_CD.linkResult().unscaledLinkingScore(), .001);
     assertEquals(1.0, score_AB_CD.scaledScore(), .001);
@@ -350,10 +350,10 @@ public class ScorerTest {
 
     //final ResponseLinking l9 = this.linking_AC_BD;
     final EALScorer2015Style.Result score_AC_BD =
-        scorer.score(ScoringData.builder().withAnswerKey(answerKey)
-            .withReferenceLinking(goldResponseLinking)
-            .withArgumentOutput(this.output_ABCD)
-            .withSystemLinking(this.linking_AC_BD).build()); // tuples all correct, but clustering wrong
+        scorer.score(ScoringData.builder().answerKey(answerKey)
+            .referenceLinking(goldResponseLinking)
+            .argumentOutput(this.output_ABCD)
+            .systemLinking(this.linking_AC_BD).build()); // tuples all correct, but clustering wrong
     assertEquals(4.0, score_AC_BD.argResult().unscaledArgumentScore(), .001);
     assertEquals(0, score_AC_BD.linkResult().unscaledLinkingScore(), .001);
     assertEquals(0.5, score_AC_BD.scaledScore(), .001);
@@ -429,10 +429,10 @@ public class ScorerTest {
     //final ResponseLinking l14 = this.linking_AB_G;
     //final ResponseLinking l15 = this.linking_ABD_G;    // overlink { {a,b,d} {g} }
     final EALScorer2015Style.Result score_ABD_G =
-        scorer.score(ScoringData.builder().withAnswerKey(answerKey)
-            .withReferenceLinking(goldResponseLinking)
-            .withArgumentOutput(this.output_ABDG)
-                .withSystemLinking(this.linking_ABD_G).build());
+        scorer.score(ScoringData.builder().answerKey(answerKey)
+            .referenceLinking(goldResponseLinking)
+            .argumentOutput(this.output_ABDG)
+                .systemLinking(this.linking_ABD_G).build());
     assertEquals(2.75, score_ABD_G.argResult().unscaledArgumentScore(), .001);
     // for each key item:
     // for item 'a', keyNeighbors=(b,c) sysNeighbors=(b,d), hence R=1/2 P=1/2, F=1/2
@@ -444,10 +444,10 @@ public class ScorerTest {
     assertEquals(0.3125, score_ABD_G.scaledScore(), .001);
 
     final EALScorer2015Style.Result score_AB_C_G =
-        scorer.score(ScoringData.builder().withAnswerKey(answerKey)
-            .withReferenceLinking(goldResponseLinking)
-            .withArgumentOutput(this.output_ABCG)
-            .withSystemLinking(this.linking_AB_C_G).build());
+        scorer.score(ScoringData.builder().answerKey(answerKey)
+            .referenceLinking(goldResponseLinking)
+            .argumentOutput(this.output_ABCG)
+            .systemLinking(this.linking_AB_C_G).build());
     assertEquals(2.75, score_AB_C_G.argResult().unscaledArgumentScore(), .001);
     assertEquals(4.0 / 3, score_AB_C_G.linkResult().unscaledLinkingScore(), .001);
     // for each key item:
@@ -459,10 +459,10 @@ public class ScorerTest {
     assertEquals(0.3403, score_AB_C_G.scaledScore(), .001);
 
     final EALScorer2015Style.Result score_G_H_I =
-        scorer.score(ScoringData.builder().withAnswerKey(answerKey)
-            .withReferenceLinking(goldResponseLinking)
-            .withArgumentOutput(this.output_GHI)
-            .withSystemLinking(this.linking_G_H_I).build());
+        scorer.score(ScoringData.builder().answerKey(answerKey)
+            .referenceLinking(goldResponseLinking)
+            .argumentOutput(this.output_GHI)
+            .systemLinking(this.linking_G_H_I).build());
     assertEquals(-0.75, score_G_H_I.argResult().unscaledArgumentScore(), .001);
     assertEquals(0, score_G_H_I.linkResult().unscaledLinkingScore(), .001);
 
@@ -470,10 +470,10 @@ public class ScorerTest {
 
     // duplicate system responses { {d,e} {d,e,a} }
     final EALScorer2015Style.Result score_DE_DEA =
-        scorer.score(ScoringData.builder().withAnswerKey(answerKey)
-            .withReferenceLinking(goldResponseLinking)
-            .withArgumentOutput(this.output_DEA)
-            .withSystemLinking(this.linking_DE_DEA).build());
+        scorer.score(ScoringData.builder().answerKey(answerKey)
+            .referenceLinking(goldResponseLinking)
+            .argumentOutput(this.output_DEA)
+            .systemLinking(this.linking_DE_DEA).build());
     assertEquals(3.0, score_DE_DEA.argResult().unscaledArgumentScore(), .001);
     assertEquals(4.0 / 3, score_DE_DEA.linkResult().unscaledLinkingScore(), .001);
     // for each key item:
@@ -502,10 +502,10 @@ public class ScorerTest {
 
     final ResponseLinking l19 = this.linking_C;     // although C is duplicated in key, but TP should just be 1
     final EALScorer2015Style.Result score_C =
-        scorer.score(ScoringData.builder().withAnswerKey(answerKey)
-            .withReferenceLinking(goldResponseLinking)
-            .withArgumentOutput(this.output_C)
-            .withSystemLinking(this.linking_C).build());
+        scorer.score(ScoringData.builder().answerKey(answerKey)
+            .referenceLinking(goldResponseLinking)
+            .argumentOutput(this.output_C)
+            .systemLinking(this.linking_C).build());
     assertEquals(1.0, score_C.argResult().unscaledArgumentScore(), .001);
     assertEquals(0, score_C.linkResult().unscaledLinkingScore(), .001);
     assertEquals(0.125, score_C.scaledScore(), .001);
@@ -529,10 +529,10 @@ public class ScorerTest {
 
     final ResponseLinking l21 = this.linking_AGenericBCE;    // { {aGeneric,b,c,e} } , aGeneric should be removed/ignored? by scorer
     final EALScorer2015Style.Result score_AGenericBCE =
-        scorer.score(ScoringData.builder().withAnswerKey(answerKey)
-            .withReferenceLinking(goldResponseLinking)
-            .withArgumentOutput(this.output_AGeneric_BCE)
-            .withSystemLinking(this.linking_AGenericBCE).build());
+        scorer.score(ScoringData.builder().answerKey(answerKey)
+            .referenceLinking(goldResponseLinking)
+            .argumentOutput(this.output_AGeneric_BCE)
+            .systemLinking(this.linking_AGenericBCE).build());
     assertEquals(4.0, score_AGenericBCE.argResult().unscaledArgumentScore(), .001);
     assertEquals(7.0 / 6, score_AGenericBCE.linkResult().unscaledLinkingScore(), .001);
     assertEquals(0.5458333, score_AGenericBCE.scaledScore(), .001);
@@ -561,23 +561,23 @@ public class ScorerTest {
             .of(ResponseSet.from(a, b), ResponseSet.from(aPrime, c), ResponseSet.from(a, f)),
         ImmutableSet.<Response>of());
 
-    final ScoringData.Builder commonBuilder = ScoringData.builder().withArgumentOutput(argOutput)
-        .withSystemLinking(systemLinking).withReferenceLinking(referenceLinking);
+    final ScoringData.Builder commonBuilder = ScoringData.builder().argumentOutput(argOutput)
+        .systemLinking(systemLinking).referenceLinking(referenceLinking);
 
     final EALScorer2015Style.Result scoreNeitherCorrect = scorer.score(
-        commonBuilder.withAnswerKey(neitherCorrect).build());
+        commonBuilder.answerKey(neitherCorrect).build());
     assertEquals(0.25, scoreNeitherCorrect.linkResult().scaledLinkingScore(), .0001);
 
     final EALScorer2015Style.Result scoreACorrect =
-        scorer.score(commonBuilder.withAnswerKey(aCorrect).build());
+        scorer.score(commonBuilder.answerKey(aCorrect).build());
     assertEquals((3.0 / 2.0) / 4.0, scoreACorrect.linkResult().scaledLinkingScore(), .0001);
 
     final EALScorer2015Style.Result scoreAPrimeCorrect =
-        scorer.score(commonBuilder.withAnswerKey(aPrimeCorrect).build());
+        scorer.score(commonBuilder.answerKey(aPrimeCorrect).build());
     assertEquals((2.0 / 3.0), scoreAPrimeCorrect.linkResult().scaledLinkingScore(), .0001);
 
     final EALScorer2015Style.Result scoreBothCorrect =
-        scorer.score(commonBuilder.withAnswerKey(bothCorrect).build());
+        scorer.score(commonBuilder.answerKey(bothCorrect).build());
     assertEquals(0.7, scoreBothCorrect.linkResult().scaledLinkingScore(), .0001);
   }
 
@@ -599,7 +599,7 @@ public class ScorerTest {
 
   private static Response dummyResponseOfType(Symbol type, Symbol role, String cas,
       KBPRealis realis, int offset) {
-    return Response.createFrom(DOC, type, role, kbpString(cas),
+    return Response.of(DOC, type, role, kbpString(cas),
         CharOffsetSpan.fromOffsetsOnly(offset + 0, offset + 1),
         ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(
             CharOffsetSpan.fromOffsetsOnly(offset + 0, offset + 1)),
@@ -611,7 +611,7 @@ public class ScorerTest {
     final ImmutableSet.Builder<AssessedResponse> correctAssessedResponses = ImmutableSet.builder();
     for (final Response correctResponse : correct) {
       correctAssessedResponses.add(
-          AssessedResponse.assessCorrectly(correctResponse, ResponseAssessment.MentionType.NAME));
+          AssessedResponse.assessCorrectly(correctResponse, FillerMentionType.NAME));
     }
     final ImmutableSet.Builder<AssessedResponse> incorrectAssessedResponses =
         ImmutableSet.builder();

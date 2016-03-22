@@ -6,6 +6,7 @@ import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.FieldAssessment;
+import com.bbn.kbp.events2014.FillerMentionType;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
@@ -153,15 +154,15 @@ public class MergeAssessmentStoresTest {
   private final Symbol role = Symbol.from("role");
 
   private AssessedResponse withCorrectAssessment(Response r) {
-    return AssessedResponse.from(r, correctAssessment());
+    return AssessedResponse.of(r, correctAssessment());
   }
 
   private AssessedResponse withWrongAssessment(Response r) {
-    return AssessedResponse.from(r, wrongAssessment());
+    return AssessedResponse.of(r, wrongAssessment());
   }
 
   private Response responseWithCAS(String CAS) {
-    return Response.createFrom(docid, type, role,
+    return Response.of(docid, type, role,
         KBPString.from(CAS, CharOffsetSpan.fromOffsetsOnly(offsetCounter++, offsetCounter++)),
         CharOffsetSpan.fromOffsetsOnly(offsetCounter++, offsetCounter++),
         ImmutableSet.<CharOffsetSpan>of(),
@@ -170,16 +171,14 @@ public class MergeAssessmentStoresTest {
   }
 
   private ResponseAssessment wrongAssessment() {
-    return ResponseAssessment.create(Optional.of(FieldAssessment.INCORRECT),
-        Optional.<FieldAssessment>absent(), Optional.<FieldAssessment>absent(),
-        Optional.<KBPRealis>absent(), Optional.<FieldAssessment>absent(),
-        Optional.<ResponseAssessment.MentionType>absent());
+    return ResponseAssessment.builder()
+        .justificationSupportsEventType(FieldAssessment.INCORRECT).build();
   }
 
   private ResponseAssessment correctAssessment() {
-    return ResponseAssessment.create(Optional.of(FieldAssessment.CORRECT),
+    return ResponseAssessment.of(Optional.of(FieldAssessment.CORRECT),
         Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.CORRECT),
         Optional.of(KBPRealis.Actual), Optional.of(FieldAssessment.CORRECT),
-        Optional.of(ResponseAssessment.MentionType.NOMINAL));
+        Optional.of(FillerMentionType.NOMINAL));
   }
 }

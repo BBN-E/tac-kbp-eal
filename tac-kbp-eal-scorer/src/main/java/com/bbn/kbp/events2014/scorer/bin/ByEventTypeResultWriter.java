@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import static com.bbn.kbp.events2014.TypeRoleFillerRealisFunctions.type;
 import static com.google.common.base.Predicates.compose;
 import static com.google.common.base.Predicates.equalTo;
 
@@ -42,7 +43,7 @@ public final class ByEventTypeResultWriter implements KBP2015Scorer.SimpleResult
             @Override
             public EALScorer2015Style.ArgResult apply(final
             EALScorer2015Style.ArgResult input) {
-              return input.copyFiltered(compose(equalTo(type), TypeRoleFillerRealis.Type));
+              return input.copyFiltered(compose(equalTo(type), type()));
             }
           };
       final File eventTypeDir = new File(eventTypesDir, type.asString());

@@ -85,7 +85,7 @@ public final class EventArgumentLinking {
     return EventArgumentLinking.create(answerKey.docId(),
         ImmutableSet.<TypeRoleFillerRealisSet>of(),
         ImmutableSet.copyOf(FluentIterable.from(answerKey.annotatedResponses())
-            .transform(AssessedResponse.Response)
+            .transform(AssessedResponseFunctions.response())
             .transform(ToEquivalenceClass)));
   }
 

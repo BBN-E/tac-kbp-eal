@@ -5,6 +5,7 @@ import com.bbn.bue.common.evaluation.BrokenDownProvenancedConfusionMatrix;
 import com.bbn.bue.common.evaluation.ProvenancedConfusionMatrix;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
+import com.bbn.kbp.events2014.TypeRoleFillerRealisFunctions;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
@@ -13,6 +14,7 @@ import com.google.common.collect.Ordering;
 
 import java.util.Map;
 
+import static com.bbn.kbp.events2014.TypeRoleFillerRealisFunctions.realis;
 import static com.google.common.base.Functions.compose;
 import static com.google.common.base.Functions.toStringFunction;
 
@@ -71,12 +73,11 @@ public final class BreakdownFunctions {
 
   public static final Map<String, Function<TypeRoleFillerRealis, Symbol>> StandardBreakdowns =
       ImmutableMap.of(
-          "Type", TypeRoleFillerRealis.Type,
+          "Type", TypeRoleFillerRealisFunctions.type(),
           "Role", BreakdownFunctions.TypeDotRole,
           "Genre", BreakdownFunctions.Genre,
-          "DocId", TypeRoleFillerRealis.DocID,
-          "Realis", compose(Symbol.FromString,
-              compose(toStringFunction(), TypeRoleFillerRealis.realisFunction())));
+          "DocId", TypeRoleFillerRealisFunctions.docID(),
+          "Realis", compose(Symbol.FromString, compose(toStringFunction(), realis())));
 
 
   private BreakdownFunctions() {

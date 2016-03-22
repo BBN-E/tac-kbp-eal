@@ -26,7 +26,7 @@ public class ScoringDataTransformations {
             toDelete.add(r);
           }
         }
-        return scoringData.modifiedCopy().withArgumentOutput(
+        return ScoringData.builder().from(scoringData).argumentOutput(
             ResponseMapping.delete(toDelete.build())
                 .apply(scoringData.argumentOutput().get())).build();
       }

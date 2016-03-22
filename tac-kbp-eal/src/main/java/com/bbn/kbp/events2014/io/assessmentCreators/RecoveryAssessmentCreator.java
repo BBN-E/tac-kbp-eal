@@ -5,6 +5,7 @@ import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.FieldAssessment;
+import com.bbn.kbp.events2014.FillerMentionType;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.KBPTIMEXExpression;
 import com.bbn.kbp.events2014.Response;
@@ -78,7 +79,7 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
       final Optional<FieldAssessment> aer, final Optional<FieldAssessment> casAssessment,
       final Optional<KBPRealis> realis, final Optional<FieldAssessment> baseFillerAssessment,
       final Optional<Integer> coreference,
-      final Optional<ResponseAssessment.MentionType> mentionTypeOfCAS) {
+      final Optional<FillerMentionType> mentionTypeOfCAS) {
     ++responsesAttempted;
 
     Optional<FieldAssessment> fixedAET = aet;
@@ -87,7 +88,7 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
     Optional<KBPRealis> fixedRealis = realis;
     Optional<FieldAssessment> fixedBF = baseFillerAssessment;
     Optional<Integer> fixedCoref = coreference;
-    Optional<ResponseAssessment.MentionType> fixedMentionType = mentionTypeOfCAS;
+    Optional<FillerMentionType> fixedMentionType = mentionTypeOfCAS;
 
     // if we're missing coreference, we put it in a singleton cluster with a random index
     if (!coreference.isPresent() && casAssessment.isPresent() && casAssessment.get()
@@ -152,7 +153,7 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
       }
     }
 
-    return new AssessmentParseResult(ResponseAssessment.create(fixedAET, fixedAER, fixedCAS,
+    return new AssessmentParseResult(ResponseAssessment.of(fixedAET, fixedAER, fixedCAS,
         fixedRealis, fixedBF, fixedMentionType), fixedCoref.orNull());
   }
 
@@ -185,8 +186,8 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
           final KBPTIMEXExpression kbptimexExpression = KBPTIMEXExpression.parseTIMEX(CASString);
           ret.add(response);
         } catch (IllegalArgumentException iae) {
-          ret.add(AssessedResponse.from(response.response(),
-              response.assessment().copyWithModifiedCASAssessment(FieldAssessment.INCORRECT)));
+          ret.add(AssessedResponse.of(response.response(),
+              response.assessment().withEntityCorrectFiller(FieldAssessment.INCORRECT)));
           illegalTIMEX.add(CASString);
         }
       } else {

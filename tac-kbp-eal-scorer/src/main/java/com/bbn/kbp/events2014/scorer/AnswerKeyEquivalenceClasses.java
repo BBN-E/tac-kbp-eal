@@ -13,7 +13,7 @@ import com.google.common.collect.Multimaps;
 
 import java.util.Set;
 
-import static com.bbn.kbp.events2014.AssessedResponse.Response;
+import static com.bbn.kbp.events2014.AssessedResponseFunctions.response;
 import static com.google.common.base.Functions.compose;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -33,7 +33,7 @@ public class AnswerKeyEquivalenceClasses<Answerable>
       final AnswerKey answerKey, final Function<Response, Answerable> answerableExtractor) {
     return new AnswerKeyEquivalenceClasses<Answerable>(answerKey,
         Multimaps.index(answerKey.annotatedResponses(),
-            compose(answerableExtractor, Response)));
+            compose(answerableExtractor, response())));
   }
 
   @Override

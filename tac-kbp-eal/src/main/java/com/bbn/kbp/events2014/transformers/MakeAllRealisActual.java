@@ -7,7 +7,6 @@ import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
 import com.bbn.kbp.events2014.ScoringData;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -33,7 +32,7 @@ public final class MakeAllRealisActual implements ScoringDataTransformation {
   private static ResponseAssessment neutralizeResponseAssessment(
       ResponseAssessment responseAssessment) {
     if (responseAssessment.realis().isPresent()) {
-      return responseAssessment.copyWithModifiedRealisAssessment(Optional.of(KBPRealis.Actual));
+      return responseAssessment.withRealis(KBPRealis.Actual);
     } else {
       return responseAssessment;
     }
@@ -56,7 +55,7 @@ public final class MakeAllRealisActual implements ScoringDataTransformation {
     final AnswerKey.Builder ret = neutralizeAssessments(input).modifiedCopyBuilder();
     for (final AssessedResponse assessedResponse : input.annotatedResponses()) {
       final Response neutralizedResponse =
-          assessedResponse.response().copyWithSwappedRealis(KBPRealis.Actual);
+          assessedResponse.response().withRealis(KBPRealis.Actual);
       if(!neutralizedResponse.equals(assessedResponse.response())) {
         ret.replaceAssessedResponseMaintainingAssessment(assessedResponse.response(), neutralizedResponse, new Random());
         ret.removeUnannotated(neutralizedResponse);
@@ -68,7 +67,7 @@ public final class MakeAllRealisActual implements ScoringDataTransformation {
   private static ResponseMapping responseMapping(final AnswerKey answerKey) {
     final ImmutableMap.Builder<Response, Response> replacements = ImmutableMap.builder();
     for (final Response response : answerKey.allResponses()) {
-      final Response replacement = response.copyWithSwappedRealis(KBPRealis.Actual);
+      final Response replacement = response.withRealis(KBPRealis.Actual);
       if (!response.equals(replacement)) {
         replacements.put(response, replacement);
       }
@@ -80,7 +79,7 @@ public final class MakeAllRealisActual implements ScoringDataTransformation {
   public ScoringData transform(final ScoringData scoringData) {
     checkArgument(scoringData.answerKey().isPresent(), "Answer key must be present to neutralize realis");
 
-    final ScoringData.Builder ret = scoringData.modifiedCopy();
+    final ScoringData.Builder ret = ScoringData.builder().from(scoringData);
 
     final ResponseMapping responseMapping = responseMapping(scoringData.answerKey().get());
     if (!responseMapping.isIdentity()) {
@@ -89,18 +88,18 @@ public final class MakeAllRealisActual implements ScoringDataTransformation {
 
     AnswerKey newAnswerKey = neutralizeAssessments(
         responseMapping.apply(scoringData.answerKey().get()));
-    ret.withAnswerKey(newAnswerKey);
+    ret.answerKey(newAnswerKey);
 
     if (scoringData.argumentOutput().isPresent()) {
-      ret.withArgumentOutput(responseMapping.apply(scoringData.argumentOutput().get()));
+      ret.argumentOutput(responseMapping.apply(scoringData.argumentOutput().get()));
     }
 
     if(scoringData.referenceLinking().isPresent()) {
-      ret.withReferenceLinking(responseMapping.apply(scoringData.referenceLinking().get()));
+      ret.referenceLinking(responseMapping.apply(scoringData.referenceLinking().get()));
     }
 
     if(scoringData.systemLinking().isPresent()) {
-      ret.withSystemLinking(responseMapping.apply(scoringData.systemLinking().get()));
+      ret.systemLinking(responseMapping.apply(scoringData.systemLinking().get()));
     }
 
     return ret.build();

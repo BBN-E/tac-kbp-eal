@@ -3,7 +3,6 @@ package com.bbn.kbp.events2014.io;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.EventArgumentLinking;
-import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.TypeRoleFillerRealisSet;
 
 import com.google.common.base.Charsets;
@@ -18,6 +17,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.bbn.kbp.events2014.TypeRoleFillerRealisFunctions.uniqueIdentifier;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.transform;
@@ -59,11 +59,11 @@ public final class EventArgumentEquivalenceSpecFormats {
 
       for (final TypeRoleFillerRealisSet trfrSet : toWrite.linkedAsSet()) {
         lines.add(TAB_JOINER.join(
-            transform(trfrSet.asSet(), TypeRoleFillerRealis.uniqueIdFunction())));
+            transform(trfrSet.asSet(), uniqueIdentifier())));
       }
 
       lines.add("INCOMPLETE\t" + TAB_JOINER.join(
-          transform(toWrite.incomplete(), TypeRoleFillerRealis.uniqueIdFunction())));
+          transform(toWrite.incomplete(), uniqueIdentifier())));
 
       final File f = new File(directory, toWrite.docID().toString());
       Files.asCharSink(f, Charsets.UTF_8).writeLines(lines, "\n");

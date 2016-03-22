@@ -7,6 +7,7 @@ import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.ResponseFunctions;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.LinkingSpecFormats;
@@ -237,7 +238,7 @@ public final class ValidateSystemOutput {
   }
 
   private static final Predicate<Response> NOT_GENERIC = compose(not(equalTo(
-      KBPRealis.Generic)), Response.realisFunction());
+      KBPRealis.Generic)), ResponseFunctions.realis());
 
   private void assertExactlyTwoSubdirectories(final File outputStoreDir) throws IOException {
     checkArgument(outputStoreDir.isDirectory());

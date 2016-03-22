@@ -72,7 +72,7 @@ public final class OnlyMostSpecificTemporal implements AnswerKeyToResponseMappin
           final TypeRoleFillerRealis responseSignature = responseSignature(response.response());
 
           for (final KBPTIMEXExpression lessSpecificTimex : time.lessSpecificCompatibleTimes()) {
-            bannedResponseSignatures.add(responseSignature.copyWithCAS(
+            bannedResponseSignatures.add(responseSignature.withArgumentCanonicalString(
                 KBPString.from(lessSpecificTimex.toString(), DUMMY_OFFSETS)));
           }
         } catch (KBPTIMEXExpression.KBPTIMEXException timexException) {
@@ -92,7 +92,8 @@ public final class OnlyMostSpecificTemporal implements AnswerKeyToResponseMappin
     final TypeRoleFillerRealis responseSignatureWithOffsets =
         TypeRoleFillerRealis.fromSystemResponseUnnormalized(response);
     return responseSignatureWithOffsets
-        .copyWithCAS(copyWithDummyOffsets(responseSignatureWithOffsets.argumentCanonicalString()));
+        .withArgumentCanonicalString(
+            copyWithDummyOffsets(responseSignatureWithOffsets.argumentCanonicalString()));
   }
 
   private static final CharOffsetSpan DUMMY_OFFSETS = CharOffsetSpan.fromOffsetsOnly(0, 0);

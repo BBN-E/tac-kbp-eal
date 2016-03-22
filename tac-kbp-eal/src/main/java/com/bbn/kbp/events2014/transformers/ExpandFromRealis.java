@@ -46,9 +46,9 @@ public final class ExpandFromRealis implements Function<AnswerKey, AnswerKey> {
     for (final AssessedResponse assessedResponse : input.annotatedResponses()) {
       if (assessedResponse.assessment().realis().isPresent()) {
         final Response responseWithAssessedRealis = assessedResponse.response()
-            .copyWithSwappedRealis(assessedResponse.assessment().realis().get());
+            .withRealis(assessedResponse.assessment().realis().get());
         if (!existingResponses.contains(responseWithAssessedRealis)) {
-          newAssessedResponses.add(AssessedResponse.from(
+          newAssessedResponses.add(AssessedResponse.of(
               responseWithAssessedRealis, assessedResponse.assessment()));
           existingResponses.add(responseWithAssessedRealis);
         }

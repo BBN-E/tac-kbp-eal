@@ -10,11 +10,11 @@ import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.FieldAssessment;
+import com.bbn.kbp.events2014.FillerMentionType;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
-import com.bbn.kbp.events2014.ResponseAssessment.MentionType;
 import com.bbn.kbp.events2014.io.assessmentCreators.AssessmentCreator;
 import com.bbn.kbp.events2014.io.assessmentCreators.RecoveryAssessmentCreator;
 import com.bbn.kbp.events2014.io.assessmentCreators.StrictAssessmentCreator;
@@ -53,6 +53,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import static com.bbn.kbp.events2014.AssessedResponseFunctions.response;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -429,7 +430,7 @@ public final class AssessmentSpecFormats {
       try {
         // first annotated responses, sorted by response ID
         final Ordering<AssessedResponse> assessedResponseOrdering =
-            format.responseOrdering().onResultOf(AssessedResponse.Response);
+            format.responseOrdering().onResultOf(response());
         for (final AssessedResponse arg : assessedResponseOrdering
             .sortedCopy(answerKey.annotatedResponses())) {
           final List<String> parts = Lists.newArrayList();
@@ -496,7 +497,7 @@ public final class AssessmentSpecFormats {
               parseAnnotation(annotationParts);
 
           if (annotation.assessment().isPresent()) {
-            annotated.add(AssessedResponse.from(response, annotation.assessment().get()));
+            annotated.add(AssessedResponse.of(response, annotation.assessment().get()));
           } else {
             unannotated.add(response);
           }
@@ -537,7 +538,8 @@ public final class AssessmentSpecFormats {
           FieldAssessment.parseOptional(parts.get(3));
 
       final Optional<KBPRealis> realis = KBPRealis.parseOptional(parts.get(5));
-      final Optional<MentionType> mentionTypeOfCAS = MentionType.parseOptional(parts.get(6));
+      final Optional<FillerMentionType> mentionTypeOfCAS = FillerMentionType
+          .parseOptional(parts.get(6));
 
       return assessmentCreator.createAssessmentFromFields(AET, AER, casAssessment,
           realis, baseFillerAssessment, coreference, mentionTypeOfCAS);
@@ -559,7 +561,7 @@ public final class AssessmentSpecFormats {
         parts.add("NIL");
       }
       parts.add(KBPRealis.asString(ann.realis()));
-      parts.add(MentionType.stringOrNil(ann.mentionTypeOfCAS()));
+      parts.add(FillerMentionType.stringOrNil(ann.mentionTypeOfCAS()));
     }
 
     private static final String UNANNOTATED = "UNANNOTATED";
@@ -613,7 +615,7 @@ public final class AssessmentSpecFormats {
   }
 
   public static Response parseArgumentFields(final List<String> parts) {
-    return Response.createFrom(Symbol.from(parts.get(0)),
+    return Response.of(Symbol.from(parts.get(0)),
         Symbol.from(parts.get(1)), Symbol.from(parts.get(2)),
         KBPString.from(parts.get(3), parseCharOffsetSpan(parts.get(4))),
         parseCharOffsetSpan(parts.get(6)),

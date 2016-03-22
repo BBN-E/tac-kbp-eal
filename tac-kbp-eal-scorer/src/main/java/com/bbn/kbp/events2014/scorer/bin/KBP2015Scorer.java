@@ -228,10 +228,10 @@ public final class KBP2015Scorer {
         }
 
         final ScoringData scoringData = ScoringData.builder()
-            .withAnswerKey(argumentKey)
-            .withArgumentOutput(argumentOutput)
-            .withReferenceLinking(referenceLinking.get())
-            .withSystemLinking(systemLinking.get())
+            .answerKey(argumentKey)
+            .argumentOutput(argumentOutput)
+            .referenceLinking(referenceLinking.get())
+            .systemLinking(systemLinking.get())
             .build();
 
         perDocResults.add(documentScorer.score(scoringData));

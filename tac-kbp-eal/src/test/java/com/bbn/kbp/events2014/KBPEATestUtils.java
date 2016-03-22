@@ -23,7 +23,7 @@ public final class KBPEATestUtils {
 
 
   public static TypeRoleFillerRealis dummyTRFR(Symbol docid, KBPString CAS) {
-    return TypeRoleFillerRealis.create(docid, Symbol.from("dummyType"),
+    return TypeRoleFillerRealis.of(docid, Symbol.from("dummyType"),
         Symbol.from("dummyRole"), KBPRealis.Actual, CAS);
   }
 
@@ -61,13 +61,13 @@ public final class KBPEATestUtils {
       new Function<Response, AssessedResponse>() {
         @Override
         public AssessedResponse apply(Response input) {
-          return AssessedResponse.from(input, ResponseAssessment.create(
+          return AssessedResponse.of(input, ResponseAssessment.of(
               Optional.of(FieldAssessment.CORRECT),
               Optional.of(FieldAssessment.CORRECT),
               Optional.of(FieldAssessment.CORRECT),
               Optional.of(KBPRealis.Actual),
               Optional.of(FieldAssessment.CORRECT),
-              Optional.of(ResponseAssessment.MentionType.NOMINAL)));
+              Optional.of(FillerMentionType.NOMINAL)));
         }
       };
 
@@ -99,7 +99,7 @@ public final class KBPEATestUtils {
     private int nextIdx = 0;
 
     public Response responseFor(TypeRoleFillerRealis trfr) {
-      return Response.createFrom(trfr.docID(), trfr.type(),
+      return Response.of(trfr.docID(), trfr.type(),
           trfr.role(), trfr.argumentCanonicalString(), charOffsetSpan(nextIdx++),
           ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(charOffsetSpan(nextIdx++)),
           KBPRealis.Actual);

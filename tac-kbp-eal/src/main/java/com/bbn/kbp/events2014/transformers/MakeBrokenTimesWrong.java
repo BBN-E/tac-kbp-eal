@@ -35,8 +35,7 @@ public final class MakeBrokenTimesWrong implements ScoringDataTransformation {
               "Response with illegal temporal expression {} had correct CAS assessment. Changing it to incorrect.",
               cas);
           ret.replaceAssessment(assessedResponse.response(),
-              assessedResponse.assessment().copyWithModifiedCASAssessment(
-                  FieldAssessment.INCORRECT));
+              assessedResponse.assessment().withEntityCorrectFiller(FieldAssessment.INCORRECT));
         }
       }
     }
@@ -46,8 +45,8 @@ public final class MakeBrokenTimesWrong implements ScoringDataTransformation {
   @Override
   public ScoringData transform(final ScoringData scoringData) {
     checkArgument(scoringData.answerKey().isPresent(), "It only makes sense to alter assessment if you have an answer key");
-    return scoringData.modifiedCopy()
-        .withAnswerKey(makeBrokenTimesWrong(scoringData.answerKey().get()))
+    return ScoringData.builder().from(scoringData)
+        .answerKey(makeBrokenTimesWrong(scoringData.answerKey().get()))
         .build();
   }
 

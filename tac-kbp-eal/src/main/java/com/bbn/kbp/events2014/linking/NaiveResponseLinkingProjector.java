@@ -3,7 +3,7 @@ package com.bbn.kbp.events2014.linking;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
-import com.bbn.kbp.events2014.AssessedResponse;
+import com.bbn.kbp.events2014.AssessedResponseFunctions;
 import com.bbn.kbp.events2014.EventArgumentLinking;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
@@ -104,7 +104,7 @@ public final class NaiveResponseLinkingProjector {
     final ImmutableSet<TypeRoleFillerRealis> allTargetTRFRs = ImmutableSet.copyOf(
         Optional.presentInstances(FluentIterable
             .from(targetAnswerKey.annotatedResponses())
-            .transform(AssessedResponse.Response)
+            .transform(AssessedResponseFunctions.response())
             .transform(toEquivalenceClassIfPossible)));
 
     final Set<TypeRoleFillerRealis> projectedIncompletesNotFoundElsewhere =

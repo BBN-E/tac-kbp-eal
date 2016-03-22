@@ -5,7 +5,7 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events2014.AnswerKey;
-import com.bbn.kbp.events2014.AssessedResponse;
+import com.bbn.kbp.events2014.AssessedResponseFunctions;
 import com.bbn.kbp.events2014.FieldAssessment;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseAssessment;
@@ -110,10 +110,10 @@ public final class KBPAssessmentDiff {
       final Set<Response> commonResponses =
           Sets.intersection(
               FluentIterable.from(leftAnswers.annotatedResponses())
-                  .transform(AssessedResponse.Response)
+                  .transform(AssessedResponseFunctions.response())
                   .toSet(),
               FluentIterable.from(rightAnswers.annotatedResponses())
-                  .transform(AssessedResponse.Response)
+                  .transform(AssessedResponseFunctions.response())
                   .toSet());
       totalCommonResponses += commonResponses.size();
 
@@ -164,7 +164,7 @@ public final class KBPAssessmentDiff {
     if (baselineAnnotationStore.isPresent()) {
       final AnswerKey baselineAnswers = baselineAnnotationStore.get().readOrEmpty(docId);
       baselineResponses = FluentIterable.from(baselineAnswers.annotatedResponses())
-          .transform(AssessedResponse.Response).toSet();
+          .transform(AssessedResponseFunctions.response()).toSet();
     } else {
       baselineResponses = ImmutableSet.of();
     }

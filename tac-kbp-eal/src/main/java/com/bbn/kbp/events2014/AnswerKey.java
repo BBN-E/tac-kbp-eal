@@ -6,6 +6,7 @@ import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
@@ -50,7 +51,7 @@ public final class AnswerKey {
     this.docid = checkNotNull(docId);
     try {
       this.annotatedArgs = DuplicateTolerantImmutableMapBuilder
-          .uniqueIndex(annotatedArgs, AssessedResponse.Response);
+          .uniqueIndex(annotatedArgs, AssessedResponseFunctions.response());
     } catch (IllegalArgumentException iae) {
       throw new IllegalStateException("The same response is assessed multiple times differently",
           iae);
@@ -84,7 +85,8 @@ public final class AnswerKey {
    */
   public ImmutableSet<Response> allResponses() {
     return ImmutableSet.copyOf(
-        concat(FluentIterable.from(annotatedResponses()).transform(AssessedResponse.Response),
+        concat(FluentIterable.from(annotatedResponses())
+                .transform(AssessedResponseFunctions.response()),
             unannotatedResponses()));
   }
 
@@ -127,8 +129,8 @@ public final class AnswerKey {
     return corefAnnotation.copyRemovingStringsNotIn(ImmutableSet.copyOf(
         transform(
             concat(unannotatedResponses,
-                transform(annotatedArgs, AssessedResponse.Response)),
-            Response.CASFunction())));
+                transform(annotatedArgs, AssessedResponseFunctions.response())),
+            ResponseFunctions.canonicalArgument())));
   }
 
   /**
@@ -142,7 +144,7 @@ public final class AnswerKey {
     final ImmutableSet<AssessedResponse> assessedResponsesSet = ImmutableSet.copyOf(assessed);
     final ImmutableSet<Response> unassessedResponseSet = ImmutableSet.copyOf(unassessedResponses);
     final Set<Response> assessedResponses = FluentIterable.from(assessedResponsesSet)
-        .transform(AssessedResponse.Response).toSet();
+        .transform(AssessedResponseFunctions.response()).toSet();
 
     if (Sets.intersection(assessedResponses, unassessedResponseSet).isEmpty()) {
       return from(docID, assessedResponsesSet, unassessedResponseSet, corefAnnotation);
@@ -167,7 +169,7 @@ public final class AnswerKey {
   private void assertNoIncompatibleCorefAnnotations() {
     final ImmutableSet<KBPString> allResponseCASes = FluentIterable
         .from(allResponses())
-        .transform(Response.CASFunction())
+        .transform(ResponseFunctions.canonicalArgument())
         .toSet();
     checkSetsEqual(corefAnnotation.allCASes(), "CASes in coref annotation",
         allResponseCASes, "CASes in responses");
@@ -220,7 +222,7 @@ public final class AnswerKey {
   public Optional<AssessedResponse> assess(Response response) {
     final Optional<ResponseAssessment> ret = assessment(response);
     if (ret.isPresent()) {
-      return Optional.of(AssessedResponse.from(response, ret.get()));
+      return Optional.of(AssessedResponse.of(response, ret.get()));
     } else {
       return Optional.absent();
     }
@@ -302,17 +304,19 @@ public final class AnswerKey {
     final Builder ret = modifiedCopyBuilder();
 
     final ImmutableMap<String, Response> unannotatedHere = Maps.uniqueIndex(unannotatedResponses(),
-        Response.uniqueIdFunction());
+        ResponseFunctions.uniqueIdentifier());
     final ImmutableMap<String, AssessedResponse> idToAssessedHere =
         Maps.uniqueIndex(annotatedResponses(),
-            Functions.compose(Response.uniqueIdFunction(), AssessedResponse.Response));
+            Functions.compose(ResponseFunctions.uniqueIdentifier(),
+                AssessedResponseFunctions.response()));
     final Set<String> idsHere = Sets.union(unannotatedHere.keySet(), idToAssessedHere.keySet());
 
     final ImmutableMap<String, Response> unannotatedThere = Maps.uniqueIndex(
-        fallback.unannotatedResponses(), Response.uniqueIdFunction());
+        fallback.unannotatedResponses(), ResponseFunctions.uniqueIdentifier());
     final ImmutableMap<String, AssessedResponse> idToAssessedThere =
         Maps.uniqueIndex(fallback.annotatedResponses(),
-            Functions.compose(Response.uniqueIdFunction(), AssessedResponse.Response));
+            Functions.compose(ResponseFunctions.uniqueIdentifier(),
+                AssessedResponseFunctions.response()));
     final Set<String> idsThere = Sets.union(unannotatedThere.keySet(), idToAssessedThere.keySet());
 
     final Set<String> idsOnlyInFallback = Sets.difference(idsThere, idsHere);
@@ -337,12 +341,12 @@ public final class AnswerKey {
   public AnswerKey copyMerging(AnswerKey toMerge) {
     // (1) determine which responses are newly assessed
     final Set<Response> alreadyAssessedInBaseline = FluentIterable.from(annotatedResponses())
-        .transform(AssessedResponse.Response).toSet();
+        .transform(AssessedResponseFunctions.response()).toSet();
 
     final Predicate<AssessedResponse> ResponseNotAssessedInBaseline =
         compose(
             not(in(alreadyAssessedInBaseline)),
-            AssessedResponse.Response);
+            AssessedResponseFunctions.response());
     final Set<AssessedResponse> newAssessedResponses =
         FluentIterable.from(toMerge.annotatedResponses())
             .filter(ResponseNotAssessedInBaseline)
@@ -356,7 +360,7 @@ public final class AnswerKey {
 
     final ImmutableSet<Response> responsesAssessedInAdditional =
         FluentIterable.from(toMerge.annotatedResponses())
-            .transform(AssessedResponse.Response)
+            .transform(AssessedResponseFunctions.response())
             .toSet();
     final Set<Response> stillUnannotated =
         Sets.union(
@@ -375,7 +379,7 @@ public final class AnswerKey {
   }
 
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
         .add("docId", docid)
         .add("assessedResponses",
             "{" + StringUtils.NewlineJoiner.join(annotatedResponses()) + "}")
@@ -453,7 +457,7 @@ public final class AnswerKey {
     public AnswerKey build() {
       final Set<KBPString> allCASes = FluentIterable.from(annotatedArgs.keySet())
           .append(unannotatedResponses)
-          .transform(Response.CASFunction()).toSet();
+          .transform(ResponseFunctions.canonicalArgument()).toSet();
 
       return new AnswerKey(docId, annotatedArgs.values(), unannotatedResponses,
           corefAnnotation.build().copyRemovingStringsNotIn(allCASes));
@@ -480,7 +484,7 @@ public final class AnswerKey {
           }
         }
         annotatedArgs.remove(original);
-        annotatedArgs.put(replacement, AssessedResponse.from(replacement, assessment));
+        annotatedArgs.put(replacement, AssessedResponse.of(replacement, assessment));
         corefAnnotation.registerCAS(replacement.canonicalArgument(), rng);
       } else if (unannotatedResponses.contains(original)) {
         unannotatedResponses.remove(original);
@@ -498,7 +502,7 @@ public final class AnswerKey {
         final ResponseAssessment newAssessment) {
 
       if (annotatedArgs.containsKey(response)) {
-        annotatedArgs.put(response, AssessedResponse.from(response, newAssessment));
+        annotatedArgs.put(response, AssessedResponse.of(response, newAssessment));
       } else {
         throw new IllegalArgumentException("Cannot replace assessment for response " + response +
             " because it is not yet assessed");

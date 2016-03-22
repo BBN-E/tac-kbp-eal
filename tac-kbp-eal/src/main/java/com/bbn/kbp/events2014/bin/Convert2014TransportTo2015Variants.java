@@ -17,6 +17,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 
+import static com.bbn.kbp.events2014.AssessedResponseFunctions.response;
+
 /**
  * Created by jdeyoung on 8/4/15.
  */
@@ -60,7 +62,7 @@ public class Convert2014TransportTo2015Variants {
 
       final ImmutableSet<Response> movementTransportResponses = FluentIterable
           .from(restrictedToRelevantTypes.annotatedResponses())
-          .transform(AssessedResponse.Response)
+          .transform(response())
           .append(restrictedToRelevantTypes.unannotatedResponses())
           .toSet();
 
@@ -81,11 +83,11 @@ public class Convert2014TransportTo2015Variants {
 
   private static Response transformResponseArtifact(Response r) {
     if (r.role().equalTo(VEHICLE_ROLE)) {
-      r = r.copyWithSwappedRole(INSTRUMENT_ROLE);
+      r = r.withRole(INSTRUMENT_ROLE);
     }
 
     if (r.type().equalTo(MOVEMENT_TRANSPORT)) {
-      return r.copyWithSwappedType(MOVEMENT_TRANSPORT_ARTIFACT);
+      return r.withType(MOVEMENT_TRANSPORT_ARTIFACT);
     } else {
       return r;
     }
@@ -93,15 +95,15 @@ public class Convert2014TransportTo2015Variants {
 
   private static Response transformResponsePerson(Response r) {
     if (r.role().equalTo(VEHICLE_ROLE)) {
-      r = r.copyWithSwappedRole(INSTRUMENT_ROLE);
+      r = r.withRole(INSTRUMENT_ROLE);
     }
 
     if (r.role().equalTo(ARTIFACT_ROLE)) {
-      r = r.copyWithSwappedRole(PERSON_ROLE);
+      r = r.withRole(PERSON_ROLE);
     }
 
     if (r.type().equalTo(MOVEMENT_TRANSPORT)) {
-      return r.copyWithSwappedType(MOVEMENT_TRANSPORT_PERSON);
+      return r.withType(MOVEMENT_TRANSPORT_PERSON);
     } else {
       return r;
     }

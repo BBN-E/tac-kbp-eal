@@ -2,7 +2,6 @@ package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.ResponseAssessment.MentionType;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -26,9 +25,9 @@ public final class TestPooledAnswerKey {
   final Set<CharOffsetSpan> predJust = ImmutableSet.of(cas.charOffsetSpan());
   final KBPRealis realis = KBPRealis.Actual;
 
-  final Response fooBase = Response.createFrom(docid, type, role, cas, cas.charOffsetSpan(),
+  final Response fooBase = Response.of(docid, type, role, cas, cas.charOffsetSpan(),
       argJust, predJust, realis);
-  final Response barBase = Response.createFrom(docid, type, role, cas2, cas2.charOffsetSpan(),
+  final Response barBase = Response.of(docid, type, role, cas2, cas2.charOffsetSpan(),
       argJust, predJust, realis);
   final Scored<Response> foo = Scored.from(fooBase, 0.9);
   final Scored<Response> foo_diff_confidence = Scored.from(fooBase, 0.8);
@@ -38,11 +37,11 @@ public final class TestPooledAnswerKey {
   final FieldAssessment C = FieldAssessment.CORRECT;
 
   final ResponseAssessment correct =
-      ResponseAssessment.create(Optional.of(C), Optional.of(C), Optional.of(C),
-          Optional.of(KBPRealis.Actual), Optional.of(C), Optional.of(MentionType.NAME));
+      ResponseAssessment.of(Optional.of(C), Optional.of(C), Optional.of(C),
+          Optional.of(KBPRealis.Actual), Optional.of(C), Optional.of(FillerMentionType.NAME));
   final ResponseAssessment unreal =
-      ResponseAssessment.create(Optional.of(C), Optional.of(C), Optional.of(C),
-          Optional.of(KBPRealis.Other), Optional.of(C), Optional.of(MentionType.NAME));
+      ResponseAssessment.of(Optional.of(C), Optional.of(C), Optional.of(C),
+          Optional.of(KBPRealis.Other), Optional.of(C), Optional.of(FillerMentionType.NAME));
   private Symbol DOCID = Symbol.from("foo");
 
   final CorefAnnotation corefAnnotation1 = CorefAnnotation.strictBuilder(DOCID)
@@ -55,13 +54,13 @@ public final class TestPooledAnswerKey {
   @Test
   public void testPooledAnswerKey() {
     final AnswerKey identical = AnswerKey.from(DOCID, ImmutableList.of(
-            AssessedResponse.from(foo.item(), correct),
-            AssessedResponse.from(foo_diff_confidence.item(), correct)),
+        AssessedResponse.of(foo.item(), correct),
+        AssessedResponse.of(foo_diff_confidence.item(), correct)),
         ImmutableList.<Response>of(), corefAnnotation1);
 
     // test okay for two different with different answer
     final AnswerKey different = AnswerKey.from(DOCID, ImmutableList.of(
-            AssessedResponse.from(foo.item(), correct), AssessedResponse.from(bar.item(), unreal)),
+        AssessedResponse.of(foo.item(), correct), AssessedResponse.of(bar.item(), unreal)),
         ImmutableList.<Response>of(), corefAnnotation2);
   }
 
@@ -69,8 +68,8 @@ public final class TestPooledAnswerKey {
   public void testPooledAnswerKeyConsistencyException() {
     @SuppressWarnings("unused")
     final AnswerKey bad = AnswerKey.from(DOCID, ImmutableList.of(
-            AssessedResponse.from(foo.item(), correct),
-            AssessedResponse.from(foo_diff_confidence.item(), unreal)),
+        AssessedResponse.of(foo.item(), correct),
+        AssessedResponse.of(foo_diff_confidence.item(), unreal)),
         ImmutableList.<Response>of(), corefAnnotation1);
   }
 }

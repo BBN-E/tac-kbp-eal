@@ -3,9 +3,10 @@ package com.bbn.kbp.events2014.linking;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.ArgumentOutput;
-import com.bbn.kbp.events2014.AssessedResponse;
+import com.bbn.kbp.events2014.AssessedResponseFunctions;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.ResponseFunctions;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
 
@@ -45,18 +46,18 @@ public final class SameEventTypeLinker extends AbstractLinkingStrategy implement
 
   public ResponseLinking linkResponses(AnswerKey key) {
     return linkResponses(key.docId(), Iterables.transform(key.annotatedResponses(),
-        AssessedResponse.Response));
+        AssessedResponseFunctions.response()));
   }
 
   private ResponseLinking linkResponses(final Symbol docId,
       final Iterable<Response> responses) {
     final Predicate<Response> HasRelevantRealis =
-        compose(in(realisesWhichMustBeAligned), Response.realisFunction());
+        compose(in(realisesWhichMustBeAligned), ResponseFunctions.realis());
     final ImmutableSet<Response> systemResponsesAlignedRealis =
         FluentIterable.from(responses).filter(HasRelevantRealis).toSet();
 
     final Multimap<Symbol, Response> responsesByEventType =
-        Multimaps.index(systemResponsesAlignedRealis, Response.typeFunction());
+        Multimaps.index(systemResponsesAlignedRealis, ResponseFunctions.type());
 
     final ImmutableSet.Builder<ResponseSet> ret = ImmutableSet.builder();
 

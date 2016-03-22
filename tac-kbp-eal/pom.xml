@@ -25,15 +25,15 @@
                     <programs>
                         <program>
                             <mainClass>com.bbn.kbp.events2014.io.ImportForeignIDs</mainClass>
-                            <name>importForeignIDs</name>
+                            <id>importForeignIDs</id>
                         </program>
                         <program>
                             <mainClass>com.bbn.nlp.corpora.ere.BuildRichEREDocIDToFileList</mainClass>
-                            <name>BuildRichEREDocIDToFileList</name>
+                            <id>BuildRichEREDocIDToFileList</id>
                         </program>
                         <program>
                             <mainClass>com.bbn.kbp.events2014.scorer.bin.KBP2014ScorerBin</mainClass>
-                            <name>kbpScorer</name>
+                            <id>kbpScorer</id>
                             <jvmSettings>
                                 <maxMemorySize>4G</maxMemorySize>
                             </jvmSettings>
@@ -41,7 +41,7 @@
 
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.Convert2014TransportTo2015Variants</mainClass>
-                            <name>convert2014MovementTransports</name>
+                            <id>convert2014MovementTransports</id>
                             <jvmSettings>
                                 <maxMemorySize>4G</maxMemorySize>
                             </jvmSettings>
@@ -49,29 +49,29 @@
 
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.ConvertTo2015Format</mainClass>
-                            <name>convertTo2015Format</name>
+                            <id>convertTo2015Format</id>
                         </program>
 
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.ChangeDocIDToMatchFile</mainClass>
-                            <name>changeDocIDToMatchFile</name>
+                            <id>changeDocIDToMatchFile</id>
                         </program>
 
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.FilterOutUnannotated</mainClass>
-                            <name>filterOutUnannotated</name>
+                            <id>filterOutUnannotated</id>
                         </program>
 
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.SplitAnnStoreBySuffixes
                             </mainClass>
-                            <name>splitAnnStoreBySuffixes</name>
+                            <id>splitAnnStoreBySuffixes</id>
                         </program>
 
                         <program>
                             <mainClass>com.bbn.kbp.events2014.transformers.MergeAssessmentStores
                             </mainClass>
-                            <name>mergeAssessmentStores</name>
+                            <id>mergeAssessmentStores</id>
                             <jvmSettings>
                                 <maxMemorySize>1g</maxMemorySize>
                             </jvmSettings>
@@ -82,7 +82,7 @@
                             <mainClass>
                                 com.bbn.kbp.events2014.bin.ImportSystemOutputToAnnotationStore
                             </mainClass>
-                            <name>importSystemOutputToAnnotationStore</name>
+                            <id>importSystemOutputToAnnotationStore</id>
                             <jvmSettings>
                                 <maxMemorySize>1g</maxMemorySize>
                             </jvmSettings>
@@ -90,7 +90,7 @@
 
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.PoolSystemOutput</mainClass>
-                            <name>poolSystemOutput</name>
+                            <id>poolSystemOutput</id>
                             <jvmSettings>
                                 <maxMemorySize>1g</maxMemorySize>
                             </jvmSettings>
@@ -98,13 +98,13 @@
 
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.DualAnnotationAgreement</mainClass>
-                            <name>dualAgreeement</name>
+                            <id>dualAgreeement</id>
                         </program>
 
 
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.ValidateSystemOutput</mainClass>
-                            <name>validateSystemOutput</name>
+                            <id>validateSystemOutput</id>
                             <jvmSettings>
                                 <maxMemorySize>1g</maxMemorySize>
                             </jvmSettings>
@@ -112,7 +112,7 @@
 
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.ValidateSystemOutput2015</mainClass>
-                            <name>validateSystemOutput2015</name>
+                            <id>validateSystemOutput2015</id>
                             <jvmSettings>
                                 <maxMemorySize>1g</maxMemorySize>
                             </jvmSettings>
@@ -121,14 +121,14 @@
 
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.NISTValidator</mainClass>
-                            <name>NISTValidator</name>
+                            <id>NISTValidator</id>
                             <jvmSettings>
                                 <maxMemorySize>1g</maxMemorySize>
                             </jvmSettings>
                         </program>
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.NISTValidator2015</mainClass>
-                            <name>NISTValidator2015</name>
+                            <id>NISTValidator2015</id>
                             <jvmSettings>
                                 <maxMemorySize>1g</maxMemorySize>
                             </jvmSettings>
@@ -136,14 +136,14 @@
 
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.BuildQuoteFilter</mainClass>
-                            <name>buildQuoteFilter</name>
+                            <id>buildQuoteFilter</id>
                             <jvmSettings>
                                 <maxMemorySize>1g</maxMemorySize>
                             </jvmSettings>
                         </program>
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.ApplyQuoteFilter</mainClass>
-                            <name>applyQuoteFilter</name>
+                            <id>applyQuoteFilter</id>
                             <jvmSettings>
                                 <maxMemorySize>1g</maxMemorySize>
                             </jvmSettings>
@@ -151,7 +151,7 @@
 
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.KeepOnlyBestResponses</mainClass>
-                            <name>keepOnlyBestResponses</name>
+                            <id>keepOnlyBestResponses</id>
                             <jvmSettings>
                                 <maxMemorySize>1g</maxMemorySize>
                             </jvmSettings>
@@ -159,7 +159,7 @@
 
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.RepairAnnotationStore</mainClass>
-                            <name>repairAnnotationStore</name>
+                            <id>repairAnnotationStore</id>
                             <jvmSettings>
                                 <maxMemorySize>1g</maxMemorySize>
                             </jvmSettings>
@@ -168,7 +168,7 @@
                         <program>
                             <mainClass>com.bbn.kbp.events2014.transformers.ExpandFromRealis
                             </mainClass>
-                            <name>expandByRealis</name>
+                            <id>expandByRealis</id>
                             <jvmSettings>
                                 <maxMemorySize>1g</maxMemorySize>
                             </jvmSettings>
@@ -176,7 +176,7 @@
 
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.KeepAnnotatedTuples</mainClass>
-                            <name>keepAnnotatedTuples</name>
+                            <id>keepAnnotatedTuples</id>
                             <jvmSettings>
                                 <maxMemorySize>1g</maxMemorySize>
                             </jvmSettings>
@@ -184,7 +184,7 @@
 
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.ApplyLinkingStrategy</mainClass>
-                            <name>applyLinkingStrategy</name>
+                            <id>applyLinkingStrategy</id>
                             <jvmSettings>
                                 <maxMemorySize>1g</maxMemorySize>
                             </jvmSettings>
@@ -193,7 +193,7 @@
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.SecondPhaseAssessmentPooler
                             </mainClass>
-                            <name>secondPhaseAssessmentPooler</name>
+                            <id>secondPhaseAssessmentPooler</id>
                             <jvmSettings>
                                 <maxMemorySize>1g</maxMemorySize>
                             </jvmSettings>
@@ -202,7 +202,7 @@
                             <mainClass>
                                 com.bbn.kbp.events2014.bin.ConvertToAndWriteEquivalenceClass
                             </mainClass>
-                            <name>convertToAndWriteEquivalenceClass</name>
+                            <id>convertToAndWriteEquivalenceClass</id>
                             <jvmSettings>
                                 <maxMemorySize>1g</maxMemorySize>
                             </jvmSettings>
@@ -212,7 +212,7 @@
                             <mainClass>
                                 com.bbn.kbp.events2014.linking.NaiveResponseLinkingProjector
                             </mainClass>
-                            <name>naiveLinkingProject</name>
+                            <id>naiveLinkingProject</id>
                             <jvmSettings>
                                 <maxMemorySize>1g</maxMemorySize>
                             </jvmSettings>
@@ -222,15 +222,34 @@
                             <mainClass>
                                 com.bbn.kbp.events2014.bin.FilterAnswerKeyByTypeAndRole
                             </mainClass>
-                            <name>FilterAnswerKeyByTypeAndRole</name>
+                            <id>FilterAnswerKeyByTypeAndRole</id>
                         </program>
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.ExploreEALScorer</mainClass>
-                            <name>exploreEalScorer</name>
+                            <id>exploreEalScorer</id>
                         </program>
 
                     </programs>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>1.10</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>target/generated-sources/annotations</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
@@ -253,12 +272,6 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-        </dependency>
-
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
         </dependency>
 
         <dependency>
@@ -293,6 +306,21 @@
             <artifactId>bue-common-awaiting-review</artifactId>
             <version>2.4.6-SNAPSHOT</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.immutables</groupId>
+            <artifactId>value</artifactId>
+            <version>2.1.14</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.immutables</groupId>
+            <artifactId>func</artifactId>
+            <version>2.1.14</version>
+            <scope>provided</scope>
+        </dependency>
+
     </dependencies>
 
 

@@ -24,13 +24,13 @@ public class ResponseTest {
     final CharOffsetSpan baseFiller = CharOffsetSpan.fromOffsetsOnly(1134, 1139);
     final KBPRealis realis = KBPRealis.Actual;
 
-    final Response r1 = Response.createFrom(doc, type,
+    final Response r1 = Response.of(doc, type,
         role, CAS, baseFiller,
         ImmutableSet.<CharOffsetSpan>of(), ImmutableSet
         .of(CharOffsetSpan.fromOffsetsOnly(1039, 1243), CharOffsetSpan.fromOffsetsOnly(642, 838)),
         realis);
 
-    final Response r2 = Response.createFrom(doc, type,
+    final Response r2 = Response.of(doc, type,
         role, CAS, baseFiller,
         ImmutableSet.<CharOffsetSpan>of(CharOffsetSpan.fromOffsetsOnly(1039, 1243)),
         ImmutableSet.of(CharOffsetSpan.fromOffsetsOnly(642, 838)),

@@ -3,7 +3,7 @@ package com.bbn.kbp.events2014.scorer.bin;
 import com.bbn.bue.common.io.GZIPByteSink;
 import com.bbn.bue.common.serialization.jackson.JacksonSerializer;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.TypeRoleFillerRealis;
+import com.bbn.kbp.events2014.TypeRoleFillerRealisFunctions;
 import com.bbn.kbp.events2014.scorer.ImmutableAggregate2015ArgScoringResult;
 import com.bbn.kbp.linking.EALScorer2015Style;
 
@@ -48,7 +48,8 @@ public final class BootstrappedPerEventResultWriter
             @Override
             public EALScorer2015Style.ArgResult apply(final
             EALScorer2015Style.ArgResult input) {
-              return input.copyFiltered(compose(equalTo(type), TypeRoleFillerRealis.Type));
+              return input
+                  .copyFiltered(compose(equalTo(type), TypeRoleFillerRealisFunctions.type()));
             }
           };
       final ImmutableList<EALScorer2015Style.ArgResult> relevantArgumentScores =

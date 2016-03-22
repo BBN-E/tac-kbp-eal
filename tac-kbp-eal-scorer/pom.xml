@@ -26,7 +26,7 @@
                         <program>
                             <mainClass>com.bbn.kbp.events2014.assessmentDiff.KBPAssessmentDiff
                             </mainClass>
-                            <name>assessmentDiff</name>
+                            <id>assessmentDiff</id>
                             <jvmSettings>
                                 <maxMemorySize>2G</maxMemorySize>
                                 <!-- <extraArguments>
@@ -37,7 +37,7 @@
                         <program>
                             <mainClass>com.bbn.kbp.events2014.scorer.bin.KBP2015Scorer
                             </mainClass>
-                            <name>KBP2015Scorer</name>
+                            <id>KBP2015Scorer</id>
                         </program>
                         <program>
                             <mainClass>com.bbn.kbp.events.ScoreKBPAgainstERE</mainClass>
@@ -46,7 +46,7 @@
 
 			<program>
 				<mainClass>com.bbn.kbp.events2014.scorer.bin.KBP2014ScorerBin</mainClass>
-				<name>KBP2014ScorerBin</name>
+				<id>KBP2014ScorerBin</id>
 			</program>
 
                     </programs>

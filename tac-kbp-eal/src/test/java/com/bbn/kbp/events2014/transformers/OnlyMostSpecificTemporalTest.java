@@ -8,6 +8,7 @@ import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.FieldAssessment;
+import com.bbn.kbp.events2014.FillerMentionType;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
@@ -57,37 +58,37 @@ public class OnlyMostSpecificTemporalTest {
 
     // this answer key has one correct temporal role (1982-12-31)
     // and one incorrect (1984-03-04)
-    final Response d19821231Response = Response.createFrom(d, type, role, d19821231, bf1,
+    final Response d19821231Response = Response.of(d, type, role, d19821231, bf1,
         ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj1), KBPRealis.Actual);
-    final Response d198212XXResponse = Response.createFrom(d, type, role, d198212XX, bf1,
+    final Response d198212XXResponse = Response.of(d, type, role, d198212XX, bf1,
         ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj1), KBPRealis.Actual);
-    final Response d198212XXOtherResponse = Response.createFrom(d, type, role, d198212XXOther, bf2,
+    final Response d198212XXOtherResponse = Response.of(d, type, role, d198212XXOther, bf2,
         ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj2), KBPRealis.Actual);
-    final Response d198403XXResponse = Response.createFrom(d, type, role, d198403XX, bf2,
+    final Response d198403XXResponse = Response.of(d, type, role, d198403XX, bf2,
         ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj2), KBPRealis.Actual);
-    final Response d19840304Response = Response.createFrom(d, type, role, d19840304, bf2,
+    final Response d19840304Response = Response.of(d, type, role, d19840304, bf2,
         ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj2), KBPRealis.Actual);
 
     final ResponseAssessment correctAssessment =
-        ResponseAssessment.create(Optional.of(FieldAssessment.CORRECT),
+        ResponseAssessment.of(Optional.of(FieldAssessment.CORRECT),
             Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.CORRECT),
             Optional.of(KBPRealis.Actual), Optional.of(FieldAssessment.CORRECT),
-            Optional.of(ResponseAssessment.MentionType.NOMINAL));
+            Optional.of(FillerMentionType.NOMINAL));
 
     final ResponseAssessment incorrectAssessment =
-        ResponseAssessment.create(Optional.of(FieldAssessment.CORRECT),
+        ResponseAssessment.of(Optional.of(FieldAssessment.CORRECT),
             Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.INCORRECT),
             Optional.of(KBPRealis.Actual), Optional.of(FieldAssessment.CORRECT),
-            Optional.of(ResponseAssessment.MentionType.NOMINAL));
+            Optional.of(FillerMentionType.NOMINAL));
 
 
     final AnswerKey answerKey = AnswerKey.from(d,
         ImmutableList.of(
-            AssessedResponse.from(d19821231Response, correctAssessment),
-            AssessedResponse.from(d19840304Response, incorrectAssessment),
-            AssessedResponse.from(d198403XXResponse, incorrectAssessment),
-            AssessedResponse.from(d198212XXResponse, correctAssessment),
-            AssessedResponse.from(d198212XXOtherResponse, correctAssessment)),
+            AssessedResponse.of(d19821231Response, correctAssessment),
+            AssessedResponse.of(d19840304Response, incorrectAssessment),
+            AssessedResponse.of(d198403XXResponse, incorrectAssessment),
+            AssessedResponse.of(d198212XXResponse, correctAssessment),
+            AssessedResponse.of(d198212XXOtherResponse, correctAssessment)),
         ImmutableList.<Response>of(), corefAnnotation);
 
     final ArgumentOutput argumentOutput = ArgumentOutput.from(d,
@@ -106,7 +107,7 @@ public class OnlyMostSpecificTemporalTest {
 
     final ScoringDataTransformation transformation = OnlyMostSpecificTemporal.asTransformationForBoth();
     final ScoringData output = transformation.transform(ScoringData.builder()
-        .withArgumentOutput(argumentOutput).withAnswerKey(answerKey).build());
+        .argumentOutput(argumentOutput).answerKey(answerKey).build());
 
     assertEquals(reference, output.argumentOutput().get());
   }
