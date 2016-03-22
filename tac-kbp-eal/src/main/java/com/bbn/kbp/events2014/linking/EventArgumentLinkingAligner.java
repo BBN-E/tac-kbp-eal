@@ -24,7 +24,7 @@ public interface EventArgumentLinkingAligner {
   ResponseLinking alignToResponseLinking(EventArgumentLinking eventArgumentLinking,
       AnswerKey answerKey);
 
-  public static class InconsistentLinkingException extends RuntimeException {
+  class InconsistentLinkingException extends RuntimeException {
 
     public InconsistentLinkingException(String msg) {
       super(msg);
