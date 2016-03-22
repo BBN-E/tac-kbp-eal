@@ -17,7 +17,7 @@ import java.util.Iterator;
  */
 @Value.Immutable
 @TextGroupPublicImmutable
-public abstract class _ResponseSet implements Comparable<ResponseSet>, Iterable<Response> {
+abstract class _ResponseSet implements Comparable<ResponseSet>, Iterable<Response> {
 
   @Value.Parameter
   public abstract ImmutableSet<Response> responses();

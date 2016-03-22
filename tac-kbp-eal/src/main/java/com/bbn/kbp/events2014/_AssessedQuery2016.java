@@ -8,7 +8,7 @@ import org.immutables.value.Value;
 @TextGroupPublicImmutable
 @Value.Immutable
 @Functional
-public abstract class _AssessedQuery2016 {
+abstract class _AssessedQuery2016 {
 
   public abstract QueryResponse2016 query();
 

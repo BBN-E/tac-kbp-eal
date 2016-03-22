@@ -15,7 +15,7 @@ import static com.google.common.base.Preconditions.checkState;
 @TextGroupPublicImmutable
 @Value.Immutable
 @Functional
-public abstract class _QueryResponse2016 {
+abstract class _QueryResponse2016 {
 
   public abstract Symbol queryID();
 

@@ -16,7 +16,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 @Value.Immutable
 @Functional
 @TextGroupPublicImmutable
-public abstract class _ScoringData {
+abstract class _ScoringData {
   @Value.Parameter
   public abstract Optional<ArgumentOutput> argumentOutput();
   @Value.Parameter
