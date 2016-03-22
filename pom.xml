@@ -224,11 +224,6 @@
                 <artifactId>common-core-jackson-serialization-open</artifactId>
                 <version>${bueopen.version}</version>
             </dependency>
-            <dependency>
-                <groupId>com.bbn.nlp</groupId>
-                <artifactId>nlp-core-open</artifactId>
-                <version>${bueopen.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
