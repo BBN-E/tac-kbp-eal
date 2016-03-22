@@ -10,6 +10,7 @@ import com.bbn.bue.common.primitives.DoubleUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.AssessedResponse;
+import com.bbn.kbp.events2014.AssessedResponseFunctions;
 import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.FieldAssessment;
 import com.bbn.kbp.events2014.KBPString;
@@ -141,9 +142,9 @@ public final class DualAnnotationAgreement {
           docID):AnswerKey.createEmpty(docID);
 
       final Map<Response, AssessedResponse> leftAnnotationsIndexed = Maps.uniqueIndex(
-          leftAnnotation.annotatedResponses(), AssessedResponse.Response);
+          leftAnnotation.annotatedResponses(), AssessedResponseFunctions.response());
       final Map<Response, AssessedResponse> rightAnnotationsIndexed = Maps.uniqueIndex(
-          rightAnnotation.annotatedResponses(), AssessedResponse.Response);
+          rightAnnotation.annotatedResponses(), AssessedResponseFunctions.response());
 
       if (!leftAnnotationsIndexed.keySet().equals(rightAnnotationsIndexed.keySet())) {
         reportResponseMismatch(docID, leftAnnotationsIndexed.keySet(),
@@ -153,7 +154,7 @@ public final class DualAnnotationAgreement {
       final ImmutableSet<Response> responsesInBoth = Sets.intersection(leftAnnotationsIndexed.keySet(),
           rightAnnotationsIndexed.keySet()).immutableCopy();
       final Set<Response> excludedResponses = FluentIterable.from(excludeAnnotation.annotatedResponses())
-          .transform(AssessedResponse.Response).toSet();
+          .transform(AssessedResponseFunctions.response()).toSet();
       final ImmutableSet<Response> nonExcludedInBoth = Sets.difference(responsesInBoth,
           excludedResponses).immutableCopy();
       log.info("For {}, left had {}, right had {}, {} in common, {} not excluded", docID,

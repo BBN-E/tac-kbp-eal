@@ -56,7 +56,7 @@ public class TestLDCIO extends TestCase {
             Optional.of(FieldAssessment.CORRECT),
             Optional.of(MentionType.NAME));
     argMetadata = "metadata";
-    annArg = AssessedResponse.from(arg.item(), ann);
+    annArg = AssessedResponse.of(arg.item(), ann);
   }
 
   @Test

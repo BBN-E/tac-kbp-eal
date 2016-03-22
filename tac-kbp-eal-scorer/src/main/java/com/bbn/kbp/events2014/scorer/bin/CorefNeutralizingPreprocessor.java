@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 
+import static com.bbn.kbp.events2014.AssessedResponseFunctions.response;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.Iterables.filter;
 
@@ -60,11 +61,11 @@ public final class CorefNeutralizingPreprocessor implements ScoringDataTransform
     final ImmutableMultimap<String, AssessedResponse> answerKeyByTypeRoleBaseFiller =
         Multimaps.index(filter(answerKey.annotatedResponses(),
                 AssessedResponse.IsCorrectUpToInexactJustifications),
-            Functions.compose(TypeRoleBaseFiller, AssessedResponse.Response));
+            Functions.compose(TypeRoleBaseFiller, response()));
     final ImmutableMultimap<String, AssessedResponse> answerKeyByTypeRole =
         Multimaps.index(filter(answerKey.annotatedResponses(),
                 AssessedResponse.IsCorrectUpToInexactJustifications),
-            Functions.compose(TypeRole, AssessedResponse.Response));
+            Functions.compose(TypeRole, response()));
 
     final ImmutableMap.Builder<Response, Response> responseReplacements = ImmutableMap.builder();
     final ImmutableSet.Builder<Response> toDelete = ImmutableSet.builder();

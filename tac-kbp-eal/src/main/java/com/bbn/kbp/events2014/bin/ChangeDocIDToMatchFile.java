@@ -68,7 +68,7 @@ public final class ChangeDocIDToMatchFile {
     return new Function<AssessedResponse, AssessedResponse>() {
       @Override
       public AssessedResponse apply(final AssessedResponse input) {
-        return AssessedResponse.from(fixAssessResponse.apply(input.response()), input.assessment());
+        return AssessedResponse.of(fixAssessResponse.apply(input.response()), input.assessment());
       }
     };
   }

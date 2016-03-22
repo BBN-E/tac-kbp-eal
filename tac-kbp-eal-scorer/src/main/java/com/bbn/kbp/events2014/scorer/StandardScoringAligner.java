@@ -3,6 +3,7 @@ package com.bbn.kbp.events2014.scorer;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.AssessedResponse;
+import com.bbn.kbp.events2014.AssessedResponseFunctions;
 import com.bbn.kbp.events2014.EventArgScoringAlignment;
 import com.bbn.kbp.events2014.Response;
 
@@ -43,7 +44,7 @@ public final class StandardScoringAligner<EquivClassType> implements ScoringAlig
     final ImmutableMultimap<EquivClassType, AssessedResponse> equivClassToAnswerKeyResponses =
         Multimaps.index(
             answerKey.annotatedResponses(),
-            Functions.compose(equivClassFunction, AssessedResponse.Response));
+            Functions.compose(equivClassFunction, AssessedResponseFunctions.response()));
 
     final ImmutableSet<EquivClassType> allEquivClasses =
         Sets.union(equivClassToSystemResponses.keySet(),

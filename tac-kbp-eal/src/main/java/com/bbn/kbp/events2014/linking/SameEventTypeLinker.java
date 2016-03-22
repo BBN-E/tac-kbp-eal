@@ -3,7 +3,7 @@ package com.bbn.kbp.events2014.linking;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.ArgumentOutput;
-import com.bbn.kbp.events2014.AssessedResponse;
+import com.bbn.kbp.events2014.AssessedResponseFunctions;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseFunctions;
@@ -46,7 +46,7 @@ public final class SameEventTypeLinker extends AbstractLinkingStrategy implement
 
   public ResponseLinking linkResponses(AnswerKey key) {
     return linkResponses(key.docId(), Iterables.transform(key.annotatedResponses(),
-        AssessedResponse.Response));
+        AssessedResponseFunctions.response()));
   }
 
   private ResponseLinking linkResponses(final Symbol docId,

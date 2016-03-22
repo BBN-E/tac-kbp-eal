@@ -185,7 +185,7 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
           final KBPTIMEXExpression kbptimexExpression = KBPTIMEXExpression.parseTIMEX(CASString);
           ret.add(response);
         } catch (IllegalArgumentException iae) {
-          ret.add(AssessedResponse.from(response.response(),
+          ret.add(AssessedResponse.of(response.response(),
               response.assessment().copyWithModifiedCASAssessment(FieldAssessment.INCORRECT)));
           illegalTIMEX.add(CASString);
         }

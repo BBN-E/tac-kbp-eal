@@ -153,11 +153,11 @@ public class MergeAssessmentStoresTest {
   private final Symbol role = Symbol.from("role");
 
   private AssessedResponse withCorrectAssessment(Response r) {
-    return AssessedResponse.from(r, correctAssessment());
+    return AssessedResponse.of(r, correctAssessment());
   }
 
   private AssessedResponse withWrongAssessment(Response r) {
-    return AssessedResponse.from(r, wrongAssessment());
+    return AssessedResponse.of(r, wrongAssessment());
   }
 
   private Response responseWithCAS(String CAS) {

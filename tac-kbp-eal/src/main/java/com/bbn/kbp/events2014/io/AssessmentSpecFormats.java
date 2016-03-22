@@ -53,6 +53,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import static com.bbn.kbp.events2014.AssessedResponseFunctions.response;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -429,7 +430,7 @@ public final class AssessmentSpecFormats {
       try {
         // first annotated responses, sorted by response ID
         final Ordering<AssessedResponse> assessedResponseOrdering =
-            format.responseOrdering().onResultOf(AssessedResponse.Response);
+            format.responseOrdering().onResultOf(response());
         for (final AssessedResponse arg : assessedResponseOrdering
             .sortedCopy(answerKey.annotatedResponses())) {
           final List<String> parts = Lists.newArrayList();
@@ -496,7 +497,7 @@ public final class AssessmentSpecFormats {
               parseAnnotation(annotationParts);
 
           if (annotation.assessment().isPresent()) {
-            annotated.add(AssessedResponse.from(response, annotation.assessment().get()));
+            annotated.add(AssessedResponse.of(response, annotation.assessment().get()));
           } else {
             unannotated.add(response);
           }

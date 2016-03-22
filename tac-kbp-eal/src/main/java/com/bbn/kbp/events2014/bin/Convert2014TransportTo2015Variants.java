@@ -17,6 +17,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 
+import static com.bbn.kbp.events2014.AssessedResponseFunctions.response;
+
 /**
  * Created by jdeyoung on 8/4/15.
  */
@@ -60,7 +62,7 @@ public class Convert2014TransportTo2015Variants {
 
       final ImmutableSet<Response> movementTransportResponses = FluentIterable
           .from(restrictedToRelevantTypes.annotatedResponses())
-          .transform(AssessedResponse.Response)
+          .transform(response())
           .append(restrictedToRelevantTypes.unannotatedResponses())
           .toSet();
 

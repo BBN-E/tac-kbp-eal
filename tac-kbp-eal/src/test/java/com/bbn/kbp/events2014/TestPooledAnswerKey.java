@@ -55,13 +55,13 @@ public final class TestPooledAnswerKey {
   @Test
   public void testPooledAnswerKey() {
     final AnswerKey identical = AnswerKey.from(DOCID, ImmutableList.of(
-            AssessedResponse.from(foo.item(), correct),
-            AssessedResponse.from(foo_diff_confidence.item(), correct)),
+        AssessedResponse.of(foo.item(), correct),
+        AssessedResponse.of(foo_diff_confidence.item(), correct)),
         ImmutableList.<Response>of(), corefAnnotation1);
 
     // test okay for two different with different answer
     final AnswerKey different = AnswerKey.from(DOCID, ImmutableList.of(
-            AssessedResponse.from(foo.item(), correct), AssessedResponse.from(bar.item(), unreal)),
+        AssessedResponse.of(foo.item(), correct), AssessedResponse.of(bar.item(), unreal)),
         ImmutableList.<Response>of(), corefAnnotation2);
   }
 
@@ -69,8 +69,8 @@ public final class TestPooledAnswerKey {
   public void testPooledAnswerKeyConsistencyException() {
     @SuppressWarnings("unused")
     final AnswerKey bad = AnswerKey.from(DOCID, ImmutableList.of(
-            AssessedResponse.from(foo.item(), correct),
-            AssessedResponse.from(foo_diff_confidence.item(), unreal)),
+        AssessedResponse.of(foo.item(), correct),
+        AssessedResponse.of(foo_diff_confidence.item(), unreal)),
         ImmutableList.<Response>of(), corefAnnotation1);
   }
 }

@@ -83,11 +83,11 @@ public class OnlyMostSpecificTemporalTest {
 
     final AnswerKey answerKey = AnswerKey.from(d,
         ImmutableList.of(
-            AssessedResponse.from(d19821231Response, correctAssessment),
-            AssessedResponse.from(d19840304Response, incorrectAssessment),
-            AssessedResponse.from(d198403XXResponse, incorrectAssessment),
-            AssessedResponse.from(d198212XXResponse, correctAssessment),
-            AssessedResponse.from(d198212XXOtherResponse, correctAssessment)),
+            AssessedResponse.of(d19821231Response, correctAssessment),
+            AssessedResponse.of(d19840304Response, incorrectAssessment),
+            AssessedResponse.of(d198403XXResponse, incorrectAssessment),
+            AssessedResponse.of(d198212XXResponse, correctAssessment),
+            AssessedResponse.of(d198212XXOtherResponse, correctAssessment)),
         ImmutableList.<Response>of(), corefAnnotation);
 
     final ArgumentOutput argumentOutput = ArgumentOutput.from(d,
