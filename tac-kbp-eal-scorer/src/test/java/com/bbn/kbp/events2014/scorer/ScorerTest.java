@@ -599,7 +599,7 @@ public class ScorerTest {
 
   private static Response dummyResponseOfType(Symbol type, Symbol role, String cas,
       KBPRealis realis, int offset) {
-    return Response.createFrom(DOC, type, role, kbpString(cas),
+    return Response.of(DOC, type, role, kbpString(cas),
         CharOffsetSpan.fromOffsetsOnly(offset + 0, offset + 1),
         ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(
             CharOffsetSpan.fromOffsetsOnly(offset + 0, offset + 1)),

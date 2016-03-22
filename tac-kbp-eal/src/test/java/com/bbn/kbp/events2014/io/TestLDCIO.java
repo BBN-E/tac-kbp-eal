@@ -41,7 +41,7 @@ public class TestLDCIO extends TestCase {
   public void setUp() {
     final KBPString cas = KBPString.from("Phillipines",
         CharOffsetSpan.fromOffsetsOnly(42, 64));
-    arg = Scored.from(Response.createFrom(docid,
+    arg = Scored.from(Response.of(docid,
         Symbol.from("Conflict.Attack"),
         Symbol.from("Attacker"),
         cas,

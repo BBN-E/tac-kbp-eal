@@ -613,7 +613,7 @@ public final class AssessmentSpecFormats {
   }
 
   public static Response parseArgumentFields(final List<String> parts) {
-    return Response.createFrom(Symbol.from(parts.get(0)),
+    return Response.of(Symbol.from(parts.get(0)),
         Symbol.from(parts.get(1)), Symbol.from(parts.get(2)),
         KBPString.from(parts.get(3), parseCharOffsetSpan(parts.get(4))),
         parseCharOffsetSpan(parts.get(6)),

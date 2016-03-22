@@ -57,15 +57,15 @@ public class OnlyMostSpecificTemporalTest {
 
     // this answer key has one correct temporal role (1982-12-31)
     // and one incorrect (1984-03-04)
-    final Response d19821231Response = Response.createFrom(d, type, role, d19821231, bf1,
+    final Response d19821231Response = Response.of(d, type, role, d19821231, bf1,
         ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj1), KBPRealis.Actual);
-    final Response d198212XXResponse = Response.createFrom(d, type, role, d198212XX, bf1,
+    final Response d198212XXResponse = Response.of(d, type, role, d198212XX, bf1,
         ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj1), KBPRealis.Actual);
-    final Response d198212XXOtherResponse = Response.createFrom(d, type, role, d198212XXOther, bf2,
+    final Response d198212XXOtherResponse = Response.of(d, type, role, d198212XXOther, bf2,
         ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj2), KBPRealis.Actual);
-    final Response d198403XXResponse = Response.createFrom(d, type, role, d198403XX, bf2,
+    final Response d198403XXResponse = Response.of(d, type, role, d198403XX, bf2,
         ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj2), KBPRealis.Actual);
-    final Response d19840304Response = Response.createFrom(d, type, role, d19840304, bf2,
+    final Response d19840304Response = Response.of(d, type, role, d19840304, bf2,
         ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(pj2), KBPRealis.Actual);
 
     final ResponseAssessment correctAssessment =

@@ -4,6 +4,7 @@ import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.ResponseFunctions;
 
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -19,7 +20,7 @@ class LinkableResponseFilter2015ForGold implements AnswerKey.Filter {
       ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other);
 
   private static final Predicate<Response> realisIsLinkable =
-      compose(in(linkableRealises), Response.realisFunction());
+      compose(in(linkableRealises), ResponseFunctions.realis());
   // package private so LinkableResponseFilter2015ForSystem can share it
   static final Predicate<AssessedResponse> responsesRealisIsLinkable =
       compose(realisIsLinkable, AssessedResponse.Response);

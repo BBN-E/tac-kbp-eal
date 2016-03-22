@@ -6,6 +6,7 @@ import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
@@ -128,7 +129,7 @@ public final class AnswerKey {
         transform(
             concat(unannotatedResponses,
                 transform(annotatedArgs, AssessedResponse.Response)),
-            Response.CASFunction())));
+            ResponseFunctions.canonicalArgument())));
   }
 
   /**
@@ -167,7 +168,7 @@ public final class AnswerKey {
   private void assertNoIncompatibleCorefAnnotations() {
     final ImmutableSet<KBPString> allResponseCASes = FluentIterable
         .from(allResponses())
-        .transform(Response.CASFunction())
+        .transform(ResponseFunctions.canonicalArgument())
         .toSet();
     checkSetsEqual(corefAnnotation.allCASes(), "CASes in coref annotation",
         allResponseCASes, "CASes in responses");
@@ -302,17 +303,17 @@ public final class AnswerKey {
     final Builder ret = modifiedCopyBuilder();
 
     final ImmutableMap<String, Response> unannotatedHere = Maps.uniqueIndex(unannotatedResponses(),
-        Response.uniqueIdFunction());
+        ResponseFunctions.uniqueIdentifier());
     final ImmutableMap<String, AssessedResponse> idToAssessedHere =
         Maps.uniqueIndex(annotatedResponses(),
-            Functions.compose(Response.uniqueIdFunction(), AssessedResponse.Response));
+            Functions.compose(ResponseFunctions.uniqueIdentifier(), AssessedResponse.Response));
     final Set<String> idsHere = Sets.union(unannotatedHere.keySet(), idToAssessedHere.keySet());
 
     final ImmutableMap<String, Response> unannotatedThere = Maps.uniqueIndex(
-        fallback.unannotatedResponses(), Response.uniqueIdFunction());
+        fallback.unannotatedResponses(), ResponseFunctions.uniqueIdentifier());
     final ImmutableMap<String, AssessedResponse> idToAssessedThere =
         Maps.uniqueIndex(fallback.annotatedResponses(),
-            Functions.compose(Response.uniqueIdFunction(), AssessedResponse.Response));
+            Functions.compose(ResponseFunctions.uniqueIdentifier(), AssessedResponse.Response));
     final Set<String> idsThere = Sets.union(unannotatedThere.keySet(), idToAssessedThere.keySet());
 
     final Set<String> idsOnlyInFallback = Sets.difference(idsThere, idsHere);
@@ -375,7 +376,7 @@ public final class AnswerKey {
   }
 
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
         .add("docId", docid)
         .add("assessedResponses",
             "{" + StringUtils.NewlineJoiner.join(annotatedResponses()) + "}")
@@ -453,7 +454,7 @@ public final class AnswerKey {
     public AnswerKey build() {
       final Set<KBPString> allCASes = FluentIterable.from(annotatedArgs.keySet())
           .append(unannotatedResponses)
-          .transform(Response.CASFunction()).toSet();
+          .transform(ResponseFunctions.canonicalArgument()).toSet();
 
       return new AnswerKey(docId, annotatedArgs.values(), unannotatedResponses,
           corefAnnotation.build().copyRemovingStringsNotIn(allCASes));

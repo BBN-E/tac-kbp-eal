@@ -5,6 +5,7 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.ResponseFunctions;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
 
@@ -131,7 +132,7 @@ public final class LinkingSpecFormats {
       }
 
       final Map<String, Response> responsesByUID = Maps.uniqueIndex(responses,
-          Response.uniqueIdFunction());
+          ResponseFunctions.uniqueIdentifier());
 
       final ImmutableSet.Builder<ResponseSet> ret = ImmutableSet.builder();
       ImmutableSet<Response> incompleteResponses = ImmutableSet.of();
@@ -198,12 +199,12 @@ public final class LinkingSpecFormats {
       final List<String> lines = Lists.newArrayList();
       for (final ResponseSet responseSet : responseLinking.responseSets()) {
         lines.add(TAB_JOINER.join(
-            transform(responseSet.asSet(), Response.uniqueIdFunction())));
+            transform(responseSet.asSet(), ResponseFunctions.uniqueIdentifier())));
       }
 
       // incompletes last
       lines.add("INCOMPLETE\t" + TAB_JOINER.join(
-          transform(responseLinking.incompleteResponses(), Response.uniqueIdFunction())));
+          transform(responseLinking.incompleteResponses(), ResponseFunctions.uniqueIdentifier())));
 
       final File f = new File(directory, responseLinking.docID().toString());
       Files.asCharSink(f, Charsets.UTF_8).writeLines(lines, "\n");

@@ -77,7 +77,7 @@ public final class ChangeDocIDToMatchFile {
     return new Function<Response, Response>() {
       @Override
       public Response apply(final Response input) {
-        return Response.createFrom(docID, input.type(), input.role(), input.canonicalArgument(), input.baseFiller(), input.additionalArgumentJustifications(),
+        return Response.of(docID, input.type(), input.role(), input.canonicalArgument(), input.baseFiller(), input.additionalArgumentJustifications(),
             input.predicateJustifications(), input.realis());
       }
     };

@@ -26,9 +26,9 @@ public final class TestPooledAnswerKey {
   final Set<CharOffsetSpan> predJust = ImmutableSet.of(cas.charOffsetSpan());
   final KBPRealis realis = KBPRealis.Actual;
 
-  final Response fooBase = Response.createFrom(docid, type, role, cas, cas.charOffsetSpan(),
+  final Response fooBase = Response.of(docid, type, role, cas, cas.charOffsetSpan(),
       argJust, predJust, realis);
-  final Response barBase = Response.createFrom(docid, type, role, cas2, cas2.charOffsetSpan(),
+  final Response barBase = Response.of(docid, type, role, cas2, cas2.charOffsetSpan(),
       argJust, predJust, realis);
   final Scored<Response> foo = Scored.from(fooBase, 0.9);
   final Scored<Response> foo_diff_confidence = Scored.from(fooBase, 0.8);

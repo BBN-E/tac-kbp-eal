@@ -47,7 +47,7 @@ public abstract class _ResponseSet implements Comparable<ResponseSet>, Iterable<
   @Override
   public final int compareTo(ResponseSet o) {
     return Ordering.natural()
-        .onResultOf(Response.uniqueIdFunction())
+        .onResultOf(ResponseFunctions.uniqueIdentifier())
         .lexicographical()
         .onResultOf(asSetFunction())
         .compare((ResponseSet) this, o);

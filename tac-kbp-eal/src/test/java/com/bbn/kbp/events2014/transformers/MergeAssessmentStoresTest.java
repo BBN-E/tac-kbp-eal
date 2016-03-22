@@ -161,7 +161,7 @@ public class MergeAssessmentStoresTest {
   }
 
   private Response responseWithCAS(String CAS) {
-    return Response.createFrom(docid, type, role,
+    return Response.of(docid, type, role,
         KBPString.from(CAS, CharOffsetSpan.fromOffsetsOnly(offsetCounter++, offsetCounter++)),
         CharOffsetSpan.fromOffsetsOnly(offsetCounter++, offsetCounter++),
         ImmutableSet.<CharOffsetSpan>of(),

@@ -5,6 +5,7 @@ import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.ResponseFunctions;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
 import com.bbn.kbp.events2014.SystemOutput;
@@ -30,7 +31,7 @@ import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.compose;
-import static com.google.common.base.Predicates.in;
+import static com.google.common.base.Predicates.equalTo;
 
 /**
  * Deduplicates a system output by keeping only a single representative for each (docid, type, role,
@@ -102,7 +103,8 @@ public final class KeepBestJustificationOnly {
 
     // ResponseLinking contain only Responses with Realis ACTUAL, OTHER. The above loop does keepBest for these.
     // We now do keepBest for Generic Responses
-    final Predicate<Response> HasGenericRealis = compose(in( ImmutableSet.of(KBPRealis.Generic) ), Response.realisFunction());
+    final Predicate<Response> HasGenericRealis = compose(equalTo(KBPRealis.Generic),
+        ResponseFunctions.realis());
     final ImmutableSet<Response> genericResponses = FluentIterable.from(input.arguments().responses()).filter(HasGenericRealis).toSet();
     final Multimap<TypeRoleFillerRealis, Response> groupedGenericResponses = Multimaps.index(genericResponses, trfrFunction);
     for (final Map.Entry<TypeRoleFillerRealis, Collection<Response>> group : groupedGenericResponses.asMap().entrySet()) {

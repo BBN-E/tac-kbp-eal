@@ -81,11 +81,11 @@ public class Convert2014TransportTo2015Variants {
 
   private static Response transformResponseArtifact(Response r) {
     if (r.role().equalTo(VEHICLE_ROLE)) {
-      r = r.copyWithSwappedRole(INSTRUMENT_ROLE);
+      r = r.withRole(INSTRUMENT_ROLE);
     }
 
     if (r.type().equalTo(MOVEMENT_TRANSPORT)) {
-      return r.copyWithSwappedType(MOVEMENT_TRANSPORT_ARTIFACT);
+      return r.withType(MOVEMENT_TRANSPORT_ARTIFACT);
     } else {
       return r;
     }
@@ -93,15 +93,15 @@ public class Convert2014TransportTo2015Variants {
 
   private static Response transformResponsePerson(Response r) {
     if (r.role().equalTo(VEHICLE_ROLE)) {
-      r = r.copyWithSwappedRole(INSTRUMENT_ROLE);
+      r = r.withRole(INSTRUMENT_ROLE);
     }
 
     if (r.role().equalTo(ARTIFACT_ROLE)) {
-      r = r.copyWithSwappedRole(PERSON_ROLE);
+      r = r.withRole(PERSON_ROLE);
     }
 
     if (r.type().equalTo(MOVEMENT_TRANSPORT)) {
-      return r.copyWithSwappedType(MOVEMENT_TRANSPORT_PERSON);
+      return r.withType(MOVEMENT_TRANSPORT_PERSON);
     } else {
       return r;
     }

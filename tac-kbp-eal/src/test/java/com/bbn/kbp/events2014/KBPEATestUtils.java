@@ -99,7 +99,7 @@ public final class KBPEATestUtils {
     private int nextIdx = 0;
 
     public Response responseFor(TypeRoleFillerRealis trfr) {
-      return Response.createFrom(trfr.docID(), trfr.type(),
+      return Response.of(trfr.docID(), trfr.type(),
           trfr.role(), trfr.argumentCanonicalString(), charOffsetSpan(nextIdx++),
           ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(charOffsetSpan(nextIdx++)),
           KBPRealis.Actual);

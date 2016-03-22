@@ -56,7 +56,7 @@ public final class MakeAllRealisActual implements ScoringDataTransformation {
     final AnswerKey.Builder ret = neutralizeAssessments(input).modifiedCopyBuilder();
     for (final AssessedResponse assessedResponse : input.annotatedResponses()) {
       final Response neutralizedResponse =
-          assessedResponse.response().copyWithSwappedRealis(KBPRealis.Actual);
+          assessedResponse.response().withRealis(KBPRealis.Actual);
       if(!neutralizedResponse.equals(assessedResponse.response())) {
         ret.replaceAssessedResponseMaintainingAssessment(assessedResponse.response(), neutralizedResponse, new Random());
         ret.removeUnannotated(neutralizedResponse);
@@ -68,7 +68,7 @@ public final class MakeAllRealisActual implements ScoringDataTransformation {
   private static ResponseMapping responseMapping(final AnswerKey answerKey) {
     final ImmutableMap.Builder<Response, Response> replacements = ImmutableMap.builder();
     for (final Response response : answerKey.allResponses()) {
-      final Response replacement = response.copyWithSwappedRealis(KBPRealis.Actual);
+      final Response replacement = response.withRealis(KBPRealis.Actual);
       if (!response.equals(replacement)) {
         replacements.put(response, replacement);
       }
