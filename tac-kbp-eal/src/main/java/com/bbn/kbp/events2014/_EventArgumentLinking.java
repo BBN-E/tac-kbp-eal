@@ -53,6 +53,7 @@ abstract class _EventArgumentLinking {
     if (idsToEventFrames().isPresent()) {
       for (final String id : idsToEventFrames().get().keySet()) {
         checkArgument(!id.contains("-"), "Event frame IDs may not contain -s");
+        checkArgument(!id.contains("\t"), "Event frame IDs may not contain tabs");
       }
       CollectionUtils.assertSameElementsOrIllegalArgument(eventFrames(),
           idsToEventFrames().get().values(), "Event frames did not match IDs",

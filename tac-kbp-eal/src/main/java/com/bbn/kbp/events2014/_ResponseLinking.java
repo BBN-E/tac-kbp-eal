@@ -43,6 +43,7 @@ abstract class _ResponseLinking {
     if (idsToResponseSets().isPresent()) {
       for (final String id : idsToResponseSets().get().keySet()) {
         checkArgument(!id.contains("-"), "Event frame IDs may not contain -s");
+        checkArgument(!id.contains("\t"), "Event frame IDs may not contain tabs");
       }
       CollectionUtils.assertSameElementsOrIllegalArgument(responseSets(),
           idsToResponseSets().get().values(), "Response sets did not match IDs",
