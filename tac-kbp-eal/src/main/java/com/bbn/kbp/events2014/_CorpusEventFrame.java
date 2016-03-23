@@ -17,10 +17,16 @@ import static com.google.common.base.Preconditions.checkArgument;
 @TextGroupPublicImmutable
 abstract class _CorpusEventFrame {
 
+  @Value.Parameter
+  public abstract String id();
+
+  @Value.Parameter
   public abstract ImmutableSet<DocEventFrameReference> docEventFrames();
 
   @Value.Check
   protected void checkPreconditions() {
+    checkArgument(!id().isEmpty(), "Corpus event frame IDs may not be empty");
+    checkArgument(!id().contains("\t"), "Corpus event frame IDs may not contain tabs");
     checkArgument(!docEventFrames().isEmpty(), "A corpus-level event frame may not be empty");
   }
 }
