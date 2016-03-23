@@ -35,8 +35,9 @@ public class QueryStore2016IOTest {
   private static final QueryResponse2016 fooQuery2 =
       QueryResponse2016.builder().docID(foo2).queryID(foo2).systemID(foo2)
           .addAllPredicateJustifications(spans).build();
-  private static final QueryAssessnentStore2016 fooStore =
-      QueryAssessnentStore2016.builder().addAllQueries(ImmutableList.of(fooQuery1, fooQuery2)).build();
+  private static final QueryAssessmentStore2016 fooStore =
+      QueryAssessmentStore2016.builder().addAllQueries(ImmutableList.of(fooQuery1, fooQuery2))
+          .build();
 
   @Test
   public void writeTest() throws IOException {
@@ -50,7 +51,7 @@ public class QueryStore2016IOTest {
     final File out = Files.createTempFile("tmp", "f").toFile();
     out.deleteOnExit();
     writer.saveTo(fooStore, com.google.common.io.Files.asCharSink(out, Charsets.UTF_8));
-    final QueryAssessnentStore2016 barStore =
+    final QueryAssessmentStore2016 barStore =
         loader.open2016(com.google.common.io.Files.asCharSource(out, Charsets.UTF_8));
     assertTrue(barStore.queries().equals(fooStore.queries()));
     assertTrue(barStore.queries().size() == 2);

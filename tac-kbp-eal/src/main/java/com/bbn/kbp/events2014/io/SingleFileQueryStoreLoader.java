@@ -60,7 +60,7 @@ public final class SingleFileQueryStoreLoader {
 
   }
 
-  public QueryAssessnentStore2016 open2016(final CharSource source) throws IOException {
+  public QueryAssessmentStore2016 open2016(final CharSource source) throws IOException {
     final List<String> lines = source.readLines();
     final List<QueryResponse2016> queries = Lists.newArrayList();
     final Map<QueryResponse2016, String> metadata = Maps.newHashMap();
@@ -91,7 +91,7 @@ public final class SingleFileQueryStoreLoader {
         }
       }
     }
-    return QueryAssessnentStore2016.builder().addAllQueries(queries).assessments(assessments)
+    return QueryAssessmentStore2016.builder().addAllQueries(queries).assessments(assessments)
         .metadata(metadata).build();
   }
 
