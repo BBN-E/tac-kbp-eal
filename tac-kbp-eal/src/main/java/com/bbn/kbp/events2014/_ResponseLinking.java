@@ -22,7 +22,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Predicates.in;
 import static com.google.common.collect.Iterables.concat;
 
-@Value.Immutable
+@Value.Immutable(prehash = true)
 @TextGroupPublicImmutable
 @Functional
 abstract class _ResponseLinking {

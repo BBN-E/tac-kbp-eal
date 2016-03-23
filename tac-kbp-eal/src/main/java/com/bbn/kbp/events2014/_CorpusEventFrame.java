@@ -12,7 +12,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 /**
  * Represents all mentions of a single event grouped across multiple documents.
  */
-@Value.Immutable
+@Value.Immutable(prehash = true)
 @Functional
 @TextGroupPublicImmutable
 abstract class _CorpusEventFrame {

@@ -15,7 +15,7 @@ import java.util.Iterator;
  * Represents a set of responses.  The default comparison method is to do a lexicographical sort of
  * the unique IDs of the (sorted) responses.
  */
-@Value.Immutable
+@Value.Immutable(prehash = true)
 @TextGroupPublicImmutable
 abstract class _ResponseSet implements Comparable<ResponseSet>, Iterable<Response> {
 
