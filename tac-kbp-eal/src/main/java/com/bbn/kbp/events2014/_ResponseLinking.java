@@ -48,7 +48,6 @@ abstract class _ResponseLinking {
           idsToResponseSets().get().values(), "Response sets did not match IDs",
           "Response sets in list", "Response sets in ID map");
     }
-
   }
 
   public final ImmutableSet<Response> allResponses() {

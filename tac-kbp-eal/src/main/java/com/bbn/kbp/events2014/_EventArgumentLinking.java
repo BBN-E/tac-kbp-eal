@@ -1,6 +1,7 @@
 package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.TextGroupPublicImmutable;
+import com.bbn.bue.common.collections.CollectionUtils;
 import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.base.Function;
@@ -48,6 +49,14 @@ abstract class _EventArgumentLinking {
           Sets.intersection(eventFrame.asSet(), incomplete());
       checkArgument(intersection.isEmpty(), "A TRFR cannot be both incomplete and linked: %s",
           intersection);
+    }
+    if (idsToEventFrames().isPresent()) {
+      for (final String id : idsToEventFrames().get().keySet()) {
+        checkArgument(!id.contains("-"), "Event frame IDs may not contain -s");
+      }
+      CollectionUtils.assertSameElementsOrIllegalArgument(eventFrames(),
+          idsToEventFrames().get().values(), "Event frames did not match IDs",
+          "Event frames in list", "Event frames in ID map");
     }
   }
 
