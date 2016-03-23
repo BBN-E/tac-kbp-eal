@@ -6,7 +6,7 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events2014.AnswerKey;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.DocumentSystemOutput;
 import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
@@ -69,7 +69,8 @@ public final class ImportSystemOutputToAnnotationStore {
       final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
       log.info(params.dump());
 
-      final Function<SystemOutput, SystemOutput> filter = getSystemOutputFilter(params);
+      final Function<DocumentSystemOutput, DocumentSystemOutput> filter =
+          getSystemOutputFilter(params);
       final Predicate<Symbol> docIdFilter = getDocIdFilter(params);
 
       final SystemOutputLayout outputLayout = params.getEnum("outputLayout",
@@ -124,8 +125,9 @@ public final class ImportSystemOutputToAnnotationStore {
     return systemOutputs;
   }
 
-  private static Function<SystemOutput, SystemOutput> getSystemOutputFilter(Parameters params) {
-    final Function<SystemOutput, SystemOutput> filter;
+  private static Function<DocumentSystemOutput, DocumentSystemOutput> getSystemOutputFilter(
+      Parameters params) {
+    final Function<DocumentSystemOutput, DocumentSystemOutput> filter;
     if (params.getBoolean("importOnlyBestAnswers")) {
       filter = KeepBestJustificationOnly.asFunctionOnSystemOutput();
       log.info("Importing only responses the scorer would select");
@@ -153,7 +155,7 @@ public final class ImportSystemOutputToAnnotationStore {
 
   private static void importSystemOutputToAnnotationStore(Set<SystemOutputStore> argumentStores,
       Set<AnnotationStore> annotationStores,
-      Function<SystemOutput, SystemOutput> filter, Predicate<Symbol> docIdFilter)
+      Function<DocumentSystemOutput, DocumentSystemOutput> filter, Predicate<Symbol> docIdFilter)
       throws IOException {
     log.info("Loading system outputs from {}", StringUtils.NewlineJoiner.join(argumentStores));
     log.info("Using assessment stores at {}", StringUtils.NewlineJoiner.join(annotationStores));
@@ -165,7 +167,7 @@ public final class ImportSystemOutputToAnnotationStore {
       log.info("Processing system output from {}", systemOutput);
 
       for (final Symbol docid : filter(systemOutput.docIDs(), docIdFilter)) {
-        final SystemOutput docOutput = filter.apply(systemOutput.read(docid));
+        final DocumentSystemOutput docOutput = filter.apply(systemOutput.read(docid));
         log.info("Processing {} responses for document {}", docid, docOutput.arguments().size());
 
         for (final AnnotationStore annStore : annotationStores) {

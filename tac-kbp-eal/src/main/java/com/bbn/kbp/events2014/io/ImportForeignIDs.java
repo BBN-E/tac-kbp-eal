@@ -4,7 +4,7 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.ResponseLinking;
-import com.bbn.kbp.events2014.SystemOutput2015;
+import com.bbn.kbp.events2014.DocumentSystemOutput2015;
 import com.bbn.kbp.events2014.SystemOutputLayout;
 
 import com.google.common.base.Optional;
@@ -84,8 +84,8 @@ public final class ImportForeignIDs {
               Optional.<ImmutableMap<String, String>>of(originalToSystem.build()));
       if (transformedLinking.isPresent()) {
         // create system output
-        final SystemOutput2015 newSystemOutput =
-            SystemOutput2015.from(originalArguments, transformedLinking.get());
+        final DocumentSystemOutput2015 newSystemOutput =
+            DocumentSystemOutput2015.from(originalArguments, transformedLinking.get());
         newOutput.write(newSystemOutput);
       } else {
         throw new IOException("No linking found for " + docid);

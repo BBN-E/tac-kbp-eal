@@ -4,7 +4,7 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.DocumentSystemOutput;
 import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
@@ -61,9 +61,9 @@ public class FilterOutUnannotated {
 
     int numDeletedTotal = 0;
     for (final Symbol docID : input.docIDs()) {
-      final SystemOutput original = input.read(docID);
+      final DocumentSystemOutput original = input.read(docID);
       final AnswerKey answerKey = annotation.readOrEmpty(docID);
-      final SystemOutput filtered =
+      final DocumentSystemOutput filtered =
           original.copyTransformedBy(selectWhichToDelete(original, answerKey));
       int numDeletedForThisDoc = original.arguments().size() - filtered.arguments().size();
       log.info("For {} deleted {} unassessed responses", docID, numDeletedForThisDoc);
@@ -78,7 +78,7 @@ public class FilterOutUnannotated {
     annotation.close();
   }
 
-  private static ResponseMapping selectWhichToDelete(final SystemOutput systemOutput,
+  private static ResponseMapping selectWhichToDelete(final DocumentSystemOutput systemOutput,
       final AnswerKey answerKey) {
     final ImmutableSet.Builder<Response> toDelete = ImmutableSet.builder();
     for (final Response response : systemOutput.arguments().responses()) {

@@ -5,7 +5,7 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.DocumentSystemOutput;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Charsets;
@@ -76,7 +76,7 @@ public final class QuoteFilter{
     return ResponseMapping.create(ImmutableMap.<Response,Response>of(), toDelete);
   }
 
-  public SystemOutput transform(final SystemOutput input) {
+  public DocumentSystemOutput transform(final DocumentSystemOutput input) {
     return input.copyTransformedBy(computeResponseMapping(input.arguments()));
   }
 

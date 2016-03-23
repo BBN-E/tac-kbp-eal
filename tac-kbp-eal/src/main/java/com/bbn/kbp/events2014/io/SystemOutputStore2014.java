@@ -1,8 +1,8 @@
 package com.bbn.kbp.events2014.io;
 
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.SystemOutput;
-import com.bbn.kbp.events2014.SystemOutput2014;
+import com.bbn.kbp.events2014.DocumentSystemOutput;
+import com.bbn.kbp.events2014.DocumentSystemOutput2014;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,13 +23,13 @@ public final class SystemOutputStore2014 implements SystemOutputStore {
   }
 
   @Override
-  public SystemOutput2014 read(final Symbol docID) throws IOException {
-    return SystemOutput2014.from(argumentStore.read(docID));
+  public DocumentSystemOutput2014 read(final Symbol docID) throws IOException {
+    return DocumentSystemOutput2014.from(argumentStore.read(docID));
   }
 
   @Override
-  public void write(final SystemOutput output) throws IOException {
-    if (output instanceof SystemOutput2014) {
+  public void write(final DocumentSystemOutput output) throws IOException {
+    if (output instanceof DocumentSystemOutput2014) {
       argumentStore.write(output.arguments());
     } else {
       throw new RuntimeException("Can only write 2014-format system outputs");
