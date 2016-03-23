@@ -1,6 +1,7 @@
 package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.TextGroupPublicImmutable;
+import com.bbn.bue.common.collections.CollectionUtils;
 import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.base.MoreObjects;
@@ -39,6 +40,15 @@ abstract class _ResponseLinking {
       checkArgument(!allResponsesInSets.contains(incompleteResponse),
           "A response may not be both completed and incomplete");
     }
+    if (idsToResponseSets().isPresent()) {
+      for (final String id : idsToResponseSets().get().keySet()) {
+        checkArgument(!id.contains("-"), "Event frame IDs may not contain -s");
+      }
+      CollectionUtils.assertSameElementsOrIllegalArgument(responseSets(),
+          idsToResponseSets().get().values(), "Response sets did not match IDs",
+          "Response sets in list", "Response sets in ID map");
+    }
+
   }
 
   public final ImmutableSet<Response> allResponses() {
