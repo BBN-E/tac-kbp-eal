@@ -20,11 +20,12 @@ final class ExactMatchEventArgumentLinkingWithIncompletes  extends ExactMatchEve
   private EventArgumentLinking addNewResponsesAsIncompletesFrom(EventArgumentLinking eventArgumentLinking, AnswerKey answerKey) {
     EventArgumentLinking minimalLinking = EventArgumentLinking.createMinimalLinkingFrom(answerKey);
     ImmutableSet<TypeRoleFillerRealis> allLinked = ImmutableSet
-        .copyOf(Iterables.concat(eventArgumentLinking.linkedAsSet()));
+        .copyOf(Iterables.concat(eventArgumentLinking.eventFrames()));
     ImmutableSet<TypeRoleFillerRealis> minimalUnlinked = Sets
         .difference(minimalLinking.incomplete(), allLinked).immutableCopy();
     ImmutableSet<TypeRoleFillerRealis> allUnlinked = Sets.union(minimalUnlinked, eventArgumentLinking.incomplete()).immutableCopy();
-    return EventArgumentLinking.create(eventArgumentLinking.docID(), eventArgumentLinking.linkedAsSet(), allUnlinked);
+    return EventArgumentLinking.builder().docID(eventArgumentLinking.docID())
+        .eventFrames(eventArgumentLinking.eventFrames()).incomplete(allUnlinked).build();
   }
   @Override
   public EventArgumentLinking align(ResponseLinking responseLinking,

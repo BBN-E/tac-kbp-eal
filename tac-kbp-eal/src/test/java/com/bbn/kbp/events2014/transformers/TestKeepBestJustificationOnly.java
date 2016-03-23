@@ -184,15 +184,14 @@ public class TestKeepBestJustificationOnly {
         best, differByType,
         differByRole, differByRealis, differByCASOffsets, differByCASString,
         anotherDifferentAJWithLowerScore));
-    final ResponseLinking responseLinking = ResponseLinking.from(docid,
-        ImmutableSet.of(ResponseSet.from(best.item(), tiesBestButLosesTiebreakByHash.item(),
+    final ResponseLinking responseLinking = ResponseLinking.builder().docID(docid)
+        .responseSets(ImmutableSet.of(ResponseSet.from(best.item(), tiesBestButLosesTiebreakByHash.item(),
                 differentPJWithLowerScore.item(),
                 differentBFWithLowerScore.item(), differentAJWithLowerScore.item(),
                 differByType.item(),
                 differByRole.item(), differByRealis.item(), differByCASOffsets.item(),
                 differByCASString.item()),
-            ResponseSet.from(anotherDifferentAJWithLowerScore.item())),
-        ImmutableSet.<Response>of());
+            ResponseSet.from(anotherDifferentAJWithLowerScore.item()))).build();
 
     final SystemOutput systemOutput = SystemOutput2015.from(toDeduplicate, responseLinking);
     final SystemOutput deduplicated =

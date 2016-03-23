@@ -18,7 +18,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 @TextGroupPublicImmutable
 @Value.Immutable
 @Functional
-public abstract class _ResponseAssessment {
+abstract class _ResponseAssessment {
 
   @Value.Parameter
   public abstract Optional<FieldAssessment> justificationSupportsEventType();

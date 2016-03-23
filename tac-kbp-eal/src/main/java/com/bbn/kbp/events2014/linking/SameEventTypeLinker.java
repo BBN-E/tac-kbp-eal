@@ -65,6 +65,6 @@ public final class SameEventTypeLinker extends AbstractLinkingStrategy implement
       ret.add(ResponseSet.from(responseSet));
     }
 
-    return ResponseLinking.from(docId, ret.build(), ImmutableSet.<Response>of());
+    return ResponseLinking.builder().docID(docId).addAllResponseSets(ret.build()).build();
   }
 }

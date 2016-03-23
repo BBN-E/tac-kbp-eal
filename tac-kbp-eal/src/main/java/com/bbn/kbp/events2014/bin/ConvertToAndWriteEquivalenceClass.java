@@ -13,8 +13,8 @@ import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.kbp.events2014.io.EventArgumentEquivalenceSpecFormats;
 import com.bbn.kbp.events2014.io.EventArgumentEquivalenceStore;
-import com.bbn.kbp.events2014.io.LinkingSpecFormats;
 import com.bbn.kbp.events2014.io.LinkingStore;
+import com.bbn.kbp.events2014.io.LinkingStoreSource;
 import com.bbn.kbp.events2014.linking.EventArgumentLinkingAligner;
 import com.bbn.kbp.events2014.linking.EventArgumentLinkingAligners;
 import com.bbn.kbp.events2014.linking.LinkingUtils;
@@ -65,7 +65,7 @@ public final class ConvertToAndWriteEquivalenceClass {
       // produced by annotators after they have grouped EA tuples into event frames, or from system output
       final File linkingStoreDir = params.getExistingDirectory("linkingStore");
       final LinkingStore linkingStore =
-          LinkingSpecFormats.openOrCreateLinkingStore(linkingStoreDir);
+          LinkingStoreSource.createFor2015().openOrCreateLinkingStore(linkingStoreDir);
       // DirectoryLinkingStore implements LinkingStore
 
       //final Set<Symbol> argumentKeyStoreDocIDs = argumentAnnotationStore.docIDs();
@@ -121,7 +121,7 @@ public final class ConvertToAndWriteEquivalenceClass {
             aligner.align(responseLinking.get(), answerKey.filter(answerKeyFilter));
 
         System.out.println("== LINKED Equivalence classes ==");
-        for (final TypeRoleFillerRealisSet eqSet : equivalenceLinking.linkedAsSet()) {
+        for (final TypeRoleFillerRealisSet eqSet : equivalenceLinking.eventFrames()) {
           for (final TypeRoleFillerRealis eq : eqSet.asSet()) {
             System.out.println(eq.uniqueIdentifier() + " " + eq);
           }

@@ -45,7 +45,7 @@ public class LinkingIOTest {
 
     final File tmpDir = Files.createTempDir();
     tmpDir.deleteOnExit();
-    final LinkingStore linkingStore = LinkingSpecFormats.openOrCreateLinkingStore(tmpDir);
+    final LinkingStore linkingStore = LinkingStoreSource.createFor2015().openOrCreateLinkingStore(tmpDir);
     linkingStore.write(linkingAligner.alignToResponseLinking(original, onlyLinkableAnswerKey));
 
     final Optional<ResponseLinking> reloadedResponseLinking =

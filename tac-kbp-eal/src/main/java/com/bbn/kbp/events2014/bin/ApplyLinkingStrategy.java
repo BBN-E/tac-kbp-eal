@@ -5,10 +5,10 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.ResponseLinking;
-import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
-import com.bbn.kbp.events2014.io.LinkingSpecFormats;
-import com.bbn.kbp.events2014.io.LinkingStore;
 import com.bbn.kbp.events2014.io.ArgumentStore;
+import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
+import com.bbn.kbp.events2014.io.LinkingStore;
+import com.bbn.kbp.events2014.io.LinkingStoreSource;
 import com.bbn.kbp.events2014.linking.LinkingStrategy;
 import com.bbn.kbp.events2014.linking.SameEventTypeLinker;
 
@@ -52,7 +52,8 @@ public final class ApplyLinkingStrategy {
     final ImmutableSet<Symbol> docIDs = argumentSystemStore.docIDs();
 
     final File linkingSystemStoreDir = params.getEmptyDirectory("linkingSystemStore");
-    final LinkingStore linkingSystemStore = LinkingSpecFormats.openOrCreateLinkingStore(linkingSystemStoreDir);
+    final LinkingStore linkingSystemStore = LinkingStoreSource.createFor2015()
+        .openOrCreateLinkingStore(linkingSystemStoreDir);
 
     // default to SameEventTypeLinker for now. We could parameterize this in future when there's multiple strategies.
     final LinkingStrategy linkingStrategy =

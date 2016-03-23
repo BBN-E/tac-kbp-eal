@@ -8,8 +8,8 @@ import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.io.AnnotationStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
-import com.bbn.kbp.events2014.io.LinkingSpecFormats;
 import com.bbn.kbp.events2014.io.LinkingStore;
+import com.bbn.kbp.events2014.io.LinkingStoreSource;
 import com.bbn.kbp.events2014.transformers.ResponseMapping;
 
 import com.google.common.base.Charsets;
@@ -138,7 +138,7 @@ public class FilterAnswerKeyByTypeAndRole {
     final Optional<LinkingStore> optLinkingAnnotationStore;
     if (optLinkingAnnotationStoreDir.isPresent()) {
       optLinkingAnnotationStore = Optional.of(
-          LinkingSpecFormats.openLinkingStore(optLinkingAnnotationStoreDir.get()));
+          LinkingStoreSource.createFor2015().openLinkingStore(optLinkingAnnotationStoreDir.get()));
     } else {
       optLinkingAnnotationStore = Optional.absent();
     }

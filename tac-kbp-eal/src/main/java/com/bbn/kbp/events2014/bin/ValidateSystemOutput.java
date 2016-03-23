@@ -10,8 +10,8 @@ import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseFunctions;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.SystemOutputLayout;
-import com.bbn.kbp.events2014.io.LinkingSpecFormats;
 import com.bbn.kbp.events2014.io.LinkingStore;
+import com.bbn.kbp.events2014.io.LinkingStoreSource;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 
@@ -140,8 +140,8 @@ public final class ValidateSystemOutput {
     try {
       outputStore = outputLayout.open(systemOutputStoreFile);
       if (SystemOutputLayout.KBP_EA_2015.equals(outputLayout)) {
-        linkingStore = Optional
-            .of(LinkingSpecFormats.openLinkingStore(new File(systemOutputStoreFile, "linking")));
+        linkingStore = Optional.of(LinkingStoreSource.createFor2015()
+            .openLinkingStore(new File(systemOutputStoreFile, "linking")));
 
       }
       docIDs = outputStore.docIDs();

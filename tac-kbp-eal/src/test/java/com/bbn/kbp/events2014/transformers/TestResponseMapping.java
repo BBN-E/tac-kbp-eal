@@ -32,11 +32,13 @@ public class TestResponseMapping {
     final Response f = rGen.responseFor(dummyTRFR(docID, KBPEATestUtils.kbpString("f")));
     final Response g = rGen.responseFor(dummyTRFR(docID, KBPEATestUtils.kbpString("g")));
 
-    final ResponseLinking sourceLinking = ResponseLinking.from(docID,
-        ImmutableSet.of(ResponseSet.from(a, b), ResponseSet.from(a, c),
-            ResponseSet.from(a, c, d), ResponseSet.from(d)), ImmutableList.of(e, f));
-    final ResponseLinking expectedResult = ResponseLinking.from(docID,
-        ImmutableSet.of(ResponseSet.from(a,c)), ImmutableList.of(g));
+    final ResponseLinking sourceLinking = ResponseLinking.builder().docID(docID)
+        .responseSets(ImmutableSet.of(ResponseSet.from(a, b), ResponseSet.from(a, c),
+            ResponseSet.from(a, c, d), ResponseSet.from(d)))
+        .incompleteResponses(ImmutableList.of(e, f)).build();
+    final ResponseLinking expectedResult = ResponseLinking.builder().docID(docID)
+        .responseSets(ImmutableSet.of(ResponseSet.from(a,c)))
+        .incompleteResponses(ImmutableList.of(g)).build();
     final ResponseMapping mapping = ResponseMapping.create(
         ImmutableMap.of(b,c, f, g), ImmutableSet.of(d,e));
 

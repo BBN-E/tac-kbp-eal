@@ -28,7 +28,7 @@ public final class SystemOutputStore2015 implements SystemOutputStore {
     final File linkingDir = new File(dir, "linking");
     final ArgumentStore argStore = AssessmentSpecFormats.openSystemOutputStore(argumentsDir,
         AssessmentSpecFormats.Format.KBP2015);
-    final LinkingStore linkingStore = LinkingSpecFormats.openLinkingStore(linkingDir);
+    final LinkingStore linkingStore = LinkingStoreSource.createFor2015().openLinkingStore(linkingDir);
     if (argStore.docIDs().equals(linkingStore.docIDs())) {
       return new SystemOutputStore2015(argStore, linkingStore);
     } else {
@@ -41,7 +41,7 @@ public final class SystemOutputStore2015 implements SystemOutputStore {
     final File linkingDir = new File(dir, "linking");
     final ArgumentStore argStore = AssessmentSpecFormats.openOrCreateSystemOutputStore(argumentsDir,
         AssessmentSpecFormats.Format.KBP2015);
-    final LinkingStore linkingStore = LinkingSpecFormats.openOrCreateLinkingStore(linkingDir);
+    final LinkingStore linkingStore = LinkingStoreSource.createFor2015().openOrCreateLinkingStore(linkingDir);
     if (argStore.docIDs().equals(linkingStore.docIDs())) {
       return new SystemOutputStore2015(argStore, linkingStore);
     } else {
