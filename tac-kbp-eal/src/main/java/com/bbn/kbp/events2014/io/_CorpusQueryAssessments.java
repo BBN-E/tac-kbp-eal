@@ -23,7 +23,25 @@ import static com.google.common.base.Preconditions.checkState;
 @TextGroupPublicImmutable
 @Value.Immutable
 @Functional
-public abstract class _QueryAssessmentStore2016 {
+public abstract class _CorpusQueryAssessments {
+
+  public abstract ImmutableSet<QueryResponse2016> queries();
+
+  /**
+   * A map of {@link QueryResponse2016} to {@link AssessedQuery2016} may never contain an {@link
+   * AssessedQuery2016} with an assessment of {@link QueryAssessment2016#UNASSASSED}
+   */
+  public abstract ImmutableMap<QueryResponse2016, AssessedQuery2016> assessments();
+
+  /**
+   * A map of {@link QueryResponse2016} to associated metadata, if any. The map may contain null
+   * entries.
+   */
+  public abstract ImmutableMap<QueryResponse2016, String> metadata();
+
+  public static CorpusQueryAssessments createEmpty() {
+    return CorpusQueryAssessments.builder().build();
+  }
 
   /**
    * @return A derived set from {@link #queries()} of query IDs
@@ -63,18 +81,4 @@ public abstract class _QueryAssessmentStore2016 {
     }
   }
 
-
-  /**
-   * A map of {@link QueryResponse2016} to associated metadata, if any. The map may contain null
-   * entries.
-   */
-  public abstract ImmutableMap<QueryResponse2016, String> metadata();
-
-  /**
-   * A map of {@link QueryResponse2016} to {@link AssessedQuery2016} may never contain an {@link
-   * AssessedQuery2016} with an assessment of {@link QueryAssessment2016#UNASSASSED}
-   */
-  public abstract ImmutableMap<QueryResponse2016, AssessedQuery2016> assessments();
-
-  public abstract ImmutableSet<QueryResponse2016> queries();
 }
