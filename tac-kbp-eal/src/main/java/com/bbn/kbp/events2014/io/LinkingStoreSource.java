@@ -22,6 +22,8 @@ import com.google.common.io.CharSink;
 import com.google.common.io.CharSource;
 import com.google.common.io.Files;
 
+import org.immutables.value.Value;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -49,7 +51,11 @@ public final class LinkingStoreSource {
   }
 
   public static LinkingStoreSource createFor2015() {
-    return new LinkingStoreSource(new KBPSpecLinkingLoader(false), new KBPSpecLinkingWriter());
+    return new LinkingStoreSource(new KBPSpec2015LinkingLoader(), new LinkingWriter2015());
+  }
+
+  public static LinkingStoreSource createFor2016() {
+    return new LinkingStoreSource(new KBPSpec2016LinkingLoader(), new LinkingWriter2016());
   }
 
   public LinkingStore openOrCreateLinkingStore(File directory) {
@@ -70,20 +76,25 @@ interface LinkingFileLoader {
       Optional<ImmutableMap<String, String>> foreignIDToLocal) throws IOException;
 }
 
-final class KBPSpecLinkingLoader implements LinkingFileLoader {
-  private final boolean expectIDs;
+@Value.Immutable
+abstract class AbstractLinkingLine {
 
-  public KBPSpecLinkingLoader(final boolean expectIDs) {
-    this.expectIDs = expectIDs;
-  }
+  @Value.Parameter
+  abstract ResponseSet responses();
 
+  @Value.Parameter
+  abstract Optional<String> id();
+}
+
+abstract class AbstractKBPSpecLinkingLoader implements LinkingFileLoader {
   public ResponseLinking read(Symbol docID, CharSource source, Set<Response> responses,
       Optional<ImmutableMap<String, String>> foreignIDToLocal) throws IOException {
     final Map<String, Response> responsesByUID = Maps.uniqueIndex(responses,
         ResponseFunctions.uniqueIdentifier());
 
-    final ImmutableSet.Builder<ResponseSet> ret = ImmutableSet.builder();
+    final ImmutableSet.Builder<ResponseSet> responseSetsB = ImmutableSet.builder();
     Optional<ImmutableSet<Response>> incompleteResponses = Optional.absent();
+    ImmutableMap.Builder<String, ResponseSet> responseSetIds = ImmutableMap.builder();
 
     int lineNo = 0;
     try {
@@ -94,7 +105,7 @@ final class KBPSpecLinkingLoader implements LinkingFileLoader {
         if (line.isEmpty() || line.charAt(0) == '#') {
           continue;
         }
-        final Iterable<String> parts = StringUtils.OnTabs.split(line);
+        final List<String> parts = StringUtils.OnTabs.splitToList(line);
         if (line.startsWith("INCOMPLETE")) {
           if (!incompleteResponses.isPresent()) {
             incompleteResponses = Optional.of(parseResponses(skip(parts, 1),
@@ -103,19 +114,36 @@ final class KBPSpecLinkingLoader implements LinkingFileLoader {
             throw new IOException("Cannot have two INCOMPLETE lines");
           }
         } else {
-          ret.add(ResponseSet.of(parseResponses(StringUtils.OnTabs.split(line), foreignIDToLocal, responsesByUID)));
+          final ImmutableLinkingLine linkingLine = parseResponseSetLine(parts,
+              foreignIDToLocal, responsesByUID);
+          responseSetsB.add(linkingLine.responses());
+          if (linkingLine.id().isPresent()) {
+            responseSetIds.put(linkingLine.id().get(), linkingLine.responses());
+          }
         }
       }
     } catch (Exception e) {
       throw new IOException("While reading " + docID + ", on line " + lineNo + ": ", e);
     }
 
-    return ResponseLinking.builder().docID(docID).responseSets(ret.build())
-        .incompleteResponses(incompleteResponses.or(ImmutableSet.<Response>of())).build();
+    final ImmutableSet<ResponseSet> responseSets = responseSetsB.build();
+    final ResponseLinking.Builder responseLinking =
+        ResponseLinking.builder().docID(docID).responseSets(responseSets)
+            .incompleteResponses(incompleteResponses.or(ImmutableSet.<Response>of()));
+    handleResponseSetIDs(responseLinking, responseSets, responseSetIds.build());
+    return responseLinking.build();
   }
 
+  protected abstract void handleResponseSetIDs(final ResponseLinking.Builder responseLinking,
+      final ImmutableSet<ResponseSet> responseSets,
+      final ImmutableMap<String, ResponseSet> responseIDs) throws IOException;
+
+  protected abstract ImmutableLinkingLine parseResponseSetLine(List<String> parts,
+      Optional<ImmutableMap<String, String>> foreignIDToLocal, Map<String, Response> responsesByUID)
+      throws IOException;
+
   @Nonnull
-  private ImmutableSet<Response> parseResponses(final Iterable<String> parts,
+  protected final ImmutableSet<Response> parseResponses(final Iterable<String> parts,
       final Optional<ImmutableMap<String, String>> foreignIDToLocal,
       final Map<String, Response> responsesByUID) throws IOException {
     final ImmutableSet.Builder<Response> responseSetB = ImmutableSet.builder();
@@ -126,7 +154,7 @@ final class KBPSpecLinkingLoader implements LinkingFileLoader {
   }
 
   @Nonnull
-  private Response responseForID(final String idString,
+  protected final Response responseForID(final String idString,
       final Optional<ImmutableMap<String, String>> foreignIDToLocal,
       final Map<String, Response> responsesByUID) throws IOException {
     final String newID;
@@ -152,26 +180,112 @@ final class KBPSpecLinkingLoader implements LinkingFileLoader {
   }
 }
 
+class KBPSpec2015LinkingLoader extends AbstractKBPSpecLinkingLoader {
+
+  @Override
+  protected void handleResponseSetIDs(final ResponseLinking.Builder responseLinking,
+      final ImmutableSet<ResponseSet> responseSets,
+      final ImmutableMap<String, ResponseSet> responseIDs) throws IOException {
+    if (!responseIDs.isEmpty()) {
+      throw new IOException("IDs not allowed in 2014 linking format");
+    }
+  }
+
+  @Override
+  protected ImmutableLinkingLine parseResponseSetLine(final List<String> parts,
+      final Optional<ImmutableMap<String, String>> foreignIDToLocal,
+      final Map<String, Response> responsesByUID)
+      throws IOException {
+    return ImmutableLinkingLine
+        .of(ResponseSet.of(parseResponses(parts, foreignIDToLocal, responsesByUID)),
+            Optional.<String>absent());
+  }
+}
+
+class KBPSpec2016LinkingLoader extends AbstractKBPSpecLinkingLoader {
+
+  @Override
+  protected void handleResponseSetIDs(final ResponseLinking.Builder responseLinking,
+      final ImmutableSet<ResponseSet> responseSets,
+      final ImmutableMap<String, ResponseSet> responseIDs) throws IOException {
+    if (responseSets.size() == responseIDs.size()) {
+      responseLinking.idsToResponseSets(responseIDs);
+    } else {
+      throw new IOException("Read " + responseSets.size() + " response sets but "
+          + responseIDs.size() + " ID assignments");
+    }
+  }
+
+  @Override
+  protected ImmutableLinkingLine parseResponseSetLine(final List<String> parts,
+      final Optional<ImmutableMap<String, String>> foreignIDToLocal,
+      final Map<String, Response> responsesByUID)
+      throws IOException {
+    if (parts.size() >= 2) {
+      return ImmutableLinkingLine.of(ResponseSet.of(parseResponses(parts.subList(1, parts.size()),
+          foreignIDToLocal, responsesByUID)), Optional.of(parts.get(0)));
+    } else {
+      throw new IOException("Line must have at least two fields");
+    }
+  }
+}
+
 interface LinkingFileWriter {
   void write(ResponseLinking linking, CharSink sink) throws IOException;
 }
 
-final class KBPSpecLinkingWriter implements LinkingFileWriter {
-  private static final Joiner TAB_JOINER = Joiner.on("\t");
-
+abstract class AbstractKBPSpecLinkingWriter implements LinkingFileWriter {
   @Override
   public void write(ResponseLinking responseLinking, CharSink sink) throws IOException {
     final List<String> lines = Lists.newArrayList();
     for (final ResponseSet responseSet : responseLinking.responseSets()) {
-      lines.add(TAB_JOINER.join(
-          transform(responseSet.asSet(), ResponseFunctions.uniqueIdentifier())));
+      lines.add(renderLine(responseSet, responseLinking));
     }
 
     // incompletes last
-    lines.add("INCOMPLETE\t" + TAB_JOINER.join(
+    lines.add("INCOMPLETE\t" + Joiner.on("\t").join(
         transform(responseLinking.incompleteResponses(), ResponseFunctions.uniqueIdentifier())));
 
     sink.writeLines(lines, "\n");
+  }
+
+  abstract String renderLine(ResponseSet responseSet, ResponseLinking responseLinking)
+      throws IOException;
+}
+
+class LinkingWriter2015 extends AbstractKBPSpecLinkingWriter {
+
+  @Override
+  String renderLine(final ResponseSet responseSet, final ResponseLinking responseLinking) {
+    return Joiner.on("\t").join(
+        transform(responseSet.asSet(), ResponseFunctions.uniqueIdentifier()));
+  }
+}
+
+class LinkingWriter2016 extends AbstractKBPSpecLinkingWriter {
+
+  @Override
+  String renderLine(final ResponseSet responseSet, final ResponseLinking responseLinking)
+      throws IOException {
+    return getEventFrameID(responseSet, responseLinking) + "\t" + Joiner.on("\t").join(
+        transform(responseSet.asSet(), ResponseFunctions.uniqueIdentifier()));
+  }
+
+  // inefficient, but the number of frames in each document should be small
+  private String getEventFrameID(final ResponseSet responseSet,
+      final ResponseLinking responseLinking) throws IOException {
+    checkArgument(responseLinking.idsToResponseSets().isPresent(), "Linking does not assign frame "
+        + "IDs. These are required for writing in 2016 format.");
+    final ImmutableSet<String> ids =
+        responseLinking.idsToResponseSets().get().asMultimap().inverse().get(responseSet);
+    if (ids.size() == 1) {
+      return ids.asList().get(0);
+    } else if (ids.isEmpty()) {
+      throw new IOException("No ID found for event frame " + responseSet);
+    } else {
+      throw new IOException("Multiple IDs found for event frame, should be impossible: "
+          + responseSet);
+    }
   }
 }
 
