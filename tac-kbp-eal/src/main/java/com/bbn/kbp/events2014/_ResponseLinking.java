@@ -8,7 +8,9 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -29,7 +31,19 @@ abstract class _ResponseLinking {
   public abstract Symbol docID();
   public abstract ImmutableSet<ResponseSet> responseSets();
   public abstract ImmutableSet<Response> incompleteResponses();
-  public abstract Optional<ImmutableMap<String, ResponseSet>> idsToResponseSets();
+
+  public abstract Optional<ImmutableBiMap<String, ResponseSet>> responseSetIds();
+
+  @Value.Derived
+  public ImmutableMultimap<Response, ResponseSet> responsesToContainingResponseSets() {
+    final ImmutableMultimap.Builder<Response, ResponseSet> ret = ImmutableMultimap.builder();
+    for (final ResponseSet responseSet : responseSets()) {
+      for (final Response response : responseSet) {
+        ret.put(response, responseSet);
+      }
+    }
+    return ret.build();
+  }
 
   @Value.Check
   protected void checkValidity() {
@@ -40,19 +54,28 @@ abstract class _ResponseLinking {
       checkArgument(!allResponsesInSets.contains(incompleteResponse),
           "A response may not be both completed and incomplete");
     }
-    if (idsToResponseSets().isPresent()) {
-      for (final String id : idsToResponseSets().get().keySet()) {
+    if (responseSetIds().isPresent()) {
+      for (final String id : responseSetIds().get().keySet()) {
         checkArgument(!id.contains("-"), "Event frame IDs may not contain -s");
         checkArgument(!id.contains("\t"), "Event frame IDs may not contain tabs");
       }
+      checkArgument(responseSetIds().get().keySet().size() == responseSets().size(),
+          "All response set IDs must be unique");
       CollectionUtils.assertSameElementsOrIllegalArgument(responseSets(),
-          idsToResponseSets().get().values(), "Response sets did not match IDs",
+          responseSetIds().get().values(), "Response sets did not match IDs",
           "Response sets in list", "Response sets in ID map");
     }
   }
 
   public final ImmutableSet<Response> allResponses() {
     return ImmutableSet.copyOf(concat(concat(responseSets()), incompleteResponses()));
+  }
+
+  public DocEventFrameReference asEventFrameReference(ResponseSet rs) {
+    checkArgument(responseSets().contains(rs), "Response set not found in linking");
+    checkArgument(responseSetIds().isPresent(), "Cannot create event frame references without "
+        + "response IDs");
+    return DocEventFrameReference.of(docID(), responseSetIds().get().inverse().get(rs));
   }
 
   public final String toString() {
@@ -76,9 +99,9 @@ abstract class _ResponseLinking {
     final ImmutableSet<ResponseSet> newResponseSets = newResponseSetsB.build();
     final ResponseLinking.Builder ret = ResponseLinking.builder().docID(docID())
         .responseSets(newResponseSets).incompleteResponses(newIncompletes);
-    if (idsToResponseSets().isPresent()) {
+    if (responseSetIds().isPresent()) {
       ret.idsToResponseSets(
-              ImmutableMap.copyOf(Maps.filterValues(idsToResponseSets().get(), in(newResponseSets))));
+          ImmutableMap.copyOf(Maps.filterValues(responseSetIds().get(), in(newResponseSets))));
     }
     return ret.build();
   }

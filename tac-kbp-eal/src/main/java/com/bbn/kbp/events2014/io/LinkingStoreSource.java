@@ -274,10 +274,10 @@ class LinkingWriter2016 extends AbstractKBPSpecLinkingWriter {
   // inefficient, but the number of frames in each document should be small
   private String getEventFrameID(final ResponseSet responseSet,
       final ResponseLinking responseLinking) throws IOException {
-    checkArgument(responseLinking.idsToResponseSets().isPresent(), "Linking does not assign frame "
+    checkArgument(responseLinking.responseSetIds().isPresent(), "Linking does not assign frame "
         + "IDs. These are required for writing in 2016 format.");
     final ImmutableSet<String> ids =
-        responseLinking.idsToResponseSets().get().asMultimap().inverse().get(responseSet);
+        responseLinking.responseSetIds().get().asMultimap().inverse().get(responseSet);
     if (ids.size() == 1) {
       return ids.asList().get(0);
     } else if (ids.isEmpty()) {

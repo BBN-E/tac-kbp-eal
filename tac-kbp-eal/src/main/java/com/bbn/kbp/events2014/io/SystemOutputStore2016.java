@@ -2,7 +2,9 @@ package com.bbn.kbp.events2014.io;
 
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.CorpusEventFrame;
+import com.bbn.kbp.events2014.CorpusEventLinking;
 import com.bbn.kbp.events2014.DocumentSystemOutput;
+import com.bbn.kbp.events2014.DocumentSystemOutput2015;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
@@ -30,12 +32,12 @@ public class SystemOutputStore2016 implements SystemOutputStore {
     return new SystemOutputStore2016(systemOutputStore2015);
   }
 
-  public ImmutableSet<CorpusEventFrame> readCorpusEventFrames() throws IOException {
+  public CorpusEventLinking readCorpusEventFrames() throws IOException {
     return eventFrameReader.loadCorpusEventFrames(Files.asCharSource(corpusLinkingFile(),
         Charsets.UTF_8));
   }
 
-  public void writeCorpusEventFrames(Set<CorpusEventFrame> corpusEventFrames) throws IOException {
+  public void writeCorpusEventFrames(CorpusEventLinking corpusEventFrames) throws IOException {
     final File corpusLinkingFile = corpusLinkingFile();
     corpusLinkingFile.mkdirs();
     eventFrameWriter.writeCorpusEventFrames(corpusEventFrames, Files.asCharSink(corpusLinkingFile,
@@ -48,7 +50,7 @@ public class SystemOutputStore2016 implements SystemOutputStore {
   }
 
   @Override
-  public DocumentSystemOutput read(final Symbol docID) throws IOException {
+  public DocumentSystemOutput2015 read(final Symbol docID) throws IOException {
     return docLevelOutput.read(docID);
   }
 

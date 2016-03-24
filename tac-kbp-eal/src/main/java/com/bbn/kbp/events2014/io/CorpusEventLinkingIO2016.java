@@ -4,6 +4,7 @@ import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.CorpusEventFrame;
 import com.bbn.kbp.events2014.CorpusEventFrameFunctions;
+import com.bbn.kbp.events2014.CorpusEventLinking;
 import com.bbn.kbp.events2014.DocEventFrameReference;
 
 import com.google.common.base.Joiner;
@@ -45,12 +46,14 @@ final class CorpusEventFrameWriter2016 implements CorpusEventFrameWriter {
   private static final Joiner SPACE_JOINER = Joiner.on(" ");
 
   @Override
-  public void writeCorpusEventFrames(final Iterable<CorpusEventFrame> corpusEventFrames,
+  public void writeCorpusEventFrames(final CorpusEventLinking corpusEventLinking,
       final CharSink sink) throws IOException {
-    checkArgument(noneEqualForHashable(FluentIterable.from(corpusEventFrames).transform(id())));
+    checkArgument(noneEqualForHashable(FluentIterable.from(corpusEventLinking.corpusEventFrames())
+        .transform(id())));
 
     try (Writer writer = sink.openBufferedStream()) {
-      for (final CorpusEventFrame corpusEventFrame : BY_ID.sortedCopy(corpusEventFrames)) {
+      for (final CorpusEventFrame corpusEventFrame : BY_ID
+          .sortedCopy(corpusEventLinking.corpusEventFrames())) {
         final List<DocEventFrameReference> sortedDocEventFrames =
             DocEventFrameReference.canonicalOrdering()
                 .sortedCopy(corpusEventFrame.docEventFrames());
@@ -69,7 +72,7 @@ final class CorpusEventFrameWriter2016 implements CorpusEventFrameWriter {
 final class CorpusEventFrameLoader2016 implements CorpusEventFrameLoader {
 
   @Override
-  public ImmutableSet<CorpusEventFrame> loadCorpusEventFrames(final CharSource source)
+  public CorpusEventLinking loadCorpusEventFrames(final CharSource source)
       throws IOException {
     int lineNo = 1;
     try (final BufferedReader in = source.openBufferedStream()) {
@@ -81,7 +84,7 @@ final class CorpusEventFrameLoader2016 implements CorpusEventFrameLoader {
           ret.add(parseLine(line));
         }
       }
-      return ret.build();
+      return CorpusEventLinking.of(ret.build());
     } catch (Exception e) {
       throw new IOException("Error on line " + lineNo + " of " + source, e);
     }
