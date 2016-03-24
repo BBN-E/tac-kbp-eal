@@ -2,7 +2,7 @@ package com.bbn.kbp.events2014.bin;
 
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.DocumentSystemOutput;
 import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.transformers.KeepBestJustificationOnly;
@@ -45,10 +45,10 @@ public final class KeepOnlyBestResponses {
 
     log.info("Source store has {} documents", inputStore.docIDs().size());
     for (final Symbol docID : inputStore.docIDs()) {
-      final SystemOutput original = inputStore.read(docID);
+      final DocumentSystemOutput original = inputStore.read(docID);
       final ResponseMapping responseMapping = KeepBestJustificationOnly.computeResponseMapping(
           original);
-      final SystemOutput filtered = original.copyTransformedBy(responseMapping);
+      final DocumentSystemOutput filtered = original.copyTransformedBy(responseMapping);
 
       int numFiltered = original.arguments().size() - filtered.arguments().size();
 

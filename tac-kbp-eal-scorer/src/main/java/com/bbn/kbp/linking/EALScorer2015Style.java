@@ -13,7 +13,7 @@ import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ScoringData;
-import com.bbn.kbp.events2014.SystemOutput2015;
+import com.bbn.kbp.events2014.DocumentSystemOutput2015;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.linking.EventArgumentLinkingAligner;
 import com.bbn.kbp.events2014.linking.ExactMatchEventArgumentLinkingAligner;
@@ -240,7 +240,7 @@ public final class EALScorer2015Style {
     // system linking.
     final ResponseMapping keepBestResponseMapping =
         KeepBestJustificationOnly.computeResponseMappingUsingProvidedCoref(
-            SystemOutput2015
+            DocumentSystemOutput2015
                 .from(scoringData.argumentOutput().get(), scoringData.systemLinking().get()),
             scoringData.answerKey().get().corefAnnotation());
     final ScoringData bestOnlyScoringData = ScoringData.builder().from(scoringData)

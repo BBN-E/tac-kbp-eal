@@ -1,6 +1,7 @@
 package com.bbn.kbp.events2014.io;
 
 
+import com.bbn.bue.common.TextGroupPublicImmutable;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AssessedQuery2016;
 import com.bbn.kbp.events2014.CharOffsetSpan;
@@ -14,6 +15,8 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharSource;
+
+import org.immutables.value.Value;
 
 import java.io.IOException;
 import java.util.List;
@@ -50,17 +53,18 @@ import static com.google.common.base.Preconditions.checkState;
  *
  * Support for reading out of order stores MAY BE REMOVED AT ANY TIME.
  */
-public final class SingleFileQueryStoreLoader {
+@Value.Immutable
+@TextGroupPublicImmutable
+abstract class _SingleFileQueryStoreLoader {
 
   private final static Splitter commaSplitter = Splitter.on(",");
   private final static Splitter dashSplitter = Splitter.on("-");
 
-
-  private SingleFileQueryStoreLoader() {
-
+  public static SingleFileQueryStoreLoader create() {
+    return SingleFileQueryStoreLoader.builder().build();
   }
 
-  public QueryAssessnentStore2016 open2016(final CharSource source) throws IOException {
+  public final CorpusQueryAssessments open2016(final CharSource source) throws IOException {
     final List<String> lines = source.readLines();
     final List<QueryResponse2016> queries = Lists.newArrayList();
     final Map<QueryResponse2016, String> metadata = Maps.newHashMap();
@@ -91,7 +95,7 @@ public final class SingleFileQueryStoreLoader {
         }
       }
     }
-    return QueryAssessnentStore2016.builder().addAllQueries(queries).assessments(assessments)
+    return CorpusQueryAssessments.builder().addAllQueries(queries).assessments(assessments)
         .metadata(metadata).build();
   }
 
@@ -106,20 +110,5 @@ public final class SingleFileQueryStoreLoader {
       spans.add(CharOffsetSpan.fromOffsetsOnly(start, end));
     }
     return spans.build();
-  }
-
-  public static Builder builder() {
-    return new Builder();
-  }
-
-  public static class Builder {
-
-
-    private Builder() {
-    }
-
-    public SingleFileQueryStoreLoader build() {
-      return new SingleFileQueryStoreLoader();
-    }
   }
 }

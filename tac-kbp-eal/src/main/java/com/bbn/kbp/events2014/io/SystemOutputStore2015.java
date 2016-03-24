@@ -3,8 +3,8 @@ package com.bbn.kbp.events2014.io;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.ResponseLinking;
-import com.bbn.kbp.events2014.SystemOutput;
-import com.bbn.kbp.events2014.SystemOutput2015;
+import com.bbn.kbp.events2014.DocumentSystemOutput;
+import com.bbn.kbp.events2014.DocumentSystemOutput2015;
 
 import com.google.common.base.Optional;
 
@@ -17,10 +17,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public final class SystemOutputStore2015 implements SystemOutputStore {
   private final ArgumentStore argumentStore;
   private final LinkingStore linkingStore;
+  private final File dir;
 
-  private SystemOutputStore2015(final ArgumentStore argumentStore, final LinkingStore linkingStore) {
+  private SystemOutputStore2015(final File dir, final ArgumentStore argumentStore,
+      final LinkingStore linkingStore) {
     this.argumentStore = checkNotNull(argumentStore);
     this.linkingStore = checkNotNull(linkingStore);
+    this.dir = checkNotNull(dir);
   }
 
   public static SystemOutputStore2015 open(File dir) throws IOException {
@@ -30,7 +33,7 @@ public final class SystemOutputStore2015 implements SystemOutputStore {
         AssessmentSpecFormats.Format.KBP2015);
     final LinkingStore linkingStore = LinkingStoreSource.createFor2015().openLinkingStore(linkingDir);
     if (argStore.docIDs().equals(linkingStore.docIDs())) {
-      return new SystemOutputStore2015(argStore, linkingStore);
+      return new SystemOutputStore2015(dir, argStore, linkingStore);
     } else {
       throw new RuntimeException("Argument and linking store docIDs do not match");
     }
@@ -43,7 +46,7 @@ public final class SystemOutputStore2015 implements SystemOutputStore {
         AssessmentSpecFormats.Format.KBP2015);
     final LinkingStore linkingStore = LinkingStoreSource.createFor2015().openOrCreateLinkingStore(linkingDir);
     if (argStore.docIDs().equals(linkingStore.docIDs())) {
-      return new SystemOutputStore2015(argStore, linkingStore);
+      return new SystemOutputStore2015(dir, argStore, linkingStore);
     } else {
       throw new RuntimeException("Argument and linking store docIDs do not match");
     }
@@ -55,20 +58,20 @@ public final class SystemOutputStore2015 implements SystemOutputStore {
   }
 
   @Override
-  public SystemOutput2015 read(final Symbol docID) throws IOException {
+  public DocumentSystemOutput2015 read(final Symbol docID) throws IOException {
     final ArgumentOutput arguments = argumentStore.read(docID);
     final Optional<ResponseLinking> linking = linkingStore.read(arguments);
     if (!linking.isPresent()) {
       throw new RuntimeException("Missing linking for " + docID);
     }
-    return SystemOutput2015.from(arguments, linking.get());
+    return DocumentSystemOutput2015.from(arguments, linking.get());
   }
 
   @Override
-  public void write(final SystemOutput output) throws IOException {
-    if (output instanceof SystemOutput2015) {
+  public void write(final DocumentSystemOutput output) throws IOException {
+    if (output instanceof DocumentSystemOutput2015) {
       argumentStore.write(output.arguments());
-      linkingStore.write(((SystemOutput2015) output).linking());
+      linkingStore.write(((DocumentSystemOutput2015) output).linking());
     } else {
       throw new RuntimeException("Can only write 2015-format system outputs");
     }
@@ -78,6 +81,11 @@ public final class SystemOutputStore2015 implements SystemOutputStore {
   public void close() throws IOException {
     argumentStore.close();
     linkingStore.close();
+  }
+
+  // package-private for use by SystemOutputStore2016
+  File directory() {
+    return dir;
   }
 
   public String toString() {

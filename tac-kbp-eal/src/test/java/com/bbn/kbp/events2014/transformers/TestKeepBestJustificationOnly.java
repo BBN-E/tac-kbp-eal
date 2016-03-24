@@ -9,8 +9,8 @@ import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
-import com.bbn.kbp.events2014.SystemOutput;
-import com.bbn.kbp.events2014.SystemOutput2015;
+import com.bbn.kbp.events2014.DocumentSystemOutput;
+import com.bbn.kbp.events2014.DocumentSystemOutput2015;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -193,8 +193,9 @@ public class TestKeepBestJustificationOnly {
                 differByCASString.item()),
             ResponseSet.from(anotherDifferentAJWithLowerScore.item()))).build();
 
-    final SystemOutput systemOutput = SystemOutput2015.from(toDeduplicate, responseLinking);
-    final SystemOutput deduplicated =
+    final DocumentSystemOutput systemOutput = DocumentSystemOutput2015
+        .from(toDeduplicate, responseLinking);
+    final DocumentSystemOutput deduplicated =
         KeepBestJustificationOnly.asFunctionOnSystemOutput().apply(systemOutput);
     assertEquals(reference, deduplicated.arguments());
   }

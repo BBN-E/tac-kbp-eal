@@ -27,7 +27,7 @@ import static com.google.common.base.Preconditions.checkArgument;
  * these event frames can be mapped to IDs.  This mapping must be present for the 2016 evaluation
  * but should not be present for 2014 and 2015.
  */
-@Value.Immutable
+@Value.Immutable(prehash = true)
 @TextGroupPublicImmutable
 @Functional
 abstract class _EventArgumentLinking {
@@ -53,6 +53,7 @@ abstract class _EventArgumentLinking {
     if (idsToEventFrames().isPresent()) {
       for (final String id : idsToEventFrames().get().keySet()) {
         checkArgument(!id.contains("-"), "Event frame IDs may not contain -s");
+        checkArgument(!id.contains("\t"), "Event frame IDs may not contain tabs");
       }
       CollectionUtils.assertSameElementsOrIllegalArgument(eventFrames(),
           idsToEventFrames().get().values(), "Event frames did not match IDs",

@@ -4,7 +4,7 @@ import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.DocumentSystemOutput;
 import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.ArgumentStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
@@ -80,11 +80,11 @@ public final class PoolSystemOutput {
       final StringBuilder sb = new StringBuilder();
 
       for (final Map.Entry<String, SystemOutputStore> storeEntry : storesToCombine.entrySet()) {
-        final SystemOutput quoteFiltered =
+        final DocumentSystemOutput quoteFiltered =
             quoteFilter.get().transform(storeEntry.getValue().read(docId));
         // if there are multiple responses which we know will end up in the same
         // equivalence class even without knowing coref, drop the lower scoring ones
-        final SystemOutput responses = KeepBestJustificationOnly.asFunctionOnSystemOutput()
+        final DocumentSystemOutput responses = KeepBestJustificationOnly.asFunctionOnSystemOutput()
             .apply(quoteFiltered);
         responseSets.add(responses.arguments());
         sb.append(String

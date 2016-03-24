@@ -8,8 +8,8 @@ import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseFunctions;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
-import com.bbn.kbp.events2014.SystemOutput;
-import com.bbn.kbp.events2014.SystemOutput2015;
+import com.bbn.kbp.events2014.DocumentSystemOutput;
+import com.bbn.kbp.events2014.DocumentSystemOutput2015;
 import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 
 import com.google.common.base.Function;
@@ -45,29 +45,29 @@ public final class KeepBestJustificationOnly {
 
   private static final Logger log = LoggerFactory.getLogger(KeepBestJustificationOnly.class);
 
-  public static ResponseMapping computeResponseMapping(SystemOutput input) {
+  public static ResponseMapping computeResponseMapping(DocumentSystemOutput input) {
     return computeResponseMapping(input, Functions.<KBPString>identity());
   }
 
-  public static ResponseMapping computeResponseMappingUsingProvidedCoref(SystemOutput input,
+  public static ResponseMapping computeResponseMappingUsingProvidedCoref(DocumentSystemOutput input,
       CorefAnnotation corefAnnotation) {
     return computeResponseMapping(input, corefAnnotation.strictCASNormalizerFunction());
   }
 
-  public static Function<SystemOutput, SystemOutput> asFunctionOnSystemOutput() {
-    return new Function<SystemOutput, SystemOutput>() {
+  public static Function<DocumentSystemOutput, DocumentSystemOutput> asFunctionOnSystemOutput() {
+    return new Function<DocumentSystemOutput, DocumentSystemOutput>() {
       @Override
-      public SystemOutput apply(final SystemOutput input) {
+      public DocumentSystemOutput apply(final DocumentSystemOutput input) {
         return input.copyTransformedBy(computeResponseMapping(input));
       }
     };
   }
 
-  public static Function<SystemOutput, SystemOutput> asFunctionUsingCoref(
+  public static Function<DocumentSystemOutput, DocumentSystemOutput> asFunctionUsingCoref(
       final CorefAnnotation corefAnnotation) {
-    return new Function<SystemOutput, SystemOutput>() {
+    return new Function<DocumentSystemOutput, DocumentSystemOutput>() {
       @Override
-      public SystemOutput apply(final SystemOutput input) {
+      public DocumentSystemOutput apply(final DocumentSystemOutput input) {
         return input.copyTransformedBy(
             computeResponseMappingUsingProvidedCoref(input, corefAnnotation));
       }
@@ -75,7 +75,7 @@ public final class KeepBestJustificationOnly {
   }
 
 
-  private static ResponseMapping computeResponseMapping(SystemOutput input,
+  private static ResponseMapping computeResponseMapping(DocumentSystemOutput input,
       Function<KBPString, KBPString> CASNormalizer) {
     checkNotNull(input);
     final Function<Response, TypeRoleFillerRealis> trfrFunction =
@@ -122,9 +122,9 @@ public final class KeepBestJustificationOnly {
     return ResponseMapping.create(ImmutableMap.<Response,Response>of(), toDelete);
   }
 
-  private static ResponseLinking getResponseLinking(final SystemOutput input) {
-    if (input instanceof SystemOutput2015) {
-      return ((SystemOutput2015) input).linking();
+  private static ResponseLinking getResponseLinking(final DocumentSystemOutput input) {
+    if (input instanceof DocumentSystemOutput2015) {
+      return ((DocumentSystemOutput2015) input).linking();
     } else {
       final ImmutableSet<ResponseSet> responseSets;
       if (!input.arguments().responses().isEmpty()) {

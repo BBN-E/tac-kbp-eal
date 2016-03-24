@@ -24,7 +24,7 @@ import org.immutables.value.Value;
  *
  * @author rgabbard
  */
-@Value.Immutable
+@Value.Immutable(prehash = true)
 @Functional
 @TextGroupPublicImmutable
 abstract class _TypeRoleFillerRealis implements Comparable<TypeRoleFillerRealis> {

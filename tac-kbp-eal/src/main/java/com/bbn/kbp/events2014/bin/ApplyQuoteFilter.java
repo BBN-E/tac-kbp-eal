@@ -2,7 +2,7 @@ package com.bbn.kbp.events2014.bin;
 
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.SystemOutput;
+import com.bbn.kbp.events2014.DocumentSystemOutput;
 import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.transformers.QuoteFilter;
@@ -67,8 +67,8 @@ public final class ApplyQuoteFilter {
 
     log.info("Source store has {} documents", source.docIDs().size());
     for (final Symbol docID : source.docIDs()) {
-      final SystemOutput original = source.read(docID);
-      final SystemOutput filtered = quoteFilter.transform(original);
+      final DocumentSystemOutput original = source.read(docID);
+      final DocumentSystemOutput filtered = quoteFilter.transform(original);
       log.info("For document {}, filtered out {} responses from quotes",
           docID, original.arguments().size() - filtered.arguments().size());
 
