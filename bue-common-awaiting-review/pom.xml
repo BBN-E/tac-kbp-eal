@@ -2,14 +2,14 @@
     <parent>
         <artifactId>tac-kbp-eal-all</artifactId>
         <groupId>com.bbn.kbp.eal</groupId>
-        <version>3.2.0</version>
+        <version>3.2.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>bue-common-awaiting-review</artifactId>
-    <version>3.2.0</version>
+    <version>3.2.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Code to include in bue-common post-review</name>
