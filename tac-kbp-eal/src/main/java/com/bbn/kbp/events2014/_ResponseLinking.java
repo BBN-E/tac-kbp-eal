@@ -9,7 +9,6 @@ import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableBiMap;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
@@ -100,8 +99,8 @@ abstract class _ResponseLinking {
     final ResponseLinking.Builder ret = ResponseLinking.builder().docID(docID())
         .responseSets(newResponseSets).incompleteResponses(newIncompletes);
     if (responseSetIds().isPresent()) {
-      ret.idsToResponseSets(
-          ImmutableMap.copyOf(Maps.filterValues(responseSetIds().get(), in(newResponseSets))));
+      ret.responseSetIds(
+          ImmutableBiMap.copyOf(Maps.filterValues(responseSetIds().get(), in(newResponseSets))));
     }
     return ret.build();
   }

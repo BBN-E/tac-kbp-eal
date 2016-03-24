@@ -14,6 +14,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -209,7 +210,7 @@ class KBPSpec2016LinkingLoader extends AbstractKBPSpecLinkingLoader {
       final ImmutableSet<ResponseSet> responseSets,
       final ImmutableMap<String, ResponseSet> responseIDs) throws IOException {
     if (responseSets.size() == responseIDs.size()) {
-      responseLinking.idsToResponseSets(responseIDs);
+      responseLinking.responseSetIds(ImmutableBiMap.copyOf(responseIDs));
     } else {
       throw new IOException("Read " + responseSets.size() + " response sets but "
           + responseIDs.size() + " ID assignments");
