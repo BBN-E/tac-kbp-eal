@@ -38,6 +38,8 @@ import com.bbn.nlp.corpora.ere.EREEventMention;
 import com.bbn.nlp.corpora.ere.EREFillerArgument;
 import com.bbn.nlp.corpora.ere.ERELoader;
 import com.bbn.nlp.events.HasEventType;
+import com.bbn.nlp.events.ontology.EREToKBPEventOntologyMapper;
+import com.bbn.nlp.events.ontology.SimpleEventOntologyMapper;
 import com.bbn.nlp.events.scoring.DocLevelEventArg;
 import com.bbn.nlp.parsing.HeadFinders;
 
@@ -140,7 +142,7 @@ public final class ScoreKBPAgainstERE {
             coreNLPXMLLoader, relaxUsingCORENLP,
             useExactMatchForCoreNLPRelaxation);
     final DocLevelArgsFromEREExtractor docLevelArgsFromEREExtractor =
-        new DocLevelArgsFromEREExtractor();
+        new DocLevelArgsFromEREExtractor(EREToKBPEventOntologyMapper.create2015Mapping());
 
     // this sets it up so that everything fed to input will be scored in various ways
     setupScoring(input, docLevelArgsFromKBPExtractor, docLevelArgsFromEREExtractor, outputDir);
@@ -233,6 +235,11 @@ public final class ScoreKBPAgainstERE {
     // for tracking things from the answer key discarded due to not being entity mentions
     private final Multiset<String> allGoldArgs = HashMultiset.create();
     private final Multiset<String> discarded = HashMultiset.create();
+    private final SimpleEventOntologyMapper mapper;
+
+    private DocLevelArgsFromEREExtractor(final SimpleEventOntologyMapper mapper) {
+      this.mapper = checkNotNull(mapper);
+    }
 
     @Override
     public ImmutableSet<DocLevelEventArg> apply(final EREDocument doc) {
@@ -240,7 +247,31 @@ public final class ScoreKBPAgainstERE {
       for (final EREEvent ereEvent : doc.getEvents()) {
         for (final EREEventMention ereEventMention : ereEvent.getEventMentions()) {
           for (final EREArgument ereArgument : ereEventMention.getArguments()) {
-            final String typeRoleKey = ereEventMention.getType() + "/" + ereArgument.getRole();
+            final Symbol ereEventMentionType = Symbol.from(ereEventMention.getType());
+            final Symbol ereEventMentionSubtype = Symbol.from(ereEventMention.getSubtype());
+            final Symbol ereArgumentRole = Symbol.from(ereArgument.getRole());
+
+            boolean skip = false;
+            if (!mapper.eventType(ereEventMentionType).isPresent()) {
+              log.debug("EventType {} is not known to the KBP ontology", ereEventMentionType);
+              skip = true;
+            }
+            if (!mapper.eventRole(ereArgumentRole).isPresent()) {
+              log.debug("EventRole {} is not known to the KBP ontology", ereArgumentRole);
+              skip = true;
+            }
+            if (!mapper.eventSubtype(ereEventMentionSubtype).isPresent()) {
+              log.debug("EventSubtype {} is not known to the KBP ontology", ereEventMentionSubtype);
+              skip = true;
+            }
+            if (skip) {
+              continue;
+            }
+
+            // type.subtype is Response format
+            final String typeRoleKey = mapper.eventType(ereEventMentionType).get() +
+                "." + mapper.eventSubtype(ereEventMentionSubtype).get() +
+                "/" + mapper.eventRole(ereArgumentRole).get();
             allGoldArgs.add(typeRoleKey);
 
             if (ereArgument instanceof EREEntityArgument) {
@@ -250,7 +281,9 @@ public final class ScoreKBPAgainstERE {
               checkState(containingEntity.isPresent(), "Corrupt ERE key input lacks "
                   + "entity for entity mention %s", entityMention);
               ret.add(DocLevelEventArg.create(Symbol.from(doc.getDocId()),
-                  Symbol.from(ereEventMention.getType()), Symbol.from(ereArgument.getRole()),
+                  Symbol.from(mapper.eventType(ereEventMentionType).get() + "." +
+                      mapper.eventSubtype(ereEventMentionSubtype).get()),
+                  mapper.eventRole(ereArgumentRole).get(),
                   containingEntity.get().getID()));
             } else if (ereArgument instanceof EREFillerArgument) {
               // we don't currently handle non-entity mention arguments
