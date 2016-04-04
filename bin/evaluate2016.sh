@@ -10,6 +10,7 @@ EXPAND=true
 QUOTEFILTER=true
 KEEPBEST=true
 
+# currently just 2016_test
 CONFIG=$1
 
 
@@ -87,7 +88,7 @@ if [ "$KEEPBEST" = true ] ; then
 inputStore: $f
 outputStore: $EVALDIR/keepBest/$sysId
 keepInferenceCases: false
-outputLayout: KBP_EA_2015
+outputLayout: KBP_EA_2016
 EOF
 
         $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/keepOnlyBestResponses $PARAMSDIR/generated/$CONFIG/keepBest_${sysId}.params > $LOG/keepBest_${sysId}.log
