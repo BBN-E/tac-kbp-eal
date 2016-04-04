@@ -1,0 +1,18 @@
+Conflict.Attack	Attacker	Instrument	Target	Place	Time
+Conflict.Demonstrate	Entity	Place	Time
+Contact.Broadcast	Audience	Entity	Place	Time	
+Contact.Contact	Entity	Place	Time	
+Contact.Correspondence	Entity	Place	Time
+Contact.Meet	Entity	Place	Time
+Justice.Arrest-Jail	Agent	Crime	Person	Place	Time
+Life.Die	Agent	Instrument	Victim	Place	Time
+Life.Injure	Agent	Instrument	Victim	Place	Time
+Manufacture.Artifact	Agent	Artifact	Instrument	Place	Time
+Movement.Transport-Artifact	Agent	Artifact	Destination	Instrument	Origin
+Movement.Transport-Person	Agent	Destination	Instrument	Origin	Person
+Personnel.Elect	Agent	Person	Position	Place	Time
+Personnel.End-Position	Entity	Person	Position	Place	Time
+Personnel.Start-Position	Entity	Person	Position	Place	Time
+Transaction.Transaction	Beneficiary	Giver	Recipient	Place	Time
+Transaction.Transfer-Money	Beneficiary	Giver	Money	Recipient	Place	Time
+Transaction.Transfer-Ownership	Beneficiary	Giver	Recipient	Thing	Place	Time
