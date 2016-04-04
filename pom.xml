@@ -1,23 +1,23 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.bbn.kbp.events2014</groupId>
-    <artifactId>kbp-events2014-all</artifactId>
-    <version>2.4.6-SNAPSHOT</version>
+    <groupId>com.bbn.kbp.eal</groupId>
+    <artifactId>tac-kbp-eal-all</artifactId>
+    <version>3.2.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>KBP 2014 Event Argument Shared Task</name>
+    <name>TAC KBP Event Argument and Linking Shared Task</name>
     <url>http://www.bbn.com/</url>
 
     <modules>
-        <module>kbp-events2014</module>
-        <module>kbp-events2014-scorer</module>
-        <module>kbp-events2014-bin</module>
+        <module>tac-kbp-eal</module>
+        <module>tac-kbp-eal-scorer</module>
+        <module>bue-common-awaiting-review</module>
     </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.plugin.version>3.1</maven.compiler.plugin.version>
+        <maven.compiler.plugin.version>3.5.1</maven.compiler.plugin.version>
         <maven.javadoc.plugin.version>2.8.1</maven.javadoc.plugin.version>
         <maven.site.plugin.version>3.1</maven.site.plugin.version>
         <maven.project.info.reports.plugin.version>2.4</maven.project.info.reports.plugin.version>
@@ -32,7 +32,7 @@
         <skipITs>true</skipITs>
 
         <junit.version>4.11</junit.version>
-        <bueopen.version>2.34.1-SNAPSHOT</bueopen.version>
+        <bueopen.version>2.34.0</bueopen.version>
 
         <!-- Sonar server properties. These only work BBN-internally -->
         <sonar.host.url>http://e-apache-2.bbn.com:9000</sonar.host.url>
@@ -222,11 +222,6 @@
             <dependency>
                 <groupId>com.bbn.bue</groupId>
                 <artifactId>common-core-jackson-serialization-open</artifactId>
-                <version>${bueopen.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.bbn.nlp</groupId>
-                <artifactId>nlp-core-open</artifactId>
                 <version>${bueopen.version}</version>
             </dependency>
         </dependencies>

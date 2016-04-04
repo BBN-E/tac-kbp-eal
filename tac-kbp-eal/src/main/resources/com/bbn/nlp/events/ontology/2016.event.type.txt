@@ -1,0 +1,16 @@
+Conflict	Conflict
+conflict	Conflict
+Contact	Contact
+contact	Contact
+Justice	Justice
+justice	Justice
+Life	Life
+life	Life
+Manufacture	Manufacture
+manufacture	Manufacture
+Movement	Movement
+movement	Movement
+Personnel	Personnel
+personnel	Personnel
+Transaction	Transaction
+transaction	Transaction

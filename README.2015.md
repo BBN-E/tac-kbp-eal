@@ -1,14 +1,14 @@
 This is code developed by BBN to support the
-2016 KBP Event Argument and Linking Shared Task.
-A description of this task will be provided soon.
+2015 KBP Event Argument and Linking Shared Task.
+A description of this task may be found [here](http://www.nist.gov/tac/2015/KBP/Event/Argument/guidelines.html).
 
 This repository contains three artifacts:
-* `tac-kbp-eal` contains classes to represent system responses and assessments for
+* `kbp-events2014` contains classes to represent system responses, assessments, and linkings for
 the task. While these are mainly to support the executables in this repository,
 if your system is based on Java or another JVM language, you are strongly encouraged
 to use them.  Note that they can be used from Python via Jython.
-* `tac-kbp-eal-scorer` contains the scoring code.
-* `tac-kbp-eal-bin` contains all the executable programs: the validator, the pooler, the scorer, etc.
+* `kbp-events2014-scorer` contains the scoring code (but not scoring binary).
+* `kbp-events2014-bin` contains all the executable programs: the validator, the pooler, the scorer, etc.
 
 ## Building
 
@@ -17,12 +17,10 @@ Requirements:
 
 Build steps:
 * Do `mvn install` from the root of this repository.
-* do `chmod +x tac-kbp-eal-bin/target/appassembler/bin/*` (you only need to do this the first time)
-* do `chmod +x tac-kbp-eal-scorer/target/appassembler/bin/*` (you only need to do this the first time)
+* do `chmod +x kbp-events2014-bin/target/appassembler/bin/*` (you only need to do this the first time)
+* do `chmod +x kbp-events2014-scorer/target/appassembler/bin/*` (you only need to do this the first time)
 
 [![Build Status](https://semaphoreci.com/api/v1/projects/a11da8fb-4e16-48bf-af3a-a4e1680f161e/467466/badge.svg)](https://semaphoreci.com/rgabbard-bbn/kbp-2014-event-arguments)
-
-# Warning - everything below here needs to be revised for 2016
 
 ## Using
 ### System Output Stores and Annotation Stores
@@ -130,8 +128,8 @@ Parameters:
 Add the following to the `dependencies` section of your project's `pom.xml` (or take similar steps if using Gradle, etc.):
 ```
 <dependency>
-      <groupId>com.bbn.kbp.eal</groupId>
-      <artifactId>tac-kbp-eal</artifactId>
+      <groupId>com.bbn.kbp.events2014</groupId>
+      <artifactId>kbp-events2014</artifactId>
       <version>current version listed in pom.xml of this repository</version>
 </dependency>
 ```
@@ -140,4 +138,4 @@ install it in your local repository as described above.
 
 ## Contact
 For questions concerning the software, please contact `rgabbard@bbn.com`.  If you 
-have bugs or feature requests, you can use the GitHub Issue Tracker. The issue tracker is preferred so future users can benefit from the answers to your questions. To track changes to this repository, follow https://github.com/BBN-E/tac-kbp-eal/commits/master.atom in an RSS reader.
+have bugs or feature requests, you can use the GitHub Issue Tracker. The issue tracker is preferred so future users can benefit from the answers to your questions. To track changes to this repository, follow https://github.com/rgabbard-bbn/kbp-2014-event-arguments/commits/master.atom in an RSS reader.
