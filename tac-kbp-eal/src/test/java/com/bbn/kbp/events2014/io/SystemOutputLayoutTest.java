@@ -56,10 +56,9 @@ public final class SystemOutputLayoutTest {
     // this must point to a directory via your filesystem, not a resource, unless you want to debug.
     // what are you doing here anyway?
     final File dir = new File(
-        "/nfs/e-nfs-01/home/jdeyoung/workspace/kbp-2014-event-arguments/tac-kbp-eal/src/test/resources/com/bbn/kbp/events2014/io/CorpusEventTest"
-//        SystemOutputLayoutTest.class
-//            .getResource("/com/bbn/kbp/events2014/io/CorpusEventTest/")
-//            .getFile()
+        SystemOutputLayoutTest.class
+            .getResource("/com/bbn/kbp/events2014/io/CorpusEventTest/")
+            .getFile()
     );
 
     final SystemOutputStore sourceLayout = SystemOutputLayout.KBP_EA_2015.open(dir);
@@ -101,13 +100,12 @@ public final class SystemOutputLayoutTest {
     }
     sourceLayout.close();
 
-    // this should really point to the same place as used above
+    // this should really point to the same place as used above in the event of regenerating the example output.
     final SystemOutputStore2016 outputStore =
         (SystemOutputStore2016) SystemOutputLayout.KBP_EA_2016
             .openOrCreate(new File(
-                    "/nfs/e-nfs-01/home/jdeyoung/workspace/kbp-2014-event-arguments/tac-kbp-eal/src/test/resources/com/bbn/kbp/events2014/io/CorpusEventTest")
-//                this.getClass().getResource("/com/bbn/kbp/events2014/io/CorpusEventTest")
-//                    .getFile())
+                this.getClass().getResource("/com/bbn/kbp/events2014/io/CorpusEventTest")
+                    .getFile())
             );
 
     final CorpusEventLinking.Builder corpusEventLinkingB = CorpusEventLinking.builder();
