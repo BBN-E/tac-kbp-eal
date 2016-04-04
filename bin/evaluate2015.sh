@@ -68,7 +68,7 @@ mkdir -p $EVALDIR/log
 # apply realis expansion to LDC assessments
 if [ "$EXPAND" = true ]; then
     echo "Expanded assessment store using realis assessments..."
-    $KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/expandByRealis $PARAMSDIR/expand.params > $LOG/expand.log
+    $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/expandByRealis $PARAMSDIR/expand.params > $LOG/expand.log
 
     mkdir -p $EVALDIR/expanded/linkingStore
     cp $ASSESSMENTS/linkingStore/* $EVALDIR/expanded/linkingStore
@@ -77,7 +77,7 @@ fi
 # quote filter participant submissions
 if [ "$QUOTEFILTER" = true ]; then
     echo "Applying quote filter to submissions..."
-    $KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/applyQuoteFilter $PARAMSDIR/quoteFilter.params > $LOG/quoteFilter.log
+    $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/applyQuoteFilter $PARAMSDIR/quoteFilter.params > $LOG/quoteFilter.log
 fi
 
 # do keepBest
@@ -96,7 +96,7 @@ keepInferenceCases: false
 outputLayout: KBP_EA_2015
 EOF
 
-        $KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/keepOnlyBestResponses $PARAMSDIR/generated/$CONFIG/keepBest_${sysId}.params > $LOG/keepBest_${sysId}.log
+        $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/keepOnlyBestResponses $PARAMSDIR/generated/$CONFIG/keepBest_${sysId}.params > $LOG/keepBest_${sysId}.log
       fi
     done
 fi

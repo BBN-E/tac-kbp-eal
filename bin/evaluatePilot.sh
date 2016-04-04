@@ -76,13 +76,13 @@ popd
 
 # repair LDC assessments
 echo "Repairing assessment store..."
-$KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/repairAnnotationStore $KBPOPENREPO/params/pilotEvaluation/repair.params >> $LOG
+$KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/repairAnnotationStore $KBPOPENREPO/params/pilotEvaluation/repair.params >> $LOG
 
 # apply realis expansion to LDC assessments
 if [ "$EXPAND" = true ];
 then
     echo "Expanded assessment store using realis assessments..."
-    $KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/expandByRealis $KBPOPENREPO/params/pilotEvaluation/expand.params >> $LOG
+    $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/expandByRealis $KBPOPENREPO/params/pilotEvaluation/expand.params >> $LOG
 else
     cp -r $EVALDIR/repaired $EVALDIR/expanded
 fi
@@ -91,14 +91,14 @@ fi
 if [ "$QUOTEFILTER" = true ];
 then
     echo "Applying quote filter to pilot submissions..."
-    $KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/applyQuoteFilter $KBPOPENREPO/params/pilotEvaluation/quoteFilter.params >> $LOG
+    $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/applyQuoteFilter $KBPOPENREPO/params/pilotEvaluation/quoteFilter.params >> $LOG
 else
     cp -r $EVALDIR/participantSubmissions $EVALDIR/quoteFiltered
 fi
 
 # score
 echo "scoring..."
-$KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/kbpScorer $KBPOPENREPO/params/pilotEvaluation/score.params >> $LOG
+$KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/kbpScorer $KBPOPENREPO/params/pilotEvaluation/score.params >> $LOG
 
 SUMMARYFILE=$EVALDIR/summary.txt
 echo "Summarizing scores to $SUMMARYFILE"

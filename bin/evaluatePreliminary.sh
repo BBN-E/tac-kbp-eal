@@ -78,19 +78,19 @@ cp -r $ASSESSMENTS/* $ASSESSDIR
 if [ "$EXPAND" = true ];
 then
     echo "Expanded assessment store using realis assessments..."
-    $KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/expandByRealis $KBPOPENREPO/params/preliminaryEvaluation/expand.params >> $LOG
+    $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/expandByRealis $KBPOPENREPO/params/preliminaryEvaluation/expand.params >> $LOG
 fi
 
 # quote filter participant submissions
 if [ "$QUOTEFILTER" = true ];
 then
     echo "Applying quote filter to submissions..."
-    $KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/applyQuoteFilter $KBPOPENREPO/params/preliminaryEvaluation/quoteFilter.params >> $LOG
+    $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/applyQuoteFilter $KBPOPENREPO/params/preliminaryEvaluation/quoteFilter.params >> $LOG
 fi
 
 # score
 echo "scoring..."
-$KBPOPENREPO/kbp-events2014-bin/target/appassembler/bin/kbpScorer $KBPOPENREPO/params/preliminaryEvaluation/score.params >> $LOG
+$KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/kbpScorer $KBPOPENREPO/params/preliminaryEvaluation/score.params >> $LOG
 
 SUMMARYFILE=$EVALDIR/summary.txt
 echo "Summarizing scores to $SUMMARYFILE"
