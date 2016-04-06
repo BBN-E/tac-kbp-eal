@@ -1,13 +1,11 @@
 package com.bbn.kbp.events2014.io;
 
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.CorpusEventFrame;
 import com.bbn.kbp.events2014.CorpusEventLinking;
 import com.bbn.kbp.events2014.DocumentSystemOutput;
 import com.bbn.kbp.events2014.DocumentSystemOutput2015;
 
 import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 
 import java.io.File;
@@ -39,7 +37,7 @@ public class SystemOutputStore2016 implements SystemOutputStore {
 
   public void writeCorpusEventFrames(CorpusEventLinking corpusEventFrames) throws IOException {
     final File corpusLinkingFile = corpusLinkingFile();
-    corpusLinkingFile.mkdirs();
+    corpusLinkingFile.getParentFile().mkdirs();
     eventFrameWriter.writeCorpusEventFrames(corpusEventFrames, Files.asCharSink(corpusLinkingFile,
         Charsets.UTF_8));
   }
