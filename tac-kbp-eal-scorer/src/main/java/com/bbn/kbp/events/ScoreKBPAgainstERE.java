@@ -344,11 +344,10 @@ public final class ScoreKBPAgainstERE {
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
-      for (final AssessedResponse annResponse : answerKey.annotatedResponses()) {
+      for (final Response response: answerKey.allResponses()) {
         // we try to align a system response to an ERE entity by exact offset match of the
         // basefiller against one of an entity's mentions
         // this search could be faster but is probably good enough
-        final Response response = annResponse.response();
         numResponses.add(errKey(response));
         final OffsetRange<CharOffset> baseFillerOffsets = response.baseFiller().asCharOffsetRange();
 
