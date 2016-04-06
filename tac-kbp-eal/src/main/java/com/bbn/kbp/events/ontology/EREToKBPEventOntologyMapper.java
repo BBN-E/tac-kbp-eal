@@ -1,4 +1,4 @@
-package com.bbn.nlp.events.ontology;
+package com.bbn.kbp.events.ontology;
 
 
 import com.bbn.bue.common.files.FileUtils;

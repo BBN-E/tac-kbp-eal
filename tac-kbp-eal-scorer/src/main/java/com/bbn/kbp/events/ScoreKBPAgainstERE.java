@@ -18,6 +18,8 @@ import com.bbn.bue.common.strings.offsets.CharOffset;
 import com.bbn.bue.common.strings.offsets.OffsetRange;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
+import com.bbn.kbp.events.ontology.EREToKBPEventOntologyMapper;
+import com.bbn.kbp.events.ontology.SimpleEventOntologyMapper;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.Response;
@@ -38,8 +40,6 @@ import com.bbn.nlp.corpora.ere.EREEventMention;
 import com.bbn.nlp.corpora.ere.EREFillerArgument;
 import com.bbn.nlp.corpora.ere.ERELoader;
 import com.bbn.nlp.events.HasEventType;
-import com.bbn.nlp.events.ontology.EREToKBPEventOntologyMapper;
-import com.bbn.nlp.events.ontology.SimpleEventOntologyMapper;
 import com.bbn.nlp.events.scoring.DocLevelEventArg;
 import com.bbn.nlp.parsing.HeadFinders;
 
