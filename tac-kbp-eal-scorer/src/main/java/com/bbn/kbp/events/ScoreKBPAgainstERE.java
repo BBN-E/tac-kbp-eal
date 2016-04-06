@@ -20,10 +20,8 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events.ontology.EREToKBPEventOntologyMapper;
 import com.bbn.kbp.events.ontology.SimpleEventOntologyMapper;
-import com.bbn.kbp.events2014.AnswerKey;
-import com.bbn.kbp.events2014.AssessedResponse;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.io.AnnotationStore;
+import com.bbn.kbp.events2014.io.ArgumentStore;
 import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
 import com.bbn.nlp.corenlp.CoreNLPConstituencyParse;
 import com.bbn.nlp.corenlp.CoreNLPDocument;
@@ -48,7 +46,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -64,12 +61,15 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Random;
 
+import javax.annotation.Nullable;
+
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.inspect;
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformLeft;
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformRight;
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformed;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.Iterables.filter;
 
 /**
  * Scores KBP 2015 event argument output against an ERE gold standard.  Scoring is in terms of
@@ -109,8 +109,10 @@ public final class ScoreKBPAgainstERE {
     final ImmutableMap<Symbol, File> goldDocIDToFileMap = FileUtils.loadSymbolToFileMap(
         Files.asCharSource(params.getExistingFile("goldDocIDToFileMap"), Charsets.UTF_8));
     final File outputDir = params.getCreatableDirectory("outputDir");
-    final AnnotationStore annStore = AssessmentSpecFormats.openAnnotationStore(
-        params.getExistingDirectory("annotationStore"), AssessmentSpecFormats.Format.KBP2015);
+    final ArgumentStore argumentStore =
+        AssessmentSpecFormats.openSystemOutputStore(params.getExistingDirectory("systemOutput"),
+            AssessmentSpecFormats.Format.KBP2015);
+
     final ImmutableMap<Symbol, File> coreNLPProcessedRawDocs = FileUtils.loadSymbolToFileMap(
         Files.asCharSource(params.getExistingFile("coreNLPDocIDMap"), Charsets.UTF_8));
     final boolean relaxUsingCORENLP = params.getBoolean("relaxUsingCoreNLP");
@@ -157,8 +159,8 @@ public final class ScoreKBPAgainstERE {
       final EREDocument ereDoc = loader.loadFrom(ereFileName);
       checkState(ereDoc.getDocId().equals(docID.asString()),
           "fetched document ID must be equal to stored");
-      final AnswerKey answerKey = annStore.read(docID).filter(
-          KEEP_CORRECT_ANSWERS_OF_RELEVANT_ROLES_ONLY);
+      final Iterable<Response>
+          answerKey = filter(argumentStore.read(docID).responses(), unassessedFilter);
       // feed this ERE doc/ KBP output pair to the scoring network
       input.inspect(EvalPair.of(ereDoc, new EREDocAndAnswerKey(ereDoc, answerKey)));
     }
@@ -173,24 +175,12 @@ public final class ScoreKBPAgainstERE {
   private static final ImmutableSet<Symbol> BANNED_ROLES =
       SymbolUtils.setFrom("Time", "Crime", "Position",
           "Fine", "Sentence");
-  public static final AnswerKey.Filter KEEP_CORRECT_ANSWERS_OF_RELEVANT_ROLES_ONLY =
-      new AnswerKey.Filter() {
-        @Override
-        public Predicate<AssessedResponse> assessedFilter() {
-          return new Predicate<AssessedResponse>() {
-            @Override
-            public boolean apply(final AssessedResponse input) {
-              return input.isCorrectUpToInexactJustifications()
-                  && !BANNED_ROLES.contains(input.response().role());
-            }
-          };
-        }
-
-        @Override
-        public Predicate<Response> unassessedFilter() {
-          return Predicates.alwaysFalse();
-        }
-      };
+  private static final Predicate<Response> unassessedFilter = new Predicate<Response>() {
+    @Override
+    public boolean apply(@Nullable final Response response) {
+      return !BANNED_ROLES.contains(response.role());
+    }
+  };
 
   private static Function<EvalPair<? extends Iterable<? extends DocLevelEventArg>, ? extends Iterable<? extends DocLevelEventArg>>, ProvenancedAlignment<DocLevelEventArg, DocLevelEventArg, DocLevelEventArg, DocLevelEventArg>>
       EXACT_MATCH_ALIGNER = EquivalenceBasedProvenancedAligner
@@ -333,7 +323,7 @@ public final class ScoreKBPAgainstERE {
 
     public ImmutableSet<DocLevelEventArg> apply(final EREDocAndAnswerKey input) {
       final ImmutableSet.Builder<DocLevelEventArg> ret = ImmutableSet.builder();
-      final AnswerKey answerKey = input.answerKey();
+      final Iterable<Response> responses = input.responses();
       final EREDocument doc = input.ereDoc();
       final Symbol ereID = Symbol.from(doc.getDocId());
       final Optional<CoreNLPDocument> coreNLPDoc;
@@ -344,7 +334,7 @@ public final class ScoreKBPAgainstERE {
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
-      for (final Response response: answerKey.allResponses()) {
+      for (final Response response : responses) {
         // we try to align a system response to an ERE entity by exact offset match of the
         // basefiller against one of an entity's mentions
         // this search could be faster but is probably good enough
@@ -449,18 +439,18 @@ public final class ScoreKBPAgainstERE {
 final class EREDocAndAnswerKey {
 
   private final EREDocument ereDoc;
-  private final AnswerKey anwerKey;
+  private final Iterable<Response> responses;
 
-  public EREDocAndAnswerKey(final EREDocument ereDoc, final AnswerKey anwerKey) {
+  public EREDocAndAnswerKey(final EREDocument ereDoc, final Iterable<Response> responses) {
     this.ereDoc = checkNotNull(ereDoc);
-    this.anwerKey = checkNotNull(anwerKey);
+    this.responses = checkNotNull(responses);
   }
 
   public EREDocument ereDoc() {
     return ereDoc;
   }
 
-  public AnswerKey answerKey() {
-    return anwerKey;
+  public Iterable<Response> responses() {
+    return responses;
   }
 }
