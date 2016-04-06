@@ -1,0 +1,162 @@
+1	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	60 lashes for having been a part - time employee for LBC 's Saudi operations	768-840	741-840	768-840	NIL	Actual	1.0	C	C	I	I	2	Actual	NOMINAL
+2	AFP_ENG_20091024.0206.fake	Justice.Sentence	Adjudicator	judge	741-750	722-842	741-750	NIL	Actual	1.0	C	C	I	C	3	Actual	NOMINAL
+3	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	a cameraman who helped film the episode	1558-1596	1552-1632	1558-1596	NIL	Actual	1.0	C	C	C	C	4	Actual	NOMINAL
+4	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	a cameraman	1558-1568	1457-1633	1558-1596	NIL	Actual	1.0	C	C	I	C	4	Actual	NOMINAL
+5	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	a cameraman	1558-1568	1153-1446,1457-1633	1570-1572	NIL	Actual	1.0	C	C	C	C	4	Actual	NOMINAL
+6	AFP_ENG_20091024.0206.fake	Justice.Sentence	Adjudicator	judge	745-749	722-841	745-749	NIL	Actual	1.0	C	C	I	I	3	Actual	NOMINAL
+7	AFP_ENG_20091024.0206.fake	Justice.Sentence	Adjudicator	judge	745-749	722-912	745-749	NIL	Actual	1.0	C	C	I	I	3	Actual	NOMINAL
+8	AFP_ENG_20091024.0206.fake	Justice.Sentence	Adjudicator	LBC	819-821	722-841	819-821	NIL	Actual	1.0	C	C	W	W	17	Actual	NOMINAL
+9	AFP_ENG_20091024.0206.fake	Justice.Sentence	Adjudicator	A court on Saturday	273-291	273-450	273-291	NIL	Actual	1.0	C	C	I	I	5	Actual	NOMINAL
+10	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	girls	1416-1420	1153-1446	1416-1420	NIL	Actual	1.0	C	C	W	W	18	Actual	NOMINAL
+11	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	girls	1416-1420	1457-1633,1153-1446	1416-1420	NIL	Actual	1.0	I	C	W	W	18	Actual	NAME
+12	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	girls	1416-1420	1153-1446	1442-1445	NIL	Actual	1.0	C	C	W	W	18	Actual	NOMINAL
+13	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	girls	1416-1420	1457-1633,1153-1446	1442-1445	NIL	Actual	1.0	I	C	W	W	18	Actual	NAME
+14	AFP_ENG_20091024.0206.fake	Justice.Charge-Indict	Defendant	a Jeddah judge	482-495	505-515	522-524	NIL	Actual	1.0	I	W	NIL	NIL	3	NIL	NIL
+15	AFP_ENG_20091024.0206.fake	Justice.Convict	Crime	his July appearance on the LBC show "Bold Red Line" in which he talked about picking up girls and having sex with them	1328-1445	1153-1446	1328-1445	NIL	Actual	1.0	C	C	W	C	6	Actual	NOMINAL
+16	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	Yami	472-475	722-841	761-763	NIL	Actual	1.0	C	C	I	C	7	Actual	NAME
+17	AFP_ENG_20091024.0206.fake	Justice.Charge-Indict	Defendant	Rosanna al-Yami	461-475	461-711	522-524	NIL	Generic	1.0	C	C	C	C	7	Other	NAME
+18	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	two months	1615-1624	1457-1633	1615-1624	NIL	Actual	1.0	C	C	I	I	8	Actual	NOMINAL
+19	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	two months	1615-1624	1602-1624	1615-1624	NIL	Actual	1.0	I	I	I	I	8	Actual	NOMINAL
+20	AFP_ENG_20091024.0206.fake	Transaction.Transfer-Money	Recipient	Three friends	1457-1469	1457-1633	1457-1503	NIL	Actual	1.0	W	NIL	NIL	NIL	9	NIL	NIL
+21	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	Three friends	1457-1469	1457-1634	1457-1469	NIL	Actual	1.0	C	C	I	I	9	Actual	NOMINAL
+22	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	Three friends	1457-1470	1457-1634	1457-1470	NIL	Actual	1.0	C	C	I	I	9	Actual	NOMINAL
+23	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	Three friends	1457-1469	1457-1633	1457-1503	NIL	Actual	1.0	C	C	I	C	9	Actual	NOMINAL
+24	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	Three friends	1457-1469	1153-1446,1457-1633	1457-1503	NIL	Actual	1.0	C	C	C	I	9	Actual	NOMINAL
+25	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	five years in jail and 1,000 lashes	1275-1309	1262-1445	1275-1309	NIL	Actual	1.0	C	C	C	C	10	Actual	NOMINAL
+26	AFP_ENG_20091024.0206.fake	Justice.Charge-Indict	Crime	having been a part-time employee for LBC's Saudi operations	782-840	461-711,722-841	782-840	NIL	Actual	1.0	C	C	W	W	21	Actual	NOMINAL
+27	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	Three friends	1457-1469	1457-1633	1471-1473	NIL	Actual	1.0	C	C	C	C	9	Actual	NOMINAL
+28	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	Three friends	1457-1469	1153-1446,1457-1633	1471-1473	NIL	Actual	1.0	I	C	C	C	9	Actual	NOMINAL
+29	AFP_ENG_20091024.0206.fake	Justice.Sentence	Place	Saudi	371-375	273-450	371-375	NIL	Actual	1.0	C	C	C	C	19	Actual	NAME
+30	AFP_ENG_20091024.0206.fake	Justice.Sentence	Crime	airline sales	1183-1195	1160-1169	1183-1195	NIL	Actual	1.0	I	W	NIL	NIL	11	NIL	NIL
+31	AFP_ENG_20091024.0206.fake	Justice.Sentence	Crime	airline sales	1183-1195	1153-1446	1183-1195	NIL	Actual	1.0	C	C	W	W	11	Actual	NOMINAL
+32	AFP_ENG_20091024.0206.fake	Transaction.Transfer-Money	Recipient	Saudi	312-316	273-450	1060-1064	1052-1142	Actual	1.0	W	NIL	NIL	NIL	22	NIL	NIL
+33	AFP_ENG_20091024.0206.fake	Justice.Charge-Indict	Defendant	Rosanna al-Yami	461-475	461-712	461-475	NIL	Actual	1.0	C	C	C	C	7	Actual	NAME
+34	AFP_ENG_20091024.0206.fake	Justice.Sentence	Time	Saturday	284-292	273-451	284-292	NIL	Actual	1.0	C	C	W	C	12	Actual	NOMINAL
+35	AFP_ENG_20091024.0206.fake	Justice.Charge-Indict	Defendant	Rosanna al-Yami	461-475	461-711	522-524	NIL	Actual	1.0	W	NIL	NIL	NIL	7	NIL	NIL
+36	AFP_ENG_20091024.0206.fake	Justice.Charge-Indict	Prosecutor	Jeddah judge	484-495	461-712	484-495	NIL	Actual	1.0	C	C	I	I	3	Other	NOMINAL
+37	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	five years in jail	1275-1293	1153-1447	1275-1293	NIL	Actual	1.0	C	C	I	I	10	Actual	NOMINAL
+38	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	female Saudi journalist	305-327	273-451	305-327	NIL	Actual	1.0	C	C	I	I	7	Actual	NOMINAL
+39	AFP_ENG_20091024.0206.fake	Transaction.Transfer-Money	Recipient	A court on Saturday	273-291	273-450	273-291	NIL	Actual	1.0	W	NIL	NIL	NIL	5	NIL	NIL
+40	AFP_ENG_20091024.0206.fake	Justice.Sentence	Time	2009-10-07	1314-1322	1262-1284	1314-1322	NIL	Actual	1.0	I	W	NIL	NIL	13	NIL	NIL
+41	AFP_ENG_20091024.0206.fake	Justice.Sentence	Crime	her links with a Saudi-owned Lebanese TV network which broadcast a provocative racy show	354-441	273-451	354-441	NIL	Actual	1.0	C	C	I	I	21	Actual	NOMINAL
+42	AFP_ENG_20091024.0206.fake	Justice.Sentence	Crime	offensive behaviour	1238-1256	1153-1446	1238-1256	NIL	Actual	1.0	C	C	C	C	6	Actual	NOMINAL
+43	AFP_ENG_20091024.0206.fake	Justice.Sentence	Crime	offensive behaviour	1238-1257	1153-1447	1238-1257	NIL	Actual	1.0	C	C	C	C	6	Actual	NOMINAL
+44	AFP_ENG_20091024.0206.fake	Justice.Sentence	Crime	offensive behaviour	1238-1256	1457-1633,1153-1446	1238-1256	NIL	Actual	1.0	C	C	C	C	6	Actual	NOMINAL
+45	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	a cameraman who helped film	1558-1584	1602-1624	1558-1584	NIL	Actual	1.0	I	W	NIL	NIL	4	NIL	NIL
+46	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	receive 60 lashes	332-348	273-451	332-348	NIL	Actual	1.0	C	C	I	I	2	Actual	NOMINAL
+47	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	1,000 lashes	1298-1310	1153-1447	1298-1310	NIL	Actual	1.0	C	C	I	I	10	Actual	NOMINAL
+48	AFP_ENG_20091024.0206.fake	Justice.Convict	Defendant	airline sales clerk Mazen Abdul Jawad	1183-1219	1153-1446	1183-1219	NIL	Actual	1.0	C	C	I	I	11	Actual	NAME
+49	AFP_ENG_20091024.0206.fake	Justice.Convict	Defendant	airline sales clerk Mazen Abdul Jawad	1183-1219	1153-1447	1183-1219	NIL	Actual	1.0	C	C	I	I	11	Actual	NAME
+50	AFP_ENG_20091024.0206.fake	Justice.Convict	Defendant	airline sales clerk Mazen Abdul Jawad	1183-1219	1177-1445	1183-1219	NIL	Actual	1.0	C	C	I	I	11	Actual	NAME
+51	AFP_ENG_20091024.0206.fake	Justice.Convict	Defendant	airline sales clerk Mazen Abdul Jawad	1183-1220	1153-1447	1183-1220	NIL	Actual	1.0	C	C	I	I	11	Actual	NAME
+52	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	cameraman	1560-1568	1457-1633	1560-1568	NIL	Actual	1.0	C	C	I	I	4	Actual	NOMINAL
+53	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	cameraman	1560-1568	1457-1634	1560-1568	NIL	Actual	1.0	C	C	I	I	4	Actual	NOMINAL
+54	AFP_ENG_20091024.0206.fake	Justice.Sentence	Place	Saudi	825-829	722-841	825-829	NIL	Actual	1.0	C	C	C	C	19	Actual	NAME
+55	AFP_ENG_20091024.0206.fake	Justice.Sentence	Adjudicator	A court	273-279	273-301	273-279	NIL	Actual	1.0	C	C	C	C	5	Actual	NOMINAL
+56	AFP_ENG_20091024.0206.fake	Justice.Sentence	Adjudicator	A court	273-279	293-301	273-279	NIL	Actual	1.0	I	W	NIL	NIL	5	NIL	NIL
+57	AFP_ENG_20091024.0206.fake	Justice.Charge-Indict	Adjudicator	a Jeddah judge	482-495	461-711	482-495	NIL	Other	1.0	C	C	C	C	3	Other	NOMINAL
+58	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	"five years in jail and 1,000 lashes"	1275-1309	1153-1447	1275-1309	NIL	Actual	1.0	C	C	C	C	10	Actual	NOMINAL
+59	AFP_ENG_20091024.0206.fake	Justice.Convict	Adjudicator	LBC	1355-1357	1153-1446	1355-1357	NIL	Actual	1.0	C	C	W	W	17	Actual	NAME
+60	AFP_ENG_20091024.0206.fake	Justice.Sentence	Time	2009-10-24	284-291	273-301	284-291	NIL	Actual	1.0	C	C	C	C	15	Actual	NOMINAL
+61	AFP_ENG_20091024.0206.fake	Justice.Sentence	Time	2009-10-24	284-291	273-450	284-291	NIL	Actual	1.0	C	C	C	C	15	Actual	NOMINAL
+62	AFP_ENG_20091024.0206.fake	Justice.Sentence	Time	2009-10-24	284-291	293-301	284-291	NIL	Actual	1.0	I	W	NIL	NIL	15	NIL	NIL
+63	AFP_ENG_20091024.0206.fake	Conflict.Attack	Target	Saudi conservatives	654-672	461-711	654-672	NIL	Actual	1.0	W	NIL	NIL	NIL	1	NIL	NIL
+64	AFP_ENG_20091024.0206.fake	Justice.Convict	Time	October 7	1314-1323	1153-1447	1314-1323	NIL	Actual	1.0	C	C	W	C	13	Actual	NOMINAL
+65	AFP_ENG_20091024.0206.fake	Contact.Phone-Write	Entity	Yami	974-977	922-1000	974-977	NIL	Generic	1.0	C	C	I	C	7	Actual	NAME
+66	AFP_ENG_20091024.0206.fake	Justice.Sentence	Adjudicator	a Jeddah judge	482-495	722-841	741-749	NIL	Actual	1.0	C	C	C	C	3	Actual	NOMINAL
+67	AFP_ENG_20091024.0206.fake	Justice.Sentence	Adjudicator	a Jeddah judge	482-495	741-763	741-749	NIL	Actual	1.0	C	C	C	C	3	Actual	NOMINAL
+68	AFP_ENG_20091024.0206.fake	Justice.Sentence	Adjudicator	a Jeddah judge	482-495	751-759	741-749	NIL	Actual	1.0	I	W	NIL	NIL	3	NIL	NIL
+69	AFP_ENG_20091024.0206.fake	Justice.Convict	Defendant	Mazen Abdul Jawad	1203-1219	1153-1446	1203-1219	NIL	Actual	1.0	C	C	C	C	11	Actual	NAME
+70	AFP_ENG_20091024.0206.fake	Justice.Convict	Defendant	Mazen Abdul Jawad	1203-1219	1203-1233	1203-1219	NIL	Actual	1.0	C	C	C	C	11	Actual	NAME
+71	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	cameraman who helped film the episode	1558-1597	1457-1634	1558-1597	NIL	Actual	1.0	C	C	I	C	4	Actual	NOMINAL
+72	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	two months in jail	1615-1632	1457-1634	1615-1632	NIL	Actual	1.0	C	C	C	C	8	Actual	NOMINAL
+73	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	two months in jail	1615-1632	1552-1632	1615-1632	NIL	Actual	1.0	C	C	C	C	8	Actual	NOMINAL
+74	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	two months in jail	1615-1633	1457-1634	1615-1633	NIL	Actual	1.0	C	C	C	I	8	Actual	NOMINAL
+75	AFP_ENG_20091024.0206.fake	Justice.Sentence	Place	Lebanese	383-390	273-450	383-390	NIL	Actual	1.0	C	W	NIL	NIL	30	NIL	NIL
+76	AFP_ENG_20091024.0206.fake	Justice.Sentence	Crime	his July appearance on the LBC show "Bold Red Line" in which he talked about picking up girls and having sex with them	1328-1445	1153-1446	1328-1445	NIL	Actual	1.0	C	C	C	C	6	Actual	NOMINAL
+77	AFP_ENG_20091024.0206.fake	Justice.Sentence	Place	Saudi	149-153	1153-1446,149-196	149-153	NIL	Actual	1.0	I	C	W	C	22	Actual	NAME
+78	AFP_ENG_20091024.0206.fake	Justice.Charge-Indict	Crime	directly involved with a programme on Beirut-based network LBC in which a Saudi man boasted of his sex life	535-641	461-712	535-641	NIL	Actual	1.0	C	C	I	I	23	Actual	NOMINAL
+79	AFP_ENG_20091024.0206.fake	Justice.Convict	Defendant	girls	1416-1420	1153-1446	1416-1420	NIL	Actual	1.0	C	C	W	W	18	Actual	NOMINAL
+80	AFP_ENG_20091024.0206.fake	Justice.Acquit	Adjudicator	Jeddah judge	482-496	461-712	482-496	NIL	Actual	1.0	C	C	C	C	3	Actual	NOMINAL
+81	AFP_ENG_20091024.0206.fake	Justice.Charge-Indict	Crime	all charges	505-515	505-515	505-515	NIL	Actual	1.0	I	W	NIL	NIL	24	NIL	NIL
+82	AFP_ENG_20091024.0206.fake	Justice.Charge-Indict	Crime	all charges	505-515	509-515	505-515	NIL	Actual	1.0	I	W	NIL	NIL	24	NIL	NIL
+83	AFP_ENG_20091024.0206.fake	Justice.Sentence	Adjudicator	Rosanna al-Yami	461-475	722-841	741-749	NIL	Actual	1.0	C	C	W	C	7	Actual	NAME
+84	AFP_ENG_20091024.0206.fake	Justice.Acquit	Crime	programme on Beirut-based network LBC	558-597	461-712	558-597	NIL	Actual	1.0	C	C	I	I	23	Actual	NOMINAL
+85	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	two-year terms and 300 lashes	1516-1544	1457-1634	1516-1544	NIL	Actual	1.0	C	C	C	C	25	Actual	NOMINAL
+86	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	journalist	318-327	273-450	318-327	NIL	Actual	1.0	C	C	I	I	7	Actual	NAME
+87	AFP_ENG_20091024.0206.fake	Justice.Convict	Crime	airline sales	1183-1195	1153-1446	1183-1195	NIL	Actual	1.0	C	C	W	W	11	Actual	NOMINAL
+88	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	a female Saudi journalist	303-327	227-450	303-327	NIL	Actual	1.0	I	C	I	C	7	Actual	NAME
+89	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	a female Saudi journalist	303-327	273-301	303-327	NIL	Actual	1.0	C	W	NIL	NIL	7	NIL	NIL
+90	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	a female Saudi journalist	303-327	293-301	303-327	NIL	Actual	1.0	I	W	NIL	NIL	7	NIL	NIL
+91	AFP_ENG_20091024.0206.fake	Justice.Sentence	Place	Saudi	312-316	273-301	312-316	NIL	Actual	1.0	C	W	NIL	NIL	22	NIL	NIL
+92	AFP_ENG_20091024.0206.fake	Justice.Sentence	Place	Saudi	312-316	273-450	312-316	NIL	Actual	1.0	C	C	I	C	22	Actual	NAME
+93	AFP_ENG_20091024.0206.fake	Justice.Sentence	Place	Saudi	312-316	293-301	312-316	NIL	Actual	1.0	I	W	NIL	NIL	22	NIL	NIL
+94	AFP_ENG_20091024.0206.fake	Justice.Charge-Indict	Adjudicator	a Jeddah judge	482-495	461-711	482-495	NIL	Generic	1.0	C	C	C	C	3	Other	NOMINAL
+95	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	female journalist	180-196	273-450	303-327	NIL	Actual	1.0	C	C	I	C	7	Actual	NAME
+96	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	a Jeddah judge	482-495	741-763	761-763	NIL	Actual	1.0	C	C	W	C	3	Actual	NAME
+97	AFP_ENG_20091024.0206.fake	Justice.Sentence	Crime	having been a part-time employee for LBC's Saudi operations	782-840	722-841	782-840	NIL	Actual	1.0	C	C	C	C	21	Actual	NOMINAL
+98	AFP_ENG_20091024.0206.fake	Justice.Sentence	Crime	having been a part-time employee for LBC's Saudi operations	782-840	722-912	782-840	NIL	Actual	1.0	C	C	C	C	21	Actual	NOMINAL
+99	AFP_ENG_20091024.0206.fake	Contact.Phone-Write	Entity	Rosanna al-Yami	461-476	922-1001	461-476	NIL	Actual	1.0	C	C	C	C	7	Actual	NAME
+100	AFP_ENG_20091024.0206.fake	Transaction.Transfer-Money	Recipient	Rosanna al-Yami	461-475	273-450	303-327	NIL	Actual	1.0	W	NIL	NIL	NIL	7	NIL	NIL
+101	AFP_ENG_20091024.0206.fake	Justice.Acquit	Defendant	she	522-525	461-712	522-525	NIL	Actual	1.0	C	C	I	C	7	Actual	NAME
+102	AFP_ENG_20091024.0206.fake	Justice.Charge-Indict	Place	Jeddah	484-489	505-515	484-489	NIL	Actual	1.0	I	W	NIL	NIL	26	NIL	NIL
+103	AFP_ENG_20091024.0206.fake	Justice.Charge-Indict	Place	Jeddah	484-489	509-515	484-489	NIL	Actual	1.0	I	W	NIL	NIL	26	NIL	NIL
+104	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	60 lashes	340-349	273-451	340-349	NIL	Actual	1.0	C	C	C	C	2	Actual	NOMINAL
+105	AFP_ENG_20091024.0206.fake	Justice.Charge-Indict	Defendant	Rosanna al-Yami	461-475	461-711	522-524	NIL	Other	1.0	C	C	C	C	7	Other	NAME
+106	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	Rosanna al-Yami	461-475	273-450	303-327	NIL	Actual	1.0	C	C	C	C	7	Actual	NAME
+107	AFP_ENG_20091024.0206.fake	Justice.Charge-Indict	Prosecutor	Jeddah judge	484-495	461-712	484-495	NIL	Other	1.0	C	C	I	I	3	Other	NOMINAL
+108	AFP_ENG_20091024.0206.fake	Contact.Phone-Write	Entity	Rosanna al-Yami	461-475	922-1000	974-977	NIL	Generic	1.0	C	C	C	C	7	Actual	NAME
+109	AFP_ENG_20091024.0206.fake	Contact.Phone-Write	Entity	AFP	984-986	922-1000	984-986	NIL	Generic	1.0	C	C	C	C	14	Actual	NAME
+110	AFP_ENG_20091024.0206.fake	Conflict.Attack	Place	Jeddah	484-489	497-503	484-489	NIL	Actual	1.0	W	NIL	NIL	NIL	26	NIL	NIL
+111	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	her	761-763	741-840	761-763	NIL	Actual	1.0	C	C	I	C	7	Actual	NAME
+112	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	Rosanna al-Yami	461-476	1153-1447	461-476	NIL	Actual	1.0	C	C	C	W	7	Actual	NAME
+113	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	60 lashes	768-776	722-912	768-776	NIL	Actual	1.0	C	C	C	C	2	Actual	NOMINAL
+114	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	60 lashes	768-776	741-763	768-776	NIL	Actual	1.0	C	C	C	C	2	Actual	NOMINAL
+115	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	60 lashes	768-776	751-759	768-776	NIL	Actual	1.0	I	W	NIL	NIL	2	NIL	NIL
+116	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	60 lashes	768-777	722-842	768-777	NIL	Actual	1.0	C	C	C	C	2	Actual	NOMINAL
+117	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	airline sales clerk Mazen Abdul Jawad	1183-1219	1153-1446	1183-1219	NIL	Actual	1.0	C	C	I	I	11	Actual	NAME
+118	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	airline sales clerk Mazen Abdul Jawad	1183-1219	1153-1447	1183-1219	NIL	Actual	1.0	C	C	I	I	11	Actual	NAME
+119	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	airline sales clerk Mazen Abdul Jawad	1183-1219	1262-1445	1183-1219	NIL	Actual	1.0	C	C	I	I	11	Actual	NAME
+120	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	airline sales clerk Mazen Abdul Jawad	1183-1220	1153-1447	1183-1220	NIL	Actual	1.0	C	C	I	I	11	Actual	NAME
+121	AFP_ENG_20091024.0206.fake	Justice.Charge-Indict	Adjudicator	a Jeddah judge	482-495	461-711	482-495	NIL	Actual	1.0	W	NIL	NIL	NIL	3	NIL	NIL
+122	AFP_ENG_20091024.0206.fake	Justice.Charge-Indict	Adjudicator	a Jeddah judge	482-495	509-515	482-495	NIL	Actual	1.0	I	W	NIL	NIL	3	NIL	NIL
+123	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	Yami's sentencing	1153-1169	1153-1446	1153-1169	NIL	Actual	1.0	C	C	W	W	16	Actual	NOMINAL
+124	AFP_ENG_20091024.0206.fake	Justice.Sentence	Adjudicator	court	275-279	273-450	275-279	NIL	Actual	1.0	C	C	I	I	5	Actual	NOMINAL
+125	AFP_ENG_20091024.0206.fake	Justice.Sentence	Adjudicator	court	275-279	273-451	275-279	NIL	Actual	1.0	C	C	I	I	5	Actual	NOMINAL
+126	AFP_ENG_20091024.0206.fake	Justice.Convict	Time	2009-10-07	1314-1322	1203-1233	1314-1322	NIL	Actual	1.0	C	W	NIL	NIL	13	NIL	NIL
+127	AFP_ENG_20091024.0206.fake	Justice.Convict	Crime	offensive behaviour	1238-1256	1153-1446	1238-1256	NIL	Actual	1.0	C	C	C	C	6	Actual	NOMINAL
+128	AFP_ENG_20091024.0206.fake	Justice.Convict	Crime	offensive behaviour	1238-1256	1153-1447	1238-1256	NIL	Actual	1.0	C	C	C	C	6	Actual	NOMINAL
+129	AFP_ENG_20091024.0206.fake	Justice.Convict	Crime	offensive behaviour	1238-1257	1153-1447	1238-1257	NIL	Actual	1.0	C	C	C	C	6	Actual	NOMINAL
+130	AFP_ENG_20091024.0206.fake	Justice.Sentence	Adjudicator	LBC	1355-1357	1153-1446	1355-1357	NIL	Actual	1.0	C	C	W	W	17	Actual	NAME
+131	AFP_ENG_20091024.0206.fake	Justice.Sentence	Adjudicator	LBC	1355-1357	1457-1633,1153-1446	1355-1357	NIL	Actual	1.0	W	NIL	NIL	NIL	17	NIL	NIL
+132	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	airline sales clerk Mazen Abdul Jawad	1183-1219	1457-1633,1153-1446	1389-1390	NIL	Actual	1.0	I	C	I	C	11	Actual	NAME
+133	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	300 lashes	1535-1545	1457-1634	1535-1545	NIL	Actual	1.0	C	C	I	I	25	Actual	NOMINAL
+134	AFP_ENG_20091024.0206.fake	Contact.Phone-Write	Entity	Rosanna al-Yami	461-475	922-1000	974-977	NIL	Actual	1.0	C	C	C	C	7	Actual	NAME
+135	AFP_ENG_20091024.0206.fake	Contact.Phone-Write	Entity	Rosanna al-Yami	461-475	991-999	974-977	NIL	Actual	1.0	I	W	NIL	NIL	7	NIL	NIL
+136	AFP_ENG_20091024.0206.fake	Contact.Phone-Write	Entity	AFP	984-986	922-1000	984-986	NIL	Actual	1.0	C	C	C	C	14	Actual	NAME
+137	AFP_ENG_20091024.0206.fake	Contact.Phone-Write	Entity	AFP	984-987	922-1001	984-987	NIL	Actual	1.0	C	C	C	C	14	Actual	NAME
+138	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	Rosanna al-Yami	461-475	722-841	761-763	NIL	Actual	1.0	C	C	C	C	7	Actual	NAME
+139	AFP_ENG_20091024.0206.fake	Justice.Arrest-Jail	Person	Saudi man	607-618	461-712	607-618	NIL	Actual	1.0	W	NIL	NIL	NIL	11	NIL	NIL
+140	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	Yami	1153-1156	1153-1446	1153-1156	NIL	Actual	1.0	C	C	I	C	7	Actual	NAME
+141	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	Yami	1153-1156	1153-1447	1153-1156	NIL	Actual	1.0	C	C	I	C	7	Actual	NAME
+142	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	Yami	1153-1156	1457-1633,1153-1446	1153-1156	NIL	Actual	1.0	I	C	C	C	7	Actual	NAME
+143	AFP_ENG_20091024.0206.fake	Conflict.Attack	Attacker	Jeddah	484-489	461-711	484-489	461-711	Actual	1.0	W	NIL	NIL	NIL	26	NIL	NIL
+144	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	Yami	731-734	722-841	731-734	NIL	Actual	1.0	C	C	I	C	7	Actual	NAME
+145	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	Yami	731-734	722-912	731-734	NIL	Actual	1.0	C	C	I	C	7	Actual	NAME
+146	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	Yami	731-734	273-450,722-841	731-734	NIL	Actual	1.0	C	C	C	C	7	Actual	NAME
+147	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	airline sales clerk Mazen Abdul Jawad	1183-1219	1153-1446,1457-1633	1501-1503	NIL	Actual	1.0	I	C	C	C	11	Actual	NAME
+148	AFP_ENG_20091024.0206.fake	Justice.Arrest-Jail	Person	Saudi man	609-617	461-712	609-617	NIL	Actual	1.0	W	NIL	NIL	NIL	11	NIL	NIL
+149	AFP_ENG_20091024.0206.fake	Justice.Convict	Defendant	Jawad	2-9	1-10	2-9	NIL	Actual	1.0	W	NIL	NIL	NIL	28	NIL	NIL
+150	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	two-year terms	1516-1530	1457-1634	1516-1530	NIL	Actual	1.0	C	C	I	I	25	Actual	NOMINAL
+151	AFP_ENG_20091024.0206.fake	Justice.Sentence	Adjudicator	the judge	741-749	741-840	741-749	NIL	Actual	1.0	C	C	C	C	3	Actual	NOMINAL
+152	AFP_ENG_20091024.0206.fake	Justice.Sentence	Crime	"his July appearance on the LBC show ""Bold Red Line"" in which he talked about picking up girls and having sex with them"	1328-1445	1153-1447	1328-1445	NIL	Actual	1.0	C	C	C	C	6	Actual	NOMINAL
+153	AFP_ENG_20091024.0206.fake	Conflict.Attack	Attacker	a Jeddah judge	482-495	461-711	482-495	NIL	Actual	1.0	W	NIL	NIL	NIL	3	NIL	NIL
+154	AFP_ENG_20091024.0206.fake	Conflict.Attack	Attacker	a Jeddah judge	482-495	497-503	482-495	NIL	Actual	1.0	W	NIL	NIL	NIL	3	NIL	NIL
+155	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	five years in jail and 1,000 lashes on October 7	1275-1322	1153-1446	1275-1322	NIL	Actual	1.0	C	C	C	C	10	Actual	NOMINAL
+156	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	five years in jail and 1,000 lashes on October 7	1275-1322	722-841,1153-1446	1275-1322	NIL	Actual	1.0	C	C	I	I	10	Actual	NOMINAL
+157	AFP_ENG_20091024.0206.fake	Justice.Sentence	Time	October 7	1314-1322	1262-1445	1314-1322	NIL	Actual	1.0	C	C	W	C	13	Actual	NOMINAL
+158	AFP_ENG_20091024.0206.fake	Justice.Sentence	Time	October 7	1314-1323	1153-1447	1314-1323	NIL	Actual	1.0	C	C	W	C	13	Actual	NOMINAL
+159	AFP_ENG_20091024.0206.fake	Justice.Sentence	Sentence	five years	1275-1284	1262-1284	1275-1284	NIL	Actual	1.0	I	I	I	I	10	Actual	NOMINAL
+160	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	Rosanna al-Yami	461-475	1262-1284	1153-1156	NIL	Actual	1.0	I	W	NIL	NIL	7	NIL	NIL
+161	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	Mazen Abdul Jawad	1203-1219	1160-1169	1203-1219	NIL	Actual	1.0	I	W	NIL	NIL	11	NIL	NIL
+162	AFP_ENG_20091024.0206.fake	Justice.Sentence	Defendant	Mazen Abdul Jawad	1203-1219	1153-1446	1203-1219	NIL	Actual	1.0	C	C	C	C	11	Actual	NAME
