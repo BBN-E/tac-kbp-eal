@@ -1,70 +1,37 @@
 package com.bbn.kbp.events2014;
 
-import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
-import com.bbn.kbp.events2014.io.SystemOutputStore2014;
-import com.bbn.kbp.events2014.io.SystemOutputStore2015;
-import com.bbn.kbp.events2014.io.SystemOutputStore2016;
-
-import com.google.common.collect.ImmutableSet;
 
 import java.io.File;
 import java.io.IOException;
 
-public enum SystemOutputLayout {
-  KBP_EA_2014 {
-    @Override
-    public SystemOutputStore open(final File path) throws IOException {
-      return SystemOutputStore2014.open(path);
-    }
 
-    @Override
-    public SystemOutputStore openOrCreate(final File path) throws IOException {
-      return SystemOutputStore2015.openOrCreate(path);
-    }
+public interface SystemOutputLayout {
 
-    @Override
-    public DocumentSystemOutput emptyOutput(final Symbol docID) {
-      return DocumentSystemOutput2014
-          .from(ArgumentOutput.from(docID, ImmutableSet.<Scored<Response>>of()));
-    }
-  }, KBP_EA_2015 {
-    @Override
-    public SystemOutputStore open(final File path) throws IOException {
-      return SystemOutputStore2015.open(path);
-    }
+  DocumentSystemOutput emptyOutput(Symbol docID);
 
-    @Override
-    public SystemOutputStore openOrCreate(final File path) throws IOException {
-      return SystemOutputStore2015.openOrCreate(path);
-    }
+  SystemOutputStore open(File path) throws IOException;
 
-    @Override
-    public DocumentSystemOutput emptyOutput(final Symbol docID) {
-      return DocumentSystemOutput2015
-          .from(ArgumentOutput.from(docID, ImmutableSet.<Scored<Response>>of()),
-              ResponseLinking.builder().docID(docID).build());
-    }
-  },
-  KBP_EA_2016 {
-    @Override
-    public DocumentSystemOutput emptyOutput(final Symbol docID) {
-      return KBP_EA_2015.emptyOutput(docID);
-    }
+  SystemOutputStore openOrCreate(File path) throws IOException;
 
-    @Override
-    public SystemOutputStore2016 open(final File path) throws IOException {
-      return SystemOutputStore2016.for2015Store(SystemOutputStore2015.open(path));
-    }
+  // this is necessary because this was orignally an enum and we'd like
+  // to provide backwards compatability with the params.getEnum() calls
+  // as much as possible
+  final class ParamParser {
 
-    @Override
-    public SystemOutputStore2016 openOrCreate(final File path) throws IOException {
-      return SystemOutputStore2016.for2015Store(SystemOutputStore2015.openOrCreate(path));
+    public static SystemOutputLayout fromParamVal(String s) {
+      if (s.equals("KBP_EAL_2016")) {
+        return KBPEA2016OutputLayout.get();
+      } else if (s.equals("KBP_EAL_2015")) {
+        return KBPEA2015OutputLayout.get();
+      } else if (s.equals("KBP_EAL_2014")) {
+        return KBPEA2014OutputLayout.get();
+      } else {
+        throw new TACKBPEALException("Unknown system output layout " + s);
+      }
     }
-  };
-
-  public abstract DocumentSystemOutput emptyOutput(Symbol docID);
-  public abstract SystemOutputStore open(File path) throws IOException;
-  public abstract SystemOutputStore openOrCreate(File path) throws IOException;
+  }
 }
+
+

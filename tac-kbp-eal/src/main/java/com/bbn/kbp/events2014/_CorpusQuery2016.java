@@ -1,6 +1,7 @@
 package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.TextGroupPublicImmutable;
+import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -15,15 +16,15 @@ import static com.google.common.base.Preconditions.checkArgument;
 abstract class _CorpusQuery2016 {
 
   @Value.Parameter
-  public abstract String id();
+  public abstract Symbol id();
 
   @Value.Parameter
   public abstract ImmutableSet<CorpusQueryEntryPoint> entryPoints();
 
   @Value.Check
   protected void check() {
-    checkArgument(!id().isEmpty(), "Query ID may not be empty");
-    checkArgument(!id().contains("\t"), "Query ID may not contain a tab");
+    checkArgument(!id().asString().isEmpty(), "Query ID may not be empty");
+    checkArgument(!id().asString().contains("\t"), "Query ID may not contain a tab");
     checkArgument(!entryPoints().isEmpty(), "Query may not lack entry points");
   }
 }

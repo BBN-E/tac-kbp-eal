@@ -1,6 +1,8 @@
 package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.TextGroupPublicImmutable;
+import com.bbn.bue.common.strings.offsets.CharOffset;
+import com.bbn.bue.common.strings.offsets.OffsetRange;
 import com.bbn.bue.common.symbols.Symbol;
 
 import org.immutables.func.Functional;
@@ -23,10 +25,10 @@ abstract class _CorpusQueryEntryPoint {
   public abstract Symbol role();
 
   @Value.Parameter
-  public abstract KBPString canonicalArgumentString();
+  public abstract OffsetRange<CharOffset> casOffsets();
 
   @Value.Parameter
-  public abstract CharOffsetSpan predicateJustification();
+  public abstract OffsetRange<CharOffset> predicateJustification();
 
   @Value.Check
   protected void check() {

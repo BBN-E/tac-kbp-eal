@@ -38,7 +38,8 @@ public final class KeepOnlyBestResponses {
 
     final File inputStoreLocation = params.getExistingDirectory("inputStore");
     final File outputStoreLocation = params.getCreatableDirectory("outputStore");
-    final SystemOutputLayout layout = params.getEnum("outputLayout", SystemOutputLayout.class);
+    final SystemOutputLayout layout = SystemOutputLayout.ParamParser.fromParamVal(
+        params.getString("outputLayout"));
 
     final SystemOutputStore inputStore = layout.open(inputStoreLocation);
     final SystemOutputStore outputStore = layout.openOrCreate(outputStoreLocation);

@@ -73,8 +73,8 @@ public final class ImportSystemOutputToAnnotationStore {
           getSystemOutputFilter(params);
       final Predicate<Symbol> docIdFilter = getDocIdFilter(params);
 
-      final SystemOutputLayout outputLayout = params.getEnum("outputLayout",
-          SystemOutputLayout.class);
+      final SystemOutputLayout outputLayout = SystemOutputLayout.ParamParser.fromParamVal(
+          params.getString("outputLayout"));
       final AssessmentSpecFormats.Format annStoreFileFormat =
           params.getEnum("annStore.fileFormat", AssessmentSpecFormats.Format.class);
 

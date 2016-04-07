@@ -4,6 +4,7 @@ import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
+import com.bbn.kbp.events2014.KBPEA2014OutputLayout;
 import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 
@@ -98,7 +99,7 @@ public final class NISTValidator {
   }
 
   public void run(final Map<Symbol, File> docIdMap, File submitFile) throws IOException {
-    run(docIdMap, submitFile, SystemOutputLayout.KBP_EA_2014);
+    run(docIdMap, submitFile, KBPEA2014OutputLayout.get());
   }
 
   public void run(final Map<Symbol, File> docIdMap, File submitFile, SystemOutputLayout layout) throws IOException {

@@ -10,7 +10,7 @@ import org.immutables.value.Value;
 @Functional
 abstract class _AssessedQuery2016 {
 
-  public abstract QueryResponse2016 query();
+  public abstract QueryResponse2016 queryResponse();
 
   public abstract QueryAssessment2016 assessment();
 

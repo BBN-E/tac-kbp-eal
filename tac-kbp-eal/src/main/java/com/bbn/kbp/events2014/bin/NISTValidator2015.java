@@ -3,7 +3,7 @@ package com.bbn.kbp.events2014.bin;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
-import com.bbn.kbp.events2014.SystemOutputLayout;
+import com.bbn.kbp.events2014.KBPEA2015OutputLayout;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 
 import com.google.common.base.Charsets;
@@ -67,7 +67,7 @@ public final class NISTValidator2015  {
     final File submitFile = new File(argv[3]);
 
     final NISTValidator nistValidator = new NISTValidator(validator, verbosity);
-    nistValidator.run(docIdMap, submitFile, SystemOutputLayout.KBP_EA_2015);
+    nistValidator.run(docIdMap, submitFile, KBPEA2015OutputLayout.get());
   }
 
 

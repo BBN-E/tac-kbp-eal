@@ -3,9 +3,9 @@ package com.bbn.kbp.events2014.io;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
-import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.DocumentSystemOutput2015;
-import com.bbn.kbp.events2014.SystemOutputLayout;
+import com.bbn.kbp.events2014.KBPEA2015OutputLayout;
+import com.bbn.kbp.events2014.ResponseLinking;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableBiMap;
@@ -70,7 +70,7 @@ public final class ImportForeignIDs {
         LinkingStoreSource.createFor2015().openLinkingStore(new File(source, "linking"));
 
     final SystemOutputStore newOutput =
-        SystemOutputLayout.KBP_EA_2015.openOrCreate(outputDirectory);
+        KBPEA2015OutputLayout.get().openOrCreate(outputDirectory);
 
     for (final Symbol docid : originalArgumentStore.docIDs()) {
       log.info("Converting {}", docid);
