@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.util.Set;
 
 public interface SystemOutputStore {
+
+  Symbol systemID();
   Set<Symbol> docIDs() throws IOException;
 
   DocumentSystemOutput read(Symbol docID) throws IOException;

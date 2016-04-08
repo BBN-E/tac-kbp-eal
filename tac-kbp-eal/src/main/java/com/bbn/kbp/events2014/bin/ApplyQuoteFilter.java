@@ -90,7 +90,8 @@ public final class ApplyQuoteFilter {
       throws IOException {
     final ImmutableMap.Builder<SystemOutputStore, SystemOutputStore> ret = ImmutableMap.builder();
 
-    final SystemOutputLayout layout = params.getEnum("outputLayout", SystemOutputLayout.class);
+    final SystemOutputLayout layout = SystemOutputLayout.ParamParser.fromParamVal(
+        params.getString("outputLayout"));
 
     final boolean inputStorePresent = params.isPresent("inputStore");
     final boolean inputStoresPresent = params.isPresent("inputStoresDir");

@@ -32,7 +32,7 @@
         <skipITs>true</skipITs>
 
         <junit.version>4.11</junit.version>
-        <bueopen.version>2.34.0</bueopen.version>
+        <bueopen.version>3.0.0</bueopen.version>
 
         <!-- Sonar server properties. These only work BBN-internally -->
         <sonar.host.url>http://e-apache-2.bbn.com:9000</sonar.host.url>
@@ -104,6 +104,10 @@
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
+                      <!-- Prevents an endPosTable exception during compilation
+                      when using code generation - this is a bug in Java, see
+                      https://bugs.openjdk.java.net/browse/JDK-8062800 -->
+                      <useIncrementalCompilation>false</useIncrementalCompilation>
                 </configuration>
             </plugin>
             <plugin>
@@ -195,6 +199,13 @@
             </dependency>
 
             <dependency>
+                <groupId>com.bbn.bue</groupId>
+                <artifactId>scoring-open</artifactId>
+                <version>${bueopen.version}</version>
+            </dependency>
+
+
+            <dependency>
                 <groupId>com.bbn.nlp</groupId>
                 <artifactId>nlp-core-open</artifactId>
                 <version>${bueopen.version}</version>
@@ -224,6 +235,20 @@
                 <artifactId>common-core-jackson-serialization-open</artifactId>
                 <version>${bueopen.version}</version>
             </dependency>
+
+            <dependency>
+            <groupId>org.immutables</groupId>
+            <artifactId>value</artifactId>
+            <version>2.1.14</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.immutables</groupId>
+            <artifactId>func</artifactId>
+            <version>2.1.14</version>
+        </dependency>
+
+
         </dependencies>
     </dependencyManagement>
 

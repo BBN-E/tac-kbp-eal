@@ -39,8 +39,9 @@ public final class PoolSystemOutput {
     final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
     final List<File> storesToPool = FileUtils.loadFileList(params.getExistingFile("storesToPool"));
     final File outputStorePath = params.getCreatableDirectory("pooledStore");
-    final SystemOutputLayout systemOutputLayout = params.getEnum("systemOutputLayout",
-        SystemOutputLayout.class);
+    final SystemOutputLayout systemOutputLayout =
+        SystemOutputLayout.ParamParser.fromParamVal(params.getString("systemOutputLayout"));
+
 
     final Optional<QuoteFilter> quoteFilter;
     if (params.isPresent("quoteFilter")) {

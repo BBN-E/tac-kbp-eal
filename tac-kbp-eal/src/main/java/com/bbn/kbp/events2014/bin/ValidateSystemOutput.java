@@ -5,6 +5,7 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.CharOffsetSpan;
+import com.bbn.kbp.events2014.KBPEA2015OutputLayout;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseFunctions;
@@ -116,7 +117,7 @@ public final class ValidateSystemOutput {
   private Result validate(File originalSystemOutputStoreFile, int maxErrors,
       Map<Symbol, File> docIDMap, SystemOutputLayout outputLayout,
       boolean dump) throws IOException {
-    if (SystemOutputLayout.KBP_EA_2015.equals(outputLayout)) {
+    if (KBPEA2015OutputLayout.get().equals(outputLayout)) {
       try {
         assertExactlyTwoSubdirectories(originalSystemOutputStoreFile);
       } catch (Exception e) {
@@ -139,7 +140,7 @@ public final class ValidateSystemOutput {
     Set<Symbol> docIDs = null;
     try {
       outputStore = outputLayout.open(systemOutputStoreFile);
-      if (SystemOutputLayout.KBP_EA_2015.equals(outputLayout)) {
+      if (KBPEA2015OutputLayout.get().equals(outputLayout)) {
         linkingStore = Optional.of(LinkingStoreSource.createFor2015()
             .openLinkingStore(new File(systemOutputStoreFile, "linking")));
 
@@ -409,7 +410,8 @@ public final class ValidateSystemOutput {
       final ValidateSystemOutput validator = create(typeAndRoleValidator, NO_PREPROCESSING);
 
       final File systemOutputStoreFile = params.getExistingFileOrDirectory("systemOutputStore");
-      final SystemOutputLayout layout = params.getEnum("outputLayout", SystemOutputLayout.class);
+      final SystemOutputLayout layout = SystemOutputLayout.ParamParser.fromParamVal(
+          params.getString("outputLayout"));
 
       final File docIDMappingFile = params.getExistingFile("docIDMap");
       log.info("Using map from document IDs to original text: {}", docIDMappingFile);

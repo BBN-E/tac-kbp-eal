@@ -17,10 +17,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public final class SystemOutputStore2015 implements SystemOutputStore {
   private final ArgumentStore argumentStore;
   private final LinkingStore linkingStore;
+  private final Symbol systemID;
   private final File dir;
 
-  private SystemOutputStore2015(final File dir, final ArgumentStore argumentStore,
-      final LinkingStore linkingStore) {
+  private SystemOutputStore2015(final Symbol systemID, final File dir,
+      final ArgumentStore argumentStore, final LinkingStore linkingStore) {
+    this.systemID = checkNotNull(systemID);
     this.argumentStore = checkNotNull(argumentStore);
     this.linkingStore = checkNotNull(linkingStore);
     this.dir = checkNotNull(dir);
@@ -33,7 +35,7 @@ public final class SystemOutputStore2015 implements SystemOutputStore {
         AssessmentSpecFormats.Format.KBP2015);
     final LinkingStore linkingStore = LinkingStoreSource.createFor2015().openLinkingStore(linkingDir);
     if (argStore.docIDs().equals(linkingStore.docIDs())) {
-      return new SystemOutputStore2015(dir, argStore, linkingStore);
+      return new SystemOutputStore2015(Symbol.from(dir.getName()), dir, argStore, linkingStore);
     } else {
       throw new RuntimeException("Argument and linking store docIDs do not match");
     }
@@ -46,10 +48,15 @@ public final class SystemOutputStore2015 implements SystemOutputStore {
         AssessmentSpecFormats.Format.KBP2015);
     final LinkingStore linkingStore = LinkingStoreSource.createFor2015().openOrCreateLinkingStore(linkingDir);
     if (argStore.docIDs().equals(linkingStore.docIDs())) {
-      return new SystemOutputStore2015(dir, argStore, linkingStore);
+      return new SystemOutputStore2015(Symbol.from(dir.getName()), dir, argStore, linkingStore);
     } else {
       throw new RuntimeException("Argument and linking store docIDs do not match");
     }
+  }
+
+  @Override
+  public Symbol systemID() {
+    return systemID;
   }
 
   @Override

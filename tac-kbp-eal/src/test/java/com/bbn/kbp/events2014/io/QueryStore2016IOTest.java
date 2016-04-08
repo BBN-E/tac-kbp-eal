@@ -2,10 +2,12 @@ package com.bbn.kbp.events2014.io;
 
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.CharOffsetSpan;
+import com.bbn.kbp.events2014.CorpusQueryAssessments;
 import com.bbn.kbp.events2014.QueryResponse2016;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import org.junit.Test;
 
@@ -20,8 +22,8 @@ import static org.junit.Assert.assertTrue;
  */
 public class QueryStore2016IOTest {
 
-  private static final SingleFileQueryStoreLoader loader =
-      SingleFileQueryStoreLoader.builder().build();
+  private static final SingleFileQueryAssessmentsLoader loader =
+      SingleFileQueryAssessmentsLoader.create();
   private static final SingleFileQueryStoreWriter writer =
       SingleFileQueryStoreWriter.builder().build();
 
@@ -30,13 +32,16 @@ public class QueryStore2016IOTest {
   private static final ImmutableList<CharOffsetSpan> spans = ImmutableList
       .of(CharOffsetSpan.fromOffsetsOnly(0, 2), CharOffsetSpan.fromOffsetsOnly(3, 4));
   private static final QueryResponse2016 fooQuery1 =
-      QueryResponse2016.builder().docID(foo).queryID(foo).systemID(foo)
+      QueryResponse2016.builder().docID(foo).queryID(foo)
           .addAllPredicateJustifications(spans).build();
   private static final QueryResponse2016 fooQuery2 =
-      QueryResponse2016.builder().docID(foo2).queryID(foo2).systemID(foo2)
+      QueryResponse2016.builder().docID(foo2).queryID(foo2)
           .addAllPredicateJustifications(spans).build();
   private static final CorpusQueryAssessments fooStore =
-      CorpusQueryAssessments.builder().addAllQueries(ImmutableList.of(fooQuery1, fooQuery2))
+      CorpusQueryAssessments.builder()
+          .addAllQueryReponses(ImmutableList.of(fooQuery1, fooQuery2))
+          .putAllQueryResponsesToSystemIDs(fooQuery1, ImmutableSet.of(foo))
+          .putAllQueryResponsesToSystemIDs(fooQuery2, ImmutableSet.of(foo2))
           .build();
 
   @Test
@@ -52,10 +57,10 @@ public class QueryStore2016IOTest {
     out.deleteOnExit();
     writer.saveTo(fooStore, com.google.common.io.Files.asCharSink(out, Charsets.UTF_8));
     final CorpusQueryAssessments barStore =
-        loader.open2016(com.google.common.io.Files.asCharSource(out, Charsets.UTF_8));
-    assertTrue(barStore.queries().equals(fooStore.queries()));
-    assertTrue(barStore.queries().size() == 2);
-    assertTrue(ImmutableList.copyOf(barStore.queries()).get(0).queryID().equalTo(foo));
+        loader.loadFrom(com.google.common.io.Files.asCharSource(out, Charsets.UTF_8));
+    assertTrue(barStore.queryReponses().equals(fooStore.queryReponses()));
+    assertTrue(barStore.queryReponses().size() == 2);
+    assertTrue(ImmutableList.copyOf(barStore.queryReponses()).get(0).queryID().equalTo(foo));
   }
 
 

@@ -191,11 +191,11 @@ public final class ScoreKBPAgainstERE {
   private static void setupScoring(
       final InspectionNode<EvalPair<EREDocument, EREDocAndAnswerKey>> input,
       final DocLevelArgsFromKBPExtractor docLevelArgsFromKBPExtractor,
-      final DocLevelArgsFromEREExtractor docLeveLArgsFromKBPExtractor,
+      final DocLevelArgsFromEREExtractor docLevelArgsFromEREExtractor,
       final File outputDir) {
     final InspectorTreeNode<EvalPair<ImmutableSet<DocLevelEventArg>, ImmutableSet<DocLevelEventArg>>>
         inputAsSetsOfScoringTuples =
-        transformRight(transformLeft(input, docLeveLArgsFromKBPExtractor),
+        transformRight(transformLeft(input, docLevelArgsFromEREExtractor),
             docLevelArgsFromKBPExtractor);
 
     final InspectorTreeNode<ProvenancedAlignment<DocLevelEventArg, DocLevelEventArg, DocLevelEventArg, DocLevelEventArg>>

@@ -1,22 +1,20 @@
 package com.bbn.kbp.events2014.io;
 
 
-import com.bbn.bue.common.TextGroupPublicImmutable;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.AssessedQuery2016;
 import com.bbn.kbp.events2014.CharOffsetSpan;
+import com.bbn.kbp.events2014.CorpusQueryAssessments;
 import com.bbn.kbp.events2014.QueryAssessment2016;
 import com.bbn.kbp.events2014.QueryResponse2016;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharSource;
-
-import org.immutables.value.Value;
 
 import java.io.IOException;
 import java.util.List;
@@ -26,7 +24,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
- * Supports reading/writing {@link QueryAssessnentStore2016} which contain newline separated {@link
+ * Supports reading/writing {@link CorpusQueryAssessments} which contain newline separated {@link
  * QueryResponse2016}'s , where a line is composed of the following tab-separated fields:
  *
  * <ul>
@@ -53,22 +51,24 @@ import static com.google.common.base.Preconditions.checkState;
  *
  * Support for reading out of order stores MAY BE REMOVED AT ANY TIME.
  */
-@Value.Immutable
-@TextGroupPublicImmutable
-abstract class _SingleFileQueryStoreLoader {
-
+public final class SingleFileQueryAssessmentsLoader {
   private final static Splitter commaSplitter = Splitter.on(",");
   private final static Splitter dashSplitter = Splitter.on("-");
 
-  public static SingleFileQueryStoreLoader create() {
-    return SingleFileQueryStoreLoader.builder().build();
+  private SingleFileQueryAssessmentsLoader() {
   }
 
-  public final CorpusQueryAssessments open2016(final CharSource source) throws IOException {
+  public static SingleFileQueryAssessmentsLoader create() {
+    return new SingleFileQueryAssessmentsLoader();
+  }
+
+  public final CorpusQueryAssessments loadFrom(final CharSource source) throws IOException {
     final List<String> lines = source.readLines();
     final List<QueryResponse2016> queries = Lists.newArrayList();
     final Map<QueryResponse2016, String> metadata = Maps.newHashMap();
-    final Map<QueryResponse2016, AssessedQuery2016> assessments = Maps.newHashMap();
+    final ImmutableMultimap.Builder<QueryResponse2016, Symbol> responsesToSystems =
+        ImmutableMultimap.builder();
+    final Map<QueryResponse2016, QueryAssessment2016> assessments = Maps.newHashMap();
     Optional<String> lastMetadata = Optional.absent();
     for (final String line : lines) {
       if (line.startsWith("#")) {
@@ -82,12 +82,12 @@ abstract class _SingleFileQueryStoreLoader {
         final ImmutableSortedSet<CharOffsetSpan> spans = extractPJSpans(parts[3]);
         final QueryAssessment2016 assessment = QueryAssessment2016.valueOf(parts[4]);
         final QueryResponse2016 query =
-            QueryResponse2016.builder().queryID(queryID).docID(docID).systemID(systemID)
+            QueryResponse2016.builder().queryID(queryID).docID(docID)
                 .addAllPredicateJustifications(spans).build();
         queries.add(query);
+        responsesToSystems.put(query, systemID);
         if (!assessment.equals(QueryAssessment2016.UNASSASSED)) {
-          assessments
-              .put(query, AssessedQuery2016.builder().query(query).assessment(assessment).build());
+          assessments.put(query, assessment);
         }
         if (lastMetadata.isPresent()) {
           metadata.put(query, lastMetadata.get());
@@ -95,7 +95,8 @@ abstract class _SingleFileQueryStoreLoader {
         }
       }
     }
-    return CorpusQueryAssessments.builder().addAllQueries(queries).assessments(assessments)
+    return CorpusQueryAssessments.builder().addAllQueryReponses(queries).assessments(assessments)
+        .queryResponsesToSystemIDs(responsesToSystems.build())
         .metadata(metadata).build();
   }
 

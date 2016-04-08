@@ -617,20 +617,13 @@ public final class AssessmentSpecFormats {
   public static Response parseArgumentFields(final List<String> parts) {
     return Response.of(Symbol.from(parts.get(0)),
         Symbol.from(parts.get(1)), Symbol.from(parts.get(2)),
-        KBPString.from(parts.get(3), parseCharOffsetSpan(parts.get(4))),
-        parseCharOffsetSpan(parts.get(6)),
+        KBPString.from(parts.get(3), TACKBPEALIOUtils.parseCharOffsetSpan(parts.get(4))),
+        TACKBPEALIOUtils.parseCharOffsetSpan(parts.get(6)),
         parseCharOffsetSpans(parts.get(7)),
         parseCharOffsetSpans(parts.get(5)),
         KBPRealis.parse(parts.get(8)));
   }
 
-  private static CharOffsetSpan parseCharOffsetSpan(final String s) {
-    final String[] parts = s.split("-");
-    if (parts.length != 2) {
-      throw new RuntimeException(String.format("Invalid span %s", s));
-    }
-    return CharOffsetSpan.fromOffsetsOnly(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
-  }
 
   private static final Splitter onCommas =
       Splitter.on(",").trimResults().omitEmptyStrings();
@@ -643,7 +636,7 @@ public final class AssessmentSpecFormats {
     final ImmutableSet.Builder<CharOffsetSpan> ret = ImmutableSet.builder();
 
     for (final String span : onCommas.split(s)) {
-      ret.add(parseCharOffsetSpan(span));
+      ret.add(TACKBPEALIOUtils.parseCharOffsetSpan(span));
     }
 
     final ImmutableSet<CharOffsetSpan> spans = ret.build();

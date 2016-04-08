@@ -17,12 +17,13 @@ import static com.google.common.base.Preconditions.checkState;
 @Functional
 abstract class _QueryResponse2016 {
 
+  @Value.Parameter
   public abstract Symbol queryID();
 
+  @Value.Parameter
   public abstract Symbol docID();
 
-  public abstract Symbol systemID();
-
+  @Value.Parameter
   @Value.NaturalOrder
   public abstract SortedSet<CharOffsetSpan> predicateJustifications();
 
@@ -30,10 +31,8 @@ abstract class _QueryResponse2016 {
   protected void check() {
     checkState(!queryID().asString().isEmpty(), "Empty query IDs not allowed!");
     checkState(!docID().asString().isEmpty(), "Empty doc IDs not allowed!");
-    checkState(!systemID().asString().isEmpty(), "Empty system IDs not allowed!");
     checkState(!queryID().asString().contains("\t"), "Tabs disallowed from query IDs");
     checkState(!docID().asString().contains("\t"), "Tabs disallowed from doc IDs");
-    checkState(!systemID().asString().contains("\t"), "Tabs disallowed from system IDs");
     checkState(predicateJustifications().size() > 0, "Must provide PredicateJustifications!");
   }
 }

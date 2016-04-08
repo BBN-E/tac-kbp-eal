@@ -53,7 +53,8 @@ public class FilterOutUnannotated {
     }
 
     final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
-    final SystemOutputLayout layout = params.getEnum("layout", SystemOutputLayout.class);
+    final SystemOutputLayout layout = SystemOutputLayout.ParamParser.fromParamVal(
+        params.getString("layout"));
     final SystemOutputStore input = layout.open(params.getExistingDirectory("inputStore"));
     final SystemOutputStore output = layout.open(params.getCreatableDirectory("outputStore"));
     final AnnotationStore annotation = AssessmentSpecFormats.openAnnotationStore(

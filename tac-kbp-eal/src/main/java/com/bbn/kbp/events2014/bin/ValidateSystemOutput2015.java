@@ -2,7 +2,7 @@ package com.bbn.kbp.events2014.bin;
 
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.SystemOutputLayout;
+import com.bbn.kbp.events2014.KBPEA2015OutputLayout;
 import com.bbn.kbp.events2014.io.ImportForeignIDs;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 
@@ -77,11 +77,11 @@ public final class ValidateSystemOutput2015 {
       if (params.getBoolean("dump")) {
         validationResult = validator
             .validateAndDump(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap,
-                SystemOutputLayout.KBP_EA_2015);
+                KBPEA2015OutputLayout.get());
       } else {
         validationResult =
             validator.validateOnly(systemOutputStoreFile, Integer.MAX_VALUE, docIDMap,
-                SystemOutputLayout.KBP_EA_2015);
+                KBPEA2015OutputLayout.get());
       }
       if (!validationResult.wasSuccessful()) {
         throw validationResult.errors().get(0);
