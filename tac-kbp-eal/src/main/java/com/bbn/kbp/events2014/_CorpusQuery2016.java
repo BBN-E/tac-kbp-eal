@@ -13,7 +13,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 @Value.Immutable
 @Functional
 @TextGroupPublicImmutable
-abstract class _CorpusQuery2016 {
+abstract class  _CorpusQuery2016 {
 
   @Value.Parameter
   public abstract Symbol id();
