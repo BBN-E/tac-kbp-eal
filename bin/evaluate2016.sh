@@ -1,20 +1,19 @@
 #1/bin/bash
 
-# uncomment the following line for debug mode
+# enables debug mode
 set -x
 set -e
 set -o nounset
+set -o pipeline
 
 EXPAND=true
 QUOTEFILTER=true
 KEEPBEST=true
 
-# should be one of: interim_2015_EA_exclude_ZJU  interim_2015_EA_include_ZJU  interim_2015_EAL_exclude_ZJU  interim_2015_EAL_include_ZJU
-# interim_2015_EAul_exclude_ZJU  interim_2015_EAul_include_ZJU
+# currently just 2016_test
 CONFIG=$1
 
 
-: ${KBPREPO:?"Need to set KBPREPO to path to working copy of kbp"}
 : ${KBPOPENREPO:?"Need to set KBPOPENREPO to path to working copy of kbp-2014-event-arguments"}
 #: ${PARTICIPANTS:?"Need to set PARTICIPANTS to /nfs/mercury-04/u22/kbp-2015/eval_analysis/interim_2015/systemsOutput"}
 #: ${ASSESSMENTS:?"Need to set $ASSESSMENTS to /nfs/mercury-04/u22/kbp-2015/eval_analysis/interim_2015/assessments"}
@@ -23,10 +22,6 @@ EVALDIR=${KBPOPENREPO}/output/${CONFIG}
 LOG=$EVALDIR/log
 PARTICIPANTS=${EVALDIR}/systemsOutput
 ASSESSMENTS=${EVALDIR}/assessments
-
-#cat <<EOF > $KBPOPENREPO/params/interim_2015/generated/config.params
-#config: $CONFIG
-#EOF
 
 PARAMSDIR=${KBPOPENREPO}/params/${CONFIG}
 
@@ -93,7 +88,7 @@ if [ "$KEEPBEST" = true ] ; then
 inputStore: $f
 outputStore: $EVALDIR/keepBest/$sysId
 keepInferenceCases: false
-outputLayout: KBP_EA_2015
+outputLayout: KBP_EA_2016
 EOF
 
         $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/keepOnlyBestResponses $PARAMSDIR/generated/$CONFIG/keepBest_${sysId}.params > $LOG/keepBest_${sysId}.log
@@ -103,10 +98,5 @@ fi
 
 
 mkdir -p $EVALDIR/score/withRealis
-$KBPREPO/kbp-scorer-bbn/target/appassembler/bin/kbpScorer2015 $PARAMSDIR/BBNKBPScorer2015.params > $LOG/scorer2015.log
-
-#mkdir -p $EVALDIR/score/neutralizeRealis
-#$KBPREPO/kbp-scorer-bbn/target/appassembler/bin/kbpScorer2015 $PARAMSDIR/BBNKBPScorer2015.neutralizeRealis.params > $LOG/scorer2015_neutralizeRealis.log
-
-
+$KBPOPENREPO/tac-kbp-eal-scorer/target/appassembler/bin/scoreKBPAgainstERE $PARAMSDIR/BBNKBPScorer2016.params > $LOG/scorer2016.log
 

@@ -1,0 +1,6 @@
+INCLUDE ../root.params
+
+gnuplotBin: %gnuplot%
+scoreDirectory: %outputDir%/score/withRealis
+OVERRIDE outputDir: %outputDir%/graphAnalyses/withRealis
+scoreType: PR

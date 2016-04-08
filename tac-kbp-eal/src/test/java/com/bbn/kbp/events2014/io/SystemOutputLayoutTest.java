@@ -52,14 +52,10 @@ public final class SystemOutputLayoutTest {
     checkState(outputStore.readCorpusEventFrames().corpusEventFrames().size() > 0);
   }
 
-  private void create2016LayoutTest() throws IOException {
+  public static void main(String... args) throws IOException {
     // this must point to a directory via your filesystem, not a resource, unless you want to debug.
     // what are you doing here anyway?
-    final File dir = new File(
-        SystemOutputLayoutTest.class
-            .getResource("/com/bbn/kbp/events2014/io/CorpusEventTest/")
-            .getFile()
-    );
+    final File dir = new File(args[0]);
 
     final SystemOutputStore sourceLayout = SystemOutputLayout.KBP_EA_2015.open(dir);
     final ImmutableMap.Builder<String, TypeRoleFillerRealisSet> completeTRFRMap =
@@ -102,11 +98,7 @@ public final class SystemOutputLayoutTest {
 
     // this should really point to the same place as used above in the event of regenerating the example output.
     final SystemOutputStore2016 outputStore =
-        (SystemOutputStore2016) SystemOutputLayout.KBP_EA_2016
-            .openOrCreate(new File(
-                this.getClass().getResource("/com/bbn/kbp/events2014/io/CorpusEventTest")
-                    .getFile())
-            );
+        (SystemOutputStore2016) SystemOutputLayout.KBP_EA_2016.openOrCreate(dir);
 
     final CorpusEventLinking.Builder corpusEventLinkingB = CorpusEventLinking.builder();
     final ImmutableMap<String, TypeRoleFillerRealisSet> hopperIDs =
@@ -120,8 +112,6 @@ public final class SystemOutputLayoutTest {
     outputStore.writeCorpusEventFrames(corpusEventLinkingB.build());
 
     outputStore.close();
-
-
   }
 
 }
