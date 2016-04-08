@@ -41,7 +41,7 @@ public class QueryStore2016IOTest {
       CorpusQueryAssessments.builder()
           .addAllQueryReponses(ImmutableList.of(fooQuery1, fooQuery2))
           .putAllQueryResponsesToSystemIDs(fooQuery1, ImmutableSet.of(foo))
-          .putAllQueryResponsesToSystemIDs(fooQuery1, ImmutableSet.of(foo2))
+          .putAllQueryResponsesToSystemIDs(fooQuery2, ImmutableSet.of(foo2))
           .build();
 
   @Test
