@@ -8,6 +8,9 @@ import com.google.common.collect.ImmutableSet;
 import org.immutables.func.Functional;
 import org.immutables.value.Value;
 
+/**
+ * The collection of all cross-document events found in a corpus.
+ */
 @Value.Immutable
 @TextGroupPublicImmutable
 @Functional

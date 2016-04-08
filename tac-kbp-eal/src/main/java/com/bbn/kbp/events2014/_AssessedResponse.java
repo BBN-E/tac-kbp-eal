@@ -11,7 +11,7 @@ import org.immutables.value.Value;
 
 /**
  * Represents a single event argument together with its assessment (assessment). This class is
- * immutable.
+ * immutable. This is obsolete in the 2016 evaluation, since assessments are no longer used.
  *
  * @author rgabbard
  */

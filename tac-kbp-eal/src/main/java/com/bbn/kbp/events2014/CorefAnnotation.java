@@ -36,6 +36,10 @@ import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.Iterables.getFirst;
 import static com.google.common.collect.Multisets.copyHighestCountFirst;
 
+/**
+ * Annotation of CAS coreference decisions. This is obsolete for the 2016 evaluation where
+ * assessment is no longer used at the document-level.
+ */
 public final class CorefAnnotation {
 
   private static final Logger log = LoggerFactory.getLogger(CorefAnnotation.class);

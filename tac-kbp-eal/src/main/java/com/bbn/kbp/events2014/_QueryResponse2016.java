@@ -11,7 +11,10 @@ import java.util.SortedSet;
 
 import static com.google.common.base.Preconditions.checkState;
 
-
+/**
+ * A system's indication that the indicated document matches the indicated query. The {@link
+ * #predicateJustifications()}s are the text which justifies this claim.
+ */
 @TextGroupPublicImmutable
 @Value.Immutable
 @Functional

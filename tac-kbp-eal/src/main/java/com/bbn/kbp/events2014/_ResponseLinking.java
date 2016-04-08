@@ -23,6 +23,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Predicates.in;
 import static com.google.common.collect.Iterables.concat;
 
+/**
+ * A linking of {@link Response}s into a document-level event.
+ */
 @Value.Immutable(prehash = true)
 @TextGroupPublicImmutable
 @Functional

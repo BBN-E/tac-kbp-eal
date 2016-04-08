@@ -11,7 +11,8 @@ import org.immutables.value.Value;
 import static com.google.common.base.Preconditions.checkArgument;
 
 /**
- * The annotations available for a KBP response.
+ * The assessments available for a KBP response.  This is obsolete in the 2016 evaluation,
+ * since assessments are no longer used.
  *
  * @author rgabbard
  */

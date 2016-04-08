@@ -13,6 +13,9 @@ import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+/**
+ * The information needed to run the document-level scorer.
+ */
 @Value.Immutable
 @Functional
 @TextGroupPublicImmutable

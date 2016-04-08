@@ -15,7 +15,7 @@ import static com.bbn.kbp.events2014.CorpusQuery2016Functions.id;
 import static com.google.common.base.Preconditions.checkArgument;
 
 /**
- * A collection of {@link CorpusQuery2016} where all IDs are guaranteed to be unique.
+ * A collection of {@link CorpusQuery2016}. All IDs are guaranteed to be unique.
  */
 @TextGroupPublicImmutable
 @Value.Immutable

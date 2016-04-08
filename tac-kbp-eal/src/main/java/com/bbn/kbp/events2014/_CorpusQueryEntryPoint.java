@@ -10,6 +10,10 @@ import org.immutables.value.Value;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+/**
+ * An "entry point" of a corpus-level query.  Every query will have one or more entry points by
+ * which a query cna be aligned to system event output.
+ */
 @Value.Immutable
 @TextGroupPublicImmutable
 @Functional
