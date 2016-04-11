@@ -60,7 +60,7 @@ referred to by its document ID and event frame ID together, yielding a `DocEvent
  * document-level arguments and event frames are scored against document annotations in ERE format.
  * corpus-level event frames are scored by query and assessment.
 
- ### Scoring document-level event frames
+### Scoring document-level event arguments
 
  The program `ScoreAgainstERE` can take a `SystemOutputStore2016` and documents in the LDC's ERE
  format and produce a document-level scores.  More details will be added soon.
