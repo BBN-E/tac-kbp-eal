@@ -8,7 +8,7 @@ the task. While these are mainly to support the executables in this repository,
 if your system is based on Java or another JVM language, you are strongly encouraged
 to use them.  Note that they can be used from Python via Jython.
 * `tac-kbp-eal-scorer` contains the scoring code.
-* `tac-kbp-eal-bin` contains all the non-scorer executables: the validator, the pooler, the scorer, etc.
+* `tac-kbp-eal-bin` contains all the non-scorer executables
 
 ## Building
 
