@@ -20,6 +20,8 @@ Build steps:
 * do `chmod +x tac-kbp-eal-bin/target/appassembler/bin/*` (you only need to do this the first time)
 * do `chmod +x tac-kbp-eal-scorer/target/appassembler/bin/*` (you only need to do this the first time)
 
+If you are building from an IDE, you will need to [set up annotation processors](http://immutables.github.io/apt.html)
+
 [![Build Status](https://semaphoreci.com/api/v1/projects/a11da8fb-4e16-48bf-af3a-a4e1680f161e/467466/badge.svg)](https://semaphoreci.com/rgabbard-bbn/kbp-2014-event-arguments)
 
 ## Using
