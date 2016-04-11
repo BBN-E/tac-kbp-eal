@@ -25,6 +25,10 @@ import static com.google.common.collect.Iterables.concat;
 
 /**
  * A linking of {@link Response}s into a document-level event.
+ *
+ * The IDs on a response linking have no canonical form; they would change due to various filtering
+ * steps (e.g. filtering {@link Response}'s in quote regions) and not be easily mappable to original
+ * participant input.
  */
 @Value.Immutable(prehash = true)
 @TextGroupPublicImmutable

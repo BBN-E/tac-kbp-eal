@@ -9,8 +9,11 @@ import com.bbn.kbp.events2014.ResponseSet;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
+import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
+import com.google.common.collect.BiMap;
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -41,7 +44,7 @@ public final class ResponseMapping {
         Sets.intersection(this.replacedResponses.keySet(), this.deletedResponses).isEmpty(),
         "A response cannot have a replacement and be deleted");
     checkArgument(Sets.intersection(ImmutableSet.copyOf(this.replacedResponses.values()),
-            this.deletedResponses).isEmpty(),
+        this.deletedResponses).isEmpty(),
         "A response cannot be a replacement and be deleted");
   }
 
@@ -100,12 +103,16 @@ public final class ResponseMapping {
     final Predicate<Response> notDeleted = not(in(deletedResponses));
 
     final ImmutableSet.Builder<ResponseSet> newResponseSetsB = ImmutableSet.builder();
+    final ImmutableBiMap.Builder<ResponseSet, ResponseSet> oldResponseSetToNewB =
+        ImmutableBiMap.builder();
     for (final ResponseSet responseSet : responseLinking.responseSets()) {
       final ImmutableSet<Response> filteredResponses = FluentIterable.from(responseSet)
           .filter(notDeleted)
           .transform(responseMapping).toSet();
       if (!filteredResponses.isEmpty()) {
-        newResponseSetsB.add(ResponseSet.from(filteredResponses));
+        final ResponseSet derived = ResponseSet.from(filteredResponses);
+        newResponseSetsB.add(derived);
+        oldResponseSetToNewB.put(responseSet, derived);
       }
     }
 
@@ -119,8 +126,24 @@ public final class ResponseMapping {
             .filter(notLinked)
             .toSet();
 
+    final Optional<ImmutableBiMap<String, ResponseSet>> newResponseSetIDMap;
+    if (responseLinking.responseSetIds().isPresent()) {
+      final BiMap<String, ResponseSet> responseSetIDs = responseLinking.responseSetIds().get();
+      final BiMap<ResponseSet, ResponseSet> oldResponseSetToNew = oldResponseSetToNewB.build();
+      final ImmutableBiMap.Builder<String, ResponseSet> newResponseSetIDMapB =
+          ImmutableBiMap.builder();
+      for (final ResponseSet old : oldResponseSetToNew.keySet()) {
+        final String id = responseSetIDs.inverse().get(old);
+        newResponseSetIDMapB.put(id, oldResponseSetToNew.get(old));
+      }
+      newResponseSetIDMap = Optional.of(newResponseSetIDMapB.build());
+    } else {
+      newResponseSetIDMap = Optional.absent();
+    }
+
     return ResponseLinking.builder().docID(responseLinking.docID())
-      .responseSets(newResponseSets).incompleteResponses(newIncompletes).build();
+        .responseSets(newResponseSets).incompleteResponses(newIncompletes)
+        .responseSetIds(newResponseSetIDMap).build();
   }
 
   public String summaryString() {

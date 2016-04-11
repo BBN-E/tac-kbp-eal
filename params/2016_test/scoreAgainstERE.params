@@ -1,0 +1,12 @@
+INCLUDE root.params
+
+
+outputLayout: KBP_EAL_2016
+systemOutput: %keepBest%/%config%
+docIDsToScore: %documentsList%
+goldDocIDToFileMap: /nfs/mercury-06/u17/data/kbp-2015-score-with-alternate-heads/richERE.docIdToFileMap
+ereScoringOutput: %outputDir%/ereScoring
+annotationStore: %keepBest%
+coreNLPDocIDMap: /nfs/mercury-06/u17/data/kbp-2015-score-with-alternate-heads/corenlp-out.docidmap
+relaxUsingCoreNLP: true
+useExactMatchForCoreNLPRelaxation: false

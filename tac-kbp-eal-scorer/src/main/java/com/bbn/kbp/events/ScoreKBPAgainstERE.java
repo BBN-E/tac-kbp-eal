@@ -21,8 +21,8 @@ import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events.ontology.EREToKBPEventOntologyMapper;
 import com.bbn.kbp.events.ontology.SimpleEventOntologyMapper;
 import com.bbn.kbp.events2014.Response;
-import com.bbn.kbp.events2014.io.ArgumentStore;
-import com.bbn.kbp.events2014.io.AssessmentSpecFormats;
+import com.bbn.kbp.events2014.SystemOutputLayout;
+import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.nlp.corenlp.CoreNLPConstituencyParse;
 import com.bbn.nlp.corenlp.CoreNLPDocument;
 import com.bbn.nlp.corenlp.CoreNLPParseNode;
@@ -108,10 +108,11 @@ public final class ScoreKBPAgainstERE {
         FileUtils.loadSymbolList(params.getExistingFile("docIDsToScore")));
     final ImmutableMap<Symbol, File> goldDocIDToFileMap = FileUtils.loadSymbolToFileMap(
         Files.asCharSource(params.getExistingFile("goldDocIDToFileMap"), Charsets.UTF_8));
-    final File outputDir = params.getCreatableDirectory("outputDir");
-    final ArgumentStore argumentStore =
-        AssessmentSpecFormats.openSystemOutputStore(params.getExistingDirectory("systemOutput"),
-            AssessmentSpecFormats.Format.KBP2015);
+    final File outputDir = params.getCreatableDirectory("ereScoringOutput");
+    final SystemOutputLayout outputLayout = SystemOutputLayout.ParamParser.fromParamVal(
+        params.getString("outputLayout"));
+    final SystemOutputStore outputStore =
+        outputLayout.open(params.getExistingDirectory("systemOutput"));
 
     final ImmutableMap<Symbol, File> coreNLPProcessedRawDocs = FileUtils.loadSymbolToFileMap(
         Files.asCharSource(params.getExistingFile("coreNLPDocIDMap"), Charsets.UTF_8));
@@ -128,11 +129,11 @@ public final class ScoreKBPAgainstERE {
     };
     // on the test side we take an AnswerKey, but we bundle it with the gold ERE document
     // for use in alignment later
-    final TypeToken<EREDocAndAnswerKey> inputIsEREDocAndAnswerKey =
-        new TypeToken<EREDocAndAnswerKey>() {
+    final TypeToken<EREDocAndResponses> inputIsEREDocAndAnswerKey =
+        new TypeToken<EREDocAndResponses>() {
         };
 
-    final InspectionNode<EvalPair<EREDocument, EREDocAndAnswerKey>>
+    final InspectionNode<EvalPair<EREDocument, EREDocAndResponses>>
         input = InspectorTreeDSL.pairedInput(inputIsEREDoc, inputIsEREDocAndAnswerKey);
 
     // these will extract the scoring tuples from the KBP system input and ERE docs, respectively
@@ -160,9 +161,9 @@ public final class ScoreKBPAgainstERE {
       checkState(ereDoc.getDocId().equals(docID.asString()),
           "fetched document ID must be equal to stored");
       final Iterable<Response>
-          answerKey = filter(argumentStore.read(docID).responses(), unassessedFilter);
+          responses = filter(outputStore.read(docID).arguments().responses(), bannedRolesFilter);
       // feed this ERE doc/ KBP output pair to the scoring network
-      input.inspect(EvalPair.of(ereDoc, new EREDocAndAnswerKey(ereDoc, answerKey)));
+      input.inspect(EvalPair.of(ereDoc, new EREDocAndResponses(ereDoc, responses)));
     }
 
     // trigger the scoring network to write its summary files
@@ -175,7 +176,7 @@ public final class ScoreKBPAgainstERE {
   private static final ImmutableSet<Symbol> BANNED_ROLES =
       SymbolUtils.setFrom("Time", "Crime", "Position",
           "Fine", "Sentence");
-  private static final Predicate<Response> unassessedFilter = new Predicate<Response>() {
+  private static final Predicate<Response> bannedRolesFilter = new Predicate<Response>() {
     @Override
     public boolean apply(@Nullable final Response response) {
       return !BANNED_ROLES.contains(response.role());
@@ -189,7 +190,7 @@ public final class ScoreKBPAgainstERE {
 
   // this sets up a scoring network which is executed on every input
   private static void setupScoring(
-      final InspectionNode<EvalPair<EREDocument, EREDocAndAnswerKey>> input,
+      final InspectionNode<EvalPair<EREDocument, EREDocAndResponses>> input,
       final DocLevelArgsFromKBPExtractor docLevelArgsFromKBPExtractor,
       final DocLevelArgsFromEREExtractor docLevelArgsFromEREExtractor,
       final File outputDir) {
@@ -302,7 +303,7 @@ public final class ScoreKBPAgainstERE {
   }
 
   private static final class DocLevelArgsFromKBPExtractor
-      implements Function<EREDocAndAnswerKey, ImmutableSet<DocLevelEventArg>>,
+      implements Function<EREDocAndResponses, ImmutableSet<DocLevelEventArg>>,
       Finishable {
 
     private Multiset<String> mentionAlignmentFailures = HashMultiset.create();
@@ -321,7 +322,7 @@ public final class ScoreKBPAgainstERE {
       this.useExactMatchForCoreNLPRelaxation = useExactMatchForCoreNLPRelaxation;
     }
 
-    public ImmutableSet<DocLevelEventArg> apply(final EREDocAndAnswerKey input) {
+    public ImmutableSet<DocLevelEventArg> apply(final EREDocAndResponses input) {
       final ImmutableSet.Builder<DocLevelEventArg> ret = ImmutableSet.builder();
       final Iterable<Response> responses = input.responses();
       final EREDocument doc = input.ereDoc();
@@ -436,12 +437,12 @@ public final class ScoreKBPAgainstERE {
   }
 }
 
-final class EREDocAndAnswerKey {
+final class EREDocAndResponses {
 
   private final EREDocument ereDoc;
   private final Iterable<Response> responses;
 
-  public EREDocAndAnswerKey(final EREDocument ereDoc, final Iterable<Response> responses) {
+  public EREDocAndResponses(final EREDocument ereDoc, final Iterable<Response> responses) {
     this.ereDoc = checkNotNull(ereDoc);
     this.responses = checkNotNull(responses);
   }

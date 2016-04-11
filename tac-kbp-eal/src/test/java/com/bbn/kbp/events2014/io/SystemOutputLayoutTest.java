@@ -8,7 +8,6 @@ import com.bbn.kbp.events2014.CorpusEventLinking;
 import com.bbn.kbp.events2014.DocEventFrameReference;
 import com.bbn.kbp.events2014.DocumentSystemOutput;
 import com.bbn.kbp.events2014.DocumentSystemOutput2015;
-import com.bbn.kbp.events2014.KBPEA2015OutputLayout;
 import com.bbn.kbp.events2014.KBPEA2016OutputLayout;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseFunctions;
@@ -18,6 +17,7 @@ import com.bbn.kbp.events2014.TypeRoleFillerRealis;
 import com.bbn.kbp.events2014.TypeRoleFillerRealisSet;
 
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
@@ -62,10 +62,11 @@ public final class SystemOutputLayoutTest {
     // what are you doing here anyway?
     final File dir = new File(args[0]);
 
-    final SystemOutputStore sourceLayout = KBPEA2015OutputLayout.get().open(dir);
+    final SystemOutputStore sourceLayout = KBPEA2016OutputLayout.get().open(dir);
     final ImmutableMap.Builder<String, TypeRoleFillerRealisSet> completeTRFRMap =
         ImmutableMap.builder();
 
+    int responseIDCount = 0;
     for (final Symbol docID : sourceLayout.docIDs()) {
       log.info("Processing {}", docID);
       final DocumentSystemOutput answerKey = sourceLayout.read(docID);
@@ -75,11 +76,15 @@ public final class SystemOutputLayoutTest {
       final ImmutableMultimap<Symbol, Response> typeToResponse =
           FluentIterable.from(responses).index(
               ResponseFunctions.type());
+      final ImmutableBiMap.Builder<String, ResponseSet> responseSetIDs = ImmutableBiMap.builder();
       final ResponseLinking.Builder responseLinkingB = ResponseLinking.builder().docID(docID);
       for (final Symbol type : typeToResponse.keySet()) {
         checkState(typeToResponse.get(type).size() > 0);
-        responseLinkingB.addResponseSets(ResponseSet.of(typeToResponse.get(type)));
+        final ResponseSet r = ResponseSet.of(typeToResponse.get(type));
+        responseLinkingB.addResponseSets(r);
+        responseSetIDs.put(Integer.toString(responseIDCount++), r);
       }
+      responseLinkingB.responseSetIds(responseSetIDs.build());
       final ResponseLinking responseLinking = responseLinkingB.build();
       log.info("ResponseLinking size is {}", responseLinking.responseSets().size());
 
@@ -102,8 +107,7 @@ public final class SystemOutputLayoutTest {
     sourceLayout.close();
 
     // this should really point to the same place as used above in the event of regenerating the example output.
-    final SystemOutputStore2016 outputStore =
-        (SystemOutputStore2016) KBPEA2016OutputLayout.get().openOrCreate(dir);
+    final SystemOutputStore2016 outputStore = KBPEA2016OutputLayout.get().openOrCreate(dir);
 
     final CorpusEventLinking.Builder corpusEventLinkingB = CorpusEventLinking.builder();
     final ImmutableMap<String, TypeRoleFillerRealisSet> hopperIDs =
