@@ -1,10 +1,12 @@
 #1/bin/bash
 
+### WARNING / TODO / README - this script is a work in progress for the 2016 eval and only supports working with the provided test store!
+
 # enables debug mode
 set -x
 set -e
 set -o nounset
-set -o pipeline
+set -o pipefail
 
 EXPAND=true
 QUOTEFILTER=true
@@ -15,8 +17,6 @@ CONFIG=$1
 
 
 : ${KBPOPENREPO:?"Need to set KBPOPENREPO to path to working copy of kbp-2014-event-arguments"}
-#: ${PARTICIPANTS:?"Need to set PARTICIPANTS to /nfs/mercury-04/u22/kbp-2015/eval_analysis/interim_2015/systemsOutput"}
-#: ${ASSESSMENTS:?"Need to set $ASSESSMENTS to /nfs/mercury-04/u22/kbp-2015/eval_analysis/interim_2015/assessments"}
 
 EVALDIR=${KBPOPENREPO}/output/${CONFIG}
 LOG=$EVALDIR/log
@@ -46,28 +46,7 @@ rm -rf $EVALDIR/score
 echo "Creating output directory"
 mkdir -p $EVALDIR/log
 
-# uncompress participant submissions
-#PARTICIPANTCOPY=$EVALDIR/participantSubmissions
-#mkdir -p $PARTICIPANTCOPY
-#echo "Copying participant submissions from $PARTICIPANTS to $PARTICIPANTCOPY"
-#cp -r $PARTICIPANTS/* $PARTICIPANTCOPY
-
-
-# copy LDC assessments
-#LDCCOPY=$EVALDIR/ldcAssessment
-#ASSESSDIR=$LDCCOPY/data/LDC_assessments
-#echo "Copying LDC assessments from $ASSESSMENTS to $ASSESSDIR"
-#mkdir -p $ASSESSDIR
-#cp -r $ASSESSMENTS/{annotation,linkingStore} $ASSESSDIR/
-
-# apply realis expansion to LDC assessments
-if [ "$EXPAND" = true ]; then
-    echo "Expanded assessment store using realis assessments..."
-    $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/expandByRealis $PARAMSDIR/expand.params > $LOG/expand.log
-
-    mkdir -p $EVALDIR/expanded/linkingStore
-    cp $ASSESSMENTS/linkingStore/* $EVALDIR/expanded/linkingStore
-fi
+# TODO restore decompressing participant submissions
 
 # quote filter participant submissions
 if [ "$QUOTEFILTER" = true ]; then
@@ -88,7 +67,7 @@ if [ "$KEEPBEST" = true ] ; then
 inputStore: $f
 outputStore: $EVALDIR/keepBest/$sysId
 keepInferenceCases: false
-outputLayout: KBP_EA_2016
+outputLayout: KBP_EAL_2016
 EOF
 
         $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/keepOnlyBestResponses $PARAMSDIR/generated/$CONFIG/keepBest_${sysId}.params > $LOG/keepBest_${sysId}.log
@@ -97,6 +76,5 @@ EOF
 fi
 
 
-mkdir -p $EVALDIR/score/withRealis
-$KBPOPENREPO/tac-kbp-eal-scorer/target/appassembler/bin/scoreKBPAgainstERE $PARAMSDIR/BBNKBPScorer2016.params > $LOG/scorer2016.log
+$KBPOPENREPO/tac-kbp-eal-scorer/target/appassembler/bin/scoreKBPAgainstERE $PARAMSDIR/scoreAgainstERE.params > $LOG/scorer2016.log
 
