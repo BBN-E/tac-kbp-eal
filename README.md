@@ -17,8 +17,6 @@ Requirements:
 
 Build steps:
 * Do `mvn install` from the root of this repository.
-* do `chmod +x tac-kbp-eal-bin/target/appassembler/bin/*` (you only need to do this the first time)
-* do `chmod +x tac-kbp-eal-scorer/target/appassembler/bin/*` (you only need to do this the first time)
 
 If you are building from an IDE, you will need to [set up annotation processors](http://immutables.github.io/apt.html)
 
