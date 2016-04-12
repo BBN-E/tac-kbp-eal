@@ -8,7 +8,7 @@ the task. While these are mainly to support the executables in this repository,
 if your system is based on Java or another JVM language, you are strongly encouraged
 to use them.  Note that they can be used from Python via Jython.
 * `tac-kbp-eal-scorer` contains the scoring code.
-* `tac-kbp-eal-bin` contains all the non-scorer executables
+* `bin` contains all the non-java executables
 
 ## Building
 
@@ -17,8 +17,6 @@ Requirements:
 
 Build steps:
 * Do `mvn install` from the root of this repository.
-* do `chmod +x tac-kbp-eal-bin/target/appassembler/bin/*` (you only need to do this the first time)
-* do `chmod +x tac-kbp-eal-scorer/target/appassembler/bin/*` (you only need to do this the first time)
 
 If you are building from an IDE, you will need to [set up annotation processors](http://immutables.github.io/apt.html)
 
@@ -39,7 +37,7 @@ The collection of system responses given by a system for a document is an `Argum
 document-level scoring we will also talk about **TRFR**s (for **type-role-filler-realis**; Java
 `TypeRoleFillerRealis`).  A TRFR is an assertion like "Bob is the `Agent` of a
 `Movement.Transport-Artifact` event in document `foo123` with realis
-`Other``"*independent of any text justifying this claim*.  So a system could potentially output
+`Other`" *independent of any text justifying this claim*.  So a system could potentially output
 multiple justifying responses for each TRFR; for example, it could find one mention of the above
 event using the string *Bob Smith* as the participant and another mention in another sentence with
 *Mr. Robert Smith*. These would be two responses which correspond to a single TRFR.
@@ -64,11 +62,36 @@ referred to by its document ID and event frame ID together, yielding a `DocEvent
 
 ### Scoring document-level event arguments
 
- The program `ScoreAgainstERE` can take a `SystemOutputStore2016` and documents in the LDC's ERE
- format and produce a document-level scores.  More details will be added soon.
+ The program `ScoreKBPAgainstERE` can take a `SystemOutputStore2016` and documents in the LDC's ERE
+ format and produce a document-level scores.  `ScoreKBPAgainstERE` offers several methods for aligning
+ an `EREEnitytMention` to a system `Response`:
+ * By exact match for base filler offsets to `EREEntityMention` or the `EREEntityMention` head
+ * By exact match for `EREEntityMention` head and the head of the base filler offsets (see [Using CoreNLP](# using-corenlp) for details) 
+ * By containment match for `EREEntityMention` head and the head of the base filler offsets (see [Using CoreNLP](# using-corenlp) for details)
 
  In the code you will occasionally see references to scoring document-level event arguments by
- assessment. This was done in 2014 and 2015 and the code has been kepy for backwards compatibility.
+ assessment. This was done in 2014 and 2015 and the code has been kept for backwards compatibility.
+ 
+#### Using CoreNLP
+
+The `ScoreKBPAgainstERE` program provides several options for scoring more relaxed than exact match. 
+Among those options is using `CoreNLP` version 3.6.0 to parse and Collins-Style head rules to find 
+the head node corresponding to the base filler. This "discovered head" and its offsets are then:
+* used for exact match to find an `EREEntityMention` head
+* used to find an `EREEntityMention` head that contains the discovered head.
+
+See `EnglishAndChineseHeadRules` under BBN's common core code open source releases for English and 
+Chinese citations.
+
+These relaxations are produced by running the CoreNLP pipeline with options documented in 
+`CoreNLPXMLLoader` (prefer that as canonical source). For convenience, the last used options are: 
+`-annotators tokenize,cleanxml,ssplit,parse -tokenize.options invertible  -outputFormat xml`. This
+output is fed into the scoring pipeline in a file with newline separated file of "docid\t/path/to/corenlp/doc".
+
+
+### Scoring document-level event hoppers
+
+Coming soon.
 
 ### Scoring document-level event frames
 
@@ -84,7 +107,7 @@ matches are compared against LDC assessments and a score is produced.
 ### Evaluation Workflow
 
 The following workflow will be used during the evaluation.  All executables referenced below may be found in
-either `kbp-events2014-bin/target/appassembler/bin` or `kbp-events-2014-scorer/target/appassembler/bin`.
+either `tac-kbp-eal/target/appassembler/bin` or `tac-kbp-eal-scorer/target/appassembler/bin`.
 
 * a 'quote filter' to remove material with CAS and BF offsets in quoted regions
 will be built from the original text of the data set.
@@ -101,6 +124,12 @@ Most of the executables take parameter files as input.  These have the format
 key1: value1
 # this is a comment!
 key2: value2
+# include the params from this file
+INCLUDE file.params
+# use the value of key2
+key3: %key2%/value3
+# override a previous defined param
+OVERRIDE key4: value4
 ```
 
 ### `validateSystemOutput`
