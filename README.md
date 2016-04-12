@@ -83,6 +83,12 @@ the head node corresponding to the base filler. This "discovered head" and its o
 See `EnglishAndChineseHeadRules` under BBN's common core code open source releases for English and 
 Chinese citations.
 
+These relaxations are produced by running the CoreNLP pipeline with options documented in 
+`CoreNLPXMLLoader`, prefer that as canonical source. For convenience, the last used options are: 
+`-annotators tokenize,cleanxml,ssplit,parse -tokenize.options invertible  -outputFormat xml`. This
+output is fed into the scoring pipeline in a file with newline separated file of "docid\t/path/to/corenlp/doc".
+
+
 ### Scoring document-level event frames
 
 The LDC will prepare a collection of **queries** for the corpus-level evaluation.  Each query
