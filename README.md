@@ -37,7 +37,7 @@ The collection of system responses given by a system for a document is an `Argum
 document-level scoring we will also talk about **TRFR**s (for **type-role-filler-realis**; Java
 `TypeRoleFillerRealis`).  A TRFR is an assertion like "Bob is the `Agent` of a
 `Movement.Transport-Artifact` event in document `foo123` with realis
-`Other``"*independent of any text justifying this claim*.  So a system could potentially output
+`Other`" *independent of any text justifying this claim*.  So a system could potentially output
 multiple justifying responses for each TRFR; for example, it could find one mention of the above
 event using the string *Bob Smith* as the participant and another mention in another sentence with
 *Mr. Robert Smith*. These would be two responses which correspond to a single TRFR.
@@ -63,10 +63,10 @@ referred to by its document ID and event frame ID together, yielding a `DocEvent
 ### Scoring document-level event arguments
 
  The program `ScoreAgainstERE` can take a `SystemOutputStore2016` and documents in the LDC's ERE
- format and produce a document-level scores.  More details will be added soon.
+ format and produce a document-level scores.  
 
  In the code you will occasionally see references to scoring document-level event arguments by
- assessment. This was done in 2014 and 2015 and the code has been kepy for backwards compatibility.
+ assessment. This was done in 2014 and 2015 and the code has been kept for backwards compatibility.
 
 ### Scoring document-level event frames
 
