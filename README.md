@@ -124,6 +124,12 @@ Most of the executables take parameter files as input.  These have the format
 key1: value1
 # this is a comment!
 key2: value2
+# include the params from this file
+INCLUDE file.params
+# use the value of key2
+key3: %key2%/value3
+# override a previous defined param
+OVERRIDE key4: value4
 ```
 
 ### `validateSystemOutput`
