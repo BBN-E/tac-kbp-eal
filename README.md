@@ -89,6 +89,10 @@ These relaxations are produced by running the CoreNLP pipeline with options docu
 output is fed into the scoring pipeline in a file with newline separated file of "docid\t/path/to/corenlp/doc".
 
 
+### Scoring document-level event hoppers
+
+This is not yet implemented for ERE.
+
 ### Scoring document-level event frames
 
 The LDC will prepare a collection of **queries** for the corpus-level evaluation.  Each query
