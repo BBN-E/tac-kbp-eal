@@ -62,11 +62,26 @@ referred to by its document ID and event frame ID together, yielding a `DocEvent
 
 ### Scoring document-level event arguments
 
- The program `ScoreAgainstERE` can take a `SystemOutputStore2016` and documents in the LDC's ERE
- format and produce a document-level scores.  
+ The program `ScoreKBPAgainstERE` can take a `SystemOutputStore2016` and documents in the LDC's ERE
+ format and produce a document-level scores.  `ScoreKBPAgainstERE` offers several methods for aligning
+ an `EREEnitytMention` to a system `Response`:
+ * By exact match for base filler offsets to `EREEntityMention` or the `EREEntityMention` head
+ * By exact match for `EREEntityMention` head and the head of the base filler offsets (see [Using CoreNLP](# using-corenlp) for details) 
+ * By containment match for `EREEntityMention` head and the head of the base filler offsets (see [Using CoreNLP](# using-corenlp) for details)
 
  In the code you will occasionally see references to scoring document-level event arguments by
  assessment. This was done in 2014 and 2015 and the code has been kept for backwards compatibility.
+ 
+#### Using CoreNLP
+
+The `ScoreKBPAgainstERE` program provides several options for scoring more relaxed than exact match. 
+Among those options is using `CoreNLP` version 3.6.0 to parse and Collins-Style head rules to find 
+the head node corresponding to the base filler. This "discovered head" and its offsets are then:
+* used for exact match to find an `EREEntityMention` head
+* used to find an `EREEntityMention` head that contains the discovered head.
+
+See `EnglishAndChineseHeadRules` under BBN's common core code open source releases for English and 
+Chinese citations.
 
 ### Scoring document-level event frames
 
