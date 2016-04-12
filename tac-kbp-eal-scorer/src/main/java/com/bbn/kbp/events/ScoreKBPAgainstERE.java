@@ -2,6 +2,8 @@ package com.bbn.kbp.events;
 
 import com.bbn.bue.common.Finishable;
 import com.bbn.bue.common.HasDocID;
+import com.bbn.bue.common.collections.ImmutableOverlappingRangeSet;
+import com.bbn.bue.common.collections.MultimapUtils;
 import com.bbn.bue.common.evaluation.AggregateBinaryFScoresInspector;
 import com.bbn.bue.common.evaluation.BinaryErrorLogger;
 import com.bbn.bue.common.evaluation.BinaryFScoreBootstrapStrategy;
@@ -20,6 +22,7 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events.ontology.EREToKBPEventOntologyMapper;
 import com.bbn.kbp.events.ontology.SimpleEventOntologyMapper;
+import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
@@ -48,8 +51,11 @@ import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
+import com.google.common.collect.Range;
 import com.google.common.io.Files;
 import com.google.common.reflect.TypeToken;
 
@@ -328,6 +334,13 @@ public final class ScoreKBPAgainstERE {
       final EREDocument doc = input.ereDoc();
       final Symbol ereID = Symbol.from(doc.getDocId());
       final Optional<CoreNLPDocument> coreNLPDoc;
+      final ImmutableMultimap<Range<CharOffset>, EREEntityMention> exactRangeToEntityMention =
+          rangeToEntity(input.ereDoc(), spanExtractor);
+      final ImmutableMultimap<Range<CharOffset>, EREEntityMention> exactRangeToEntityMentionHead =
+          rangeToEntity(input.ereDoc(), headExtractor);
+      final ImmutableOverlappingRangeSet<CharOffset> exactHeadRange =
+          ImmutableOverlappingRangeSet.create(exactRangeToEntityMentionHead.keySet());
+
       try {
         coreNLPDoc = Optional.fromNullable(ereMapping.get(ereID)).isPresent() ? Optional
             .of(coreNLPXMLLoader.loadFrom(ereMapping.get(ereID)))
@@ -341,53 +354,46 @@ public final class ScoreKBPAgainstERE {
         // this search could be faster but is probably good enough
         numResponses.add(errKey(response));
         final OffsetRange<CharOffset> baseFillerOffsets = response.baseFiller().asCharOffsetRange();
-
-        EREEntity matchingEntity = null;
-
-        for (final EREEntity entity : doc.getEntities()) {
-          for (final EREEntityMention ereEntityMention : entity.getMentions()) {
-            final OffsetRange<CharOffset> mentionRange = OffsetRange.charOffsetRange(
-                ereEntityMention.getExtent().getStart(), ereEntityMention.getExtent().getEnd());
-            if (baseFillerOffsets.equals(mentionRange)) {
-              matchingEntity = entity;
-              break;
-            }
-            if (ereEntityMention.getHead().isPresent()) {
-              final OffsetRange<CharOffset> headRange = OffsetRange.charOffsetRange(
-                  ereEntityMention.getHead().get().getStart(),
-                  ereEntityMention.getHead().get().getEnd());
-              if (baseFillerOffsets.equals(headRange)) {
-                matchingEntity = entity;
-                break;
-              }
-              if (coreNLPDoc.isPresent() && relaxUsingCORENLP) {
-                final Optional<CoreNLPSentence> sent =
-                    coreNLPDoc.get().firstSentenceContaining(baseFillerOffsets);
-                if (sent.isPresent()) {
-                  final Optional<CoreNLPParseNode> node =
-                      sent.get().nodeForOffsets(baseFillerOffsets);
-                  if (node.isPresent()) {
-                    final Optional<CoreNLPParseNode> terminalHead = node.get().terminalHead();
-                    if (terminalHead.isPresent()) {
-                      // how strict do we want this to be?
-                      terminalHead.get().span();
-                      final OffsetRange<CharOffset> ereHead = OffsetRange
-                          .charOffsetRange(ereEntityMention.getHead().get().getStart(),
-                              ereEntityMention.getHead().get().getEnd());
-                      if ((useExactMatchForCoreNLPRelaxation &&
-                               ereHead.equals(terminalHead.get().span()))
-                          || (!useExactMatchForCoreNLPRelaxation &&
-                                  ereHead.contains(terminalHead.get().span()))) {
-                        matchingEntity = entity;
-                        break;
-                      }
-                    }
-                  }
+        // collect all the candidate mentions
+        final ImmutableSet.Builder<EREEntityMention> candidateMentionsB = ImmutableSet.builder();
+        // add the candidate mentions that align exactly to base filler offsets
+        candidateMentionsB.addAll(exactRangeToEntityMention.get(baseFillerOffsets.asRange()));
+        // add the candidate mentions whose head aligns exactly with the base filler offsets
+        candidateMentionsB.addAll(exactRangeToEntityMentionHead.get(baseFillerOffsets.asRange()));
+        if (coreNLPDoc.isPresent() && relaxUsingCORENLP) {
+          final Optional<CoreNLPSentence> sent =
+              coreNLPDoc.get().firstSentenceContaining(baseFillerOffsets);
+          if (sent.isPresent()) {
+            final Optional<CoreNLPParseNode> node =
+                sent.get().nodeForOffsets(baseFillerOffsets);
+            if (node.isPresent()) {
+              final Optional<CoreNLPParseNode> terminalHead = node.get().terminalHead();
+              if (terminalHead.isPresent()) {
+                final Range<CharOffset> coreNLPHeadRange = terminalHead.get().span().asRange();
+                if (useExactMatchForCoreNLPRelaxation) {
+                  // add the candidate entity mentions whose heads exactly match the CoreNLPHead
+                  candidateMentionsB.addAll(exactRangeToEntityMentionHead.get(coreNLPHeadRange));
+                } else {
+                  // add the candidate entity mentions whose heads contain the CoreNLPHead
+                  candidateMentionsB.addAll(MultimapUtils.getAll(exactRangeToEntityMentionHead,
+                      exactHeadRange.rangesContaining(coreNLPHeadRange)));
+                  // add the candidate entity mentions whose heads are contained in the CoreNLPHead
+                  candidateMentionsB.addAll(MultimapUtils.getAll(exactRangeToEntityMentionHead,
+                      exactHeadRange.rangesContained(coreNLPHeadRange)));
                 }
               }
             }
           }
         }
+
+        final ImmutableSet<EREEntityMention> candidateMentions = candidateMentionsB.build();
+        final ImmutableSet<EREEntity> candidateEntities = getCandidateEntitiesFromMentions(doc, candidateMentions);
+        if (candidateMentions.size() == 0) {
+          log.warn("Unable to find a candidate mention for base filler " + response.baseFiller());
+        } else if (candidateEntities.size() > 1) {
+          log.warn("Found multiple candidate entities for base filler " + response.baseFiller() + " using the first one found!");
+        }
+        final EREEntity matchingEntity = Iterables.getFirst(candidateEntities, null);
 
         if (matchingEntity != null) {
           ret.add(DocLevelEventArg.create(Symbol.from(doc.getDocId()), response.type(),
@@ -418,6 +424,64 @@ public final class ScoreKBPAgainstERE {
       }
       return ret.build();
     }
+
+    private ImmutableSet<EREEntity> getCandidateEntitiesFromMentions(final EREDocument doc,
+        final ImmutableSet<EREEntityMention> candidateMentions) {
+      final ImmutableSet.Builder<EREEntity> ret = ImmutableSet.builder();
+      for(final EREEntityMention em: candidateMentions) {
+        final Optional<EREEntity> e = doc.getEntityContaining(em);
+        if(e.isPresent()) {
+          ret.add(e.get());
+        }
+      }
+      return ret.build();
+    }
+
+    private ImmutableMultimap<Range<CharOffset>, EREEntityMention> rangeToEntity(
+        final EREDocument ereDocument,
+        Function<EREEntityMention, Optional<Range<CharOffset>>> extractor) {
+      final ImmutableMultimap.Builder<Range<CharOffset>, EREEntityMention> ret =
+          ImmutableMultimap.builder();
+      for (final EREEntity e : ereDocument.getEntities()) {
+        for (final EREEntityMention em : e.getMentions()) {
+          final Optional<Range<CharOffset>> range = checkNotNull(extractor.apply(em));
+          if (range.isPresent()) {
+            ret.put(range.get(), em);
+          }
+        }
+      }
+      return ret.build();
+    }
+
+    private static final Function<EREEntityMention, Optional<Range<CharOffset>>> spanExtractor =
+        new Function<EREEntityMention, Optional<Range<CharOffset>>>() {
+          @Nullable
+          @Override
+          public Optional<Range<CharOffset>> apply(
+              @Nullable final EREEntityMention ereEntityMention) {
+            checkNotNull(ereEntityMention);
+            return Optional
+                .of(CharOffsetSpan.fromOffsetsOnly(ereEntityMention.getExtent().getStart(),
+                    ereEntityMention.getExtent().getEnd()).asCharOffsetRange().asRange());
+          }
+        };
+
+    private static final Function<EREEntityMention, Optional<Range<CharOffset>>> headExtractor =
+        new Function<EREEntityMention, Optional<Range<CharOffset>>>() {
+          @Nullable
+          @Override
+          public Optional<Range<CharOffset>> apply(
+              @Nullable final EREEntityMention ereEntityMention) {
+            checkNotNull(ereEntityMention);
+            if (ereEntityMention.getHead().isPresent()) {
+              return Optional.of(CharOffsetSpan
+                  .fromOffsetsOnly(ereEntityMention.getHead().get().getStart(),
+                      ereEntityMention.getHead().get().getEnd()).asCharOffsetRange().asRange());
+            } else {
+              return Optional.absent();
+            }
+          }
+        };
 
     public String errKey(Response r) {
       return r.type() + "/" + r.role();
