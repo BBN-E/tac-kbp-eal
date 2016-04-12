@@ -8,7 +8,7 @@ the task. While these are mainly to support the executables in this repository,
 if your system is based on Java or another JVM language, you are strongly encouraged
 to use them.  Note that they can be used from Python via Jython.
 * `tac-kbp-eal-scorer` contains the scoring code.
-* `tac-kbp-eal-bin` contains all the non-scorer executables
+* `bin` contains all the non-java executables
 
 ## Building
 
@@ -107,7 +107,7 @@ matches are compared against LDC assessments and a score is produced.
 ### Evaluation Workflow
 
 The following workflow will be used during the evaluation.  All executables referenced below may be found in
-either `kbp-events2014-bin/target/appassembler/bin` or `kbp-events-2014-scorer/target/appassembler/bin`.
+either `tac-kbp-eal/target/appassembler/bin` or `tac-kbp-eal-scorer/target/appassembler/bin`.
 
 * a 'quote filter' to remove material with CAS and BF offsets in quoted regions
 will be built from the original text of the data set.
