@@ -334,11 +334,14 @@ public final class ScoreKBPAgainstERE {
       final EREDocument doc = input.ereDoc();
       final Symbol ereID = Symbol.from(doc.getDocId());
       final Optional<CoreNLPDocument> coreNLPDoc;
+      final EREAligner ereAligner;
 
       try {
         coreNLPDoc = Optional.fromNullable(ereMapping.get(ereID)).isPresent() ? Optional
             .of(coreNLPXMLLoader.loadFrom(ereMapping.get(ereID)))
                                                                               : Optional.<CoreNLPDocument>absent();
+        ereAligner = EREAligner
+            .create(relaxUsingCORENLP, useExactMatchForCoreNLPRelaxation, doc, coreNLPDoc);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -347,7 +350,7 @@ public final class ScoreKBPAgainstERE {
         final OffsetRange<CharOffset> baseFillerOffsets = response.baseFiller().asCharOffsetRange();
 
         final ImmutableSet<EREEntity> candidateEntities =
-            coreNLPDoc.isPresent() ? entitiesForResponse(coreNLPDoc.get(), response, input.ereDoc())
+            coreNLPDoc.isPresent() ? ereAligner.entitiesForResponse(response)
                                    : ImmutableSet.<EREEntity>of();
         if (candidateEntities.size() == 0) {
           log.warn("Unable to find a candidate mention for base filler " + response.baseFiller());
@@ -387,115 +390,6 @@ public final class ScoreKBPAgainstERE {
       return ret.build();
     }
 
-    private static ImmutableSet<EREEntity> entitiesForResponse(final CoreNLPDocument coreNLPDoc,
-        final Response response, final EREDocument ereDoc) {
-      // we try to align a system response to an ERE entity by exact offset match of the
-      // basefiller against one of an entity's mentions
-      // this search could be faster but is probably good enough
-      final boolean relaxUsingCORENLP = true;
-      final boolean useExactMatchForCoreNLPRelaxation = false;
-      final ImmutableMultimap<Range<CharOffset>, EREEntityMention> exactRangeToEntityMention =
-          rangeToEntity(ereDoc, spanExtractor);
-      final ImmutableMultimap<Range<CharOffset>, EREEntityMention> exactRangeToEntityMentionHead =
-          rangeToEntity(ereDoc, headExtractor);
-      final ImmutableOverlappingRangeSet<CharOffset> exactHeadRange =
-          ImmutableOverlappingRangeSet.create(exactRangeToEntityMentionHead.keySet());
-
-      final OffsetRange<CharOffset> baseFillerOffsets = response.baseFiller().asCharOffsetRange();
-      // collect all the candidate mentions
-      final ImmutableSet.Builder<EREEntityMention> candidateMentionsB = ImmutableSet.builder();
-      // add the candidate mentions that align exactly to base filler offsets
-      candidateMentionsB.addAll(exactRangeToEntityMention.get(baseFillerOffsets.asRange()));
-      // add the candidate mentions whose head aligns exactly with the base filler offsets
-      candidateMentionsB.addAll(exactRangeToEntityMentionHead.get(baseFillerOffsets.asRange()));
-      if (relaxUsingCORENLP) {
-        final Optional<CoreNLPSentence> sent =
-            coreNLPDoc.firstSentenceContaining(baseFillerOffsets);
-        if (sent.isPresent()) {
-          final Optional<CoreNLPParseNode> node =
-              sent.get().nodeForOffsets(baseFillerOffsets);
-          if (node.isPresent()) {
-            final Optional<CoreNLPParseNode> terminalHead = node.get().terminalHead();
-            if (terminalHead.isPresent()) {
-              final Range<CharOffset> coreNLPHeadRange = terminalHead.get().span().asRange();
-              if (useExactMatchForCoreNLPRelaxation) {
-                // add the candidate entity mentions whose heads exactly match the CoreNLPHead
-                candidateMentionsB.addAll(exactRangeToEntityMentionHead.get(coreNLPHeadRange));
-              } else {
-                // add the candidate entity mentions whose heads contain the CoreNLPHead
-                candidateMentionsB.addAll(MultimapUtils.getAll(exactRangeToEntityMentionHead,
-                    exactHeadRange.rangesContaining(coreNLPHeadRange)));
-                // add the candidate entity mentions whose heads are contained in the CoreNLPHead
-                candidateMentionsB.addAll(MultimapUtils.getAll(exactRangeToEntityMentionHead,
-                    exactHeadRange.rangesContained(coreNLPHeadRange)));
-              }
-            }
-          }
-        }
-      }
-
-      final ImmutableSet<EREEntityMention> candidateMentions = candidateMentionsB.build();
-      return getCandidateEntitiesFromMentions(ereDoc, candidateMentions);
-    }
-
-    private static ImmutableSet<EREEntity> getCandidateEntitiesFromMentions(final EREDocument doc,
-        final ImmutableSet<EREEntityMention> candidateMentions) {
-      final ImmutableSet.Builder<EREEntity> ret = ImmutableSet.builder();
-      for (final EREEntityMention em : candidateMentions) {
-        final Optional<EREEntity> e = doc.getEntityContaining(em);
-        if (e.isPresent()) {
-          ret.add(e.get());
-        }
-      }
-      return ret.build();
-    }
-
-    private static ImmutableMultimap<Range<CharOffset>, EREEntityMention> rangeToEntity(
-        final EREDocument ereDocument,
-        Function<EREEntityMention, Optional<Range<CharOffset>>> extractor) {
-      final ImmutableMultimap.Builder<Range<CharOffset>, EREEntityMention> ret =
-          ImmutableMultimap.builder();
-      for (final EREEntity e : ereDocument.getEntities()) {
-        for (final EREEntityMention em : e.getMentions()) {
-          final Optional<Range<CharOffset>> range = checkNotNull(extractor.apply(em));
-          if (range.isPresent()) {
-            ret.put(range.get(), em);
-          }
-        }
-      }
-      return ret.build();
-    }
-
-    private static final Function<EREEntityMention, Optional<Range<CharOffset>>> spanExtractor =
-        new Function<EREEntityMention, Optional<Range<CharOffset>>>() {
-          @Nullable
-          @Override
-          public Optional<Range<CharOffset>> apply(
-              @Nullable final EREEntityMention ereEntityMention) {
-            checkNotNull(ereEntityMention);
-            return Optional
-                .of(CharOffsetSpan.fromOffsetsOnly(ereEntityMention.getExtent().getStart(),
-                    ereEntityMention.getExtent().getEnd()).asCharOffsetRange().asRange());
-          }
-        };
-
-    private static final Function<EREEntityMention, Optional<Range<CharOffset>>> headExtractor =
-        new Function<EREEntityMention, Optional<Range<CharOffset>>>() {
-          @Nullable
-          @Override
-          public Optional<Range<CharOffset>> apply(
-              @Nullable final EREEntityMention ereEntityMention) {
-            checkNotNull(ereEntityMention);
-            if (ereEntityMention.getHead().isPresent()) {
-              return Optional.of(CharOffsetSpan
-                  .fromOffsetsOnly(ereEntityMention.getHead().get().getStart(),
-                      ereEntityMention.getHead().get().getEnd()).asCharOffsetRange().asRange());
-            } else {
-              return Optional.absent();
-            }
-          }
-        };
-
     public String errKey(Response r) {
       return r.type() + "/" + r.role();
     }
@@ -512,6 +406,144 @@ public final class ScoreKBPAgainstERE {
       }
     }
   }
+}
+
+final class EREAligner {
+
+  private final boolean relaxUsingCORENLP;
+  private final boolean useExactMatchForCoreNLPRelaxation;
+  private final EREDocument ereDoc;
+  private final ImmutableMultimap<Range<CharOffset>, EREEntityMention> exactRangeToEntityMention;
+  private final ImmutableMultimap<Range<CharOffset>, EREEntityMention>
+      exactRangeToEntityMentionHead;
+  private final ImmutableOverlappingRangeSet<CharOffset> exactHeadRange;
+  private final Optional<CoreNLPDocument> coreNLPDoc;
+
+  private EREAligner(final boolean relaxUsingCORENLP,
+      final boolean useExactMatchForCoreNLPRelaxation,
+      final EREDocument ereDoc, final Optional<CoreNLPDocument> coreNLPDocument) {
+    this.relaxUsingCORENLP = relaxUsingCORENLP;
+    this.useExactMatchForCoreNLPRelaxation = useExactMatchForCoreNLPRelaxation;
+    this.ereDoc = ereDoc;
+    this.exactRangeToEntityMention =
+        rangeToEntity(ereDoc, spanExtractor);
+    this.exactRangeToEntityMentionHead =
+        rangeToEntity(ereDoc, headExtractor);
+    this.exactHeadRange =
+        ImmutableOverlappingRangeSet.create(exactRangeToEntityMentionHead.keySet());
+    this.coreNLPDoc = coreNLPDocument;
+  }
+
+  static EREAligner create(final boolean relaxUsingCORENLP,
+      final boolean useExactMatchForCoreNLPRelaxation,
+      final EREDocument ereDoc, final Optional<CoreNLPDocument> coreNLPDocument) {
+    return new EREAligner(relaxUsingCORENLP, useExactMatchForCoreNLPRelaxation, ereDoc,
+        coreNLPDocument);
+  }
+
+
+  ImmutableSet<EREEntity> entitiesForResponse(final Response response) {
+    if (!coreNLPDoc.isPresent()) {
+      return ImmutableSet.of();
+    }
+    // we try to align a system response to an ERE entity by exact offset match of the
+    // basefiller against one of an entity's mentions
+    // this search could be faster but is probably good enough
+
+    final OffsetRange<CharOffset> baseFillerOffsets = response.baseFiller().asCharOffsetRange();
+    // collect all the candidate mentions
+    final ImmutableSet.Builder<EREEntityMention> candidateMentionsB = ImmutableSet.builder();
+    // add the candidate mentions that align exactly to base filler offsets
+    candidateMentionsB.addAll(exactRangeToEntityMention.get(baseFillerOffsets.asRange()));
+    // add the candidate mentions whose head aligns exactly with the base filler offsets
+    candidateMentionsB.addAll(exactRangeToEntityMentionHead.get(baseFillerOffsets.asRange()));
+    if (relaxUsingCORENLP) {
+      final Optional<CoreNLPSentence> sent =
+          coreNLPDoc.get().firstSentenceContaining(baseFillerOffsets);
+      if (sent.isPresent()) {
+        final Optional<CoreNLPParseNode> node =
+            sent.get().nodeForOffsets(baseFillerOffsets);
+        if (node.isPresent()) {
+          final Optional<CoreNLPParseNode> terminalHead = node.get().terminalHead();
+          if (terminalHead.isPresent()) {
+            final Range<CharOffset> coreNLPHeadRange = terminalHead.get().span().asRange();
+            if (useExactMatchForCoreNLPRelaxation) {
+              // add the candidate entity mentions whose heads exactly match the CoreNLPHead
+              candidateMentionsB.addAll(exactRangeToEntityMentionHead.get(coreNLPHeadRange));
+            } else {
+              // add the candidate entity mentions whose heads contain the CoreNLPHead
+              candidateMentionsB.addAll(MultimapUtils.getAll(exactRangeToEntityMentionHead,
+                  exactHeadRange.rangesContaining(coreNLPHeadRange)));
+              // add the candidate entity mentions whose heads are contained in the CoreNLPHead
+              candidateMentionsB.addAll(MultimapUtils.getAll(exactRangeToEntityMentionHead,
+                  exactHeadRange.rangesContained(coreNLPHeadRange)));
+            }
+          }
+        }
+      }
+    }
+
+    final ImmutableSet<EREEntityMention> candidateMentions = candidateMentionsB.build();
+    return getCandidateEntitiesFromMentions(ereDoc, candidateMentions);
+  }
+
+  private static ImmutableSet<EREEntity> getCandidateEntitiesFromMentions(final EREDocument doc,
+      final ImmutableSet<EREEntityMention> candidateMentions) {
+    final ImmutableSet.Builder<EREEntity> ret = ImmutableSet.builder();
+    for (final EREEntityMention em : candidateMentions) {
+      final Optional<EREEntity> e = doc.getEntityContaining(em);
+      if (e.isPresent()) {
+        ret.add(e.get());
+      }
+    }
+    return ret.build();
+  }
+
+  private static ImmutableMultimap<Range<CharOffset>, EREEntityMention> rangeToEntity(
+      final EREDocument ereDocument,
+      Function<EREEntityMention, Optional<Range<CharOffset>>> extractor) {
+    final ImmutableMultimap.Builder<Range<CharOffset>, EREEntityMention> ret =
+        ImmutableMultimap.builder();
+    for (final EREEntity e : ereDocument.getEntities()) {
+      for (final EREEntityMention em : e.getMentions()) {
+        final Optional<Range<CharOffset>> range = checkNotNull(extractor.apply(em));
+        if (range.isPresent()) {
+          ret.put(range.get(), em);
+        }
+      }
+    }
+    return ret.build();
+  }
+
+  private static final Function<EREEntityMention, Optional<Range<CharOffset>>> spanExtractor =
+      new Function<EREEntityMention, Optional<Range<CharOffset>>>() {
+        @Nullable
+        @Override
+        public Optional<Range<CharOffset>> apply(
+            @Nullable final EREEntityMention ereEntityMention) {
+          checkNotNull(ereEntityMention);
+          return Optional
+              .of(CharOffsetSpan.fromOffsetsOnly(ereEntityMention.getExtent().getStart(),
+                  ereEntityMention.getExtent().getEnd()).asCharOffsetRange().asRange());
+        }
+      };
+
+  private static final Function<EREEntityMention, Optional<Range<CharOffset>>> headExtractor =
+      new Function<EREEntityMention, Optional<Range<CharOffset>>>() {
+        @Nullable
+        @Override
+        public Optional<Range<CharOffset>> apply(
+            @Nullable final EREEntityMention ereEntityMention) {
+          checkNotNull(ereEntityMention);
+          if (ereEntityMention.getHead().isPresent()) {
+            return Optional.of(CharOffsetSpan
+                .fromOffsetsOnly(ereEntityMention.getHead().get().getStart(),
+                    ereEntityMention.getHead().get().getEnd()).asCharOffsetRange().asRange());
+          } else {
+            return Optional.absent();
+          }
+        }
+      };
 }
 
 final class EREDocAndResponses {
