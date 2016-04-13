@@ -354,37 +354,40 @@ public final class ScoreKBPAgainstERE {
                                    : ImmutableSet.<EREEntity>of();
         if (candidateEntities.size() == 0) {
           log.warn("Unable to find a candidate mention for base filler " + response.baseFiller());
+          if (coreNLPDoc.isPresent() && relaxUsingCORENLP) {
+            final String parseString;
+            final Optional<CoreNLPSentence> sent =
+                coreNLPDoc.get().firstSentenceContaining(baseFillerOffsets);
+            if (sent.isPresent()) {
+              final Optional<CoreNLPConstituencyParse> parse = sent.get().parse();
+              if (parse.isPresent()) {
+                parseString = parse.get().coreNLPString();
+              } else {
+                parseString = "no parse found!";
+              }
+            } else {
+              parseString = "no sentence found!";
+            }
+            log.info(
+                "Failed to align base filler with offsets {} to an ERE mention for response {}, parse tree is {}",
+                baseFillerOffsets, response, parseString);
+            mentionAlignmentFailures.add(errKey(response));
+          } else {
+            log.info("Failed to align base filler with offsets {} to an ERE mention for response {}",
+                baseFillerOffsets, response);
+            mentionAlignmentFailures.add(errKey(response));
+          }
         } else if (candidateEntities.size() > 1) {
           log.warn("Found multiple candidate entities for base filler " + response.baseFiller()
-              + " using the first one found!");
+              + " using the first one found with a matching type!");
         }
-        final EREEntity matchingEntity = Iterables.getFirst(candidateEntities, null);
 
+
+        // TODO match this using the type instead of first entity
+        final EREEntity matchingEntity = Iterables.getFirst(candidateEntities, null);
         if (matchingEntity != null) {
           ret.add(DocLevelEventArg.create(Symbol.from(doc.getDocId()), response.type(),
               response.role(), matchingEntity.getID()));
-        } else if (coreNLPDoc.isPresent() && relaxUsingCORENLP) {
-          final String parseString;
-          final Optional<CoreNLPSentence> sent =
-              coreNLPDoc.get().firstSentenceContaining(baseFillerOffsets);
-          if (sent.isPresent()) {
-            final Optional<CoreNLPConstituencyParse> parse = sent.get().parse();
-            if (parse.isPresent()) {
-              parseString = parse.get().coreNLPString();
-            } else {
-              parseString = "no parse found!";
-            }
-          } else {
-            parseString = "no sentence found!";
-          }
-          log.info(
-              "Failed to align base filler with offsets {} to an ERE mention for response {}, parse tree is {}",
-              baseFillerOffsets, response, parseString);
-          mentionAlignmentFailures.add(errKey(response));
-        } else {
-          log.info("Failed to align base filler with offsets {} to an ERE mention for response {}",
-              baseFillerOffsets, response);
-          mentionAlignmentFailures.add(errKey(response));
         }
       }
       return ret.build();
