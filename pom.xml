@@ -18,7 +18,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.plugin.version>3.5.1</maven.compiler.plugin.version>
-        <maven.javadoc.plugin.version>2.8.1</maven.javadoc.plugin.version>
+        <maven.javadoc.plugin.version>2.9.1</maven.javadoc.plugin.version>
         <maven.site.plugin.version>3.1</maven.site.plugin.version>
         <maven.project.info.reports.plugin.version>2.4</maven.project.info.reports.plugin.version>
         <maven.dependency.plugin.version>2.4</maven.dependency.plugin.version>
@@ -56,6 +56,32 @@
                             </link>
                         </links>
                     </configuration>
+                    <!-- Uncomment this configuration to produce one huge RTF of javadoc. -->
+                    <!--
+                    <configuration> 
+                    <doclet>com.tarsec.javadoc.pdfdoclet.PDFDoclet</doclet> 
+                    <docletPath>${settings.localRepository}/net/sf/pdfdoclet/1.0.2/pdfdoclet-1.0.2.jar</docletPath> 
+                    <useStandardDocletOptions>false</useStandardDocletOptions> 
+                            <maxmemory>512m</maxmemory> 
+                            <doclet>com.docflex.javadoc.Doclet</doclet> 
+                            <docletPath>/nfs/raid59/u12/DEFT/tools/docflex-doclet-1.6.1/lib/docflex-doclet.jar</docletPath> 
+                            <additionalparam> 
+                            -template /nfs/raid59/u12/DEFT/tools/docflex-doclet-1.6.1/templates/javadoc/PlainDoc.tpl 
+                            -p:windowTitle "BBN TAC KBP Open Source Code"
+                            -p:docTitle "BBN TAC KBP Open Source Code" 
+                            -format RTF 
+                            -nodialog 
+                            -launchviewer=false 
+                            -d ${project.build.directory}/site/ 
+                            -f ${project.build.directory}/site/javadoc.rtf 
+                            </additionalparam> 
+                            <destDir>site</destDir> 
+                            <name>site</name> 
+                            <description> 
+                            BBN TAC KBP Open Source Code
+                            </description> 
+                    </configuration> 
+                    -->
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
