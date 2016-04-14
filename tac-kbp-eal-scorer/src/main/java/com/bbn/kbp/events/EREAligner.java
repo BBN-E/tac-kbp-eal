@@ -26,11 +26,8 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Range;
 
-import java.util.Objects;
-
 import javax.annotation.Nullable;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
@@ -73,9 +70,10 @@ final class EREAligner {
 
 
   ImmutableSet<EREEntity> entitiesForResponse(final Response response) {
-    if (!coreNLPDoc.isPresent()) {
-      return ImmutableSet.of();
-    }
+    return getCandidateEntitiesFromMentions(ereDoc, mentionsForResponse(response));
+  }
+
+  ImmutableSet<EREEntityMention> mentionsForResponse(final Response response) {
     // we try to align a system response to an ERE entity by exact offset match of the
     // basefiller against one of an entity's mentions
     // this search could be faster but is probably good enough
@@ -104,11 +102,41 @@ final class EREAligner {
       }
     }
 
-    final ImmutableSet<EREEntityMention> candidateMentions = candidateMentionsB.build();
-    return getCandidateEntitiesFromMentions(ereDoc, candidateMentions);
+    return candidateMentionsB.build();
+  }
+
+  ImmutableSet<EREArgument> eventMentionArgsForResponse(final Response response) {
+    final ImmutableSet.Builder<EREArgument> ret = ImmutableSet.builder();
+    for (final EREEvent e : ereDoc.getEvents()) {
+      for (final EREEventMention em : e.getEventMentions()) {
+        // TODO check event type, subtype here
+        for (final EREArgument ea : em.getArguments()) {
+          // TODO check event argument role here
+          Optional<ERESpan> head = Optional.absent();
+          ERESpan extent;
+          if (ea instanceof EREFillerArgument) {
+            extent = ((EREFillerArgument) ea).filler().getExtent();
+          } else if (ea instanceof EREEntityArgument) {
+            head = ((EREEntityArgument) ea).entityMention().getHead();
+            extent = ((EREEntityArgument) ea).entityMention().getExtent();
+          } else {
+            throw new RuntimeException("Unknown EREArgument type " + ea.getClass());
+          }
+
+          if (spanMatches(extent, response.baseFiller()) || (head.isPresent() && spanMatches(
+              head.get(), response.baseFiller()))) {
+            ret.add(ea);
+          }
+        }
+      }
+    }
+    return ret.build();
   }
 
   private Optional<Range<CharOffset>> getCoreNLPHead(final OffsetRange<CharOffset> offsets) {
+    if (!coreNLPDoc.isPresent()) {
+      return Optional.absent();
+    }
     final Optional<CoreNLPSentence> sent =
         coreNLPDoc.get().firstSentenceContaining(offsets);
     if (sent.isPresent()) {
@@ -226,79 +254,4 @@ final class EREAligner {
     return false;
   }
 
-  ImmutableSet<ResolvedEREEventMentionArg> argsForResponse(final Response r) {
-    final ImmutableSet.Builder<ResolvedEREEventMentionArg> ret = ImmutableSet.builder();
-    // TODO what to do about generic events? This level handling probably doesn't belong here...
-    // TODO what to do about mismatched response and EREArgs?
-    for (final EREEvent ev : ereDoc.getEvents()) {
-      for (final EREEventMention evm : ev.getEventMentions()) {
-        // TODO check type
-        for (final EREArgument arg : evm.getArguments()) {
-          EREFiller f = null;
-          EREEntityMention em = null;
-          final Optional<ERESpan> head;
-          final ERESpan extent;
-          if (arg instanceof EREFillerArgument) {
-            f = ((EREFillerArgument) arg).filler();
-            head = Optional.of(f.getExtent());
-            extent = f.getExtent();
-          } else if (arg instanceof EREEntityArgument) {
-            em = ((EREEntityArgument) arg).entityMention();
-            head = em.getHead();
-            extent = em.getExtent();
-          } else {
-            throw new RuntimeException("Unknown ERE arg type " + arg.getClass());
-          }
-
-          if (spanMatches(extent, r.baseFiller()) || (head.isPresent() && spanMatches(head.get(),
-              r.baseFiller()))) {
-            ret.add(ResolvedEREEventMentionArg
-                .create(evm, Optional.fromNullable(f), Optional.fromNullable(em)));
-          }
-        }
-      }
-    }
-    return ret.build();
-  }
-
-}
-
-final class ResolvedEREEventMentionArg {
-
-  final EREEventMention ereEventMention;
-  final Optional<EREFiller> ereFiller;
-  final Optional<EREEntityMention> entityMention;
-
-  private ResolvedEREEventMentionArg(final EREEventMention ereEventMention,
-      final Optional<EREFiller> ereFiller, final Optional<EREEntityMention> entityMention) {
-    this.ereEventMention = checkNotNull(ereEventMention);
-    this.ereFiller = checkNotNull(ereFiller);
-    this.entityMention = checkNotNull(entityMention);
-    checkArgument(ereFiller.isPresent() || entityMention.isPresent(),
-        "Either a filler or an entity mention must be present!");
-  }
-
-  static ResolvedEREEventMentionArg create(final EREEventMention ereEventMention,
-      final Optional<EREFiller> ereFiller, final Optional<EREEntityMention> entityMention) {
-    return new ResolvedEREEventMentionArg(ereEventMention, ereFiller, entityMention);
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final ResolvedEREEventMentionArg that = (ResolvedEREEventMentionArg) o;
-    return Objects.equals(ereEventMention, that.ereEventMention) &&
-        Objects.equals(ereFiller, that.ereFiller) &&
-        Objects.equals(entityMention, that.entityMention);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(ereEventMention, ereFiller, entityMention);
-  }
 }
