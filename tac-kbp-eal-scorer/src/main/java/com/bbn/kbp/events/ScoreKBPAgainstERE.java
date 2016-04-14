@@ -344,9 +344,7 @@ public final class ScoreKBPAgainstERE {
         numResponses.add(errKey(response));
         final OffsetRange<CharOffset> baseFillerOffsets = response.baseFiller().asCharOffsetRange();
 
-        final ImmutableSet<EREEntity> candidateEntities =
-            coreNLPDoc.isPresent() ? ereAligner.entitiesForResponse(response)
-                                   : ImmutableSet.<EREEntity>of();
+        final ImmutableSet<EREEntity> candidateEntities = ereAligner.entitiesForResponse(response);
         if (candidateEntities.size() == 0) {
           log.warn("Unable to find a candidate mention for base filler " + response.baseFiller());
           if (coreNLPDoc.isPresent() && relaxUsingCORENLP) {
