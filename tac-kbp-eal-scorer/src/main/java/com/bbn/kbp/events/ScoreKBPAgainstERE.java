@@ -344,6 +344,7 @@ public final class ScoreKBPAgainstERE {
         numResponses.add(errKey(response));
         final OffsetRange<CharOffset> baseFillerOffsets = response.baseFiller().asCharOffsetRange();
 
+        // TODO match this using the type instead of first entity
         final ImmutableSet<EREEntity> candidateEntities = ereAligner.entitiesForResponse(response);
         if (candidateEntities.size() == 0) {
           log.warn("Unable to find a candidate mention for base filler " + response.baseFiller());
@@ -376,13 +377,12 @@ public final class ScoreKBPAgainstERE {
               + " using the first one found with a matching type!");
         }
 
-        // TODO handle fillers (e.g. times)
-        // TODO match this using the type instead of first entity
         final EREEntity matchingEntity = Iterables.getFirst(candidateEntities, null);
         if (matchingEntity != null) {
           ret.add(DocLevelEventArg.create(Symbol.from(doc.getDocId()), response.type(),
               response.role(), matchingEntity.getID()));
         }
+        // TODO handle fillers (e.g. times) (goes here)
       }
       return ret.build();
     }
