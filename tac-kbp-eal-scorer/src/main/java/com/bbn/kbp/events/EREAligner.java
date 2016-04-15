@@ -109,6 +109,7 @@ final class EREAligner {
     final ImmutableSet.Builder<EREArgument> ret = ImmutableSet.builder();
     for (final EREEvent e : ereDoc.getEvents()) {
       for (final EREEventMention em : e.getEventMentions()) {
+        // TODO throwaway generics here?
         // TODO check event type, subtype here
         for (final EREArgument ea : em.getArguments()) {
           // TODO check event argument role here
