@@ -69,6 +69,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -243,9 +244,25 @@ public final class ScoreKBPAgainstERE {
         transformLeft(inputAsResponsesAndLinking, ResponsesAndLinking.linkingFunction),
         ResponsesAndLinking.linkingFunction);
 
+
+
     final LinkingInspector linkingInspector =
         LinkingInspector.createOutputtingTo(new File(outputDir, "linkingF.txt"));
     inspect(linkingNode).with(linkingInspector);
+  }
+
+  private static <T> Function<Iterable<? extends Set<T>>, ImmutableSet<ImmutableSet<T>>> filterNestedElements(final Predicate<T> filter) {
+    return new Function<Iterable<? extends Set<T>>, ImmutableSet<ImmutableSet<T>>>() {
+      @Nullable
+      @Override
+      public ImmutableSet<ImmutableSet<T>> apply(@Nullable final Iterable<? extends Set<T>> sets) {
+        final ImmutableSet.Builder<ImmutableSet<T>> ret = ImmutableSet.builder();
+        for(final Set<T> s: sets) {
+          ret.add(ImmutableSet.copyOf(Iterables.filter(s, filter)));
+        }
+        return ret.build();
+      }
+    };
   }
 
   private static final class LinkingInspector implements
