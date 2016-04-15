@@ -27,6 +27,8 @@ import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
 import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.linking.ExplicitFMeasureInfo;
+import com.bbn.kbp.linking.LinkF1;
 import com.bbn.nlp.corenlp.CoreNLPConstituencyParse;
 import com.bbn.nlp.corenlp.CoreNLPDocument;
 import com.bbn.nlp.corenlp.CoreNLPParseNode;
@@ -64,6 +66,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Map;
 import java.util.Random;
 
@@ -233,18 +236,21 @@ public final class ScoreKBPAgainstERE {
         BootstrapInspector.forStrategy(perEventBootstrapStrategy, 1000, new Random(0));
     inspect(alignmentNode).with(breakdownScoresByEventTypeWithBootstrapping);
 
-    // TODO add the linking scoring here?
-    // TODO align based on the DocLevelArgs
-    // this alignment needs to be a "response" (DocLevelArg) to all the DocLevelArgs it's connected to
-    // TODO score using the same logic as in LinkF1 scoring class
+    final InspectorTreeNode<EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>>>
+        linkingNode = transformRight(
+        transformLeft(inputAsResponsesAndLinking, ResponsesAndLinking.linkingFunction),
+        ResponsesAndLinking.linkingFunction);
 
-//    inspect(alignmentNode).with(scoreAndWriteLinking);
+    final LinkingInspector linkingInspector =
+        LinkingInspector.createOutputtingTo(new File(outputDir, "linkingF.txt"));
+    inspect(linkingNode).with(linkingInspector);
   }
 
   private static final class LinkingInspector implements
-      Inspector<ProvenancedAlignment<DocLevelEventArg, DocLevelEventArg, DocLevelEventArg, DocLevelEventArg>> {
+      Inspector<EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>>> {
 
     private final File outputFile;
+    ExplicitFMeasureInfo counts = null;
 
     private LinkingInspector(final File outputFile) {
       this.outputFile = outputFile;
@@ -256,13 +262,16 @@ public final class ScoreKBPAgainstERE {
 
     @Override
     public void inspect(
-        final ProvenancedAlignment<DocLevelEventArg, DocLevelEventArg, DocLevelEventArg, DocLevelEventArg> item) {
-
+        final EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>> item) {
+      counts = LinkF1.create().score(item.test(), item.key());
     }
 
     @Override
     public void finish() throws IOException {
-
+      checkNotNull(counts, "Inspect must be called before Finish!");
+      final PrintWriter outputWriter = new PrintWriter(outputFile);
+      outputWriter.println(counts.toString());
+      outputWriter.close();
     }
   }
 
