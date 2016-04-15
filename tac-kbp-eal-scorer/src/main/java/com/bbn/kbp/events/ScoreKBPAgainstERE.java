@@ -77,8 +77,10 @@ import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformBoth;
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformLeft;
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformRight;
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformed;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Iterables.filter;
 
 /**
@@ -263,6 +265,8 @@ public final class ScoreKBPAgainstERE {
     @Override
     public void inspect(
         final EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>> item) {
+      checkArgument(ImmutableSet.copyOf(concat(item.key())).containsAll(
+          ImmutableSet.copyOf(concat(item.test()))), "Must contain all answers in test set!");
       counts = LinkF1.create().score(item.test(), item.key());
     }
 
