@@ -2,6 +2,7 @@ package com.bbn.kbp.events;
 
 import com.bbn.bue.common.Finishable;
 import com.bbn.bue.common.HasDocID;
+import com.bbn.bue.common.Inspector;
 import com.bbn.bue.common.evaluation.AggregateBinaryFScoresInspector;
 import com.bbn.bue.common.evaluation.BinaryErrorLogger;
 import com.bbn.bue.common.evaluation.BinaryFScoreBootstrapStrategy;
@@ -20,7 +21,10 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events.ontology.EREToKBPEventOntologyMapper;
 import com.bbn.kbp.events.ontology.SimpleEventOntologyMapper;
+import com.bbn.kbp.events2014.DocumentSystemOutput2015;
 import com.bbn.kbp.events2014.Response;
+import com.bbn.kbp.events2014.ResponseLinking;
+import com.bbn.kbp.events2014.ResponseSet;
 import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.nlp.corenlp.CoreNLPConstituencyParse;
@@ -46,6 +50,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -65,6 +70,7 @@ import java.util.Random;
 import javax.annotation.Nullable;
 
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.inspect;
+import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformBoth;
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformLeft;
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformRight;
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformed;
@@ -163,8 +169,12 @@ public final class ScoreKBPAgainstERE {
           "fetched document ID must be equal to stored");
       final Iterable<Response>
           responses = filter(outputStore.read(docID).arguments().responses(), bannedRolesFilter);
+      final ResponseLinking linking =
+          ((DocumentSystemOutput2015) outputStore.read(docID)).linking();
+      linking.copyWithFilteredResponses(Predicates.in(ImmutableSet.copyOf(responses)));
       // feed this ERE doc/ KBP output pair to the scoring network
-      input.inspect(EvalPair.of(ereDoc, new EREDocAndResponses(ereDoc, responses)));
+      input.inspect(EvalPair.of(ereDoc, new EREDocAndResponses(ereDoc, responses, linking)));
+
     }
 
     // trigger the scoring network to write its summary files
@@ -195,10 +205,13 @@ public final class ScoreKBPAgainstERE {
       final DocLevelArgsFromKBPExtractor docLevelArgsFromKBPExtractor,
       final DocLevelArgsFromEREExtractor docLevelArgsFromEREExtractor,
       final File outputDir) {
-    final InspectorTreeNode<EvalPair<ImmutableSet<DocLevelEventArg>, ImmutableSet<DocLevelEventArg>>>
-        inputAsSetsOfScoringTuples =
+    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
+        inputAsResponsesAndLinking =
         transformRight(transformLeft(input, docLevelArgsFromEREExtractor),
             docLevelArgsFromKBPExtractor);
+    final InspectorTreeNode<EvalPair<ImmutableSet<DocLevelEventArg>, ImmutableSet<DocLevelEventArg>>>
+        inputAsSetsOfScoringTuples =
+        transformBoth(inputAsResponsesAndLinking, ResponsesAndLinking.argFunction);
 
     final InspectorTreeNode<ProvenancedAlignment<DocLevelEventArg, DocLevelEventArg, DocLevelEventArg, DocLevelEventArg>>
         alignmentNode = transformed(inputAsSetsOfScoringTuples, EXACT_MATCH_ALIGNER);
@@ -219,10 +232,42 @@ public final class ScoreKBPAgainstERE {
     final BootstrapInspector breakdownScoresByEventTypeWithBootstrapping =
         BootstrapInspector.forStrategy(perEventBootstrapStrategy, 1000, new Random(0));
     inspect(alignmentNode).with(breakdownScoresByEventTypeWithBootstrapping);
+
+    // TODO add the linking scoring here?
+    // TODO align based on the DocLevelArgs
+    // this alignment needs to be a "response" (DocLevelArg) to all the DocLevelArgs it's connected to
+    // TODO score using the same logic as in LinkF1 scoring class
+
+//    inspect(alignmentNode).with(scoreAndWriteLinking);
+  }
+
+  private static final class LinkingInspector implements
+      Inspector<ProvenancedAlignment<DocLevelEventArg, DocLevelEventArg, DocLevelEventArg, DocLevelEventArg>> {
+
+    private final File outputFile;
+
+    private LinkingInspector(final File outputFile) {
+      this.outputFile = outputFile;
+    }
+
+    public static LinkingInspector createOutputtingTo(final File outputFile) {
+      return new LinkingInspector(outputFile);
+    }
+
+    @Override
+    public void inspect(
+        final ProvenancedAlignment<DocLevelEventArg, DocLevelEventArg, DocLevelEventArg, DocLevelEventArg> item) {
+
+    }
+
+    @Override
+    public void finish() throws IOException {
+
+    }
   }
 
   private static final class DocLevelArgsFromEREExtractor
-      implements Function<EREDocument, ImmutableSet<DocLevelEventArg>>, Finishable {
+      implements Function<EREDocument, ResponsesAndLinking>, Finishable {
 
     // for tracking things from the answer key discarded due to not being entity mentions
     private final Multiset<String> allGoldArgs = HashMultiset.create();
@@ -234,9 +279,12 @@ public final class ScoreKBPAgainstERE {
     }
 
     @Override
-    public ImmutableSet<DocLevelEventArg> apply(final EREDocument doc) {
+    public ResponsesAndLinking apply(final EREDocument doc) {
       final ImmutableSet.Builder<DocLevelEventArg> ret = ImmutableSet.builder();
+      // every event mention argument within a hopper is linked
+      final ImmutableSet.Builder<ImmutableSet<DocLevelEventArg>> linking = ImmutableSet.builder();
       for (final EREEvent ereEvent : doc.getEvents()) {
+        final ImmutableSet.Builder<DocLevelEventArg> responseSet = ImmutableSet.builder();
         for (final EREEventMention ereEventMention : ereEvent.getEventMentions()) {
           for (final EREArgument ereArgument : ereEventMention.getArguments()) {
             final Symbol ereEventMentionType = Symbol.from(ereEventMention.getType());
@@ -272,11 +320,13 @@ public final class ScoreKBPAgainstERE {
               final Optional<EREEntity> containingEntity = doc.getEntityContaining(entityMention);
               checkState(containingEntity.isPresent(), "Corrupt ERE key input lacks "
                   + "entity for entity mention %s", entityMention);
-              ret.add(DocLevelEventArg.create(Symbol.from(doc.getDocId()),
+              final DocLevelEventArg arg = DocLevelEventArg.create(Symbol.from(doc.getDocId()),
                   Symbol.from(mapper.eventType(ereEventMentionType).get() + "." +
                       mapper.eventSubtype(ereEventMentionSubtype).get()),
                   mapper.eventRole(ereArgumentRole).get(),
-                  containingEntity.get().getID()));
+                  containingEntity.get().getID());
+              ret.add(arg);
+              responseSet.add(arg);
             } else if (ereArgument instanceof EREFillerArgument) {
               // we don't currently handle non-entity mention arguments
               discarded.add(typeRoleKey);
@@ -285,8 +335,9 @@ public final class ScoreKBPAgainstERE {
             }
           }
         }
+        linking.add(responseSet.build());
       }
-      return ret.build();
+      return new EREResponsesAndLinking(ret.build(), linking.build());
     }
 
     @Override
@@ -304,7 +355,7 @@ public final class ScoreKBPAgainstERE {
   }
 
   private static final class DocLevelArgsFromKBPExtractor
-      implements Function<EREDocAndResponses, ImmutableSet<DocLevelEventArg>>,
+      implements Function<EREDocAndResponses, ResponsesAndLinking>,
       Finishable {
 
     private Multiset<String> mentionAlignmentFailures = HashMultiset.create();
@@ -323,7 +374,7 @@ public final class ScoreKBPAgainstERE {
       this.useExactMatchForCoreNLPRelaxation = useExactMatchForCoreNLPRelaxation;
     }
 
-    public ImmutableSet<DocLevelEventArg> apply(final EREDocAndResponses input) {
+    public ResponsesAndLinking apply(final EREDocAndResponses input) {
       final ImmutableSet.Builder<DocLevelEventArg> ret = ImmutableSet.builder();
       final Iterable<Response> responses = input.responses();
       final EREDocument doc = input.ereDoc();
@@ -340,6 +391,9 @@ public final class ScoreKBPAgainstERE {
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
+      final ImmutableMap.Builder<Response, DocLevelEventArg> responseToDocLevelArg =
+          ImmutableMap.builder();
+
       for (final Response response : responses) {
         numResponses.add(errKey(response));
         final OffsetRange<CharOffset> baseFillerOffsets = response.baseFiller().asCharOffsetRange();
@@ -379,12 +433,17 @@ public final class ScoreKBPAgainstERE {
 
         final EREEntity matchingEntity = Iterables.getFirst(candidateEntities, null);
         if (matchingEntity != null) {
-          ret.add(DocLevelEventArg.create(Symbol.from(doc.getDocId()), response.type(),
-              response.role(), matchingEntity.getID()));
+          final DocLevelEventArg res =
+              DocLevelEventArg.create(Symbol.from(doc.getDocId()), response.type(),
+                  response.role(), matchingEntity.getID());
+          ret.add(res);
+          responseToDocLevelArg.put(response, res);
+
         }
         // TODO handle fillers (e.g. times) (goes here)
       }
-      return ret.build();
+      return new KBPResponsesAndLinking(ImmutableSet.copyOf(input.responses()),
+          responseToDocLevelArg.build(), input.linking());
     }
 
     public String errKey(Response r) {
@@ -405,14 +464,104 @@ public final class ScoreKBPAgainstERE {
   }
 }
 
+interface ResponsesAndLinking {
+
+  ImmutableSet<DocLevelEventArg> args();
+
+  ImmutableSet<ImmutableSet<DocLevelEventArg>> linking();
+
+  Function<ResponsesAndLinking, ImmutableSet<DocLevelEventArg>> argFunction =
+      new Function<ResponsesAndLinking, ImmutableSet<DocLevelEventArg>>() {
+        @Nullable
+        @Override
+        public ImmutableSet<DocLevelEventArg> apply(
+            @Nullable final ResponsesAndLinking responsesAndLinking) {
+          return responsesAndLinking.args();
+        }
+      };
+
+  Function<ResponsesAndLinking, ImmutableSet<ImmutableSet<DocLevelEventArg>>> linkingFunction =
+      new Function<ResponsesAndLinking, ImmutableSet<ImmutableSet<DocLevelEventArg>>>() {
+        @Nullable
+        @Override
+        public ImmutableSet<ImmutableSet<DocLevelEventArg>> apply(
+            @Nullable final ResponsesAndLinking responsesAndLinking) {
+          return responsesAndLinking.linking();
+        }
+      };
+}
+
+final class KBPResponsesAndLinking implements ResponsesAndLinking {
+
+  final ImmutableSet<Response> originalResponses;
+  final ImmutableMap<Response, DocLevelEventArg> responseToDocLevelEventArg;
+  final ImmutableSet<ImmutableSet<DocLevelEventArg>> responseSets;
+
+  KBPResponsesAndLinking(final ImmutableSet<Response> originalResponses,
+      final ImmutableMap<Response, DocLevelEventArg> responseToDocLevelEventArg,
+      final ResponseLinking responseLinking) {
+    this.originalResponses = originalResponses;
+    this.responseToDocLevelEventArg = responseToDocLevelEventArg;
+    final ImmutableSet.Builder<ImmutableSet<DocLevelEventArg>> responseSetsB =
+        ImmutableSet.builder();
+    for (final ResponseSet rs : responseLinking.responseSets()) {
+      final ImmutableSet.Builder<DocLevelEventArg> rsn = ImmutableSet.builder();
+      for (final Response response : rs) {
+        if (responseToDocLevelEventArg.containsKey(response)) {
+          rsn.add(responseToDocLevelEventArg.get(response));
+        }
+      }
+      responseSetsB.add(rsn.build());
+    }
+    this.responseSets = responseSetsB.build();
+  }
+
+
+  @Override
+  public ImmutableSet<DocLevelEventArg> args() {
+    return ImmutableSet.copyOf(responseToDocLevelEventArg.values());
+  }
+
+  @Override
+  public ImmutableSet<ImmutableSet<DocLevelEventArg>> linking() {
+    return responseSets;
+  }
+}
+
+final class EREResponsesAndLinking implements ResponsesAndLinking {
+
+  final ImmutableSet<DocLevelEventArg> args;
+  final ImmutableSet<ImmutableSet<DocLevelEventArg>> linking;
+
+  EREResponsesAndLinking(final Iterable<DocLevelEventArg> args,
+      final Iterable<ImmutableSet<DocLevelEventArg>> linking) {
+    this.args = ImmutableSet.copyOf(args);
+    this.linking = ImmutableSet.copyOf(linking);
+  }
+
+  @Override
+  public ImmutableSet<DocLevelEventArg> args() {
+    return args;
+  }
+
+  @Override
+  public ImmutableSet<ImmutableSet<DocLevelEventArg>> linking() {
+    return linking;
+  }
+}
+
+
 final class EREDocAndResponses {
 
   private final EREDocument ereDoc;
   private final Iterable<Response> responses;
+  private final ResponseLinking linking;
 
-  public EREDocAndResponses(final EREDocument ereDoc, final Iterable<Response> responses) {
+  public EREDocAndResponses(final EREDocument ereDoc, final Iterable<Response> responses,
+      final ResponseLinking linking) {
     this.ereDoc = checkNotNull(ereDoc);
     this.responses = checkNotNull(responses);
+    this.linking = checkNotNull(linking);
   }
 
   public EREDocument ereDoc() {
@@ -421,5 +570,9 @@ final class EREDocAndResponses {
 
   public Iterable<Response> responses() {
     return responses;
+  }
+
+  public ResponseLinking linking() {
+    return linking;
   }
 }
