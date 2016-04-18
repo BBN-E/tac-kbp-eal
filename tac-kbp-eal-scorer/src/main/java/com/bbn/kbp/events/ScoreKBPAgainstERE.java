@@ -15,8 +15,6 @@ import com.bbn.bue.common.evaluation.InspectorTreeNode;
 import com.bbn.bue.common.evaluation.ProvenancedAlignment;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
-import com.bbn.bue.common.strings.offsets.CharOffset;
-import com.bbn.bue.common.strings.offsets.OffsetRange;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events.ontology.EREToKBPEventOntologyMapper;
@@ -459,9 +457,8 @@ public final class ScoreKBPAgainstERE {
 
       for (final Response response : responses) {
         numResponses.add(errKey(response));
-        final OffsetRange<CharOffset> baseFillerOffsets = response.baseFiller().asCharOffsetRange();
 
-        // TODO match this using the type instead of first entity
+        // there are too few instances of these to bother matching on type currently
         final ImmutableSet<EREEntity> candidateEntities = ereAligner.entitiesForResponse(response);
         if (candidateEntities.size() > 1) {
           log.warn(
@@ -469,7 +466,6 @@ public final class ScoreKBPAgainstERE {
               candidateEntities.size(), response.baseFiller());
         }
 
-        // TODO match on type instead of just taking the first for both filler and entities
         final EREEntity matchingEntity = Iterables.getFirst(candidateEntities, null);
         if (matchingEntity != null) {
           final DocLevelEventArg res =
@@ -480,6 +476,7 @@ public final class ScoreKBPAgainstERE {
         } else {
           final ImmutableSet<EREFillerArgument> fillers = ereAligner.fillersForResponse(response);
           final EREFillerArgument filler = Iterables.getFirst(fillers, null);
+          // there are too few instances of these to bother matching on type currently
           if (fillers.size() > 1) {
             log.warn("Found multiple {} matching fillers for {}", fillers.size(),
                 response.baseFiller());
@@ -491,6 +488,7 @@ public final class ScoreKBPAgainstERE {
             ret.add(res);
             responseToDocLevelArg.put(response, res);
           } else {
+            mentionAlignmentFailures.add(errKey(response));
             log.warn("Neither entity nor filler match found for " + response.baseFiller());
           }
         }
