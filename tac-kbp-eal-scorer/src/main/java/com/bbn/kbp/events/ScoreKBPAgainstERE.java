@@ -29,10 +29,8 @@ import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.linking.ExplicitFMeasureInfo;
 import com.bbn.kbp.linking.LinkF1;
-import com.bbn.nlp.corenlp.CoreNLPConstituencyParse;
 import com.bbn.nlp.corenlp.CoreNLPDocument;
 import com.bbn.nlp.corenlp.CoreNLPParseNode;
-import com.bbn.nlp.corenlp.CoreNLPSentence;
 import com.bbn.nlp.corenlp.CoreNLPXMLLoader;
 import com.bbn.nlp.corpora.ere.EREArgument;
 import com.bbn.nlp.corpora.ere.EREDocument;
@@ -465,33 +463,7 @@ public final class ScoreKBPAgainstERE {
 
         // TODO match this using the type instead of first entity
         final ImmutableSet<EREEntity> candidateEntities = ereAligner.entitiesForResponse(response);
-        if (candidateEntities.size() == 0) {
-          log.warn("Unable to find a candidate mention for base filler " + response.baseFiller());
-          if (coreNLPDoc.isPresent() && relaxUsingCORENLP) {
-            final String parseString;
-            final Optional<CoreNLPSentence> sent =
-                coreNLPDoc.get().firstSentenceContaining(baseFillerOffsets);
-            if (sent.isPresent()) {
-              final Optional<CoreNLPConstituencyParse> parse = sent.get().parse();
-              if (parse.isPresent()) {
-                parseString = parse.get().coreNLPString();
-              } else {
-                parseString = "no parse found!";
-              }
-            } else {
-              parseString = "no sentence found!";
-            }
-            log.info(
-                "Failed to align base filler with offsets {} to an ERE mention for response {}, parse tree is {}",
-                baseFillerOffsets, response, parseString);
-            mentionAlignmentFailures.add(errKey(response));
-          } else {
-            log.info(
-                "Failed to align base filler with offsets {} to an ERE mention for response {}",
-                baseFillerOffsets, response);
-            mentionAlignmentFailures.add(errKey(response));
-          }
-        } else if (candidateEntities.size() > 1) {
+        if (candidateEntities.size() > 1) {
           log.warn(
               "Found {} candidate entities for base filler {}, using the first one!",
               candidateEntities.size(), response.baseFiller());
@@ -509,7 +481,7 @@ public final class ScoreKBPAgainstERE {
           final ImmutableSet<EREFillerArgument> fillers = ereAligner.fillersForResponse(response);
           final EREFillerArgument filler = Iterables.getFirst(fillers, null);
           if (fillers.size() > 1) {
-            log.info("Found multiple {} matching fillers for {}", fillers.size(),
+            log.warn("Found multiple {} matching fillers for {}", fillers.size(),
                 response.baseFiller());
           }
           if (filler != null) {
@@ -519,7 +491,7 @@ public final class ScoreKBPAgainstERE {
             ret.add(res);
             responseToDocLevelArg.put(response, res);
           } else {
-            log.info("Neither entity nor filler match found for " + response.baseFiller());
+            log.warn("Neither entity nor filler match found for " + response.baseFiller());
           }
         }
 
