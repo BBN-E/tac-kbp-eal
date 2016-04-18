@@ -33,8 +33,8 @@ import static com.google.common.base.Preconditions.checkState;
 /**
  * Aligns a TAC KBP {@link Response} to appropriate ERE types by offset matching. Offset matching
  * may be relaxed in two ways: <ul> <li>By fuzzier offset matching (e.g. allowing containment or
- * overlap)</li> <li>By finding the head of the KBP {@link Response} and aligning with the ERE
- * head (if any)</li> </ul>
+ * overlap)</li> <li>By finding the head of the KBP {@link Response} and aligning with the ERE head
+ * (if any)</li> </ul>
  */
 final class EREAligner {
 
@@ -118,9 +118,9 @@ final class EREAligner {
         // TODO check event type, subtype here
         for (final EREArgument ea : em.getArguments()) {
           // TODO check event argument role here
-          if(ea instanceof EREFillerArgument) {
+          if (ea instanceof EREFillerArgument) {
             final ERESpan extent = ((EREFillerArgument) ea).filler().getExtent();
-            if(spanMatches(extent, response.baseFiller())) {
+            if (spanMatches(extent, response.baseFiller())) {
               ret.add((EREFillerArgument) ea);
             }
           }
