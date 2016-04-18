@@ -153,15 +153,15 @@ public final class ScoreKBPAgainstERE {
     // we create these here because we will call their .finish method()s
     // at the end to record some statistics about alignment failures,
     // so we need to keep references to them
-    final DocLevelArgsFromKBPExtractor docLevelArgsFromKBPExtractor =
-        new DocLevelArgsFromKBPExtractor(coreNLPProcessedRawDocs,
+    final ResponsesAndLinkingFromKBPExtractor responsesAndLinkingFromKBPExtractor =
+        new ResponsesAndLinkingFromKBPExtractor(coreNLPProcessedRawDocs,
             coreNLPXMLLoader, relaxUsingCORENLP,
             useExactMatchForCoreNLPRelaxation);
-    final DocLevelArgsFromEREExtractor docLevelArgsFromEREExtractor =
-        new DocLevelArgsFromEREExtractor(EREToKBPEventOntologyMapper.create2015Mapping());
+    final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor =
+        new ResponsesAndLinkingFromEREExtractor(EREToKBPEventOntologyMapper.create2015Mapping());
 
     // this sets it up so that everything fed to input will be scored in various ways
-    setupScoring(input, docLevelArgsFromKBPExtractor, docLevelArgsFromEREExtractor, outputDir);
+    setupScoring(input, responsesAndLinkingFromKBPExtractor, responsesAndLinkingFromEREExtractor, outputDir);
 
     final ERELoader loader = ERELoader.create();
 
@@ -186,8 +186,8 @@ public final class ScoreKBPAgainstERE {
     // trigger the scoring network to write its summary files
     input.finish();
     // log alignment failures
-    docLevelArgsFromKBPExtractor.finish();
-    docLevelArgsFromEREExtractor.finish();
+    responsesAndLinkingFromKBPExtractor.finish();
+    responsesAndLinkingFromEREExtractor.finish();
   }
 
   private static final ImmutableSet<Symbol> BANNED_ROLES =
@@ -208,13 +208,13 @@ public final class ScoreKBPAgainstERE {
   // this sets up a scoring network which is executed on every input
   private static void setupScoring(
       final InspectionNode<EvalPair<EREDocument, EREDocAndResponses>> input,
-      final DocLevelArgsFromKBPExtractor docLevelArgsFromKBPExtractor,
-      final DocLevelArgsFromEREExtractor docLevelArgsFromEREExtractor,
+      final ResponsesAndLinkingFromKBPExtractor responsesAndLinkingFromKBPExtractor,
+      final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor,
       final File outputDir) {
     final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
         inputAsResponsesAndLinking =
-        transformRight(transformLeft(input, docLevelArgsFromEREExtractor),
-            docLevelArgsFromKBPExtractor);
+        transformRight(transformLeft(input, responsesAndLinkingFromEREExtractor),
+            responsesAndLinkingFromKBPExtractor);
     final InspectorTreeNode<EvalPair<ImmutableSet<DocLevelEventArg>, ImmutableSet<DocLevelEventArg>>>
         inputAsSetsOfScoringTuples =
         transformBoth(inputAsResponsesAndLinking, ResponsesAndLinking.argFunction);
@@ -299,7 +299,7 @@ public final class ScoreKBPAgainstERE {
     public void inspect(
         final EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>> item) {
       checkArgument(ImmutableSet.copyOf(concat(item.test())).containsAll(
-          ImmutableSet.copyOf(concat(item.key()))), "Must contain all answers in test set!");
+          ImmutableSet.copyOf(concat(item.key()))), "Must contain only answers in test set!");
       counts = LinkF1.create().score(item.key(), item.test());
     }
 
@@ -312,7 +312,7 @@ public final class ScoreKBPAgainstERE {
     }
   }
 
-  private static final class DocLevelArgsFromEREExtractor
+  private static final class ResponsesAndLinkingFromEREExtractor
       implements Function<EREDocument, ResponsesAndLinking>, Finishable {
 
     // for tracking things from the answer key discarded due to not being entity mentions
@@ -320,7 +320,7 @@ public final class ScoreKBPAgainstERE {
     private final Multiset<String> discarded = HashMultiset.create();
     private final SimpleEventOntologyMapper mapper;
 
-    private DocLevelArgsFromEREExtractor(final SimpleEventOntologyMapper mapper) {
+    private ResponsesAndLinkingFromEREExtractor(final SimpleEventOntologyMapper mapper) {
       this.mapper = checkNotNull(mapper);
     }
 
@@ -400,7 +400,7 @@ public final class ScoreKBPAgainstERE {
     }
   }
 
-  private static final class DocLevelArgsFromKBPExtractor
+  private static final class ResponsesAndLinkingFromKBPExtractor
       implements Function<EREDocAndResponses, ResponsesAndLinking>,
       Finishable {
 
@@ -411,7 +411,7 @@ public final class ScoreKBPAgainstERE {
     private final boolean relaxUsingCORENLP;
     private final boolean useExactMatchForCoreNLPRelaxation;
 
-    public DocLevelArgsFromKBPExtractor(final Map<Symbol, File> ereMapping,
+    public ResponsesAndLinkingFromKBPExtractor(final Map<Symbol, File> ereMapping,
         final CoreNLPXMLLoader coreNLPXMLLoader, final boolean relaxUsingCORENLP,
         final boolean useExactMatchForCoreNLPRelaxation) {
       this.ereMapping = ImmutableMap.copyOf(ereMapping);
