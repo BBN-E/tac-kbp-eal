@@ -93,11 +93,11 @@ final class EREAligner {
           candidateMentionsB.addAll(exactRangeToEntityMentionHead.get(coreNLPHeadRange.get()));
         } else {
           // add the candidate entity mentions whose heads contain the CoreNLPHead
-          candidateMentionsB.addAll(MultimapUtils.getAll(exactRangeToEntityMentionHead,
+          candidateMentionsB.addAll(MultimapUtils.getAllAsSet(exactRangeToEntityMentionHead,
               exactHeadRange.rangesContaining(coreNLPHeadRange.get())));
           // add the candidate entity mentions whose heads are contained in the CoreNLPHead
-          candidateMentionsB.addAll(MultimapUtils.getAll(exactRangeToEntityMentionHead,
-              exactHeadRange.rangesContained(coreNLPHeadRange.get())));
+          candidateMentionsB.addAll(MultimapUtils.getAllAsSet(exactRangeToEntityMentionHead,
+              exactHeadRange.rangesContainedBy(coreNLPHeadRange.get())));
         }
       }
     }
