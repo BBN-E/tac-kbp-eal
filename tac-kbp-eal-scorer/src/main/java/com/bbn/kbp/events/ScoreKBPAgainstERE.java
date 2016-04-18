@@ -161,7 +161,8 @@ public final class ScoreKBPAgainstERE {
         new ResponsesAndLinkingFromEREExtractor(EREToKBPEventOntologyMapper.create2015Mapping());
 
     // this sets it up so that everything fed to input will be scored in various ways
-    setupScoring(input, responsesAndLinkingFromKBPExtractor, responsesAndLinkingFromEREExtractor, outputDir);
+    setupScoring(input, responsesAndLinkingFromKBPExtractor, responsesAndLinkingFromEREExtractor,
+        outputDir);
 
     final ERELoader loader = ERELoader.create();
 
@@ -215,6 +216,15 @@ public final class ScoreKBPAgainstERE {
         inputAsResponsesAndLinking =
         transformRight(transformLeft(input, responsesAndLinkingFromEREExtractor),
             responsesAndLinkingFromKBPExtractor);
+    // set up for event argument scoring in 2015 style
+    eventArgumentScoringSetup(inputAsResponsesAndLinking, outputDir);
+    // set up for linking scoring in 2015 style
+    linkingScoringSetup(inputAsResponsesAndLinking, outputDir);
+  }
+
+  private static void eventArgumentScoringSetup(
+      final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
+          inputAsResponsesAndLinking, final File outputDir) {
     final InspectorTreeNode<EvalPair<ImmutableSet<DocLevelEventArg>, ImmutableSet<DocLevelEventArg>>>
         inputAsSetsOfScoringTuples =
         transformBoth(inputAsResponsesAndLinking, ResponsesAndLinking.argFunction);
@@ -238,7 +248,11 @@ public final class ScoreKBPAgainstERE {
     final BootstrapInspector breakdownScoresByEventTypeWithBootstrapping =
         BootstrapInspector.forStrategy(perEventBootstrapStrategy, 1000, new Random(0));
     inspect(alignmentNode).with(breakdownScoresByEventTypeWithBootstrapping);
+  }
 
+  private static void linkingScoringSetup(
+      final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
+          inputAsResponsesAndLinking, final File outputDir) {
     final InspectorTreeNode<EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>>>
         linkingNode = transformRight(
         transformLeft(inputAsResponsesAndLinking, ResponsesAndLinking.linkingFunction),
