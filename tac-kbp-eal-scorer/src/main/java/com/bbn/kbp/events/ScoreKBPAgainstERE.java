@@ -282,9 +282,9 @@ public final class ScoreKBPAgainstERE {
     @Override
     public void inspect(
         final EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>> item) {
-      checkArgument(ImmutableSet.copyOf(concat(item.key())).containsAll(
-          ImmutableSet.copyOf(concat(item.test()))), "Must contain all answers in test set!");
-      counts = LinkF1.create().score(item.test(), item.key());
+      checkArgument(ImmutableSet.copyOf(concat(item.test())).containsAll(
+          ImmutableSet.copyOf(concat(item.key()))), "Must contain all answers in test set!");
+      counts = LinkF1.create().score(item.key(), item.test());
     }
 
     @Override
