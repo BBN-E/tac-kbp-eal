@@ -12,7 +12,6 @@ import com.bbn.nlp.corenlp.CoreNLPSentence;
 import com.bbn.nlp.corpora.ere.EREArgument;
 import com.bbn.nlp.corpora.ere.EREDocument;
 import com.bbn.nlp.corpora.ere.EREEntity;
-import com.bbn.nlp.corpora.ere.EREEntityArgument;
 import com.bbn.nlp.corpora.ere.EREEntityMention;
 import com.bbn.nlp.corpora.ere.EREEvent;
 import com.bbn.nlp.corpora.ere.EREEventMention;
@@ -111,28 +110,19 @@ final class EREAligner {
     return candidateMentionsB.build();
   }
 
-  ImmutableSet<EREArgument> eventMentionArgsForResponse(final Response response) {
-    final ImmutableSet.Builder<EREArgument> ret = ImmutableSet.builder();
+  ImmutableSet<EREFillerArgument> fillersForResponse(final Response response) {
+    final ImmutableSet.Builder<EREFillerArgument> ret = ImmutableSet.builder();
     for (final EREEvent e : ereDoc.getEvents()) {
       for (final EREEventMention em : e.getEventMentions()) {
         // TODO throwaway generics here?
         // TODO check event type, subtype here
         for (final EREArgument ea : em.getArguments()) {
           // TODO check event argument role here
-          Optional<ERESpan> head = Optional.absent();
-          ERESpan extent;
-          if (ea instanceof EREFillerArgument) {
-            extent = ((EREFillerArgument) ea).filler().getExtent();
-          } else if (ea instanceof EREEntityArgument) {
-            head = ((EREEntityArgument) ea).entityMention().getHead();
-            extent = ((EREEntityArgument) ea).entityMention().getExtent();
-          } else {
-            throw new RuntimeException("Unknown EREArgument type " + ea.getClass());
-          }
-
-          if (spanMatches(extent, response.baseFiller()) || (head.isPresent() && spanMatches(
-              head.get(), response.baseFiller()))) {
-            ret.add(ea);
+          if(ea instanceof EREFillerArgument) {
+            final ERESpan extent = ((EREFillerArgument) ea).filler().getExtent();
+            if(spanMatches(extent, response.baseFiller())) {
+              ret.add((EREFillerArgument) ea);
+            }
           }
         }
       }

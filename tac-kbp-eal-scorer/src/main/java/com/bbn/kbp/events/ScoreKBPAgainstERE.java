@@ -388,8 +388,13 @@ public final class ScoreKBPAgainstERE {
               ret.add(arg);
               responseSet.add(arg);
             } else if (ereArgument instanceof EREFillerArgument) {
-              // we don't currently handle non-entity mention arguments
-              discarded.add(typeRoleKey);
+              final EREFillerArgument filler = (EREFillerArgument) ereArgument;
+              final DocLevelEventArg arg = DocLevelEventArg.create(Symbol.from(doc.getDocId()),
+                  Symbol.from(mapper.eventType(ereEventMentionType).get() + "." +
+                      mapper.eventSubtype(ereEventMentionSubtype).get()),
+                  mapper.eventRole(ereArgumentRole).get(), filler.filler().getID());
+              ret.add(arg);
+              responseSet.add(arg);
             } else {
               throw new RuntimeException("Unknown ERE argument type " + ereArgument.getClass());
             }
@@ -487,10 +492,12 @@ public final class ScoreKBPAgainstERE {
             mentionAlignmentFailures.add(errKey(response));
           }
         } else if (candidateEntities.size() > 1) {
-          log.warn("Found multiple candidate entities for base filler " + response.baseFiller()
-              + " using the first one found with a matching type!");
+          log.warn(
+              "Found {} candidate entities for base filler {}, using the first one!",
+              candidateEntities.size(), response.baseFiller());
         }
 
+        // TODO match on type instead of just taking the first for both filler and entities
         final EREEntity matchingEntity = Iterables.getFirst(candidateEntities, null);
         if (matchingEntity != null) {
           final DocLevelEventArg res =
@@ -498,9 +505,25 @@ public final class ScoreKBPAgainstERE {
                   response.role(), matchingEntity.getID());
           ret.add(res);
           responseToDocLevelArg.put(response, res);
-
+        } else {
+          final ImmutableSet<EREFillerArgument> fillers = ereAligner.fillersForResponse(response);
+          final EREFillerArgument filler = Iterables.getFirst(fillers, null);
+          if (fillers.size() > 1) {
+            log.info("Found multiple {} matching fillers for {}", fillers.size(),
+                response.baseFiller());
+          }
+          if (filler != null) {
+            final DocLevelEventArg res = DocLevelEventArg
+                .create(Symbol.from(doc.getDocId()), response.type(), response.role(),
+                    filler.filler().getID());
+            ret.add(res);
+            responseToDocLevelArg.put(response, res);
+          } else {
+            log.info("Neither entity nor filler match found for " + response.baseFiller());
+          }
         }
-        // TODO handle fillers (e.g. times) (goes here)
+
+
       }
       return new KBPResponsesAndLinking(ImmutableSet.copyOf(input.responses()),
           responseToDocLevelArg.build(), input.linking());
