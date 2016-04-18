@@ -193,7 +193,6 @@ final class EREAligner {
     final ImmutableMultimap.Builder<Range<CharOffset>, EREFiller> ret =
         ImmutableMultimap.builder();
     for (final EREFiller f : ereDoc.getFillers()) {
-      // TODO check for off-by-one error since we use [closed,closed] offsets
       final Range<CharOffset> r =
           CharOffsetSpan.fromOffsetsOnly(f.getExtent().getStart(), f.getExtent().getEnd())
               .asCharOffsetRange().asRange();
@@ -209,7 +208,6 @@ final class EREAligner {
         public Optional<Range<CharOffset>> apply(
             @Nullable final EREEntityMention ereEntityMention) {
           checkNotNull(ereEntityMention);
-          // TODO check for off-by-one error since we use [closed,closed] offsets
           return Optional
               .of(CharOffsetSpan.fromOffsetsOnly(ereEntityMention.getExtent().getStart(),
                   ereEntityMention.getExtent().getEnd()).asCharOffsetRange().asRange());
@@ -224,7 +222,6 @@ final class EREAligner {
             @Nullable final EREEntityMention ereEntityMention) {
           checkNotNull(ereEntityMention);
           if (ereEntityMention.getHead().isPresent()) {
-            // TODO check for off-by-one error since we use [closed,closed] offsets
             return Optional.of(CharOffsetSpan
                 .fromOffsetsOnly(ereEntityMention.getHead().get().getStart(),
                     ereEntityMention.getHead().get().getEnd()).asCharOffsetRange().asRange());
@@ -235,7 +232,6 @@ final class EREAligner {
       };
 
   private boolean spanMatches(final ERESpan es, final CharOffsetSpan cs) {
-    // TODO check for off-by-one error since we use [closed,closed] offsets
     final Range<CharOffset> esRange =
         CharOffsetSpan.fromOffsetsOnly(es.getStart(), es.getEnd()).asCharOffsetRange().asRange();
     final Range<CharOffset> csRange = cs.asCharOffsetRange().asRange();
