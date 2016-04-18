@@ -56,13 +56,13 @@ final class EREAligner {
     this.useExactMatchForCoreNLPRelaxation = useExactMatchForCoreNLPRelaxation;
     this.ereDoc = ereDoc;
     this.exactRangeToEntityMention =
-        rangeToEntity(ereDoc, spanExtractor);
+        buildRangeToFillerMap(ereDoc, spanExtractor);
     this.exactRangeToEntityMentionHead =
-        rangeToEntity(ereDoc, headExtractor);
+        buildRangeToFillerMap(ereDoc, headExtractor);
     this.exactHeadRange =
         ImmutableOverlappingRangeSet.create(exactRangeToEntityMentionHead.keySet());
     this.coreNLPDoc = coreNLPDocument;
-    this.rangeToFiller = rangeToFiller(ereDoc);
+    this.rangeToFiller = buildRangeToFillerMap(ereDoc);
     checkState(!relaxUsingCORENLP || coreNLPDoc.isPresent(),
         "Either we have our CoreNLPDocument or we are not relaxing using it");
   }
@@ -172,7 +172,7 @@ final class EREAligner {
     return ret.build();
   }
 
-  private static ImmutableMultimap<Range<CharOffset>, EREEntityMention> rangeToEntity(
+  private static ImmutableMultimap<Range<CharOffset>, EREEntityMention> buildRangeToFillerMap(
       final EREDocument ereDocument,
       Function<EREEntityMention, Optional<Range<CharOffset>>> extractor) {
     final ImmutableMultimap.Builder<Range<CharOffset>, EREEntityMention> ret =
@@ -188,7 +188,7 @@ final class EREAligner {
     return ret.build();
   }
 
-  private static ImmutableMultimap<Range<CharOffset>, EREFiller> rangeToFiller(
+  private static ImmutableMultimap<Range<CharOffset>, EREFiller> buildRangeToFillerMap(
       final EREDocument ereDoc) {
     final ImmutableMultimap.Builder<Range<CharOffset>, EREFiller> ret =
         ImmutableMultimap.builder();
