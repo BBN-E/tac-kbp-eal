@@ -244,23 +244,39 @@ public final class ScoreKBPAgainstERE {
         transformLeft(inputAsResponsesAndLinking, ResponsesAndLinking.linkingFunction),
         ResponsesAndLinking.linkingFunction);
 
-
-
+    final InspectorTreeNode<EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>>>
+        filteredNode =
+        transformed(linkingNode, ScoreKBPAgainstERE.<DocLevelEventArg>restrictToLinkingFunction());
     final LinkingInspector linkingInspector =
         LinkingInspector.createOutputtingTo(new File(outputDir, "linkingF.txt"));
-    inspect(linkingNode).with(linkingInspector);
+    inspect(filteredNode).with(linkingInspector);
   }
 
-  private static <T> Function<Iterable<? extends Set<T>>, ImmutableSet<ImmutableSet<T>>> filterNestedElements(final Predicate<T> filter) {
+  private static <T> Function<Iterable<? extends Set<T>>, ImmutableSet<ImmutableSet<T>>> filterNestedElements(
+      final Predicate<T> filter) {
     return new Function<Iterable<? extends Set<T>>, ImmutableSet<ImmutableSet<T>>>() {
       @Nullable
       @Override
       public ImmutableSet<ImmutableSet<T>> apply(@Nullable final Iterable<? extends Set<T>> sets) {
         final ImmutableSet.Builder<ImmutableSet<T>> ret = ImmutableSet.builder();
-        for(final Set<T> s: sets) {
+        for (final Set<T> s : sets) {
           ret.add(ImmutableSet.copyOf(Iterables.filter(s, filter)));
         }
         return ret.build();
+      }
+    };
+  }
+
+  private static <T> Function<EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>>, EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>>> restrictToLinkingFunction() {
+    return new Function<EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>>, EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>>>() {
+      @Nullable
+      @Override
+      public EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>> apply(
+          @Nullable final EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>> input) {
+        final ImmutableSet<ImmutableSet<T>> key =
+            filterNestedElements(Predicates.in(ImmutableSet.copyOf(Iterables.concat(input.test()))))
+                .apply(input.key());
+        return EvalPair.of(key, input.test());
       }
     };
   }
