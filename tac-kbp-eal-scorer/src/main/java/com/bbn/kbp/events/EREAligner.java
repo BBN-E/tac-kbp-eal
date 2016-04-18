@@ -29,9 +29,13 @@ import com.google.common.collect.Range;
 import javax.annotation.Nullable;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 /**
- * Created by jdeyoung on 4/14/16.
+ * Aligns a TAC KBP {@link Response} to appropriate ERE types by offset matching. Offset matching
+ * may be relaxed in two ways: <ul> <li>By fuzzier offset matching (e.g. allowing containment or
+ * overlap)</li> <li>By finding the head of the KBP {@link Response} and aligning with the ERE
+ * head (if any)</li> </ul>
  */
 final class EREAligner {
 
@@ -59,6 +63,8 @@ final class EREAligner {
         ImmutableOverlappingRangeSet.create(exactRangeToEntityMentionHead.keySet());
     this.coreNLPDoc = coreNLPDocument;
     this.rangeToFiller = rangeToFiller(ereDoc);
+    checkState(!relaxUsingCORENLP || coreNLPDoc.isPresent(),
+        "Either we have our CoreNLPDocument or we are not relaxing using it");
   }
 
   static EREAligner create(final boolean relaxUsingCORENLP,
