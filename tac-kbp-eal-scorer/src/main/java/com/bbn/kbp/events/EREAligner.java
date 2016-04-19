@@ -59,20 +59,34 @@ final class EREAligner {
   }
 
   ImmutableSet<EREEntityMention> mentionsForResponse(final Response response) {
-    // we try to align a system response to an ERE entity by exact offset match of the
-    // basefiller against one of an entity's mentions
     // this search could be faster but is probably good enough
 
     // collect all the candidate mentions
     final ImmutableSet.Builder<EREEntityMention> candidateMentionsB = ImmutableSet.builder();
-    final OffsetRange<CharOffset> baseFillerOffsets = response.baseFiller().asCharOffsetRange();
+    final OffsetRange<CharOffset> offsets =
+        response.canonicalArgument().charOffsetSpan().asCharOffsetRange();
+    boolean success = false;
     if (relaxUsingCORENLP) {
       for (final EREEntity e : ereDoc.getEntities()) {
         for (final EREEntityMention em : e.getMentions()) {
           final ERESpan es = em.getExtent();
           final Optional<ERESpan> ereHead = em.getHead();
-          if (spanMatches(es, ereHead, CharOffsetSpan.of(baseFillerOffsets))) {
+          if (spanMatches(es, ereHead, CharOffsetSpan.of(offsets))) {
             candidateMentionsB.add(em);
+            success = true;
+          }
+        }
+      }
+      // fall back to aligning on the basefiller
+      if (!success) {
+        for (final EREEntity e : ereDoc.getEntities()) {
+          for (final EREEntityMention em : e.getMentions()) {
+            final ERESpan es = em.getExtent();
+            final Optional<ERESpan> ereHead = em.getHead();
+            if (spanMatches(es, ereHead,
+                CharOffsetSpan.of(response.baseFiller().asCharOffsetRange()))) {
+              candidateMentionsB.add(em);
+            }
           }
         }
       }
