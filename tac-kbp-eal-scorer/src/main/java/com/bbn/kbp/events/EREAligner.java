@@ -1,7 +1,6 @@
 package com.bbn.kbp.events;
 
 import com.bbn.bue.common.collections.ImmutableOverlappingRangeSet;
-import com.bbn.bue.common.collections.MultimapUtils;
 import com.bbn.bue.common.strings.offsets.CharOffset;
 import com.bbn.bue.common.strings.offsets.OffsetRange;
 import com.bbn.kbp.events2014.CharOffsetSpan;
@@ -83,26 +82,17 @@ final class EREAligner {
     // basefiller against one of an entity's mentions
     // this search could be faster but is probably good enough
 
-    final OffsetRange<CharOffset> baseFillerOffsets = response.baseFiller().asCharOffsetRange();
     // collect all the candidate mentions
     final ImmutableSet.Builder<EREEntityMention> candidateMentionsB = ImmutableSet.builder();
-    // add the candidate mentions that align exactly to base filler offsets
-    candidateMentionsB.addAll(exactRangeToEntityMention.get(baseFillerOffsets.asRange()));
-    // add the candidate mentions whose head aligns exactly with the base filler offsets
-    candidateMentionsB.addAll(exactRangeToEntityMentionHead.get(baseFillerOffsets.asRange()));
+    final OffsetRange<CharOffset> baseFillerOffsets = response.baseFiller().asCharOffsetRange();
     if (relaxUsingCORENLP) {
-      final Optional<Range<CharOffset>> coreNLPHeadRange = getCoreNLPHead(baseFillerOffsets);
-      if (coreNLPHeadRange.isPresent()) {
-        if (useExactMatchForCoreNLPRelaxation) {
-          // add the candidate entity mentions whose heads exactly match the CoreNLPHead
-          candidateMentionsB.addAll(exactRangeToEntityMentionHead.get(coreNLPHeadRange.get()));
-        } else {
-          // add the candidate entity mentions whose heads contain the CoreNLPHead
-          candidateMentionsB.addAll(MultimapUtils.getAllAsSet(exactRangeToEntityMentionHead,
-              exactHeadRange.rangesContaining(coreNLPHeadRange.get())));
-          // add the candidate entity mentions whose heads are contained in the CoreNLPHead
-          candidateMentionsB.addAll(MultimapUtils.getAllAsSet(exactRangeToEntityMentionHead,
-              exactHeadRange.rangesContainedBy(coreNLPHeadRange.get())));
+      for (final EREEntity e : ereDoc.getEntities()) {
+        for (final EREEntityMention em : e.getMentions()) {
+          final ERESpan es = em.getExtent();
+          final Optional<ERESpan> ereHead = em.getHead();
+          if (spanMatches(es, ereHead, CharOffsetSpan.of(baseFillerOffsets))) {
+            candidateMentionsB.add(em);
+          }
         }
       }
     }
@@ -114,13 +104,10 @@ final class EREAligner {
     final ImmutableSet.Builder<EREFillerArgument> ret = ImmutableSet.builder();
     for (final EREEvent e : ereDoc.getEvents()) {
       for (final EREEventMention em : e.getEventMentions()) {
-        // TODO throwaway generics here?
-        // TODO check event type, subtype here
         for (final EREArgument ea : em.getArguments()) {
-          // TODO check event argument role here
           if (ea instanceof EREFillerArgument) {
             final ERESpan extent = ((EREFillerArgument) ea).filler().getExtent();
-            if (spanMatches(extent, response.baseFiller())) {
+            if (spanMatches(extent, Optional.<ERESpan>absent(), response.baseFiller())) {
               ret.add((EREFillerArgument) ea);
             }
           }
@@ -221,26 +208,42 @@ final class EREAligner {
         }
       };
 
-  private boolean spanMatches(final ERESpan es, final CharOffsetSpan cs) {
-    final Range<CharOffset> esRange =
-        CharOffsetSpan.fromOffsetsOnly(es.getStart(), es.getEnd()).asCharOffsetRange().asRange();
+  private static Range<CharOffset> rangeFromERESpan(final ERESpan es) {
+    return CharOffsetSpan.fromOffsetsOnly(es.getStart(), es.getEnd()).asCharOffsetRange().asRange();
+  }
+
+  private boolean spanMatches(final ERESpan es, final Optional<ERESpan> ereHead,
+      final CharOffsetSpan cs) {
+    final Range<CharOffset> esRange = rangeFromERESpan(es);
+    final Optional<Range<CharOffset>> ereHeadRange = ereHead.isPresent() ? Optional
+        .of(rangeFromERESpan(ereHead.get())) : Optional.<Range<CharOffset>>absent();
     final Range<CharOffset> csRange = cs.asCharOffsetRange().asRange();
-    if (esRange.equals(csRange)) {
+    if (esRange.equals(csRange) || (ereHeadRange.isPresent() && ereHeadRange.get()
+        .equals(csRange))) {
       return true;
     }
-    if (!useExactMatchForCoreNLPRelaxation && esRange.encloses(csRange)) {
+    // we assume that the ERESpan encloses its head
+    if (!useExactMatchForCoreNLPRelaxation && (esRange.encloses(csRange))) {
       return true;
     }
     if (relaxUsingCORENLP) {
-      final Optional<Range<CharOffset>> headRange = getCoreNLPHead(cs.asCharOffsetRange());
-      if (headRange.isPresent()) {
-        if (esRange.equals(headRange.get())) {
+      final Optional<Range<CharOffset>> coreNLPHead = getCoreNLPHead(cs.asCharOffsetRange());
+      if (coreNLPHead.isPresent()) {
+        if (esRange.equals(coreNLPHead.get()) || (ereHeadRange.isPresent() && ereHeadRange.get()
+            .equals(coreNLPHead.get()))) {
           return true;
         }
-        // TODO do we want this second .encloses?
-        if (!useExactMatchForCoreNLPRelaxation && (esRange.encloses(headRange.get()) || headRange
-            .get().encloses(esRange))) {
-          return true;
+        if (!useExactMatchForCoreNLPRelaxation) {
+          // if one contains the other
+          if (esRange.encloses(coreNLPHead.get()) || coreNLPHead.get().encloses(esRange)) {
+            // if they both contain the head, for either notion of head
+            if ((esRange.encloses(coreNLPHead.get()) || (ereHeadRange.isPresent() && esRange
+                .encloses(ereHeadRange.get())))
+                && (csRange.encloses(coreNLPHead.get()) || (ereHeadRange.isPresent()) && csRange
+                .encloses(ereHeadRange.get()))) {
+              return true;
+            }
+          }
         }
       }
     }
