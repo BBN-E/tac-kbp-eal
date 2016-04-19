@@ -488,7 +488,12 @@ public final class ScoreKBPAgainstERE {
             ret.add(res);
             responseToDocLevelArg.put(response, res);
           } else {
-            // TODO just add Responses with a fake ID since these don't align.
+            // add the response with a fake alignment so we properly penalize answers that don't align
+            final DocLevelEventArg fake = DocLevelEventArg
+                .create(Symbol.from(doc.getDocId()), response.type(), response.role(),
+                    "fake " + mentionAlignmentFailures.size());
+            ret.add(fake);
+            responseToDocLevelArg.put(response, fake);
             mentionAlignmentFailures.add(errKey(response));
             log.warn("Neither entity nor filler match found for {}", response.toString());
           }
