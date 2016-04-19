@@ -157,7 +157,8 @@ final class EREAligner {
         }
         if (!useExactMatchForCoreNLPRelaxation) {
           // if one contains the other
-          if (esRange.encloses(coreNLPHead.get()) || coreNLPHead.get().encloses(esRange)) {
+          // we use [closed, closed] offsets so no need to check for non-empty intersecting range
+          if (esRange.encloses(csRange) || csRange.encloses(esRange)) {
             // if they both contain the head, for either notion of head
             if ((esRange.encloses(coreNLPHead.get()) || (ereHeadRange.isPresent() && esRange
                 .encloses(ereHeadRange.get())))
