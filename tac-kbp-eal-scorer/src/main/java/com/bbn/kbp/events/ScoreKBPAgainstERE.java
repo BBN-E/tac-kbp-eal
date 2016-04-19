@@ -154,7 +154,7 @@ public final class ScoreKBPAgainstERE {
             coreNLPXMLLoader, relaxUsingCORENLP,
             useExactMatchForCoreNLPRelaxation);
     final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor =
-        new ResponsesAndLinkingFromEREExtractor(EREToKBPEventOntologyMapper.create2015Mapping());
+        new ResponsesAndLinkingFromEREExtractor(EREToKBPEventOntologyMapper.create2016Mapping());
 
     // this sets it up so that everything fed to input will be scored in various ways
     setupScoring(input, responsesAndLinkingFromKBPExtractor, responsesAndLinkingFromEREExtractor,
