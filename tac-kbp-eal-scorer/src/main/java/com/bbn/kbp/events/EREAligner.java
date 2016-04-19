@@ -1,6 +1,5 @@
 package com.bbn.kbp.events;
 
-import com.bbn.bue.common.collections.ImmutableOverlappingRangeSet;
 import com.bbn.bue.common.strings.offsets.CharOffset;
 import com.bbn.bue.common.strings.offsets.OffsetRange;
 import com.bbn.kbp.events2014.CharOffsetSpan;
@@ -14,19 +13,13 @@ import com.bbn.nlp.corpora.ere.EREEntity;
 import com.bbn.nlp.corpora.ere.EREEntityMention;
 import com.bbn.nlp.corpora.ere.EREEvent;
 import com.bbn.nlp.corpora.ere.EREEventMention;
-import com.bbn.nlp.corpora.ere.EREFiller;
 import com.bbn.nlp.corpora.ere.EREFillerArgument;
 import com.bbn.nlp.corpora.ere.ERESpan;
 
-import com.google.common.base.Function;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Range;
 
-import javax.annotation.Nullable;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
@@ -40,11 +33,6 @@ final class EREAligner {
   private final boolean relaxUsingCORENLP;
   private final boolean useExactMatchForCoreNLPRelaxation;
   private final EREDocument ereDoc;
-  private final ImmutableMultimap<Range<CharOffset>, EREEntityMention> exactRangeToEntityMention;
-  private final ImmutableMultimap<Range<CharOffset>, EREEntityMention>
-      exactRangeToEntityMentionHead;
-  private final ImmutableOverlappingRangeSet<CharOffset> exactHeadRange;
-  private final ImmutableMultimap<Range<CharOffset>, EREFiller> rangeToFiller;
   private final Optional<CoreNLPDocument> coreNLPDoc;
 
   private EREAligner(final boolean relaxUsingCORENLP,
@@ -53,14 +41,7 @@ final class EREAligner {
     this.relaxUsingCORENLP = relaxUsingCORENLP;
     this.useExactMatchForCoreNLPRelaxation = useExactMatchForCoreNLPRelaxation;
     this.ereDoc = ereDoc;
-    this.exactRangeToEntityMention =
-        buildRangeToFillerMap(ereDoc, spanExtractor);
-    this.exactRangeToEntityMentionHead =
-        buildRangeToFillerMap(ereDoc, headExtractor);
-    this.exactHeadRange =
-        ImmutableOverlappingRangeSet.create(exactRangeToEntityMentionHead.keySet());
     this.coreNLPDoc = coreNLPDocument;
-    this.rangeToFiller = buildRangeToFillerMap(ereDoc);
     checkState(!relaxUsingCORENLP || coreNLPDoc.isPresent(),
         "Either we have our CoreNLPDocument or we are not relaxing using it");
   }
@@ -148,65 +129,6 @@ final class EREAligner {
     }
     return ret.build();
   }
-
-  private static ImmutableMultimap<Range<CharOffset>, EREEntityMention> buildRangeToFillerMap(
-      final EREDocument ereDocument,
-      Function<EREEntityMention, Optional<Range<CharOffset>>> extractor) {
-    final ImmutableMultimap.Builder<Range<CharOffset>, EREEntityMention> ret =
-        ImmutableMultimap.builder();
-    for (final EREEntity e : ereDocument.getEntities()) {
-      for (final EREEntityMention em : e.getMentions()) {
-        final Optional<Range<CharOffset>> range = checkNotNull(extractor.apply(em));
-        if (range.isPresent()) {
-          ret.put(range.get(), em);
-        }
-      }
-    }
-    return ret.build();
-  }
-
-  private static ImmutableMultimap<Range<CharOffset>, EREFiller> buildRangeToFillerMap(
-      final EREDocument ereDoc) {
-    final ImmutableMultimap.Builder<Range<CharOffset>, EREFiller> ret =
-        ImmutableMultimap.builder();
-    for (final EREFiller f : ereDoc.getFillers()) {
-      final Range<CharOffset> r =
-          CharOffsetSpan.fromOffsetsOnly(f.getExtent().getStart(), f.getExtent().getEnd())
-              .asCharOffsetRange().asRange();
-      ret.put(r, f);
-    }
-    return ret.build();
-  }
-
-  private static final Function<EREEntityMention, Optional<Range<CharOffset>>> spanExtractor =
-      new Function<EREEntityMention, Optional<Range<CharOffset>>>() {
-        @Nullable
-        @Override
-        public Optional<Range<CharOffset>> apply(
-            @Nullable final EREEntityMention ereEntityMention) {
-          checkNotNull(ereEntityMention);
-          return Optional
-              .of(CharOffsetSpan.fromOffsetsOnly(ereEntityMention.getExtent().getStart(),
-                  ereEntityMention.getExtent().getEnd()).asCharOffsetRange().asRange());
-        }
-      };
-
-  private static final Function<EREEntityMention, Optional<Range<CharOffset>>> headExtractor =
-      new Function<EREEntityMention, Optional<Range<CharOffset>>>() {
-        @Nullable
-        @Override
-        public Optional<Range<CharOffset>> apply(
-            @Nullable final EREEntityMention ereEntityMention) {
-          checkNotNull(ereEntityMention);
-          if (ereEntityMention.getHead().isPresent()) {
-            return Optional.of(CharOffsetSpan
-                .fromOffsetsOnly(ereEntityMention.getHead().get().getStart(),
-                    ereEntityMention.getHead().get().getEnd()).asCharOffsetRange().asRange());
-          } else {
-            return Optional.absent();
-          }
-        }
-      };
 
   private static Range<CharOffset> rangeFromERESpan(final ERESpan es) {
     return CharOffsetSpan.fromOffsetsOnly(es.getStart(), es.getEnd()).asCharOffsetRange().asRange();
