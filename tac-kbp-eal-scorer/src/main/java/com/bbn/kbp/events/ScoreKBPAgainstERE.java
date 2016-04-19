@@ -488,8 +488,9 @@ public final class ScoreKBPAgainstERE {
             ret.add(res);
             responseToDocLevelArg.put(response, res);
           } else {
+            // TODO just add Responses with a fake ID since these don't align.
             mentionAlignmentFailures.add(errKey(response));
-            log.warn("Neither entity nor filler match found for " + response.baseFiller());
+            log.warn("Neither entity nor filler match found for {}", response.toString());
           }
         }
 
