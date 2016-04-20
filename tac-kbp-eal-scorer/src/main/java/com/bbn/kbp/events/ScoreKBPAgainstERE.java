@@ -370,6 +370,18 @@ public final class ScoreKBPAgainstERE {
     }
   }
 
+  private enum ERERealisEnum {
+    generic,
+    other,
+    actual,
+  }
+
+  private enum ArgumentRealis {
+    Generic,
+    Actual,
+    Other
+  }
+
   private static final class ResponsesAndLinkingFromEREExtractor
       implements Function<EREDocument, ResponsesAndLinking>, Finishable {
 
@@ -395,25 +407,25 @@ public final class ScoreKBPAgainstERE {
             final Symbol ereEventMentionSubtype = Symbol.from(ereEventMention.getSubtype());
             final Symbol ereArgumentRole = Symbol.from(ereArgument.getRole());
             final String ERERealis = ereEventMention.getRealis();
-            final String argumentRealis;
+            final ArgumentRealis argumentRealis;
             // generic event mention realis overrides everything
-            if (ERERealis.equals("generic")) {
-              argumentRealis = "Generic";
+            if (ERERealis.equals(ERERealisEnum.generic.name())) {
+              argumentRealis = ArgumentRealis.Generic;
             } else {
               // if the argument is realis
               // must be present for event mention arguments
               if (ereArgument.getRealis().get().equals(LinkRealis.REALIS)) {
-                if (ERERealis.equals("other")) {
-                  argumentRealis = "Other";
-                } else if (ereArgument.getRealis().get().equals(LinkRealis.IRREALIS)) {
-                  argumentRealis = "Actual";
+                if (ERERealis.equals(ERERealisEnum.other.name())) {
+                  argumentRealis = ArgumentRealis.Other;
+                } else if (ERERealis.equals(ERERealisEnum.actual.name())) {
+                  argumentRealis = ArgumentRealis.Actual;
                 } else {
                   throw new RuntimeException(
-                      "Unknown LinkRealis of type " + ereArgument.getRealis().get());
+                      "Unknown ERERealis of type " + ereArgument.getRealis().get());
                 }
               } else {
                 // if it's irrealis, override Actual with Other, Other is preserved. Generic is handled above.
-                argumentRealis = "Other";
+                argumentRealis = ArgumentRealis.Other;
               }
               /*
               {EventMentionRealis,ArgumentRealis}=event argument realis
@@ -459,7 +471,7 @@ public final class ScoreKBPAgainstERE {
                           mapper.eventSubtype(ereEventMentionSubtype).get()))
                       .eventArgumentType(mapper.eventRole(ereArgumentRole).get())
                       .corefID(containingEntity.get().getID())
-                      .realis(Symbol.from(argumentRealis)).build();
+                      .realis(Symbol.from(argumentRealis.name())).build();
 
               ret.add(arg);
               responseSet.add(arg);
@@ -470,7 +482,8 @@ public final class ScoreKBPAgainstERE {
                       .eventType(Symbol.from(mapper.eventType(ereEventMentionType).get() + "." +
                           mapper.eventSubtype(ereEventMentionSubtype).get()))
                       .eventArgumentType(mapper.eventRole(ereArgumentRole).get())
-                      .corefID(filler.filler().getID()).realis(Symbol.from(argumentRealis)).build();
+                      .corefID(filler.filler().getID()).realis(Symbol.from(argumentRealis.name()))
+                      .build();
 
               ret.add(arg);
               responseSet.add(arg);
