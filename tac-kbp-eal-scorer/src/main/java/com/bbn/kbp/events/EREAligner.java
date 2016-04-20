@@ -63,14 +63,14 @@ final class EREAligner {
 
     // collect all the candidate mentions
     final ImmutableSet.Builder<EREEntityMention> candidateMentionsB = ImmutableSet.builder();
-    final OffsetRange<CharOffset> offsets =
+    final OffsetRange<CharOffset> casOffsets =
         response.canonicalArgument().charOffsetSpan().asCharOffsetRange();
     boolean success = false;
     for (final EREEntity e : ereDoc.getEntities()) {
       for (final EREEntityMention em : e.getMentions()) {
         final ERESpan es = em.getExtent();
         final Optional<ERESpan> ereHead = em.getHead();
-        if (spanMatches(es, ereHead, CharOffsetSpan.of(offsets))) {
+        if (spanMatches(es, ereHead, CharOffsetSpan.of(casOffsets))) {
           candidateMentionsB.add(em);
           success = true;
         }
