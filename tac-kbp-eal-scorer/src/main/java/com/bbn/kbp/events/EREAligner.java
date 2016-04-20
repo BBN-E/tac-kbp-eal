@@ -30,7 +30,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
- * Aligns a TAC KBP {@link Response} to appropriate ERE types by offset matching. Offset matching
+ * Aligns a TAC KBP {@link Response} to ERE entities or fillers by offset matching. Offset matching
  * may be relaxed in two ways: <ul> <li>By fuzzier offset matching (e.g. allowing containment or
  * overlap)</li> <li>By finding the head of the KBP {@link Response} and aligning with the ERE head
  * (if any)</li> </ul>
@@ -65,9 +65,9 @@ final class EREAligner {
   }
 
 
-  Optional<EREArgument> argumentForResponse(final Response response) {
+  Optional<ScoringCorefID> argumentForResponse(final Response response) {
 
-    final ImmutableSet.Builder<EREArgument> ret = ImmutableSet.builder();
+    final ImmutableSet.Builder<ScoringCorefID> ret = ImmutableSet.builder();
 
     // first with CAS, then with BF
     final ImmutableList<Function<Response, CharOffsetSpan>> responseSpanFunctions =
@@ -77,7 +77,7 @@ final class EREAligner {
       final Function<Response, CharOffsetSpan> responseHeadExtractor =
           coreNLPHeadExtractorFromResultOrFallback(responseExtractor);
 
-      ImmutableSet<EREArgument> found;
+      ImmutableSet<ScoringCorefID> found;
       //    See if there is an exact offset match with matching role.
       {
         found = matcher.aligns(response,
@@ -92,7 +92,7 @@ final class EREAligner {
       //    See if there is a head match with matching role.
       {
         // both heads
-        final ImmutableSet.Builder<EREArgument> headMatchesB = ImmutableSet.builder();
+        final ImmutableSet.Builder<ScoringCorefID> headMatchesB = ImmutableSet.builder();
         headMatchesB.addAll(matcher.aligns(response, new ComposingRoleBasedChecker(
             new ExactSpanChecker(responseHeadExtractor, ereHeadExtractorFallingBackToExtent),
             mapping)));
@@ -103,7 +103,7 @@ final class EREAligner {
         headMatchesB.addAll(matcher.aligns(response, new ComposingRoleBasedChecker(
             new ExactSpanChecker(responseExtractor, ereHeadExtractorFallingBackToExtent),
             mapping)));
-        final ImmutableSet<EREArgument> headMatches = headMatchesB.build();
+        final ImmutableSet<ScoringCorefID> headMatches = headMatchesB.build();
         if (headMatches.size() > 0) {
           ret.addAll(headMatches);
           break;
@@ -121,7 +121,7 @@ final class EREAligner {
       //    See if there is a head match without matching role.
       {
         // both heads
-        final ImmutableSet.Builder<EREArgument> headMatchesB = ImmutableSet.builder();
+        final ImmutableSet.Builder<ScoringCorefID> headMatchesB = ImmutableSet.builder();
         headMatchesB.addAll(matcher.aligns(response,
             new ExactSpanChecker(responseHeadExtractor, ereHeadExtractorFallingBackToExtent)));
         // response head
@@ -130,7 +130,7 @@ final class EREAligner {
         // ere head
         headMatchesB.addAll(matcher.aligns(response,
             new ExactSpanChecker(responseExtractor, ereHeadExtractorFallingBackToExtent)));
-        final ImmutableSet<EREArgument> headMatches = headMatchesB.build();
+        final ImmutableSet<ScoringCorefID> headMatches = headMatchesB.build();
         if (headMatches.size() > 0) {
           ret.addAll(headMatches);
           break;
@@ -372,21 +372,19 @@ final class EREAligner {
 
   private class EREMatcher {
 
-    public ImmutableSet<EREArgument> aligns(final Response r,
+    public ImmutableSet<ScoringCorefID> aligns(final Response r,
         final MentionResponseChecker checker) {
-      final ImmutableSet.Builder<EREArgument> ret = ImmutableSet.builder();
+      final ImmutableSet.Builder<ScoringCorefID> ret = ImmutableSet.builder();
       for (final EREEvent e : ereDoc.getEvents()) {
         for (final EREEventMention em : e.getEventMentions()) {
           for (final EREArgument ea : em.getArguments()) {
             if (checker.aligns(r, ea)) {
-              ret.add(ea);
+              ret.add(ScoringUtils.extractScoringEntity(ea, ereDoc));
             }
           }
         }
       }
       return ret.build();
     }
-
   }
-
 }

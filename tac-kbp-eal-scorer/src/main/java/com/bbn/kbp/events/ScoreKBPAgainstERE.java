@@ -3,6 +3,7 @@ package com.bbn.kbp.events;
 import com.bbn.bue.common.Finishable;
 import com.bbn.bue.common.HasDocID;
 import com.bbn.bue.common.Inspector;
+import com.bbn.bue.common.IntIDSequence;
 import com.bbn.bue.common.evaluation.AggregateBinaryFScoresInspector;
 import com.bbn.bue.common.evaluation.BinaryErrorLogger;
 import com.bbn.bue.common.evaluation.BinaryFScoreBootstrapStrategy;
@@ -32,12 +33,8 @@ import com.bbn.nlp.corenlp.CoreNLPParseNode;
 import com.bbn.nlp.corenlp.CoreNLPXMLLoader;
 import com.bbn.nlp.corpora.ere.EREArgument;
 import com.bbn.nlp.corpora.ere.EREDocument;
-import com.bbn.nlp.corpora.ere.EREEntity;
-import com.bbn.nlp.corpora.ere.EREEntityArgument;
-import com.bbn.nlp.corpora.ere.EREEntityMention;
 import com.bbn.nlp.corpora.ere.EREEvent;
 import com.bbn.nlp.corpora.ere.EREEventMention;
-import com.bbn.nlp.corpora.ere.EREFillerArgument;
 import com.bbn.nlp.corpora.ere.ERELoader;
 import com.bbn.nlp.corpora.ere.LinkRealis;
 import com.bbn.nlp.events.HasEventType;
@@ -432,37 +429,16 @@ public final class ScoreKBPAgainstERE {
                 "/" + mapper.eventRole(ereArgumentRole).get();
             allGoldArgs.add(typeRoleKey);
 
-            if (ereArgument instanceof EREEntityArgument) {
-              final EREEntityMention entityMention =
-                  ((EREEntityArgument) ereArgument).entityMention();
-              final Optional<EREEntity> containingEntity = doc.getEntityContaining(entityMention);
-              checkState(containingEntity.isPresent(), "Corrupt ERE key input lacks "
-                  + "entity for entity mention %s", entityMention);
-              final DocLevelEventArg arg =
-                  DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
-                      .eventType(Symbol.from(mapper.eventType(ereEventMentionType).get() + "." +
-                          mapper.eventSubtype(ereEventMentionSubtype).get()))
-                      .eventArgumentType(mapper.eventRole(ereArgumentRole).get())
-                      .corefID(containingEntity.get().getID())
-                      .realis(Symbol.from(argumentRealis.name())).build();
+            final DocLevelEventArg arg =
+                DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
+                    .eventType(Symbol.from(mapper.eventType(ereEventMentionType).get() + "." +
+                        mapper.eventSubtype(ereEventMentionSubtype).get()))
+                    .eventArgumentType(mapper.eventRole(ereArgumentRole).get())
+                    .corefID(ScoringUtils.extractScoringEntity(ereArgument, doc).globalID())
+                    .realis(Symbol.from(argumentRealis.name())).build();
 
-              ret.add(arg);
-              responseSet.add(arg);
-            } else if (ereArgument instanceof EREFillerArgument) {
-              final EREFillerArgument filler = (EREFillerArgument) ereArgument;
-              final DocLevelEventArg arg =
-                  DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
-                      .eventType(Symbol.from(mapper.eventType(ereEventMentionType).get() + "." +
-                          mapper.eventSubtype(ereEventMentionSubtype).get()))
-                      .eventArgumentType(mapper.eventRole(ereArgumentRole).get())
-                      .corefID(filler.filler().getID()).realis(Symbol.from(argumentRealis.name()))
-                      .build();
-
-              ret.add(arg);
-              responseSet.add(arg);
-            } else {
-              throw new RuntimeException("Unknown ERE argument type " + ereArgument.getClass());
-            }
+            ret.add(arg);
+            responseSet.add(arg);
           }
         }
         linking.add(responseSet.build());
@@ -517,6 +493,9 @@ public final class ScoreKBPAgainstERE {
       implements Function<EREDocAndResponses, ResponsesAndLinking>,
       Finishable {
 
+    // each system item which fails to align to any reference item gets put in its own
+    // coreference class, numbered using this sequence
+    private IntIDSequence alignmentFailureIDs = IntIDSequence.startingFrom(0);
     private Multiset<String> mentionAlignmentFailures = HashMultiset.create();
     private Multiset<String> numResponses = HashMultiset.create();
     private final ImmutableMap<Symbol, File> ereMapping;
@@ -558,30 +537,21 @@ public final class ScoreKBPAgainstERE {
         numResponses.add(errKey(response));
         final Symbol realis = Symbol.from(response.realis().name());
 
-        final Optional<EREArgument> aligned = ereAligner.argumentForResponse(response);
-        if (aligned.isPresent()) {
-          final String id;
-          if (aligned.get() instanceof EREFillerArgument) {
-            id = ((EREFillerArgument) aligned.get()).filler().getID();
-          } else if (aligned.get() instanceof EREEntityArgument) {
-            final EREEntityMention m = ((EREEntityArgument) aligned.get()).entityMention();
-            id = input.ereDoc().getEntityContaining(m).get().getID();
-          } else {
-            throw new RuntimeException("Unknown argument type " + aligned.get().getClass());
-          }
-          final DocLevelEventArg res = DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
-              .eventType(response.type()).eventArgumentType(response.role())
-              .corefID(id).realis(realis).build();
-          ret.add(res);
-          responseToDocLevelArg.put(response, res);
+        final Optional<ScoringCorefID> alignedCorefIDOpt = ereAligner.argumentForResponse(response);
+        // this increments the alignment failure ID regardless of success or failure, but
+        // we don't care
+        final ScoringCorefID alignedCorefID = alignedCorefIDOpt.or(
+            ScoringCorefID.of(ScoringEntityType.AlignmentFailure,
+                Integer.toString(alignmentFailureIDs.nextID())));
 
-        } else {
-          final DocLevelEventArg fake =
-              DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
-                  .eventType(response.type()).eventArgumentType(response.role())
-                  .corefID("fake " + mentionAlignmentFailures.size()).realis(realis).build();
-          ret.add(fake);
-          responseToDocLevelArg.put(response, fake);
+        final DocLevelEventArg res = DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
+            .eventType(response.type()).eventArgumentType(response.role())
+            .corefID(alignedCorefID.globalID()).realis(realis).build();
+        ret.add(res);
+        responseToDocLevelArg.put(response, res);
+
+        // record alignment failures
+        if (!alignedCorefIDOpt.isPresent()) {
           mentionAlignmentFailures.add(errKey(response));
         }
       }
