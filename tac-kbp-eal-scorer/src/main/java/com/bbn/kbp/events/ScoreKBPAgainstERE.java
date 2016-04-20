@@ -406,35 +406,8 @@ public final class ScoreKBPAgainstERE {
             final Symbol ereEventMentionType = Symbol.from(ereEventMention.getType());
             final Symbol ereEventMentionSubtype = Symbol.from(ereEventMention.getSubtype());
             final Symbol ereArgumentRole = Symbol.from(ereArgument.getRole());
-            final String ERERealis = ereEventMention.getRealis();
-            final ArgumentRealis argumentRealis;
-            // generic event mention realis overrides everything
-            if (ERERealis.equals(ERERealisEnum.generic.name())) {
-              argumentRealis = ArgumentRealis.Generic;
-            } else {
-              // if the argument is realis
-              // must be present for event mention arguments
-              if (ereArgument.getRealis().get().equals(LinkRealis.REALIS)) {
-                if (ERERealis.equals(ERERealisEnum.other.name())) {
-                  argumentRealis = ArgumentRealis.Other;
-                } else if (ERERealis.equals(ERERealisEnum.actual.name())) {
-                  argumentRealis = ArgumentRealis.Actual;
-                } else {
-                  throw new RuntimeException(
-                      "Unknown ERERealis of type " + ereArgument.getRealis().get());
-                }
-              } else {
-                // if it's irrealis, override Actual with Other, Other is preserved. Generic is handled above.
-                argumentRealis = ArgumentRealis.Other;
-              }
-              /*
-              {EventMentionRealis,ArgumentRealis}=event argument realis
-              {Generic,*}=Generic
-              {X, True}=X
-              {Actual, False}=Other
-              {Other,False}=Other
-               */
-            }
+            final ArgumentRealis argumentRealis =
+                getRealis(ereEventMention.getRealis(), ereArgument.getRealis().get());
 
             boolean skip = false;
             if (!mapper.eventType(ereEventMentionType).isPresent()) {
@@ -495,6 +468,35 @@ public final class ScoreKBPAgainstERE {
         linking.add(responseSet.build());
       }
       return new EREResponsesAndLinking(ret.build(), linking.build());
+    }
+
+    /*
+    {EventMentionRealis,ArgumentRealis}=event argument realis
+    {Generic,*}=Generic
+    {X, True}=X
+    {Actual, False}=Other
+    {Other,False}=Other
+     */
+    private ArgumentRealis getRealis(final String ERERealis, final LinkRealis linkRealis) {
+      // generic event mention realis overrides everything
+      if (ERERealis.equals(ERERealisEnum.generic.name())) {
+        return ArgumentRealis.Generic;
+      } else {
+        // if the argument is realis
+        if (linkRealis.equals(LinkRealis.REALIS)) {
+          if (ERERealis.equals(ERERealisEnum.other.name())) {
+            return ArgumentRealis.Other;
+          } else if (ERERealis.equals(ERERealisEnum.actual.name())) {
+            return ArgumentRealis.Actual;
+          } else {
+            throw new RuntimeException(
+                "Unknown ERERealis of type " + linkRealis);
+          }
+        } else {
+          // if it's irrealis, override Actual with Other, Other is preserved. Generic is handled above.
+          return ArgumentRealis.Other;
+        }
+      }
     }
 
     @Override
