@@ -24,6 +24,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Range;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.annotation.Nullable;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -36,6 +39,8 @@ import static com.google.common.base.Preconditions.checkState;
  * (if any)</li> </ul>
  */
 final class EREAligner {
+
+  private static final Logger log = LoggerFactory.getLogger(EREAligner.class);
 
   private final boolean relaxUsingCORENLP;
   private final boolean useExactMatchForCoreNLPRelaxation;
@@ -66,9 +71,6 @@ final class EREAligner {
 
 
   Optional<ScoringCorefID> argumentForResponse(final Response response) {
-
-    final ImmutableSet.Builder<ScoringCorefID> ret = ImmutableSet.builder();
-
     // first with CAS, then with BF
     final ImmutableList<Function<Response, CharOffsetSpan>> responseSpanFunctions =
         ImmutableList.of(casExtractor, baseFillerExtractor);
@@ -77,88 +79,78 @@ final class EREAligner {
       final Function<Response, CharOffsetSpan> responseHeadExtractor =
           coreNLPHeadExtractorFromResultOrFallback(responseExtractor);
 
-      ImmutableSet<ScoringCorefID> found;
+      Optional<ScoringCorefID> found;
       //    See if there is an exact offset match with matching role.
-      {
-        found = matcher.aligns(response,
-            new ComposingRoleBasedChecker(
-                new ExactSpanChecker(responseExtractor, ereExtentExtractor),
-                mapping));
-        if (found.size() > 0) {
-          ret.addAll(found);
-          break;
-        }
+      found = matcher.aligns(response,
+          new ComposingRoleBasedChecker(
+              new ExactSpanChecker(responseExtractor, ereExtentExtractor),
+              mapping));
+      if (found.isPresent()) {
+        return found;
       }
       //    See if there is a head match with matching role.
-      {
-        // both heads
-        final ImmutableSet.Builder<ScoringCorefID> headMatchesB = ImmutableSet.builder();
-        headMatchesB.addAll(matcher.aligns(response, new ComposingRoleBasedChecker(
-            new ExactSpanChecker(responseHeadExtractor, ereHeadExtractorFallingBackToExtent),
-            mapping)));
-        // response head
-        headMatchesB.addAll(matcher.aligns(response, new ComposingRoleBasedChecker(
-            new ExactSpanChecker(responseHeadExtractor, ereExtentExtractor), mapping)));
-        // ere head
-        headMatchesB.addAll(matcher.aligns(response, new ComposingRoleBasedChecker(
-            new ExactSpanChecker(responseExtractor, ereHeadExtractorFallingBackToExtent),
-            mapping)));
-        final ImmutableSet<ScoringCorefID> headMatches = headMatchesB.build();
-        if (headMatches.size() > 0) {
-          ret.addAll(headMatches);
-          break;
-        }
+      // both heads
+      found = matcher.aligns(response, new ComposingRoleBasedChecker(
+          new ExactSpanChecker(responseHeadExtractor, ereHeadExtractorFallingBackToExtent),
+          mapping));
+      if (found.isPresent()) {
+        return found;
+      }
+      // response head
+      found = matcher.aligns(response, new ComposingRoleBasedChecker(
+          new ExactSpanChecker(responseHeadExtractor, ereExtentExtractor), mapping));
+      if (found.isPresent()) {
+        return found;
+      }
+      // ere head
+      found = matcher.aligns(response, new ComposingRoleBasedChecker(
+          new ExactSpanChecker(responseExtractor, ereHeadExtractorFallingBackToExtent),
+          mapping));
+      if (found.isPresent()) {
+        return found;
       }
       //    See if there is an exact match without matching role.
-      {
-        found =
-            matcher.aligns(response, new ExactSpanChecker(responseExtractor, ereExtentExtractor));
-        if (found.size() > 0) {
-          ret.addAll(found);
-          break;
-        }
+      found =
+          matcher.aligns(response, new ExactSpanChecker(responseExtractor, ereExtentExtractor));
+      if (found.isPresent()) {
+        return found;
       }
       //    See if there is a head match without matching role.
-      {
-        // both heads
-        final ImmutableSet.Builder<ScoringCorefID> headMatchesB = ImmutableSet.builder();
-        headMatchesB.addAll(matcher.aligns(response,
-            new ExactSpanChecker(responseHeadExtractor, ereHeadExtractorFallingBackToExtent)));
-        // response head
-        headMatchesB.addAll(matcher
-            .aligns(response, new ExactSpanChecker(responseHeadExtractor, ereExtentExtractor)));
-        // ere head
-        headMatchesB.addAll(matcher.aligns(response,
-            new ExactSpanChecker(responseExtractor, ereHeadExtractorFallingBackToExtent)));
-        final ImmutableSet<ScoringCorefID> headMatches = headMatchesB.build();
-        if (headMatches.size() > 0) {
-          ret.addAll(headMatches);
-          break;
-        }
+      // both heads
+      found = matcher.aligns(response,
+          new ExactSpanChecker(responseHeadExtractor, ereHeadExtractorFallingBackToExtent));
+      if (found.isPresent()) {
+        return found;
+      }
+      // response head
+      found =
+          matcher.aligns(response, new ExactSpanChecker(responseHeadExtractor, ereExtentExtractor));
+      if (found.isPresent()) {
+        return found;
+      }
+      // ere head
+      found = matcher.aligns(response,
+          new ExactSpanChecker(responseExtractor, ereHeadExtractorFallingBackToExtent));
+      if (found.isPresent()) {
+        return found;
       }
       //    See if there is a containment match with matching role.
-      {
-        found = matcher.aligns(response, new ComposingRoleBasedChecker(
-            new ContainmentSpanChecker(responseExtractor, responseHeadExtractor, ereExtentExtractor,
-                ereHeadExtractorFallingBackToExtent), mapping));
-        if (found.size() > 0) {
-          ret.addAll(found);
-          break;
-        }
+      found = matcher.aligns(response, new ComposingRoleBasedChecker(
+          new ContainmentSpanChecker(responseExtractor, responseHeadExtractor, ereExtentExtractor,
+              ereHeadExtractorFallingBackToExtent), mapping));
+      if (found.isPresent()) {
+        return found;
       }
       //    See if there is a containment match without matching role.
-      {
-        found = matcher.aligns(response,
-            new ContainmentSpanChecker(responseExtractor, responseHeadExtractor, ereExtentExtractor,
-                ereHeadExtractorFallingBackToExtent));
-        if (found.size() > 0) {
-          ret.addAll(found);
-          break;
-        }
+      found = matcher.aligns(response,
+          new ContainmentSpanChecker(responseExtractor, responseHeadExtractor, ereExtentExtractor,
+              ereHeadExtractorFallingBackToExtent));
+      if (found.isPresent()) {
+        return found;
       }
     }
 
-    return Optional.fromNullable(Iterables.getFirst(ret.build(), null));
+    return Optional.absent();
   }
 
   private Optional<Range<CharOffset>> getCoreNLPHead(final OffsetRange<CharOffset> offsets) {
@@ -372,19 +364,24 @@ final class EREAligner {
 
   private class EREMatcher {
 
-    public ImmutableSet<ScoringCorefID> aligns(final Response r,
+    public Optional<ScoringCorefID> aligns(final Response r,
         final MentionResponseChecker checker) {
-      final ImmutableSet.Builder<ScoringCorefID> ret = ImmutableSet.builder();
+      final ImmutableSet.Builder<ScoringCorefID> retB = ImmutableSet.builder();
       for (final EREEvent e : ereDoc.getEvents()) {
         for (final EREEventMention em : e.getEventMentions()) {
           for (final EREArgument ea : em.getArguments()) {
             if (checker.aligns(r, ea)) {
-              ret.add(ScoringUtils.extractScoringEntity(ea, ereDoc));
+              retB.add(ScoringUtils.extractScoringEntity(ea, ereDoc));
             }
           }
         }
       }
-      return ret.build();
+
+      final ImmutableSet<ScoringCorefID> ret = retB.build();
+      if (ret.size() > 1) {
+        log.warn("Multiple matches for response {}: {}", r, ret);
+      }
+      return Optional.fromNullable(Iterables.getFirst(ret, null));
     }
   }
 }
