@@ -197,6 +197,7 @@ public final class ScoreKBPAgainstERE {
           "Recipient", "Target", "Thing", "Time", "Victim");
   private static final ImmutableSet<Symbol> ALLOWED_ROLES_2016 =
       Sets.difference(ROLES_2016, BANNED_ROLES).immutableCopy();
+  private static final ImmutableSet<Symbol> linkableRealis = SymbolUtils.setFrom("Other", "Actual");
 
   private static final Predicate<Response> bannedRolesFilter = new Predicate<Response>() {
     @Override
@@ -261,9 +262,11 @@ public final class ScoreKBPAgainstERE {
   private static void linkingScoringSetup(
       final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
           inputAsResponsesAndLinking, final File outputDir) {
+    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredForRealis =
+        transformBoth(inputAsResponsesAndLinking, filterLinkingFor2016());
     final InspectorTreeNode<EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>>>
         linkingNode = transformRight(
-        transformLeft(inputAsResponsesAndLinking, ResponsesAndLinking.linkingFunction),
+        transformLeft(filteredForRealis, ResponsesAndLinking.linkingFunction),
         ResponsesAndLinking.linkingFunction);
 
     final InspectorTreeNode<EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>>>
@@ -280,10 +283,25 @@ public final class ScoreKBPAgainstERE {
       @Override
       public ResponsesAndLinking apply(@Nullable final ResponsesAndLinking responsesAndLinking) {
         checkNotNull(responsesAndLinking);
-
         final ImmutableSet<DocLevelEventArg> args = FluentIterable.from(responsesAndLinking.args())
             .filter(Predicates.compose(Predicates.in(ALLOWED_ROLES_2016),
                 DocLevelEventArgFunctions.eventArgumentType())).toSet();
+        final ImmutableSet<ImmutableSet<DocLevelEventArg>> linking =
+            filterNestedElements(Predicates.in(args)).apply(responsesAndLinking.linking());
+        return new EREResponsesAndLinking(args, linking);
+      }
+    };
+  }
+
+  private static Function<ResponsesAndLinking, ResponsesAndLinking> filterLinkingFor2016() {
+    return new Function<ResponsesAndLinking, ResponsesAndLinking>() {
+      @Nullable
+      @Override
+      public ResponsesAndLinking apply(@Nullable final ResponsesAndLinking responsesAndLinking) {
+        checkNotNull(responsesAndLinking);
+        final ImmutableSet<DocLevelEventArg> args = FluentIterable.from(responsesAndLinking.args())
+            .filter(Predicates.compose(Predicates.in(linkableRealis),
+                DocLevelEventArgFunctions.realis())).toSet();
         final ImmutableSet<ImmutableSet<DocLevelEventArg>> linking =
             filterNestedElements(Predicates.in(args)).apply(responsesAndLinking.linking());
         return new EREResponsesAndLinking(args, linking);
