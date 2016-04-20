@@ -46,19 +46,19 @@ final class EREAligner {
   private final boolean useExactMatchForCoreNLPRelaxation;
   private final EREDocument ereDoc;
   private final Optional<CoreNLPDocument> coreNLPDoc;
-  private final EREToKBPEventOntologyMapper mapping;
+  private final ImmutableList<MentionResponseChecker> responseMatchingStrategy;
 
   private EREAligner(final boolean relaxUsingCORENLP,
       final boolean useExactMatchForCoreNLPRelaxation,
       final EREDocument ereDoc, final Optional<CoreNLPDocument> coreNLPDocument,
-      final EREToKBPEventOntologyMapper mapping) {
+      ImmutableList<MentionResponseChecker> responseMatchingStrategy) {
     this.relaxUsingCORENLP = relaxUsingCORENLP;
     this.useExactMatchForCoreNLPRelaxation = useExactMatchForCoreNLPRelaxation;
     this.ereDoc = ereDoc;
     this.coreNLPDoc = coreNLPDocument;
-    this.mapping = mapping;
     checkState(!relaxUsingCORENLP || coreNLPDoc.isPresent(),
         "Either we have our CoreNLPDocument or we are not relaxing using it");
+    this.responseMatchingStrategy = responseMatchingStrategy;
   }
 
   static EREAligner create(final boolean relaxUsingCORENLP,
@@ -66,34 +66,37 @@ final class EREAligner {
       final EREDocument ereDoc, final Optional<CoreNLPDocument> coreNLPDocument,
       final EREToKBPEventOntologyMapper mapping) {
     return new EREAligner(relaxUsingCORENLP, useExactMatchForCoreNLPRelaxation, ereDoc,
-        coreNLPDocument, mapping);
+        coreNLPDocument, createResponseMatchingStrategy(coreNLPDocument, mapping));
   }
 
+  static final ImmutableList<Function<Response, CharOffsetSpan>> responseSpanFunctions =
+      ImmutableList.<Function<Response, CharOffsetSpan>>of(CasExtractor.INSTANCE,
+          BaseFillerExtractor.INSTANCE);
 
-  Optional<ScoringCorefID> argumentForResponse(final Response response) {
-    // first with CAS, then with BF
-    final ImmutableList<Function<Response, CharOffsetSpan>> responseSpanFunctions =
-        ImmutableList.of(casExtractor, baseFillerExtractor);
-    final EREMatcher matcher = new EREMatcher();
+  private static ImmutableList<MentionResponseChecker> createResponseMatchingStrategy(
+      Optional<CoreNLPDocument> coreNLPDoc, EREToKBPEventOntologyMapper mapping) {
+    final ImmutableList.Builder<MentionResponseChecker> ret = ImmutableList.builder();
     for (final Function<Response, CharOffsetSpan> responseExtractor : responseSpanFunctions) {
       final Function<Response, CharOffsetSpan> responseHeadExtractor =
-          coreNLPHeadExtractorFromResultOrFallback(responseExtractor);
+          coreNLPHeadExtractorFromResultOrFallback(coreNLPDoc, responseExtractor);
 
-      final ImmutableList<MentionResponseChecker> responseCheckers = ImmutableList.of(
-          new ComposingRoleBasedChecker(
-              new ExactSpanChecker(responseExtractor, ereExtentExtractor),
-              mapping),
+      final ExactSpanChecker responseMatchesEREExtentExactly =
+          new ExactSpanChecker(responseExtractor, ereExtentExtractor);
+      final ExactSpanChecker responseHeadMathesEREExtentExactly =
+          new ExactSpanChecker(responseHeadExtractor, ereExtentExtractor);
+
+      ret.addAll(ImmutableList.of(
+          new ComposingRoleBasedChecker(responseMatchesEREExtentExactly, mapping),
           new ComposingRoleBasedChecker(
               new ExactSpanChecker(responseHeadExtractor, ereHeadExtractorFallingBackToExtent),
               mapping),
-          new ComposingRoleBasedChecker(
-              new ExactSpanChecker(responseHeadExtractor, ereExtentExtractor), mapping),
+          new ComposingRoleBasedChecker(responseHeadMathesEREExtentExactly, mapping),
           new ComposingRoleBasedChecker(
               new ExactSpanChecker(responseExtractor, ereHeadExtractorFallingBackToExtent),
               mapping),
-          new ExactSpanChecker(responseExtractor, ereExtentExtractor),
+          responseMatchesEREExtentExactly,
           new ExactSpanChecker(responseHeadExtractor, ereHeadExtractorFallingBackToExtent),
-          new ExactSpanChecker(responseHeadExtractor, ereExtentExtractor),
+          responseHeadMathesEREExtentExactly,
           new ExactSpanChecker(responseExtractor, ereHeadExtractorFallingBackToExtent),
           new ComposingRoleBasedChecker(
               new ContainmentSpanChecker(responseExtractor, responseHeadExtractor,
@@ -101,15 +104,22 @@ final class EREAligner {
                   ereHeadExtractorFallingBackToExtent), mapping),
           new ContainmentSpanChecker(responseExtractor, responseHeadExtractor, ereExtentExtractor,
               ereHeadExtractorFallingBackToExtent)
-      );
+      ));
+    }
+    return ret.build();
+  }
 
-      for (final MentionResponseChecker responseChecker : responseCheckers) {
+
+  Optional<ScoringCorefID> argumentForResponse(final Response response) {
+    // first with CAS, then with BF
+
+    final EREMatcher matcher = new EREMatcher();
+    for (final MentionResponseChecker responseChecker : responseMatchingStrategy) {
         final Optional<ScoringCorefID> found = matcher.aligns(response, responseChecker);
         if (found.isPresent()) {
           return found;
         }
       }
-    }
 
     return Optional.absent();
   }
@@ -180,25 +190,28 @@ final class EREAligner {
         }
       };
 
-  private static final Function<Response, CharOffsetSpan> casExtractor =
-      new Function<Response, CharOffsetSpan>() {
-        @Nullable
-        @Override
-        public CharOffsetSpan apply(@Nullable final Response response) {
-          return checkNotNull(response).canonicalArgument().charOffsetSpan();
-        }
-      };
+  private enum CasExtractor implements Function<Response, CharOffsetSpan> {
+    INSTANCE;
 
-  private static final Function<Response, CharOffsetSpan> baseFillerExtractor =
-      new Function<Response, CharOffsetSpan>() {
-        @Nullable
-        @Override
-        public CharOffsetSpan apply(@Nullable final Response response) {
-          return checkNotNull(response).baseFiller();
-        }
-      };
+    @Override
+    public CharOffsetSpan apply(@Nullable final Response response) {
+      return checkNotNull(response).canonicalArgument().charOffsetSpan();
+    }
+  }
 
-  private Function<Response, CharOffsetSpan> coreNLPHeadExtractorFromResultOrFallback(
+  private enum BaseFillerExtractor implements Function<Response, CharOffsetSpan> {
+    INSTANCE;
+
+    @Override
+    public CharOffsetSpan
+
+    apply(@Nullable final Response response) {
+      return checkNotNull(response).baseFiller();
+    }
+  }
+
+  private static Function<Response, CharOffsetSpan> coreNLPHeadExtractorFromResultOrFallback(
+      final Optional<CoreNLPDocument> coreNLPDoc,
       final Function<Response, CharOffsetSpan> rangeFinder) {
     return new Function<Response, CharOffsetSpan>() {
       @Nullable
