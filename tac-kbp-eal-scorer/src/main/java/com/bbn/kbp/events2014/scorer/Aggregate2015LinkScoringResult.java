@@ -12,11 +12,11 @@ import static com.google.common.base.Preconditions.checkArgument;
 @JsonDeserialize(as = ImmutableAggregate2015LinkScoringResult.class)
 public abstract class Aggregate2015LinkScoringResult {
 
-  abstract double precision();
+  public abstract double precision();
 
-  abstract double recall();
+  public abstract double recall();
 
-  abstract double overall();
+  public abstract double overall();
 
   protected void check() {
     checkArgument(precision() >= 0.0);
