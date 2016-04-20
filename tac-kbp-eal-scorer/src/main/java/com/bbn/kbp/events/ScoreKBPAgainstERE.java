@@ -546,7 +546,8 @@ public final class ScoreKBPAgainstERE {
             .of(coreNLPXMLLoader.loadFrom(ereMapping.get(ereID)))
                                                                               : Optional.<CoreNLPDocument>absent();
         ereAligner = EREAligner
-            .create(relaxUsingCORENLP, useExactMatchForCoreNLPRelaxation, doc, coreNLPDoc);
+            .create(relaxUsingCORENLP, useExactMatchForCoreNLPRelaxation, doc, coreNLPDoc,
+                EREToKBPEventOntologyMapper.create2016Mapping());
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
