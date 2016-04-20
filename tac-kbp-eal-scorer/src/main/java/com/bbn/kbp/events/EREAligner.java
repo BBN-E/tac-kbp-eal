@@ -66,27 +66,25 @@ final class EREAligner {
     final OffsetRange<CharOffset> offsets =
         response.canonicalArgument().charOffsetSpan().asCharOffsetRange();
     boolean success = false;
-    if (relaxUsingCORENLP) {
+    for (final EREEntity e : ereDoc.getEntities()) {
+      for (final EREEntityMention em : e.getMentions()) {
+        final ERESpan es = em.getExtent();
+        final Optional<ERESpan> ereHead = em.getHead();
+        if (spanMatches(es, ereHead, CharOffsetSpan.of(offsets))) {
+          candidateMentionsB.add(em);
+          success = true;
+        }
+      }
+    }
+    // fall back to aligning on the basefiller
+    if (!success) {
       for (final EREEntity e : ereDoc.getEntities()) {
         for (final EREEntityMention em : e.getMentions()) {
           final ERESpan es = em.getExtent();
           final Optional<ERESpan> ereHead = em.getHead();
-          if (spanMatches(es, ereHead, CharOffsetSpan.of(offsets))) {
+          if (spanMatches(es, ereHead,
+              CharOffsetSpan.of(response.baseFiller().asCharOffsetRange()))) {
             candidateMentionsB.add(em);
-            success = true;
-          }
-        }
-      }
-      // fall back to aligning on the basefiller
-      if (!success) {
-        for (final EREEntity e : ereDoc.getEntities()) {
-          for (final EREEntityMention em : e.getMentions()) {
-            final ERESpan es = em.getExtent();
-            final Optional<ERESpan> ereHead = em.getHead();
-            if (spanMatches(es, ereHead,
-                CharOffsetSpan.of(response.baseFiller().asCharOffsetRange()))) {
-              candidateMentionsB.add(em);
-            }
           }
         }
       }
