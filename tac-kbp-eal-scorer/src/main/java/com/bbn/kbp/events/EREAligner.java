@@ -11,9 +11,7 @@ import com.bbn.nlp.corenlp.CoreNLPParseNode;
 import com.bbn.nlp.corenlp.CoreNLPSentence;
 import com.bbn.nlp.corpora.ere.EREArgument;
 import com.bbn.nlp.corpora.ere.EREDocument;
-import com.bbn.nlp.corpora.ere.EREEntity;
 import com.bbn.nlp.corpora.ere.EREEntityArgument;
-import com.bbn.nlp.corpora.ere.EREEntityMention;
 import com.bbn.nlp.corpora.ere.EREEvent;
 import com.bbn.nlp.corpora.ere.EREEventMention;
 import com.bbn.nlp.corpora.ere.EREFillerArgument;
@@ -66,44 +64,6 @@ final class EREAligner {
         coreNLPDocument, mapping);
   }
 
-
-  ImmutableSet<EREEntity> entitiesForResponse(final Response response) {
-    return getCandidateEntitiesFromMentions(ereDoc, mentionsForResponse(response));
-  }
-
-  ImmutableSet<EREEntityMention> mentionsForResponse(final Response response) {
-    // this search could be faster but is probably good enough
-    // collect all the candidate mentions
-    final ImmutableSet.Builder<EREEntityMention> candidateMentionsB = ImmutableSet.builder();
-    final OffsetRange<CharOffset> casOffsets =
-        response.canonicalArgument().charOffsetSpan().asCharOffsetRange();
-    boolean success = false;
-    for (final EREEntity e : ereDoc.getEntities()) {
-      for (final EREEntityMention em : e.getMentions()) {
-        final ERESpan es = em.getExtent();
-        final Optional<ERESpan> ereHead = em.getHead();
-        if (spanMatches(es, ereHead, CharOffsetSpan.of(casOffsets))) {
-          candidateMentionsB.add(em);
-          success = true;
-        }
-      }
-    }
-    // fall back to aligning on the basefiller
-    if (!success) {
-      for (final EREEntity e : ereDoc.getEntities()) {
-        for (final EREEntityMention em : e.getMentions()) {
-          final ERESpan es = em.getExtent();
-          final Optional<ERESpan> ereHead = em.getHead();
-          if (spanMatches(es, ereHead,
-              CharOffsetSpan.of(response.baseFiller().asCharOffsetRange()))) {
-            candidateMentionsB.add(em);
-          }
-        }
-      }
-    }
-
-    return candidateMentionsB.build();
-  }
 
   Optional<EREArgument> argumentForResponse(final Response response) {
 
@@ -182,23 +142,6 @@ final class EREAligner {
     return Optional.fromNullable(Iterables.getFirst(ret.build(), null));
   }
 
-  ImmutableSet<EREFillerArgument> fillersForResponse(final Response response) {
-    final ImmutableSet.Builder<EREFillerArgument> ret = ImmutableSet.builder();
-    for (final EREEvent e : ereDoc.getEvents()) {
-      for (final EREEventMention em : e.getEventMentions()) {
-        for (final EREArgument ea : em.getArguments()) {
-          if (ea instanceof EREFillerArgument) {
-            final ERESpan extent = ((EREFillerArgument) ea).filler().getExtent();
-            if (spanMatches(extent, Optional.<ERESpan>absent(), response.baseFiller())) {
-              ret.add((EREFillerArgument) ea);
-            }
-          }
-        }
-      }
-    }
-    return ret.build();
-  }
-
   private Optional<Range<CharOffset>> getCoreNLPHead(final OffsetRange<CharOffset> offsets) {
     if (!coreNLPDoc.isPresent()) {
       return Optional.absent();
@@ -218,62 +161,7 @@ final class EREAligner {
     }
     return Optional.absent();
   }
-
-  private static ImmutableSet<EREEntity> getCandidateEntitiesFromMentions(final EREDocument doc,
-      final ImmutableSet<EREEntityMention> candidateMentions) {
-    final ImmutableSet.Builder<EREEntity> ret = ImmutableSet.builder();
-    for (final EREEntityMention em : candidateMentions) {
-      final Optional<EREEntity> e = doc.getEntityContaining(em);
-      if (e.isPresent()) {
-        ret.add(e.get());
-      }
-    }
-    return ret.build();
-  }
-
-  private static Range<CharOffset> rangeFromERESpan(final ERESpan es) {
-    return CharOffsetSpan.fromOffsetsOnly(es.getStart(), es.getEnd()).asCharOffsetRange().asRange();
-  }
-
-  private boolean spanMatches(final ERESpan es, final Optional<ERESpan> ereHead,
-      final CharOffsetSpan cs) {
-    final Range<CharOffset> esRange = rangeFromERESpan(es);
-    final Optional<Range<CharOffset>> ereHeadRange = ereHead.isPresent() ? Optional
-        .of(rangeFromERESpan(ereHead.get())) : Optional.<Range<CharOffset>>absent();
-    final Range<CharOffset> csRange = cs.asCharOffsetRange().asRange();
-    if (esRange.equals(csRange) || (ereHeadRange.isPresent() && ereHeadRange.get()
-        .equals(csRange))) {
-      return true;
-    }
-    // we assume that the ERESpan encloses its head
-    if (!useExactMatchForCoreNLPRelaxation && (esRange.encloses(csRange))) {
-      return true;
-    }
-    if (relaxUsingCORENLP) {
-      final Optional<Range<CharOffset>> coreNLPHead = getCoreNLPHead(cs.asCharOffsetRange());
-      if (coreNLPHead.isPresent()) {
-        if (esRange.equals(coreNLPHead.get()) || (ereHeadRange.isPresent() && ereHeadRange.get()
-            .equals(coreNLPHead.get()))) {
-          return true;
-        }
-        if (!useExactMatchForCoreNLPRelaxation) {
-          // if one contains the other
-          // we use [closed, closed] offsets so no need to check for non-empty intersecting range
-          if (esRange.encloses(csRange) || csRange.encloses(esRange)) {
-            // if they both contain the head, for either notion of head
-            if ((esRange.encloses(coreNLPHead.get()) || (ereHeadRange.isPresent() && esRange
-                .encloses(ereHeadRange.get())))
-                && (csRange.encloses(coreNLPHead.get()) || (ereHeadRange.isPresent()) && csRange
-                .encloses(ereHeadRange.get()))) {
-              return true;
-            }
-          }
-        }
-      }
-    }
-    return false;
-  }
-
+  
   private static final Function<EREArgument, CharOffsetSpan> ereExtentExtractor =
       new Function<EREArgument, CharOffsetSpan>() {
         @Nullable

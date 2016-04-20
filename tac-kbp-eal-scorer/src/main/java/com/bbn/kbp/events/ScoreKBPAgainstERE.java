@@ -557,7 +557,7 @@ public final class ScoreKBPAgainstERE {
       for (final Response response : responses) {
         numResponses.add(errKey(response));
         final Symbol realis = Symbol.from(response.realis().name());
-        
+
         final Optional<EREArgument> aligned = ereAligner.argumentForResponse(response);
         if (aligned.isPresent()) {
           final String id;
