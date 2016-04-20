@@ -224,7 +224,7 @@ public final class ScoreKBPAgainstERE {
             responsesAndLinkingFromKBPExtractor);
     final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredInput =
         InspectorTreeDSL.transformBoth(
-            inputAsResponsesAndLinking, filterFor2016());
+            inputAsResponsesAndLinking, filterFor2016Roles());
 
     // set up for event argument scoring in 2015 style
     eventArgumentScoringSetup(filteredInput, outputDir);
@@ -264,7 +264,7 @@ public final class ScoreKBPAgainstERE {
       final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
           inputAsResponsesAndLinking, final File outputDir) {
     final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredForRealis =
-        transformBoth(inputAsResponsesAndLinking, filterLinkingFor2016());
+        transformBoth(inputAsResponsesAndLinking, filterLinkingForRealis());
     final InspectorTreeNode<EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>>>
         linkingNode = transformRight(
         transformLeft(filteredForRealis, ResponsesAndLinking.linkingFunction),
@@ -278,7 +278,7 @@ public final class ScoreKBPAgainstERE {
     inspect(filteredNode).with(linkingInspector);
   }
 
-  private static Function<ResponsesAndLinking, ResponsesAndLinking> filterFor2016() {
+  private static Function<ResponsesAndLinking, ResponsesAndLinking> filterFor2016Roles() {
     return new Function<ResponsesAndLinking, ResponsesAndLinking>() {
       @Nullable
       @Override
@@ -294,7 +294,7 @@ public final class ScoreKBPAgainstERE {
     };
   }
 
-  private static Function<ResponsesAndLinking, ResponsesAndLinking> filterLinkingFor2016() {
+  private static Function<ResponsesAndLinking, ResponsesAndLinking> filterLinkingForRealis() {
     return new Function<ResponsesAndLinking, ResponsesAndLinking>() {
       @Nullable
       @Override
