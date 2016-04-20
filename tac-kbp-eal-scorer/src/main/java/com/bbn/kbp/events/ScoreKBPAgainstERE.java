@@ -374,7 +374,7 @@ public final class ScoreKBPAgainstERE {
               // if the argument is realis
               // must be present for event mention arguments
               if (ereArgument.getRealis().get()) {
-                if(ERERealis.equals("other")) {
+                if (ERERealis.equals("other")) {
                   argumentRealis = "Other";
                 } else {
                   argumentRealis = "Actual";
@@ -650,6 +650,7 @@ final class EREResponsesAndLinking implements ResponsesAndLinking {
       final Iterable<ImmutableSet<DocLevelEventArg>> linking) {
     this.args = ImmutableSet.copyOf(args);
     this.linking = ImmutableSet.copyOf(linking);
+    checkArgument(this.args.containsAll(ImmutableSet.copyOf(Iterables.concat(this.linking))));
   }
 
   @Override
