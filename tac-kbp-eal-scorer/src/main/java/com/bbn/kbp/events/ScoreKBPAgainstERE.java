@@ -39,6 +39,7 @@ import com.bbn.nlp.corpora.ere.EREEvent;
 import com.bbn.nlp.corpora.ere.EREEventMention;
 import com.bbn.nlp.corpora.ere.EREFillerArgument;
 import com.bbn.nlp.corpora.ere.ERELoader;
+import com.bbn.nlp.corpora.ere.LinkRealis;
 import com.bbn.nlp.events.HasEventType;
 import com.bbn.nlp.parsing.HeadFinders;
 
@@ -401,11 +402,14 @@ public final class ScoreKBPAgainstERE {
             } else {
               // if the argument is realis
               // must be present for event mention arguments
-              if (ereArgument.getRealis().get()) {
+              if (ereArgument.getRealis().get().equals(LinkRealis.REALIS)) {
                 if (ERERealis.equals("other")) {
                   argumentRealis = "Other";
-                } else {
+                } else if (ereArgument.getRealis().get().equals(LinkRealis.IRREALIS)) {
                   argumentRealis = "Actual";
+                } else {
+                  throw new RuntimeException(
+                      "Unknown LinkRealis of type " + ereArgument.getRealis().get());
                 }
               } else {
                 // if it's irrealis, override Actual with Other, Other is preserved. Generic is handled above.
