@@ -557,51 +557,33 @@ public final class ScoreKBPAgainstERE {
       for (final Response response : responses) {
         numResponses.add(errKey(response));
         final Symbol realis = Symbol.from(response.realis().name());
-
-        // there are too few instances of these to bother matching on type currently
-        final ImmutableSet<EREEntity> candidateEntities = ereAligner.entitiesForResponse(response);
-        if (candidateEntities.size() > 1) {
-          log.warn(
-              "Found {} candidate entities for base filler {}, using the first one!",
-              candidateEntities.size(), response.baseFiller());
-        }
-
-        final EREEntity matchingEntity = Iterables.getFirst(candidateEntities, null);
-        if (matchingEntity != null) {
+        
+        final Optional<EREArgument> aligned = ereAligner.argumentForResponse(response);
+        if (aligned.isPresent()) {
+          final String id;
+          if (aligned.get() instanceof EREFillerArgument) {
+            id = ((EREFillerArgument) aligned.get()).filler().getID();
+          } else if (aligned.get() instanceof EREEntityArgument) {
+            final EREEntityMention m = ((EREEntityArgument) aligned.get()).entityMention();
+            id = input.ereDoc().getEntityContaining(m).get().getID();
+          } else {
+            throw new RuntimeException("Unknown argument type " + aligned.get().getClass());
+          }
           final DocLevelEventArg res = DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
               .eventType(response.type()).eventArgumentType(response.role())
-              .corefID(matchingEntity.getID()).realis(realis).build();
+              .corefID(id).realis(realis).build();
           ret.add(res);
           responseToDocLevelArg.put(response, res);
+
         } else {
-          final ImmutableSet<EREFillerArgument> fillers = ereAligner.fillersForResponse(response);
-          final EREFillerArgument filler = Iterables.getFirst(fillers, null);
-          // there are too few instances of these to bother matching on type currently
-          if (fillers.size() > 1) {
-            log.warn("Found multiple {} matching fillers for {}", fillers.size(),
-                response.baseFiller());
-          }
-          if (filler != null) {
-            final DocLevelEventArg res =
-                DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
-                    .eventType(response.type()).eventArgumentType(response.role())
-                    .corefID(filler.filler().getID()).realis(realis).build();
-            ret.add(res);
-            responseToDocLevelArg.put(response, res);
-          } else {
-            // add the response with a fake alignment so we properly penalize answers that don't align
-            final DocLevelEventArg fake =
-                DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
-                    .eventType(response.type()).eventArgumentType(response.role())
-                    .corefID("fake " + mentionAlignmentFailures.size()).realis(realis).build();
-            ret.add(fake);
-            responseToDocLevelArg.put(response, fake);
-            mentionAlignmentFailures.add(errKey(response));
-            log.warn("Neither entity nor filler match found for {}", response.toString());
-          }
+          final DocLevelEventArg fake =
+              DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
+                  .eventType(response.type()).eventArgumentType(response.role())
+                  .corefID("fake " + mentionAlignmentFailures.size()).realis(realis).build();
+          ret.add(fake);
+          responseToDocLevelArg.put(response, fake);
+          mentionAlignmentFailures.add(errKey(response));
         }
-
-
       }
       return new KBPResponsesAndLinking(ImmutableSet.copyOf(input.responses()),
           responseToDocLevelArg.build(), input.linking());
