@@ -79,74 +79,35 @@ final class EREAligner {
       final Function<Response, CharOffsetSpan> responseHeadExtractor =
           coreNLPHeadExtractorFromResultOrFallback(responseExtractor);
 
-      Optional<ScoringCorefID> found;
-      //    See if there is an exact offset match with matching role.
-      found = matcher.aligns(response,
+      final ImmutableList<MentionResponseChecker> responseCheckers = ImmutableList.of(
           new ComposingRoleBasedChecker(
               new ExactSpanChecker(responseExtractor, ereExtentExtractor),
-              mapping));
-      if (found.isPresent()) {
-        return found;
-      }
-      //    See if there is a head match with matching role.
-      // both heads
-      found = matcher.aligns(response, new ComposingRoleBasedChecker(
+              mapping),
+          new ComposingRoleBasedChecker(
+              new ExactSpanChecker(responseHeadExtractor, ereHeadExtractorFallingBackToExtent),
+              mapping),
+          new ComposingRoleBasedChecker(
+              new ExactSpanChecker(responseHeadExtractor, ereExtentExtractor), mapping),
+          new ComposingRoleBasedChecker(
+              new ExactSpanChecker(responseExtractor, ereHeadExtractorFallingBackToExtent),
+              mapping),
+          new ExactSpanChecker(responseExtractor, ereExtentExtractor),
           new ExactSpanChecker(responseHeadExtractor, ereHeadExtractorFallingBackToExtent),
-          mapping));
-      if (found.isPresent()) {
-        return found;
-      }
-      // response head
-      found = matcher.aligns(response, new ComposingRoleBasedChecker(
-          new ExactSpanChecker(responseHeadExtractor, ereExtentExtractor), mapping));
-      if (found.isPresent()) {
-        return found;
-      }
-      // ere head
-      found = matcher.aligns(response, new ComposingRoleBasedChecker(
+          new ExactSpanChecker(responseHeadExtractor, ereExtentExtractor),
           new ExactSpanChecker(responseExtractor, ereHeadExtractorFallingBackToExtent),
-          mapping));
-      if (found.isPresent()) {
-        return found;
-      }
-      //    See if there is an exact match without matching role.
-      found =
-          matcher.aligns(response, new ExactSpanChecker(responseExtractor, ereExtentExtractor));
-      if (found.isPresent()) {
-        return found;
-      }
-      //    See if there is a head match without matching role.
-      // both heads
-      found = matcher.aligns(response,
-          new ExactSpanChecker(responseHeadExtractor, ereHeadExtractorFallingBackToExtent));
-      if (found.isPresent()) {
-        return found;
-      }
-      // response head
-      found =
-          matcher.aligns(response, new ExactSpanChecker(responseHeadExtractor, ereExtentExtractor));
-      if (found.isPresent()) {
-        return found;
-      }
-      // ere head
-      found = matcher.aligns(response,
-          new ExactSpanChecker(responseExtractor, ereHeadExtractorFallingBackToExtent));
-      if (found.isPresent()) {
-        return found;
-      }
-      //    See if there is a containment match with matching role.
-      found = matcher.aligns(response, new ComposingRoleBasedChecker(
+          new ComposingRoleBasedChecker(
+              new ContainmentSpanChecker(responseExtractor, responseHeadExtractor,
+                  ereExtentExtractor,
+                  ereHeadExtractorFallingBackToExtent), mapping),
           new ContainmentSpanChecker(responseExtractor, responseHeadExtractor, ereExtentExtractor,
-              ereHeadExtractorFallingBackToExtent), mapping));
-      if (found.isPresent()) {
-        return found;
-      }
-      //    See if there is a containment match without matching role.
-      found = matcher.aligns(response,
-          new ContainmentSpanChecker(responseExtractor, responseHeadExtractor, ereExtentExtractor,
-              ereHeadExtractorFallingBackToExtent));
-      if (found.isPresent()) {
-        return found;
+              ereHeadExtractorFallingBackToExtent)
+      );
+
+      for (final MentionResponseChecker responseChecker : responseCheckers) {
+        final Optional<ScoringCorefID> found = matcher.aligns(response, responseChecker);
+        if (found.isPresent()) {
+          return found;
+        }
       }
     }
 
