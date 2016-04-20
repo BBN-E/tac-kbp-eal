@@ -101,7 +101,8 @@ final class EREAligner {
             new ExactSpanChecker(responseHeadExtractor, ereExtentExtractor), mapping)));
         // ere head
         headMatchesB.addAll(matcher.aligns(response, new ComposingRoleBasedChecker(
-            new ExactSpanChecker(responseExtractor, ereHeadExtractorFallingBackToExtent), mapping)));
+            new ExactSpanChecker(responseExtractor, ereHeadExtractorFallingBackToExtent),
+            mapping)));
         final ImmutableSet<EREArgument> headMatches = headMatchesB.build();
         if (headMatches.size() > 0) {
           ret.addAll(headMatches);
@@ -136,7 +137,25 @@ final class EREAligner {
         }
       }
       //    See if there is a containment match with matching role.
+      {
+        found = matcher.aligns(response, new ComposingRoleBasedChecker(
+            new ContainmentSpanChecker(responseExtractor, responseHeadExtractor, ereExtentExtractor,
+                ereHeadExtractorFallingBackToExtent), mapping));
+        if (found.size() > 0) {
+          ret.addAll(found);
+          break;
+        }
+      }
       //    See if there is a containment match without matching role.
+      {
+        found = matcher.aligns(response,
+            new ContainmentSpanChecker(responseExtractor, responseHeadExtractor, ereExtentExtractor,
+                ereHeadExtractorFallingBackToExtent));
+        if (found.size() > 0) {
+          ret.addAll(found);
+          break;
+        }
+      }
     }
 
     return Optional.fromNullable(Iterables.getFirst(ret.build(), null));
@@ -161,7 +180,7 @@ final class EREAligner {
     }
     return Optional.absent();
   }
-  
+
   private static final Function<EREArgument, CharOffsetSpan> ereExtentExtractor =
       new Function<EREArgument, CharOffsetSpan>() {
         @Nullable
@@ -321,7 +340,7 @@ final class EREAligner {
       if (responseOffsets.encloses(ereOffsets) || ereOffsets.encloses(responseOffsets)) {
         return
             (responseOffsets.encloses(responseHead) && responseOffsets.encloses(ereHead))
-            || (ereOffsets.encloses(responseHead) && ereOffsets.encloses(ereHead));
+                || (ereOffsets.encloses(responseHead) && ereOffsets.encloses(ereHead));
       }
       return false;
     }
