@@ -40,7 +40,6 @@ import com.bbn.nlp.corpora.ere.EREEventMention;
 import com.bbn.nlp.corpora.ere.EREFillerArgument;
 import com.bbn.nlp.corpora.ere.ERELoader;
 import com.bbn.nlp.events.HasEventType;
-import com.bbn.nlp.events.scoring.DocLevelEventArg;
 import com.bbn.nlp.parsing.HeadFinders;
 
 import com.google.common.base.Charsets;
@@ -54,6 +53,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
+import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.google.common.reflect.TypeToken;
 
@@ -376,19 +376,24 @@ public final class ScoreKBPAgainstERE {
               final Optional<EREEntity> containingEntity = doc.getEntityContaining(entityMention);
               checkState(containingEntity.isPresent(), "Corrupt ERE key input lacks "
                   + "entity for entity mention %s", entityMention);
-              final DocLevelEventArg arg = DocLevelEventArg.create(Symbol.from(doc.getDocId()),
-                  Symbol.from(mapper.eventType(ereEventMentionType).get() + "." +
-                      mapper.eventSubtype(ereEventMentionSubtype).get()),
-                  mapper.eventRole(ereArgumentRole).get(),
-                  containingEntity.get().getID());
+              final DocLevelEventArg arg =
+                  DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
+                      .eventType(Symbol.from(mapper.eventType(ereEventMentionType).get() + "." +
+                          mapper.eventSubtype(ereEventMentionSubtype).get()))
+                      .eventArgumentType(mapper.eventRole(ereArgumentRole).get())
+                      .corefID(containingEntity.get().getID()).build();
+
               ret.add(arg);
               responseSet.add(arg);
             } else if (ereArgument instanceof EREFillerArgument) {
               final EREFillerArgument filler = (EREFillerArgument) ereArgument;
-              final DocLevelEventArg arg = DocLevelEventArg.create(Symbol.from(doc.getDocId()),
-                  Symbol.from(mapper.eventType(ereEventMentionType).get() + "." +
-                      mapper.eventSubtype(ereEventMentionSubtype).get()),
-                  mapper.eventRole(ereArgumentRole).get(), filler.filler().getID());
+              final DocLevelEventArg arg =
+                  DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
+                      .eventType(Symbol.from(mapper.eventType(ereEventMentionType).get() + "." +
+                          mapper.eventSubtype(ereEventMentionSubtype).get()))
+                      .eventArgumentType(mapper.eventRole(ereArgumentRole).get())
+                      .corefID(filler.filler().getID()).build();
+
               ret.add(arg);
               responseSet.add(arg);
             } else {
@@ -468,9 +473,9 @@ public final class ScoreKBPAgainstERE {
 
         final EREEntity matchingEntity = Iterables.getFirst(candidateEntities, null);
         if (matchingEntity != null) {
-          final DocLevelEventArg res =
-              DocLevelEventArg.create(Symbol.from(doc.getDocId()), response.type(),
-                  response.role(), matchingEntity.getID());
+          final DocLevelEventArg res = DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
+              .eventType(response.type()).eventArgumentType(response.role())
+              .corefID(matchingEntity.getID()).build();
           ret.add(res);
           responseToDocLevelArg.put(response, res);
         } else {
@@ -482,16 +487,18 @@ public final class ScoreKBPAgainstERE {
                 response.baseFiller());
           }
           if (filler != null) {
-            final DocLevelEventArg res = DocLevelEventArg
-                .create(Symbol.from(doc.getDocId()), response.type(), response.role(),
-                    filler.filler().getID());
+            final DocLevelEventArg res =
+                DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
+                    .eventType(response.type()).eventArgumentType(response.role())
+                    .corefID(filler.filler().getID()).build();
             ret.add(res);
             responseToDocLevelArg.put(response, res);
           } else {
             // add the response with a fake alignment so we properly penalize answers that don't align
-            final DocLevelEventArg fake = DocLevelEventArg
-                .create(Symbol.from(doc.getDocId()), response.type(), response.role(),
-                    "fake " + mentionAlignmentFailures.size());
+            final DocLevelEventArg fake =
+                DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
+                    .eventType(response.type()).eventArgumentType(response.role())
+                    .corefID("fake " + mentionAlignmentFailures.size()).build();
             ret.add(fake);
             responseToDocLevelArg.put(response, fake);
             mentionAlignmentFailures.add(errKey(response));
