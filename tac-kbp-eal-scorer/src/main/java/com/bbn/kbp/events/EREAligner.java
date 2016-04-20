@@ -234,7 +234,7 @@ final class EREAligner {
     boolean aligns(Response r, EREArgument ea);
   }
 
-  private abstract class SpanChecker implements MentionResponseChecker {
+  private static abstract class SpanChecker implements MentionResponseChecker {
 
     protected final Function<Response, CharOffsetSpan> responseSpanExtractor;
     protected final Function<EREArgument, CharOffsetSpan> ereArgSpanExtractor;
@@ -246,7 +246,7 @@ final class EREAligner {
     }
   }
 
-  private class ExactSpanChecker extends SpanChecker {
+  private static class ExactSpanChecker extends SpanChecker {
 
     protected ExactSpanChecker(
         final Function<Response, CharOffsetSpan> responseSpanExtractor,
@@ -260,7 +260,7 @@ final class EREAligner {
     }
   }
 
-  private final class ContainmentSpanChecker implements MentionResponseChecker {
+  private static final class ContainmentSpanChecker implements MentionResponseChecker {
 
     protected final Function<Response, CharOffsetSpan> responseSpanExtractor;
     protected final Function<Response, CharOffsetSpan> responseHeadExtractor;
@@ -299,7 +299,7 @@ final class EREAligner {
     }
   }
 
-  private class ComposingRoleBasedChecker implements MentionResponseChecker {
+  private static class ComposingRoleBasedChecker implements MentionResponseChecker {
 
     private final MentionResponseChecker checker;
     private final EREToKBPEventOntologyMapper ontologyMapper;
