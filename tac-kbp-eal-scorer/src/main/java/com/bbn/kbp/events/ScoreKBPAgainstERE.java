@@ -190,10 +190,17 @@ public final class ScoreKBPAgainstERE {
   private static final ImmutableSet<Symbol> BANNED_ROLES =
       SymbolUtils.setFrom("Time", "Crime", "Position",
           "Fine", "Sentence");
+  private static final ImmutableSet<Symbol> ROLES_2016 = SymbolUtils
+      .setFrom("Agent", "Artifact", "Attacker", "Audience", "Beneficiary", "Crime", "Destination",
+          "Entity", "Giver", "Instrument", "Money", "Origin", "Person", "Place", "Position",
+          "Recipient", "Target", "Thing", "Time", "Victim");
+  private static final ImmutableSet<Symbol> ALLOWED_ROLES_2016 =
+      Sets.difference(ROLES_2016, BANNED_ROLES).immutableCopy();
+
   private static final Predicate<Response> bannedRolesFilter = new Predicate<Response>() {
     @Override
     public boolean apply(@Nullable final Response response) {
-      return !BANNED_ROLES.contains(response.role());
+      return ALLOWED_ROLES_2016.contains(response.role());
     }
   };
 
@@ -212,6 +219,7 @@ public final class ScoreKBPAgainstERE {
         inputAsResponsesAndLinking =
         transformRight(transformLeft(input, responsesAndLinkingFromEREExtractor),
             responsesAndLinkingFromKBPExtractor);
+//    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredInput = transformBoth(input, filterFor2016());
     // set up for event argument scoring in 2015 style
     eventArgumentScoringSetup(inputAsResponsesAndLinking, outputDir);
     // set up for linking scoring in 2015 style
@@ -260,6 +268,17 @@ public final class ScoreKBPAgainstERE {
     final LinkingInspector linkingInspector =
         LinkingInspector.createOutputtingTo(new File(outputDir, "linkingF.txt"));
     inspect(filteredNode).with(linkingInspector);
+  }
+
+  private static Function<ResponsesAndLinking, ResponsesAndLinking> filterFor2016() {
+    return new Function<ResponsesAndLinking, ResponsesAndLinking>() {
+      @Nullable
+      @Override
+      public ResponsesAndLinking apply(@Nullable final ResponsesAndLinking responsesAndLinking) {
+//        FluentIterable.from(responsesAndLinking.args()).filter(Predicates.compose(Predicates.in(ALLOWED_ROLES_2016, )))
+        return null;
+      }
+    };
   }
 
   private static <T> Function<Iterable<? extends Set<T>>, ImmutableSet<ImmutableSet<T>>> filterNestedElements(
@@ -346,6 +365,32 @@ public final class ScoreKBPAgainstERE {
             final Symbol ereEventMentionType = Symbol.from(ereEventMention.getType());
             final Symbol ereEventMentionSubtype = Symbol.from(ereEventMention.getSubtype());
             final Symbol ereArgumentRole = Symbol.from(ereArgument.getRole());
+            final String ERERealis = ereEventMention.getRealis();
+            final String argumentRealis;
+            // generic event mention realis overrides everything
+            if (ERERealis.equals("generic")) {
+              argumentRealis = "Generic";
+            } else {
+              // if the argument is realis
+              // must be present for event mention arguments
+              if (ereArgument.getRealis().get()) {
+                if(ERERealis.equals("other")) {
+                  argumentRealis = "Other";
+                } else {
+                  argumentRealis = "Actual";
+                }
+              } else {
+                // if it's irrealis, override Actual with Other, Other is preserved. Generic is handled above.
+                argumentRealis = "Other";
+              }
+              /*
+              {EventMentionRealis,ArgumentRealis}=event argument realis
+              {Generic,*}=Generic
+              {X, True}=X
+              {Actual, False}=Other
+              {Other,False}=Other
+               */
+            }
 
             boolean skip = false;
             if (!mapper.eventType(ereEventMentionType).isPresent()) {
@@ -381,7 +426,8 @@ public final class ScoreKBPAgainstERE {
                       .eventType(Symbol.from(mapper.eventType(ereEventMentionType).get() + "." +
                           mapper.eventSubtype(ereEventMentionSubtype).get()))
                       .eventArgumentType(mapper.eventRole(ereArgumentRole).get())
-                      .corefID(containingEntity.get().getID()).build();
+                      .corefID(containingEntity.get().getID())
+                      .realis(Symbol.from(argumentRealis)).build();
 
               ret.add(arg);
               responseSet.add(arg);
@@ -392,7 +438,7 @@ public final class ScoreKBPAgainstERE {
                       .eventType(Symbol.from(mapper.eventType(ereEventMentionType).get() + "." +
                           mapper.eventSubtype(ereEventMentionSubtype).get()))
                       .eventArgumentType(mapper.eventRole(ereArgumentRole).get())
-                      .corefID(filler.filler().getID()).build();
+                      .corefID(filler.filler().getID()).realis(Symbol.from(argumentRealis)).build();
 
               ret.add(arg);
               responseSet.add(arg);
@@ -462,6 +508,7 @@ public final class ScoreKBPAgainstERE {
 
       for (final Response response : responses) {
         numResponses.add(errKey(response));
+        final Symbol realis = Symbol.from(response.realis().name());
 
         // there are too few instances of these to bother matching on type currently
         final ImmutableSet<EREEntity> candidateEntities = ereAligner.entitiesForResponse(response);
@@ -475,7 +522,7 @@ public final class ScoreKBPAgainstERE {
         if (matchingEntity != null) {
           final DocLevelEventArg res = DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
               .eventType(response.type()).eventArgumentType(response.role())
-              .corefID(matchingEntity.getID()).build();
+              .corefID(matchingEntity.getID()).realis(realis).build();
           ret.add(res);
           responseToDocLevelArg.put(response, res);
         } else {
@@ -490,7 +537,7 @@ public final class ScoreKBPAgainstERE {
             final DocLevelEventArg res =
                 DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
                     .eventType(response.type()).eventArgumentType(response.role())
-                    .corefID(filler.filler().getID()).build();
+                    .corefID(filler.filler().getID()).realis(realis).build();
             ret.add(res);
             responseToDocLevelArg.put(response, res);
           } else {
@@ -498,7 +545,7 @@ public final class ScoreKBPAgainstERE {
             final DocLevelEventArg fake =
                 DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
                     .eventType(response.type()).eventArgumentType(response.role())
-                    .corefID("fake " + mentionAlignmentFailures.size()).build();
+                    .corefID("fake " + mentionAlignmentFailures.size()).realis(realis).build();
             ret.add(fake);
             responseToDocLevelArg.put(response, fake);
             mentionAlignmentFailures.add(errKey(response));
