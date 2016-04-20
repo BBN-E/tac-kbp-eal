@@ -48,6 +48,7 @@ import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -219,11 +220,14 @@ public final class ScoreKBPAgainstERE {
         inputAsResponsesAndLinking =
         transformRight(transformLeft(input, responsesAndLinkingFromEREExtractor),
             responsesAndLinkingFromKBPExtractor);
-//    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredInput = transformBoth(input, filterFor2016());
+    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredInput =
+        InspectorTreeDSL.transformBoth(
+            inputAsResponsesAndLinking, filterFor2016());
+
     // set up for event argument scoring in 2015 style
-    eventArgumentScoringSetup(inputAsResponsesAndLinking, outputDir);
+    eventArgumentScoringSetup(filteredInput, outputDir);
     // set up for linking scoring in 2015 style
-    linkingScoringSetup(inputAsResponsesAndLinking, outputDir);
+    linkingScoringSetup(filteredInput, outputDir);
   }
 
   private static void eventArgumentScoringSetup(
@@ -275,8 +279,14 @@ public final class ScoreKBPAgainstERE {
       @Nullable
       @Override
       public ResponsesAndLinking apply(@Nullable final ResponsesAndLinking responsesAndLinking) {
-//        FluentIterable.from(responsesAndLinking.args()).filter(Predicates.compose(Predicates.in(ALLOWED_ROLES_2016, )))
-        return null;
+        checkNotNull(responsesAndLinking);
+
+        final ImmutableSet<DocLevelEventArg> args = FluentIterable.from(responsesAndLinking.args())
+            .filter(Predicates.compose(Predicates.in(ALLOWED_ROLES_2016),
+                DocLevelEventArgFunctions.eventArgumentType())).toSet();
+        final ImmutableSet<ImmutableSet<DocLevelEventArg>> linking =
+            filterNestedElements(Predicates.in(args)).apply(responsesAndLinking.linking());
+        return new EREResponsesAndLinking(args, linking);
       }
     };
   }
