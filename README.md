@@ -64,10 +64,11 @@ referred to by its document ID and event frame ID together, yielding a `DocEvent
 
  The program `ScoreKBPAgainstERE` can take a `SystemOutputStore2016` and documents in the LDC's ERE
  format and produce a document-level scores.  `ScoreKBPAgainstERE` offers several methods for aligning
- an `EREEnitytMention` to a system `Response`:
- * By exact match for base filler offsets to `EREEntityMention` or the `EREEntityMention` head
- * By exact match for `EREEntityMention` head and the head of the base filler offsets (see [Using CoreNLP](# using-corenlp) for details) 
- * By containment match for `EREEntityMention` head and the head of the base filler offsets (see [Using CoreNLP](# using-corenlp) for details)
+ an `EREEntitytMention` or `EREFiller` to a system `Response` (referred to as `Argument`s, rules in decreasing priority):
+ * By exact match for CAS (Canonical Argument String) offsets to `Argument` or the `Argument` head
+ * By exact match for `Argument` head and the head of the CAS offsets (see [Using CoreNLP](# using-corenlp) for details)
+ * By either the CAS containing the `Argument` or visa versa, and heads being included in both of them. (see [Using CoreNLP](# using-corenlp) for details)
+ * The above rules with fallback to matching base filler offsets instead of CAS.
 
  In the code you will occasionally see references to scoring document-level event arguments by
  assessment. This was done in 2014 and 2015 and the code has been kept for backwards compatibility.
@@ -77,8 +78,8 @@ referred to by its document ID and event frame ID together, yielding a `DocEvent
 The `ScoreKBPAgainstERE` program provides several options for scoring more relaxed than exact match. 
 Among those options is using `CoreNLP` version 3.6.0 to parse and Collins-Style head rules to find 
 the head node corresponding to the base filler. This "discovered head" and its offsets are then:
-* used for exact match to find an `EREEntityMention` head
-* used to find an `EREEntityMention` head that contains the discovered head.
+* used for exact match to find an `Argument` head
+* used to find an `Argument` that contains the discovered head.
 
 See `EnglishAndChineseHeadRules` under BBN's common core code open source releases for English and 
 Chinese citations.
