@@ -71,17 +71,25 @@ final class EREAligner {
         coreNLPDocument, createResponseMatchingStrategy(coreNLPDocument, mapping));
   }
 
-  static final ImmutableList<Function<Response, CharOffsetSpan>> responseSpanFunctions =
+  private static final ImmutableList<Function<Response, CharOffsetSpan>> responseSpanFunctions =
       ImmutableList.<Function<Response, CharOffsetSpan>>of(CasExtractor.INSTANCE,
           BaseFillerExtractor.INSTANCE);
 
   private static ImmutableList<MentionResponseChecker> createResponseMatchingStrategy(
       Optional<CoreNLPDocument> coreNLPDoc, EREToKBPEventOntologyMapper mapping) {
     final ImmutableList.Builder<MentionResponseChecker> ret = ImmutableList.builder();
-    for (final Function<Response, CharOffsetSpan> responseExtractor : responseSpanFunctions) {
-      final Function<Response, CharOffsetSpan> responseHeadExtractor =
-          coreNLPHeadExtractorFromResultOrFallback(coreNLPDoc, responseExtractor);
 
+    // first we try all our alignment rules on the CAS; if none succeed, we fall back to the BF
+    for (final Function<Response, CharOffsetSpan> responseExtractor : responseSpanFunctions) {
+      final Function<Response, CharOffsetSpan> responseHeadExtractor;
+      // if a CoreNLP analysis is provided we will use it to find the heads of response spans
+      if (coreNLPDoc.isPresent()) {
+        responseHeadExtractor = CoreNLPHeadExtractor.of(coreNLPDoc.get(), responseExtractor);
+      } else {
+        responseHeadExtractor = responseExtractor;
+      }
+
+      // these are atoms out of which more complex rules will be built
       final ExactSpanChecker responseMatchesEREExtentExactly =
           new ExactSpanChecker(responseExtractor, ereExtentExtractor);
       final ExactSpanChecker responseHeadMathesEREExtentExactly =
@@ -211,36 +219,36 @@ final class EREAligner {
     }
   }
 
-  private static Function<Response, CharOffsetSpan> coreNLPHeadExtractorFromResultOrFallback(
-      final Optional<CoreNLPDocument> coreNLPDoc,
-      final Function<Response, CharOffsetSpan> rangeFinder) {
-    return new Function<Response, CharOffsetSpan>() {
-      @Nullable
-      @Override
-      public CharOffsetSpan apply(@Nullable final Response response) {
-        final CharOffsetSpan off = checkNotNull(rangeFinder.apply(response));
-        if (!coreNLPDoc.isPresent()) {
-          return off;
-        }
-        final Optional<CoreNLPSentence> sent =
-            coreNLPDoc.get().firstSentenceContaining(off.asCharOffsetRange());
-        if (sent.isPresent()) {
-          final Optional<CoreNLPParseNode> node =
-              sent.get().nodeForOffsets(off.asCharOffsetRange());
-          if (node.isPresent()) {
-            final Optional<CoreNLPParseNode> terminalHead = node.get().terminalHead();
-            if (terminalHead.isPresent()) {
-              final Range<CharOffset> coreNLPHeadRange = terminalHead.get().span().asRange();
-              return CharOffsetSpan
-                  .fromOffsetsAndDebugString(coreNLPHeadRange.lowerEndpoint().asInt(),
-                      coreNLPHeadRange.upperEndpoint().asInt(),
-                      terminalHead.get().token().get().content());
-            }
+  @TextGroupPackageImmutable
+  @Value.Immutable
+  static abstract class _CoreNLPHeadExtractor implements Function<Response, CharOffsetSpan> {
+
+    @Value.Parameter
+    public abstract CoreNLPDocument coreNLPDoc();
+
+    @Value.Parameter
+    public abstract Function<Response, CharOffsetSpan> rangeFinder();
+
+    public CharOffsetSpan apply(final Response response) {
+      final CharOffsetSpan off = checkNotNull(rangeFinder().apply(response));
+      final Optional<CoreNLPSentence> sent =
+          coreNLPDoc().firstSentenceContaining(off.asCharOffsetRange());
+      if (sent.isPresent()) {
+        final Optional<CoreNLPParseNode> node =
+            sent.get().nodeForOffsets(off.asCharOffsetRange());
+        if (node.isPresent()) {
+          final Optional<CoreNLPParseNode> terminalHead = node.get().terminalHead();
+          if (terminalHead.isPresent()) {
+            final Range<CharOffset> coreNLPHeadRange = terminalHead.get().span().asRange();
+            return CharOffsetSpan
+                .fromOffsetsAndDebugString(coreNLPHeadRange.lowerEndpoint().asInt(),
+                    coreNLPHeadRange.upperEndpoint().asInt(),
+                    terminalHead.get().token().get().content());
           }
         }
-        return off;
       }
-    };
+      return off;
+    }
   }
 
   interface MentionResponseChecker {
