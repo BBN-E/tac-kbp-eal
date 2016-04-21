@@ -46,7 +46,6 @@ import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -263,12 +262,11 @@ public final class ScoreKBPAgainstERE {
           inputAsResponsesAndLinking, final File outputDir) {
     final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredForRealis =
         transformBoth(inputAsResponsesAndLinking, filterLinkingForRealis());
-    final InspectorTreeNode<EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>>>
+    final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
         linkingNode = transformBoth(filteredForRealis, ResponsesAndLinking.linkingFunction);
 
-    final InspectorTreeNode<EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>>>
-        filteredNode =
-        transformed(linkingNode, ScoreKBPAgainstERE.<DocLevelEventArg>restrictToLinkingFunction());
+    final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
+        filteredNode = transformed(linkingNode, RestrictToLinking.INSTANCE);
     final LinkingInspector linkingInspector =
         LinkingInspector.createOutputtingTo(new File(outputDir, "linkingF.txt"));
     inspect(filteredNode).with(linkingInspector);
@@ -280,12 +278,13 @@ public final class ScoreKBPAgainstERE {
       @Override
       public ResponsesAndLinking apply(@Nullable final ResponsesAndLinking responsesAndLinking) {
         checkNotNull(responsesAndLinking);
-        final ImmutableSet<DocLevelEventArg> args = FluentIterable.from(responsesAndLinking.args())
-            .filter(Predicates.compose(Predicates.in(ALLOWED_ROLES_2016),
-                DocLevelEventArgFunctions.eventArgumentType())).toSet();
-        final ImmutableSet<ImmutableSet<DocLevelEventArg>> linking =
-            filterNestedElements(Predicates.in(args)).apply(responsesAndLinking.linking());
-        return new EREResponsesAndLinking(args, linking);
+
+        final Predicate<_DocLevelEventArg> argTypeIsAllowedFor2016 =
+            Predicates.compose(Predicates.in(ALLOWED_ROLES_2016),
+                DocLevelEventArgFunctions.eventArgumentType());
+        return new EREResponsesAndLinking(
+            Iterables.filter(responsesAndLinking.args(), argTypeIsAllowedFor2016),
+            responsesAndLinking.linking().filterArguments(argTypeIsAllowedFor2016));
       }
     };
   }
@@ -296,12 +295,11 @@ public final class ScoreKBPAgainstERE {
       @Override
       public ResponsesAndLinking apply(@Nullable final ResponsesAndLinking responsesAndLinking) {
         checkNotNull(responsesAndLinking);
-        final ImmutableSet<DocLevelEventArg> args = FluentIterable.from(responsesAndLinking.args())
-            .filter(Predicates.compose(Predicates.in(linkableRealis),
-                DocLevelEventArgFunctions.realis())).toSet();
-        final ImmutableSet<ImmutableSet<DocLevelEventArg>> linking =
-            filterNestedElements(Predicates.in(args)).apply(responsesAndLinking.linking());
-        return new EREResponsesAndLinking(args, linking);
+        final Predicate<_DocLevelEventArg> realisAllowedForLinking =
+            Predicates.compose(Predicates.in(linkableRealis), DocLevelEventArgFunctions.realis());
+        return new EREResponsesAndLinking(
+            Iterables.filter(responsesAndLinking.args(), realisAllowedForLinking),
+            responsesAndLinking.linking().filterArguments(realisAllowedForLinking));
       }
     };
   }
@@ -321,6 +319,19 @@ public final class ScoreKBPAgainstERE {
     };
   }
 
+  private enum RestrictToLinking implements
+      Function<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, EvalPair<DocLevelArgLinking, DocLevelArgLinking>> {
+    INSTANCE;
+
+    @Override
+    public EvalPair<DocLevelArgLinking, DocLevelArgLinking> apply(
+        final EvalPair<DocLevelArgLinking, DocLevelArgLinking> input) {
+      final DocLevelArgLinking newKey =
+          input.key().filterArguments(Predicates.in(input.test().allArguments()));
+      return EvalPair.of(newKey, input.test());
+    }
+  }
+
   private static <T> Function<EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>>, EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>>> restrictToLinkingFunction() {
     return new Function<EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>>, EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>>>() {
       @Nullable
@@ -336,7 +347,7 @@ public final class ScoreKBPAgainstERE {
   }
 
   private static final class LinkingInspector implements
-      Inspector<EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>>> {
+      Inspector<EvalPair<DocLevelArgLinking, DocLevelArgLinking>> {
 
     private final File outputFile;
     ExplicitFMeasureInfo counts = null;
@@ -351,7 +362,7 @@ public final class ScoreKBPAgainstERE {
 
     @Override
     public void inspect(
-        final EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>> item) {
+        final EvalPair<DocLevelArgLinking, DocLevelArgLinking> item) {
       checkArgument(ImmutableSet.copyOf(concat(item.test())).containsAll(
           ImmutableSet.copyOf(concat(item.key()))), "Must contain only answers in test set!");
       counts = LinkF1.create().score(item.key(), item.test());
@@ -394,9 +405,10 @@ public final class ScoreKBPAgainstERE {
     public ResponsesAndLinking apply(final EREDocument doc) {
       final ImmutableSet.Builder<DocLevelEventArg> ret = ImmutableSet.builder();
       // every event mention argument within a hopper is linked
-      final ImmutableSet.Builder<ImmutableSet<DocLevelEventArg>> linking = ImmutableSet.builder();
+      final DocLevelArgLinking.Builder linking = DocLevelArgLinking.builder();
       for (final EREEvent ereEvent : doc.getEvents()) {
-        final ImmutableSet.Builder<DocLevelEventArg> responseSet = ImmutableSet.builder();
+        final ScoringEventFrame.Builder eventFrame = ScoringEventFrame.builder();
+        boolean addedArg = false;
         for (final EREEventMention ereEventMention : ereEvent.getEventMentions()) {
           for (final EREArgument ereArgument : ereEventMention.getArguments()) {
             final Symbol ereEventMentionType = Symbol.from(ereEventMention.getType());
@@ -437,10 +449,13 @@ public final class ScoreKBPAgainstERE {
                     .realis(Symbol.from(argumentRealis.name())).build();
 
             ret.add(arg);
-            responseSet.add(arg);
+            eventFrame.addArguments(arg);
+            addedArg = true;
           }
         }
-        linking.add(responseSet.build());
+        if (addedArg) {
+          linking.addEventFrames(eventFrame.build());
+        }
       }
       return new EREResponsesAndLinking(ret.build(), linking.build());
     }
@@ -580,7 +595,7 @@ interface ResponsesAndLinking {
 
   ImmutableSet<DocLevelEventArg> args();
 
-  ImmutableSet<ImmutableSet<DocLevelEventArg>> linking();
+  DocLevelArgLinking linking();
 
   Function<ResponsesAndLinking, ImmutableSet<DocLevelEventArg>> argFunction =
       new Function<ResponsesAndLinking, ImmutableSet<DocLevelEventArg>>() {
@@ -592,12 +607,10 @@ interface ResponsesAndLinking {
         }
       };
 
-  Function<ResponsesAndLinking, ImmutableSet<ImmutableSet<DocLevelEventArg>>> linkingFunction =
-      new Function<ResponsesAndLinking, ImmutableSet<ImmutableSet<DocLevelEventArg>>>() {
-        @Nullable
+  Function<ResponsesAndLinking, DocLevelArgLinking> linkingFunction =
+      new Function<ResponsesAndLinking, DocLevelArgLinking>() {
         @Override
-        public ImmutableSet<ImmutableSet<DocLevelEventArg>> apply(
-            @Nullable final ResponsesAndLinking responsesAndLinking) {
+        public DocLevelArgLinking apply(final ResponsesAndLinking responsesAndLinking) {
           return responsesAndLinking.linking();
         }
       };
@@ -607,27 +620,29 @@ final class KBPResponsesAndLinking implements ResponsesAndLinking {
 
   final ImmutableSet<Response> originalResponses;
   final ImmutableMap<Response, DocLevelEventArg> responseToDocLevelEventArg;
-  final ImmutableSet<ImmutableSet<DocLevelEventArg>> responseSets;
+  final DocLevelArgLinking responseSets;
 
   KBPResponsesAndLinking(final ImmutableSet<Response> originalResponses,
       final ImmutableMap<Response, DocLevelEventArg> responseToDocLevelEventArg,
       final ResponseLinking responseLinking) {
     this.originalResponses = originalResponses;
     this.responseToDocLevelEventArg = responseToDocLevelEventArg;
-    final ImmutableSet.Builder<ImmutableSet<DocLevelEventArg>> responseSetsB =
-        ImmutableSet.builder();
+    final DocLevelArgLinking.Builder linkingBuilder = DocLevelArgLinking.builder();
     for (final ResponseSet rs : responseLinking.responseSets()) {
-      final ImmutableSet.Builder<DocLevelEventArg> rsn = ImmutableSet.builder();
+      final ScoringEventFrame.Builder eventFrameBuilder = ScoringEventFrame.builder();
+      boolean addedArg = false;
       for (final Response response : rs) {
         if (responseToDocLevelEventArg.containsKey(response)) {
-          rsn.add(responseToDocLevelEventArg.get(response));
+          eventFrameBuilder.addArguments(responseToDocLevelEventArg.get(response));
+          addedArg = true;
         }
       }
-      responseSetsB.add(rsn.build());
+      if (addedArg) {
+        linkingBuilder.addEventFrames(eventFrameBuilder.build());
+      }
     }
-    this.responseSets = responseSetsB.build();
+    this.responseSets = linkingBuilder.build();
   }
-
 
   @Override
   public ImmutableSet<DocLevelEventArg> args() {
@@ -635,7 +650,7 @@ final class KBPResponsesAndLinking implements ResponsesAndLinking {
   }
 
   @Override
-  public ImmutableSet<ImmutableSet<DocLevelEventArg>> linking() {
+  public DocLevelArgLinking linking() {
     return responseSets;
   }
 }
@@ -643,12 +658,12 @@ final class KBPResponsesAndLinking implements ResponsesAndLinking {
 final class EREResponsesAndLinking implements ResponsesAndLinking {
 
   final ImmutableSet<DocLevelEventArg> args;
-  final ImmutableSet<ImmutableSet<DocLevelEventArg>> linking;
+  final DocLevelArgLinking linking;
 
   EREResponsesAndLinking(final Iterable<DocLevelEventArg> args,
-      final Iterable<ImmutableSet<DocLevelEventArg>> linking) {
+      final DocLevelArgLinking linking) {
     this.args = ImmutableSet.copyOf(args);
-    this.linking = ImmutableSet.copyOf(linking);
+    this.linking = checkNotNull(linking);
     checkArgument(this.args.containsAll(ImmutableSet.copyOf(Iterables.concat(this.linking))));
   }
 
@@ -658,7 +673,7 @@ final class EREResponsesAndLinking implements ResponsesAndLinking {
   }
 
   @Override
-  public ImmutableSet<ImmutableSet<DocLevelEventArg>> linking() {
+  public DocLevelArgLinking linking() {
     return linking;
   }
 }
