@@ -75,6 +75,7 @@ final class EREAligner {
       ImmutableList.<Function<Response, CharOffsetSpan>>of(CasExtractor.INSTANCE,
           BaseFillerExtractor.INSTANCE);
 
+  // build the list of alignment rules which will be applied in order until one matches
   private static ImmutableList<MentionResponseChecker> createResponseMatchingStrategy(
       Optional<CoreNLPDocument> coreNLPDoc, EREToKBPEventOntologyMapper mapping) {
     final ImmutableList.Builder<MentionResponseChecker> ret = ImmutableList.builder();
@@ -90,29 +91,34 @@ final class EREAligner {
       }
 
       // these are atoms out of which more complex rules will be built
-      final ExactSpanChecker responseMatchesEREExtentExactly =
-          new ExactSpanChecker(responseExtractor, ereExtentExtractor);
-      final ExactSpanChecker responseHeadMathesEREExtentExactly =
-          new ExactSpanChecker(responseHeadExtractor, ereExtentExtractor);
+      final SpansMatchExactly responseMatchesEREExtentExactly =
+          new SpansMatchExactly(responseExtractor, ereExtentExtractor);
+      final SpansMatchExactly responseHeadMatchesEREExtentExactly =
+          new SpansMatchExactly(responseHeadExtractor, ereExtentExtractor);
       final MappedRolesMatch mappedRolesMatch = MappedRolesMatch.of(mapping);
+      final SpansMatchExactly responseHeadMatchesEREHeadExactly =
+          new SpansMatchExactly(responseHeadExtractor, ereHeadIfPresent);
+      final SpansMatchExactly responseMatchesEREHeadExactly =
+          new SpansMatchExactly(responseExtractor, ereHeadIfPresent);
+      final ContainmentSpanChecker alignByContainment =
+          new ContainmentSpanChecker(responseExtractor, responseHeadExtractor,
+              ereExtentExtractor, ereHeadIfPresent);
 
       ret.addAll(ImmutableList.of(
+          // first search for matches subject to a requirement that the response role
+          // match the ERE argument role, to be generous
           And.of(responseMatchesEREExtentExactly, mappedRolesMatch),
-          And.of(new ExactSpanChecker(responseHeadExtractor, ereHeadExtractorFallingBackToExtent),
-              mappedRolesMatch),
-          And.of(responseHeadMathesEREExtentExactly, mappedRolesMatch),
-          And.of(new ExactSpanChecker(responseExtractor, ereHeadExtractorFallingBackToExtent),
-              mappedRolesMatch),
+          And.of(responseHeadMatchesEREHeadExactly, mappedRolesMatch),
+          And.of(responseHeadMatchesEREExtentExactly, mappedRolesMatch),
+          And.of(responseMatchesEREHeadExactly, mappedRolesMatch),
+          // then do the same search without that restriction
           responseMatchesEREExtentExactly,
-          new ExactSpanChecker(responseHeadExtractor, ereHeadExtractorFallingBackToExtent),
-          responseHeadMathesEREExtentExactly,
-          new ExactSpanChecker(responseExtractor, ereHeadExtractorFallingBackToExtent),
-          And.of(
-              new ContainmentSpanChecker(responseExtractor, responseHeadExtractor,
-                  ereExtentExtractor,
-                  ereHeadExtractorFallingBackToExtent), mappedRolesMatch),
-          new ContainmentSpanChecker(responseExtractor, responseHeadExtractor, ereExtentExtractor,
-              ereHeadExtractorFallingBackToExtent)
+          responseHeadMatchesEREHeadExactly,
+          responseHeadMatchesEREExtentExactly,
+          responseMatchesEREHeadExactly,
+          // finally we do a more aggressive alignment attempt by containment
+          And.of(alignByContainment, mappedRolesMatch),
+          alignByContainment
       ));
     }
     return ret.build();
@@ -174,7 +180,7 @@ final class EREAligner {
       };
 
   // falling back to the extent won't harm us since we'll always run this after the ereExtentExtractor
-  private static final Function<EREArgument, CharOffsetSpan> ereHeadExtractorFallingBackToExtent =
+  private static final Function<EREArgument, CharOffsetSpan> ereHeadIfPresent =
       new Function<EREArgument, CharOffsetSpan>() {
         @Nullable
         @Override
@@ -267,9 +273,9 @@ final class EREAligner {
     }
   }
 
-  private static class ExactSpanChecker extends SpanChecker {
+  private static class SpansMatchExactly extends SpanChecker {
 
-    protected ExactSpanChecker(
+    protected SpansMatchExactly(
         final Function<Response, CharOffsetSpan> responseSpanExtractor,
         final Function<EREArgument, CharOffsetSpan> ereArgSpanExtractor) {
       super(responseSpanExtractor, ereArgSpanExtractor);
