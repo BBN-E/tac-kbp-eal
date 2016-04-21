@@ -3,6 +3,8 @@ package com.bbn.kbp.events;
 import com.bbn.bue.common.Finishable;
 import com.bbn.bue.common.HasDocID;
 import com.bbn.bue.common.Inspector;
+import com.bbn.bue.common.IntIDSequence;
+import com.bbn.bue.common.TextGroupPackageImmutable;
 import com.bbn.bue.common.evaluation.AggregateBinaryFScoresInspector;
 import com.bbn.bue.common.evaluation.BinaryErrorLogger;
 import com.bbn.bue.common.evaluation.BinaryFScoreBootstrapStrategy;
@@ -32,12 +34,8 @@ import com.bbn.nlp.corenlp.CoreNLPParseNode;
 import com.bbn.nlp.corenlp.CoreNLPXMLLoader;
 import com.bbn.nlp.corpora.ere.EREArgument;
 import com.bbn.nlp.corpora.ere.EREDocument;
-import com.bbn.nlp.corpora.ere.EREEntity;
-import com.bbn.nlp.corpora.ere.EREEntityArgument;
-import com.bbn.nlp.corpora.ere.EREEntityMention;
 import com.bbn.nlp.corpora.ere.EREEvent;
 import com.bbn.nlp.corpora.ere.EREEventMention;
-import com.bbn.nlp.corpora.ere.EREFillerArgument;
 import com.bbn.nlp.corpora.ere.ERELoader;
 import com.bbn.nlp.corpora.ere.LinkRealis;
 import com.bbn.nlp.events.HasEventType;
@@ -48,8 +46,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -59,6 +55,8 @@ import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.google.common.reflect.TypeToken;
 
+import org.immutables.func.Functional;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +65,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -79,6 +76,8 @@ import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformed;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Predicates.compose;
+import static com.google.common.base.Predicates.in;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Iterables.filter;
 
@@ -176,7 +175,7 @@ public final class ScoreKBPAgainstERE {
           responses = filter(outputStore.read(docID).arguments().responses(), bannedRolesFilter);
       final ResponseLinking linking =
           ((DocumentSystemOutput2015) outputStore.read(docID)).linking();
-      linking.copyWithFilteredResponses(Predicates.in(ImmutableSet.copyOf(responses)));
+      linking.copyWithFilteredResponses(in(ImmutableSet.copyOf(responses)));
       // feed this ERE doc/ KBP output pair to the scoring network
       input.inspect(EvalPair.of(ereDoc, new EREDocAndResponses(ereDoc, responses, linking)));
 
@@ -224,7 +223,8 @@ public final class ScoreKBPAgainstERE {
             responsesAndLinkingFromKBPExtractor);
     final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredInput =
         InspectorTreeDSL.transformBoth(
-            inputAsResponsesAndLinking, filterFor2016Roles());
+            inputAsResponsesAndLinking,
+            ResponsesAndLinking.filterFunction(ARG_TYPE_IS_ALLOWED_FOR_2016));
 
     // set up for event argument scoring in 2015 style
     eventArgumentScoringSetup(filteredInput, outputDir);
@@ -237,8 +237,9 @@ public final class ScoreKBPAgainstERE {
           inputAsResponsesAndLinking, final File outputDir) {
     final InspectorTreeNode<EvalPair<ImmutableSet<DocLevelEventArg>, ImmutableSet<DocLevelEventArg>>>
         inputAsSetsOfScoringTuples =
-        transformBoth(inputAsResponsesAndLinking, ResponsesAndLinking.argFunction);
+        transformBoth(inputAsResponsesAndLinking, ResponsesAndLinkingFunctions.args());
 
+    // require exact match between the system arguments and the key responses
     final InspectorTreeNode<ProvenancedAlignment<DocLevelEventArg, DocLevelEventArg, DocLevelEventArg, DocLevelEventArg>>
         alignmentNode = transformed(inputAsSetsOfScoringTuples, EXACT_MATCH_ALIGNER);
 
@@ -264,83 +265,39 @@ public final class ScoreKBPAgainstERE {
       final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
           inputAsResponsesAndLinking, final File outputDir) {
     final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredForRealis =
-        transformBoth(inputAsResponsesAndLinking, filterLinkingForRealis());
-    final InspectorTreeNode<EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>>>
-        linkingNode = transformRight(
-        transformLeft(filteredForRealis, ResponsesAndLinking.linkingFunction),
-        ResponsesAndLinking.linkingFunction);
+        transformBoth(inputAsResponsesAndLinking,
+            ResponsesAndLinking.filterFunction(REALIS_ALLOWED_FOR_LINKING));
+    final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
+        linkingNode = transformBoth(filteredForRealis, ResponsesAndLinkingFunctions.linking());
 
-    final InspectorTreeNode<EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>>>
-        filteredNode =
-        transformed(linkingNode, ScoreKBPAgainstERE.<DocLevelEventArg>restrictToLinkingFunction());
+    // we throw out any system responses not found in the key before scoring linking
+    final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
+        filteredNode = transformed(linkingNode, RestrictToLinking.INSTANCE);
     final LinkingInspector linkingInspector =
         LinkingInspector.createOutputtingTo(new File(outputDir, "linkingF.txt"));
     inspect(filteredNode).with(linkingInspector);
   }
 
-  private static Function<ResponsesAndLinking, ResponsesAndLinking> filterFor2016Roles() {
-    return new Function<ResponsesAndLinking, ResponsesAndLinking>() {
-      @Nullable
-      @Override
-      public ResponsesAndLinking apply(@Nullable final ResponsesAndLinking responsesAndLinking) {
-        checkNotNull(responsesAndLinking);
-        final ImmutableSet<DocLevelEventArg> args = FluentIterable.from(responsesAndLinking.args())
-            .filter(Predicates.compose(Predicates.in(ALLOWED_ROLES_2016),
-                DocLevelEventArgFunctions.eventArgumentType())).toSet();
-        final ImmutableSet<ImmutableSet<DocLevelEventArg>> linking =
-            filterNestedElements(Predicates.in(args)).apply(responsesAndLinking.linking());
-        return new EREResponsesAndLinking(args, linking);
-      }
-    };
-  }
+  private static final Predicate<_DocLevelEventArg> ARG_TYPE_IS_ALLOWED_FOR_2016 =
+      compose(in(ALLOWED_ROLES_2016), DocLevelEventArgFunctions.eventArgumentType());
+  private static final Predicate<_DocLevelEventArg> REALIS_ALLOWED_FOR_LINKING =
+      compose(in(linkableRealis), DocLevelEventArgFunctions.realis());
 
-  private static Function<ResponsesAndLinking, ResponsesAndLinking> filterLinkingForRealis() {
-    return new Function<ResponsesAndLinking, ResponsesAndLinking>() {
-      @Nullable
-      @Override
-      public ResponsesAndLinking apply(@Nullable final ResponsesAndLinking responsesAndLinking) {
-        checkNotNull(responsesAndLinking);
-        final ImmutableSet<DocLevelEventArg> args = FluentIterable.from(responsesAndLinking.args())
-            .filter(Predicates.compose(Predicates.in(linkableRealis),
-                DocLevelEventArgFunctions.realis())).toSet();
-        final ImmutableSet<ImmutableSet<DocLevelEventArg>> linking =
-            filterNestedElements(Predicates.in(args)).apply(responsesAndLinking.linking());
-        return new EREResponsesAndLinking(args, linking);
-      }
-    };
-  }
+  private enum RestrictToLinking implements
+      Function<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, EvalPair<DocLevelArgLinking, DocLevelArgLinking>> {
+    INSTANCE;
 
-  private static <T> Function<Iterable<? extends Set<T>>, ImmutableSet<ImmutableSet<T>>> filterNestedElements(
-      final Predicate<T> filter) {
-    return new Function<Iterable<? extends Set<T>>, ImmutableSet<ImmutableSet<T>>>() {
-      @Nullable
-      @Override
-      public ImmutableSet<ImmutableSet<T>> apply(@Nullable final Iterable<? extends Set<T>> sets) {
-        final ImmutableSet.Builder<ImmutableSet<T>> ret = ImmutableSet.builder();
-        for (final Set<T> s : sets) {
-          ret.add(ImmutableSet.copyOf(Iterables.filter(s, filter)));
-        }
-        return ret.build();
-      }
-    };
-  }
-
-  private static <T> Function<EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>>, EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>>> restrictToLinkingFunction() {
-    return new Function<EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>>, EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>>>() {
-      @Nullable
-      @Override
-      public EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>> apply(
-          @Nullable final EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>> input) {
-        final ImmutableSet<ImmutableSet<T>> key =
-            filterNestedElements(Predicates.in(ImmutableSet.copyOf(Iterables.concat(input.test()))))
-                .apply(input.key());
-        return EvalPair.of(key, input.test());
-      }
-    };
+    @Override
+    public EvalPair<DocLevelArgLinking, DocLevelArgLinking> apply(
+        final EvalPair<DocLevelArgLinking, DocLevelArgLinking> input) {
+      final DocLevelArgLinking newTest =
+          input.test().filterArguments(in(input.key().allArguments()));
+      return EvalPair.of(input.key(), newTest);
+    }
   }
 
   private static final class LinkingInspector implements
-      Inspector<EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>>> {
+      Inspector<EvalPair<DocLevelArgLinking, DocLevelArgLinking>> {
 
     private final File outputFile;
     ExplicitFMeasureInfo counts = null;
@@ -355,10 +312,10 @@ public final class ScoreKBPAgainstERE {
 
     @Override
     public void inspect(
-        final EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>> item) {
-      checkArgument(ImmutableSet.copyOf(concat(item.test())).containsAll(
-          ImmutableSet.copyOf(concat(item.key()))), "Must contain only answers in test set!");
-      counts = LinkF1.create().score(item.key(), item.test());
+        final EvalPair<DocLevelArgLinking, DocLevelArgLinking> item) {
+      checkArgument(ImmutableSet.copyOf(concat(item.key())).containsAll(
+          ImmutableSet.copyOf(concat(item.test()))), "Must contain only answers in test set!");
+      counts = LinkF1.create().score(item.test(), item.key());
     }
 
     @Override
@@ -398,9 +355,10 @@ public final class ScoreKBPAgainstERE {
     public ResponsesAndLinking apply(final EREDocument doc) {
       final ImmutableSet.Builder<DocLevelEventArg> ret = ImmutableSet.builder();
       // every event mention argument within a hopper is linked
-      final ImmutableSet.Builder<ImmutableSet<DocLevelEventArg>> linking = ImmutableSet.builder();
+      final DocLevelArgLinking.Builder linking = DocLevelArgLinking.builder();
       for (final EREEvent ereEvent : doc.getEvents()) {
-        final ImmutableSet.Builder<DocLevelEventArg> responseSet = ImmutableSet.builder();
+        final ScoringEventFrame.Builder eventFrame = ScoringEventFrame.builder();
+        boolean addedArg = false;
         for (final EREEventMention ereEventMention : ereEvent.getEventMentions()) {
           for (final EREArgument ereArgument : ereEventMention.getArguments()) {
             final Symbol ereEventMentionType = Symbol.from(ereEventMention.getType());
@@ -432,42 +390,24 @@ public final class ScoreKBPAgainstERE {
                 "/" + mapper.eventRole(ereArgumentRole).get();
             allGoldArgs.add(typeRoleKey);
 
-            if (ereArgument instanceof EREEntityArgument) {
-              final EREEntityMention entityMention =
-                  ((EREEntityArgument) ereArgument).entityMention();
-              final Optional<EREEntity> containingEntity = doc.getEntityContaining(entityMention);
-              checkState(containingEntity.isPresent(), "Corrupt ERE key input lacks "
-                  + "entity for entity mention %s", entityMention);
-              final DocLevelEventArg arg =
-                  DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
-                      .eventType(Symbol.from(mapper.eventType(ereEventMentionType).get() + "." +
-                          mapper.eventSubtype(ereEventMentionSubtype).get()))
-                      .eventArgumentType(mapper.eventRole(ereArgumentRole).get())
-                      .corefID(containingEntity.get().getID())
-                      .realis(Symbol.from(argumentRealis.name())).build();
+            final DocLevelEventArg arg =
+                DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
+                    .eventType(Symbol.from(mapper.eventType(ereEventMentionType).get() + "." +
+                        mapper.eventSubtype(ereEventMentionSubtype).get()))
+                    .eventArgumentType(mapper.eventRole(ereArgumentRole).get())
+                    .corefID(ScoringUtils.extractScoringEntity(ereArgument, doc).globalID())
+                    .realis(Symbol.from(argumentRealis.name())).build();
 
-              ret.add(arg);
-              responseSet.add(arg);
-            } else if (ereArgument instanceof EREFillerArgument) {
-              final EREFillerArgument filler = (EREFillerArgument) ereArgument;
-              final DocLevelEventArg arg =
-                  DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
-                      .eventType(Symbol.from(mapper.eventType(ereEventMentionType).get() + "." +
-                          mapper.eventSubtype(ereEventMentionSubtype).get()))
-                      .eventArgumentType(mapper.eventRole(ereArgumentRole).get())
-                      .corefID(filler.filler().getID()).realis(Symbol.from(argumentRealis.name()))
-                      .build();
-
-              ret.add(arg);
-              responseSet.add(arg);
-            } else {
-              throw new RuntimeException("Unknown ERE argument type " + ereArgument.getClass());
-            }
+            ret.add(arg);
+            eventFrame.addArguments(arg);
+            addedArg = true;
           }
         }
-        linking.add(responseSet.build());
+        if (addedArg) {
+          linking.addEventFrames(eventFrame.build());
+        }
       }
-      return new EREResponsesAndLinking(ret.build(), linking.build());
+      return ResponsesAndLinking.of(ret.build(), linking.build());
     }
 
     /*
@@ -517,6 +457,9 @@ public final class ScoreKBPAgainstERE {
       implements Function<EREDocAndResponses, ResponsesAndLinking>,
       Finishable {
 
+    // each system item which fails to align to any reference item gets put in its own
+    // coreference class, numbered using this sequence
+    private IntIDSequence alignmentFailureIDs = IntIDSequence.startingFrom(0);
     private Multiset<String> mentionAlignmentFailures = HashMultiset.create();
     private Multiset<String> numResponses = HashMultiset.create();
     private final ImmutableMap<Symbol, File> ereMapping;
@@ -546,7 +489,8 @@ public final class ScoreKBPAgainstERE {
             .of(coreNLPXMLLoader.loadFrom(ereMapping.get(ereID)))
                                                                               : Optional.<CoreNLPDocument>absent();
         ereAligner = EREAligner
-            .create(relaxUsingCORENLP, useExactMatchForCoreNLPRelaxation, doc, coreNLPDoc);
+            .create(relaxUsingCORENLP, useExactMatchForCoreNLPRelaxation, doc, coreNLPDoc,
+                EREToKBPEventOntologyMapper.create2016Mapping());
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -557,53 +501,46 @@ public final class ScoreKBPAgainstERE {
         numResponses.add(errKey(response));
         final Symbol realis = Symbol.from(response.realis().name());
 
-        // there are too few instances of these to bother matching on type currently
-        final ImmutableSet<EREEntity> candidateEntities = ereAligner.entitiesForResponse(response);
-        if (candidateEntities.size() > 1) {
-          log.warn(
-              "Found {} candidate entities for base filler {}, using the first one!",
-              candidateEntities.size(), response.baseFiller());
+        final Optional<ScoringCorefID> alignedCorefIDOpt = ereAligner.argumentForResponse(response);
+        // this increments the alignment failure ID regardless of success or failure, but
+        // we don't care
+        final ScoringCorefID alignedCorefID = alignedCorefIDOpt.or(
+            ScoringCorefID.of(ScoringEntityType.AlignmentFailure,
+                Integer.toString(alignmentFailureIDs.nextID())));
+
+        final DocLevelEventArg res = DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
+            .eventType(response.type()).eventArgumentType(response.role())
+            .corefID(alignedCorefID.globalID()).realis(realis).build();
+        ret.add(res);
+        responseToDocLevelArg.put(response, res);
+
+        // record alignment failures
+        if (!alignedCorefIDOpt.isPresent()) {
+          mentionAlignmentFailures.add(errKey(response));
         }
-
-        final EREEntity matchingEntity = Iterables.getFirst(candidateEntities, null);
-        if (matchingEntity != null) {
-          final DocLevelEventArg res = DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
-              .eventType(response.type()).eventArgumentType(response.role())
-              .corefID(matchingEntity.getID()).realis(realis).build();
-          ret.add(res);
-          responseToDocLevelArg.put(response, res);
-        } else {
-          final ImmutableSet<EREFillerArgument> fillers = ereAligner.fillersForResponse(response);
-          final EREFillerArgument filler = Iterables.getFirst(fillers, null);
-          // there are too few instances of these to bother matching on type currently
-          if (fillers.size() > 1) {
-            log.warn("Found multiple {} matching fillers for {}", fillers.size(),
-                response.baseFiller());
-          }
-          if (filler != null) {
-            final DocLevelEventArg res =
-                DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
-                    .eventType(response.type()).eventArgumentType(response.role())
-                    .corefID(filler.filler().getID()).realis(realis).build();
-            ret.add(res);
-            responseToDocLevelArg.put(response, res);
-          } else {
-            // add the response with a fake alignment so we properly penalize answers that don't align
-            final DocLevelEventArg fake =
-                DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
-                    .eventType(response.type()).eventArgumentType(response.role())
-                    .corefID("fake " + mentionAlignmentFailures.size()).realis(realis).build();
-            ret.add(fake);
-            responseToDocLevelArg.put(response, fake);
-            mentionAlignmentFailures.add(errKey(response));
-            log.warn("Neither entity nor filler match found for {}", response.toString());
-          }
-        }
-
-
       }
-      return new KBPResponsesAndLinking(ImmutableSet.copyOf(input.responses()),
+      return fromResponses(ImmutableSet.copyOf(input.responses()),
           responseToDocLevelArg.build(), input.linking());
+    }
+
+    ResponsesAndLinking fromResponses(final ImmutableSet<Response> originalResponses,
+        final ImmutableMap<Response, DocLevelEventArg> responseToDocLevelEventArg,
+        final ResponseLinking responseLinking) {
+      final DocLevelArgLinking.Builder linkingBuilder = DocLevelArgLinking.builder();
+      for (final ResponseSet rs : responseLinking.responseSets()) {
+        final ScoringEventFrame.Builder eventFrameBuilder = ScoringEventFrame.builder();
+        boolean addedArg = false;
+        for (final Response response : rs) {
+          if (responseToDocLevelEventArg.containsKey(response)) {
+            eventFrameBuilder.addArguments(responseToDocLevelEventArg.get(response));
+            addedArg = true;
+          }
+        }
+        if (addedArg) {
+          linkingBuilder.addEventFrames(eventFrameBuilder.build());
+        }
+      }
+      return ResponsesAndLinking.of(responseToDocLevelEventArg.values(), linkingBuilder.build());
     }
 
     public String errKey(Response r) {
@@ -624,93 +561,38 @@ public final class ScoreKBPAgainstERE {
   }
 }
 
-interface ResponsesAndLinking {
+@Value.Immutable
+@Functional
+@TextGroupPackageImmutable
+abstract class _ResponsesAndLinking {
 
-  ImmutableSet<DocLevelEventArg> args();
+  @Value.Parameter
+  public abstract ImmutableSet<DocLevelEventArg> args();
 
-  ImmutableSet<ImmutableSet<DocLevelEventArg>> linking();
+  @Value.Parameter
+  public abstract DocLevelArgLinking linking();
 
-  Function<ResponsesAndLinking, ImmutableSet<DocLevelEventArg>> argFunction =
-      new Function<ResponsesAndLinking, ImmutableSet<DocLevelEventArg>>() {
-        @Nullable
-        @Override
-        public ImmutableSet<DocLevelEventArg> apply(
-            @Nullable final ResponsesAndLinking responsesAndLinking) {
-          return responsesAndLinking.args();
-        }
-      };
+  @Value.Check
+  protected void check() {
+    checkArgument(args().containsAll(ImmutableSet.copyOf(Iterables.concat(linking()))));
+  }
 
-  Function<ResponsesAndLinking, ImmutableSet<ImmutableSet<DocLevelEventArg>>> linkingFunction =
-      new Function<ResponsesAndLinking, ImmutableSet<ImmutableSet<DocLevelEventArg>>>() {
-        @Nullable
-        @Override
-        public ImmutableSet<ImmutableSet<DocLevelEventArg>> apply(
-            @Nullable final ResponsesAndLinking responsesAndLinking) {
-          return responsesAndLinking.linking();
-        }
-      };
-}
+  public final ResponsesAndLinking filter(Predicate<? super DocLevelEventArg> predicate) {
+    return ResponsesAndLinking.of(
+        Iterables.filter(args(), predicate),
+        linking().filterArguments(predicate));
+  }
 
-final class KBPResponsesAndLinking implements ResponsesAndLinking {
-
-  final ImmutableSet<Response> originalResponses;
-  final ImmutableMap<Response, DocLevelEventArg> responseToDocLevelEventArg;
-  final ImmutableSet<ImmutableSet<DocLevelEventArg>> responseSets;
-
-  KBPResponsesAndLinking(final ImmutableSet<Response> originalResponses,
-      final ImmutableMap<Response, DocLevelEventArg> responseToDocLevelEventArg,
-      final ResponseLinking responseLinking) {
-    this.originalResponses = originalResponses;
-    this.responseToDocLevelEventArg = responseToDocLevelEventArg;
-    final ImmutableSet.Builder<ImmutableSet<DocLevelEventArg>> responseSetsB =
-        ImmutableSet.builder();
-    for (final ResponseSet rs : responseLinking.responseSets()) {
-      final ImmutableSet.Builder<DocLevelEventArg> rsn = ImmutableSet.builder();
-      for (final Response response : rs) {
-        if (responseToDocLevelEventArg.containsKey(response)) {
-          rsn.add(responseToDocLevelEventArg.get(response));
-        }
+  static final Function<ResponsesAndLinking, ResponsesAndLinking> filterFunction(
+      final Predicate<? super DocLevelEventArg> predicate) {
+    return new Function<ResponsesAndLinking, ResponsesAndLinking>() {
+      @Override
+      public ResponsesAndLinking apply(final ResponsesAndLinking input) {
+        return input.filter(predicate);
       }
-      responseSetsB.add(rsn.build());
-    }
-    this.responseSets = responseSetsB.build();
-  }
-
-
-  @Override
-  public ImmutableSet<DocLevelEventArg> args() {
-    return ImmutableSet.copyOf(responseToDocLevelEventArg.values());
-  }
-
-  @Override
-  public ImmutableSet<ImmutableSet<DocLevelEventArg>> linking() {
-    return responseSets;
+    };
   }
 }
-
-final class EREResponsesAndLinking implements ResponsesAndLinking {
-
-  final ImmutableSet<DocLevelEventArg> args;
-  final ImmutableSet<ImmutableSet<DocLevelEventArg>> linking;
-
-  EREResponsesAndLinking(final Iterable<DocLevelEventArg> args,
-      final Iterable<ImmutableSet<DocLevelEventArg>> linking) {
-    this.args = ImmutableSet.copyOf(args);
-    this.linking = ImmutableSet.copyOf(linking);
-    checkArgument(this.args.containsAll(ImmutableSet.copyOf(Iterables.concat(this.linking))));
-  }
-
-  @Override
-  public ImmutableSet<DocLevelEventArg> args() {
-    return args;
-  }
-
-  @Override
-  public ImmutableSet<ImmutableSet<DocLevelEventArg>> linking() {
-    return linking;
-  }
-}
-
 
 final class EREDocAndResponses {
 

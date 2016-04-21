@@ -6,8 +6,12 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.nlp.events.HasEventArgType;
 import com.bbn.nlp.events.HasEventType;
 
+import com.google.common.collect.ImmutableSet;
+
 import org.immutables.func.Functional;
 import org.immutables.value.Value;
+
+import java.util.Iterator;
 
 @Value.Immutable
 @Functional
@@ -25,3 +29,8 @@ public abstract class _DocLevelEventArg implements HasDocID, HasEventType, HasEv
   public abstract String corefID();
 
 }
+
+/*public abstract class _DocLevelEventArgLinking implements HasDocID {
+  public abstract Symbol docID();
+  public abstract Immutable
+}*/
