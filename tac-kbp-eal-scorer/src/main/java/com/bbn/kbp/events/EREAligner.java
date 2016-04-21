@@ -349,7 +349,7 @@ final class EREAligner {
       // ereOffsets.encloses(ereHead) in case of annotation inconsistency
       if (ereOffsets.encloses(responseOffsets)) {
         return
-            (responseOffsets.encloses(ereHead))
+            (responseOffsets.encloses(ereHead) && responseOffsets.encloses(responseHead))
                 || (ereOffsets.encloses(responseHead) && ereOffsets.encloses(ereHead));
       }
       return false;
