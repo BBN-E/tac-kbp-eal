@@ -46,7 +46,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -78,6 +77,8 @@ import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformed;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Predicates.compose;
+import static com.google.common.base.Predicates.in;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Iterables.filter;
 
@@ -175,7 +176,7 @@ public final class ScoreKBPAgainstERE {
           responses = filter(outputStore.read(docID).arguments().responses(), bannedRolesFilter);
       final ResponseLinking linking =
           ((DocumentSystemOutput2015) outputStore.read(docID)).linking();
-      linking.copyWithFilteredResponses(Predicates.in(ImmutableSet.copyOf(responses)));
+      linking.copyWithFilteredResponses(in(ImmutableSet.copyOf(responses)));
       // feed this ERE doc/ KBP output pair to the scoring network
       input.inspect(EvalPair.of(ereDoc, new EREDocAndResponses(ereDoc, responses, linking)));
 
@@ -223,7 +224,8 @@ public final class ScoreKBPAgainstERE {
             responsesAndLinkingFromKBPExtractor);
     final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredInput =
         InspectorTreeDSL.transformBoth(
-            inputAsResponsesAndLinking, filterFor2016Roles());
+            inputAsResponsesAndLinking,
+            ResponsesAndLinking.filterFunction(ARG_TYPE_IS_ALLOWED_FOR_2016));
 
     // set up for event argument scoring in 2015 style
     eventArgumentScoringSetup(filteredInput, outputDir);
@@ -264,7 +266,8 @@ public final class ScoreKBPAgainstERE {
       final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
           inputAsResponsesAndLinking, final File outputDir) {
     final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredForRealis =
-        transformBoth(inputAsResponsesAndLinking, filterLinkingForRealis());
+        transformBoth(inputAsResponsesAndLinking,
+            ResponsesAndLinking.filterFunction(REALIS_ALLOWED_FOR_LINKING));
     final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
         linkingNode = transformBoth(filteredForRealis, ResponsesAndLinkingFunctions.linking());
 
@@ -275,37 +278,10 @@ public final class ScoreKBPAgainstERE {
     inspect(filteredNode).with(linkingInspector);
   }
 
-  private static Function<ResponsesAndLinking, ResponsesAndLinking> filterFor2016Roles() {
-    return new Function<ResponsesAndLinking, ResponsesAndLinking>() {
-      @Nullable
-      @Override
-      public ResponsesAndLinking apply(@Nullable final ResponsesAndLinking responsesAndLinking) {
-        checkNotNull(responsesAndLinking);
-
-        final Predicate<_DocLevelEventArg> argTypeIsAllowedFor2016 =
-            Predicates.compose(Predicates.in(ALLOWED_ROLES_2016),
-                DocLevelEventArgFunctions.eventArgumentType());
-        return ResponsesAndLinking.of(
-            Iterables.filter(responsesAndLinking.args(), argTypeIsAllowedFor2016),
-            responsesAndLinking.linking().filterArguments(argTypeIsAllowedFor2016));
-      }
-    };
-  }
-
-  private static Function<ResponsesAndLinking, ResponsesAndLinking> filterLinkingForRealis() {
-    return new Function<ResponsesAndLinking, ResponsesAndLinking>() {
-      @Nullable
-      @Override
-      public ResponsesAndLinking apply(@Nullable final ResponsesAndLinking responsesAndLinking) {
-        checkNotNull(responsesAndLinking);
-        final Predicate<_DocLevelEventArg> realisAllowedForLinking =
-            Predicates.compose(Predicates.in(linkableRealis), DocLevelEventArgFunctions.realis());
-        return ResponsesAndLinking.of(
-            Iterables.filter(responsesAndLinking.args(), realisAllowedForLinking),
-            responsesAndLinking.linking().filterArguments(realisAllowedForLinking));
-      }
-    };
-  }
+  private static final Predicate<_DocLevelEventArg> ARG_TYPE_IS_ALLOWED_FOR_2016 =
+      compose(in(ALLOWED_ROLES_2016), DocLevelEventArgFunctions.eventArgumentType());
+  private static final Predicate<_DocLevelEventArg> REALIS_ALLOWED_FOR_LINKING =
+      compose(in(linkableRealis), DocLevelEventArgFunctions.realis());
 
   private static <T> Function<Iterable<? extends Set<T>>, ImmutableSet<ImmutableSet<T>>> filterNestedElements(
       final Predicate<T> filter) {
@@ -330,7 +306,7 @@ public final class ScoreKBPAgainstERE {
     public EvalPair<DocLevelArgLinking, DocLevelArgLinking> apply(
         final EvalPair<DocLevelArgLinking, DocLevelArgLinking> input) {
       final DocLevelArgLinking newKey =
-          input.key().filterArguments(Predicates.in(input.test().allArguments()));
+          input.key().filterArguments(in(input.test().allArguments()));
       return EvalPair.of(newKey, input.test());
     }
   }
@@ -342,7 +318,7 @@ public final class ScoreKBPAgainstERE {
       public EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>> apply(
           @Nullable final EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>> input) {
         final ImmutableSet<ImmutableSet<T>> key =
-            filterNestedElements(Predicates.in(ImmutableSet.copyOf(Iterables.concat(input.test()))))
+            filterNestedElements(in(ImmutableSet.copyOf(Iterables.concat(input.test()))))
                 .apply(input.key());
         return EvalPair.of(key, input.test());
       }
@@ -628,6 +604,22 @@ abstract class _ResponsesAndLinking {
   @Value.Check
   protected void check() {
     checkArgument(args().containsAll(ImmutableSet.copyOf(Iterables.concat(linking()))));
+  }
+
+  public final ResponsesAndLinking filter(Predicate<? super DocLevelEventArg> predicate) {
+    return ResponsesAndLinking.of(
+        Iterables.filter(args(), predicate),
+        linking().filterArguments(predicate));
+  }
+
+  static final Function<ResponsesAndLinking, ResponsesAndLinking> filterFunction(
+      final Predicate<? super DocLevelEventArg> predicate) {
+    return new Function<ResponsesAndLinking, ResponsesAndLinking>() {
+      @Override
+      public ResponsesAndLinking apply(final ResponsesAndLinking input) {
+        return input.filter(predicate);
+      }
+    };
   }
 }
 
