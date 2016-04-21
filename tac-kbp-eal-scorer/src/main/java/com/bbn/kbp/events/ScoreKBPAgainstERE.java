@@ -270,6 +270,7 @@ public final class ScoreKBPAgainstERE {
     final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
         linkingNode = transformBoth(filteredForRealis, ResponsesAndLinkingFunctions.linking());
 
+    // we throw out any system responses not found in the key before scoring linking
     final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
         filteredNode = transformed(linkingNode, RestrictToLinking.INSTANCE);
     final LinkingInspector linkingInspector =
@@ -289,9 +290,9 @@ public final class ScoreKBPAgainstERE {
     @Override
     public EvalPair<DocLevelArgLinking, DocLevelArgLinking> apply(
         final EvalPair<DocLevelArgLinking, DocLevelArgLinking> input) {
-      final DocLevelArgLinking newKey =
-          input.key().filterArguments(in(input.test().allArguments()));
-      return EvalPair.of(newKey, input.test());
+      final DocLevelArgLinking newTest =
+          input.test().filterArguments(in(input.key().allArguments()));
+      return EvalPair.of(input.key(), newTest);
     }
   }
 
