@@ -313,8 +313,8 @@ public final class ScoreKBPAgainstERE {
     @Override
     public void inspect(
         final EvalPair<DocLevelArgLinking, DocLevelArgLinking> item) {
-      checkArgument(ImmutableSet.copyOf(concat(item.test())).containsAll(
-          ImmutableSet.copyOf(concat(item.key()))), "Must contain only answers in test set!");
+      checkArgument(ImmutableSet.copyOf(concat(item.key())).containsAll(
+          ImmutableSet.copyOf(concat(item.test()))), "Must contain only answers in test set!");
       counts = LinkF1.create().score(item.key(), item.test());
     }
 
