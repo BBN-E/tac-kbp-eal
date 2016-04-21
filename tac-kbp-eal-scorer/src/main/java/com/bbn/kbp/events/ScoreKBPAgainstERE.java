@@ -65,7 +65,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -283,21 +282,6 @@ public final class ScoreKBPAgainstERE {
   private static final Predicate<_DocLevelEventArg> REALIS_ALLOWED_FOR_LINKING =
       compose(in(linkableRealis), DocLevelEventArgFunctions.realis());
 
-  private static <T> Function<Iterable<? extends Set<T>>, ImmutableSet<ImmutableSet<T>>> filterNestedElements(
-      final Predicate<T> filter) {
-    return new Function<Iterable<? extends Set<T>>, ImmutableSet<ImmutableSet<T>>>() {
-      @Nullable
-      @Override
-      public ImmutableSet<ImmutableSet<T>> apply(@Nullable final Iterable<? extends Set<T>> sets) {
-        final ImmutableSet.Builder<ImmutableSet<T>> ret = ImmutableSet.builder();
-        for (final Set<T> s : sets) {
-          ret.add(ImmutableSet.copyOf(Iterables.filter(s, filter)));
-        }
-        return ret.build();
-      }
-    };
-  }
-
   private enum RestrictToLinking implements
       Function<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, EvalPair<DocLevelArgLinking, DocLevelArgLinking>> {
     INSTANCE;
@@ -309,20 +293,6 @@ public final class ScoreKBPAgainstERE {
           input.key().filterArguments(in(input.test().allArguments()));
       return EvalPair.of(newKey, input.test());
     }
-  }
-
-  private static <T> Function<EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>>, EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>>> restrictToLinkingFunction() {
-    return new Function<EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>>, EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>>>() {
-      @Nullable
-      @Override
-      public EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>> apply(
-          @Nullable final EvalPair<ImmutableSet<ImmutableSet<T>>, ImmutableSet<ImmutableSet<T>>> input) {
-        final ImmutableSet<ImmutableSet<T>> key =
-            filterNestedElements(in(ImmutableSet.copyOf(Iterables.concat(input.test()))))
-                .apply(input.key());
-        return EvalPair.of(key, input.test());
-      }
-    };
   }
 
   private static final class LinkingInspector implements
