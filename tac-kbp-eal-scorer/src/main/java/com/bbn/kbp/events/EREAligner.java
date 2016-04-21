@@ -4,6 +4,7 @@ import com.bbn.bue.common.TextGroupPackageImmutable;
 import com.bbn.bue.common.strings.offsets.CharOffset;
 import com.bbn.bue.common.strings.offsets.OffsetRange;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.TACException;
 import com.bbn.kbp.events.ontology.EREToKBPEventOntologyMapper;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.Response;
@@ -68,7 +69,9 @@ final class EREAligner {
       final EREDocument ereDoc, final Optional<CoreNLPDocument> coreNLPDocument,
       final EREToKBPEventOntologyMapper mapping) {
     return new EREAligner(relaxUsingCORENLP, useExactMatchForCoreNLPRelaxation, ereDoc,
-        coreNLPDocument, createResponseMatchingStrategy(coreNLPDocument, mapping));
+        coreNLPDocument,
+        createResponseMatchingStrategy(relaxUsingCORENLP, useExactMatchForCoreNLPRelaxation,
+            coreNLPDocument, mapping));
   }
 
   private static final ImmutableList<Function<Response, CharOffsetSpan>> responseSpanFunctions =
@@ -77,6 +80,8 @@ final class EREAligner {
 
   // build the list of alignment rules which will be applied in order until one matches
   private static ImmutableList<ResponseToEREEArgAlignmentRule> createResponseMatchingStrategy(
+      final boolean relaxUsingCORENLP,
+      final boolean useExactMatchForCoreNLPRelaxation,
       Optional<CoreNLPDocument> coreNLPDoc, EREToKBPEventOntologyMapper mapping) {
     final ImmutableList.Builder<ResponseToEREEArgAlignmentRule> ret = ImmutableList.builder();
 
@@ -84,8 +89,12 @@ final class EREAligner {
     for (final Function<Response, CharOffsetSpan> responseExtractor : responseSpanFunctions) {
       final Function<Response, CharOffsetSpan> responseHeadExtractor;
       // if a CoreNLP analysis is provided we will use it to find the heads of response spans
-      if (coreNLPDoc.isPresent()) {
-        responseHeadExtractor = CoreNLPHeadExtractor.of(coreNLPDoc.get(), responseExtractor);
+      if (relaxUsingCORENLP) {
+        if(coreNLPDoc.isPresent()) {
+          responseHeadExtractor = CoreNLPHeadExtractor.of(coreNLPDoc.get(), responseExtractor);
+        } else  {
+          throw new TACException("Attempting to relax using CoreNLP when no doc is present!");
+        }
       } else {
         responseHeadExtractor = responseExtractor;
       }
@@ -129,10 +138,10 @@ final class EREAligner {
     // for each alignment rule in order, try to find an ERE object which aligns
     for (final ResponseToEREEArgAlignmentRule responseChecker : responseMatchingStrategy) {
       final Optional<ScoringCorefID> found = findEREObjectMatchingRule(response, responseChecker);
-        if (found.isPresent()) {
-          return found;
-        }
+      if (found.isPresent()) {
+        return found;
       }
+    }
 
     return Optional.absent();
   }
@@ -276,6 +285,7 @@ final class EREAligner {
   }
 
   interface ResponseToEREEArgAlignmentRule {
+
     boolean aligns(Response r, EREArgument ea);
   }
 
@@ -336,9 +346,10 @@ final class EREAligner {
           ereArgSpanExtractor.apply(ea).asCharOffsetRange().asRange();
       final Range<CharOffset> ereHead = ereHeadExtractor.apply(ea).asCharOffsetRange().asRange();
 
-      if (responseOffsets.encloses(ereOffsets) || ereOffsets.encloses(responseOffsets)) {
+      // ereOffsets.encloses(ereHead) in case of annotation inconsistency
+      if (ereOffsets.encloses(responseOffsets)) {
         return
-            (responseOffsets.encloses(responseHead) && responseOffsets.encloses(ereHead))
+            (responseOffsets.encloses(ereHead))
                 || (ereOffsets.encloses(responseHead) && ereOffsets.encloses(ereHead));
       }
       return false;
