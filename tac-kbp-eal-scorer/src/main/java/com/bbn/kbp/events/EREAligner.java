@@ -1,5 +1,6 @@
 package com.bbn.kbp.events;
 
+import com.bbn.bue.common.TextGroupPackageImmutable;
 import com.bbn.bue.common.strings.offsets.CharOffset;
 import com.bbn.bue.common.strings.offsets.OffsetRange;
 import com.bbn.bue.common.symbols.Symbol;
@@ -24,6 +25,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Range;
 
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,24 +86,23 @@ final class EREAligner {
           new ExactSpanChecker(responseExtractor, ereExtentExtractor);
       final ExactSpanChecker responseHeadMathesEREExtentExactly =
           new ExactSpanChecker(responseHeadExtractor, ereExtentExtractor);
+      final MappedRolesMatch mappedRolesMatch = MappedRolesMatch.of(mapping);
 
       ret.addAll(ImmutableList.of(
-          new ComposingRoleBasedChecker(responseMatchesEREExtentExactly, mapping),
-          new ComposingRoleBasedChecker(
-              new ExactSpanChecker(responseHeadExtractor, ereHeadExtractorFallingBackToExtent),
-              mapping),
-          new ComposingRoleBasedChecker(responseHeadMathesEREExtentExactly, mapping),
-          new ComposingRoleBasedChecker(
-              new ExactSpanChecker(responseExtractor, ereHeadExtractorFallingBackToExtent),
-              mapping),
+          And.of(responseMatchesEREExtentExactly, mappedRolesMatch),
+          And.of(new ExactSpanChecker(responseHeadExtractor, ereHeadExtractorFallingBackToExtent),
+              mappedRolesMatch),
+          And.of(responseHeadMathesEREExtentExactly, mappedRolesMatch),
+          And.of(new ExactSpanChecker(responseExtractor, ereHeadExtractorFallingBackToExtent),
+              mappedRolesMatch),
           responseMatchesEREExtentExactly,
           new ExactSpanChecker(responseHeadExtractor, ereHeadExtractorFallingBackToExtent),
           responseHeadMathesEREExtentExactly,
           new ExactSpanChecker(responseExtractor, ereHeadExtractorFallingBackToExtent),
-          new ComposingRoleBasedChecker(
+          And.of(
               new ContainmentSpanChecker(responseExtractor, responseHeadExtractor,
                   ereExtentExtractor,
-                  ereHeadExtractorFallingBackToExtent), mapping),
+                  ereHeadExtractorFallingBackToExtent), mappedRolesMatch),
           new ContainmentSpanChecker(responseExtractor, responseHeadExtractor, ereExtentExtractor,
               ereHeadExtractorFallingBackToExtent)
       ));
@@ -242,8 +243,7 @@ final class EREAligner {
     };
   }
 
-  private interface MentionResponseChecker {
-
+  interface MentionResponseChecker {
     boolean aligns(Response r, EREArgument ea);
   }
 
@@ -312,27 +312,33 @@ final class EREAligner {
     }
   }
 
-  private static class ComposingRoleBasedChecker implements MentionResponseChecker {
+  @TextGroupPackageImmutable
+  @Value.Immutable
+  static abstract class _And implements MentionResponseChecker {
 
-    private final MentionResponseChecker checker;
-    private final EREToKBPEventOntologyMapper ontologyMapper;
+    @Value.Parameter
+    public abstract MentionResponseChecker first();
 
-    protected ComposingRoleBasedChecker(
-        final MentionResponseChecker checker,
-        final EREToKBPEventOntologyMapper ontologyMapper) {
-      this.checker = checker;
-      this.ontologyMapper = ontologyMapper;
-    }
+    @Value.Parameter
+    public abstract MentionResponseChecker second();
 
     @Override
-    public boolean aligns(final Response r, final EREArgument ea) {
-      if (checker.aligns(r, ea)) {
-        final Optional<Symbol> role = ontologyMapper.eventRole(Symbol.from(ea.getRole()));
-        if (role.isPresent() && role.get().equals(r.role())) {
-          return true;
-        }
-      }
-      return false;
+    public final boolean aligns(final Response r, final EREArgument ea) {
+      return first().aligns(r, ea) && second().aligns(r, ea);
+    }
+  }
+
+  @TextGroupPackageImmutable
+  @Value.Immutable
+  static abstract class _MappedRolesMatch implements MentionResponseChecker {
+
+    @Value.Parameter
+    public abstract EREToKBPEventOntologyMapper ontologyMapper();
+
+    @Override
+    public final boolean aligns(final Response r, final EREArgument ea) {
+      final Optional<Symbol> role = ontologyMapper().eventRole(Symbol.from(ea.getRole()));
+      return role.isPresent() && role.get().equals(r.role());
     }
   }
 
