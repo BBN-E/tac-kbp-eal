@@ -48,12 +48,12 @@ final class EREAligner {
   private final boolean useExactMatchForCoreNLPRelaxation;
   private final EREDocument ereDoc;
   private final Optional<CoreNLPDocument> coreNLPDoc;
-  private final ImmutableList<MentionResponseChecker> responseMatchingStrategy;
+  private final ImmutableList<ResponseToEREEArgAlignmentRule> responseMatchingStrategy;
 
   private EREAligner(final boolean relaxUsingCORENLP,
       final boolean useExactMatchForCoreNLPRelaxation,
       final EREDocument ereDoc, final Optional<CoreNLPDocument> coreNLPDocument,
-      ImmutableList<MentionResponseChecker> responseMatchingStrategy) {
+      ImmutableList<ResponseToEREEArgAlignmentRule> responseMatchingStrategy) {
     this.relaxUsingCORENLP = relaxUsingCORENLP;
     this.useExactMatchForCoreNLPRelaxation = useExactMatchForCoreNLPRelaxation;
     this.ereDoc = ereDoc;
@@ -76,9 +76,9 @@ final class EREAligner {
           BaseFillerExtractor.INSTANCE);
 
   // build the list of alignment rules which will be applied in order until one matches
-  private static ImmutableList<MentionResponseChecker> createResponseMatchingStrategy(
+  private static ImmutableList<ResponseToEREEArgAlignmentRule> createResponseMatchingStrategy(
       Optional<CoreNLPDocument> coreNLPDoc, EREToKBPEventOntologyMapper mapping) {
-    final ImmutableList.Builder<MentionResponseChecker> ret = ImmutableList.builder();
+    final ImmutableList.Builder<ResponseToEREEArgAlignmentRule> ret = ImmutableList.builder();
 
     // first we try all our alignment rules on the CAS; if none succeed, we fall back to the BF
     for (final Function<Response, CharOffsetSpan> responseExtractor : responseSpanFunctions) {
@@ -126,17 +126,35 @@ final class EREAligner {
 
 
   Optional<ScoringCorefID> argumentForResponse(final Response response) {
-    // first with CAS, then with BF
-
-    final EREMatcher matcher = new EREMatcher();
-    for (final MentionResponseChecker responseChecker : responseMatchingStrategy) {
-        final Optional<ScoringCorefID> found = matcher.aligns(response, responseChecker);
+    // for each alignment rule in order, try to find an ERE object which aligns
+    for (final ResponseToEREEArgAlignmentRule responseChecker : responseMatchingStrategy) {
+      final Optional<ScoringCorefID> found = findEREObjectMatchingRule(response, responseChecker);
         if (found.isPresent()) {
           return found;
         }
       }
 
     return Optional.absent();
+  }
+
+  private Optional<ScoringCorefID> findEREObjectMatchingRule(final Response r,
+      final ResponseToEREEArgAlignmentRule checker) {
+    final ImmutableSet.Builder<ScoringCorefID> retB = ImmutableSet.builder();
+    for (final EREEvent e : ereDoc.getEvents()) {
+      for (final EREEventMention em : e.getEventMentions()) {
+        for (final EREArgument ea : em.getArguments()) {
+          if (checker.aligns(r, ea)) {
+            retB.add(ScoringUtils.extractScoringEntity(ea, ereDoc));
+          }
+        }
+      }
+    }
+
+    final ImmutableSet<ScoringCorefID> ret = retB.build();
+    if (ret.size() > 1) {
+      log.warn("Multiple matches for response {}: {}", r, ret);
+    }
+    return Optional.fromNullable(Iterables.getFirst(ret, null));
   }
 
   private Optional<Range<CharOffset>> getCoreNLPHead(final OffsetRange<CharOffset> offsets) {
@@ -257,11 +275,11 @@ final class EREAligner {
     }
   }
 
-  interface MentionResponseChecker {
+  interface ResponseToEREEArgAlignmentRule {
     boolean aligns(Response r, EREArgument ea);
   }
 
-  private static abstract class SpanChecker implements MentionResponseChecker {
+  private static abstract class SpanChecker implements ResponseToEREEArgAlignmentRule {
 
     protected final Function<Response, CharOffsetSpan> responseSpanExtractor;
     protected final Function<EREArgument, CharOffsetSpan> ereArgSpanExtractor;
@@ -287,7 +305,8 @@ final class EREAligner {
     }
   }
 
-  private static final class ContainmentSpanChecker implements MentionResponseChecker {
+  private static final class ContainmentSpanChecker implements
+      ResponseToEREEArgAlignmentRule {
 
     protected final Function<Response, CharOffsetSpan> responseSpanExtractor;
     protected final Function<Response, CharOffsetSpan> responseHeadExtractor;
@@ -328,13 +347,13 @@ final class EREAligner {
 
   @TextGroupPackageImmutable
   @Value.Immutable
-  static abstract class _And implements MentionResponseChecker {
+  static abstract class _And implements ResponseToEREEArgAlignmentRule {
 
     @Value.Parameter
-    public abstract MentionResponseChecker first();
+    public abstract ResponseToEREEArgAlignmentRule first();
 
     @Value.Parameter
-    public abstract MentionResponseChecker second();
+    public abstract ResponseToEREEArgAlignmentRule second();
 
     @Override
     public final boolean aligns(final Response r, final EREArgument ea) {
@@ -344,7 +363,7 @@ final class EREAligner {
 
   @TextGroupPackageImmutable
   @Value.Immutable
-  static abstract class _MappedRolesMatch implements MentionResponseChecker {
+  static abstract class _MappedRolesMatch implements ResponseToEREEArgAlignmentRule {
 
     @Value.Parameter
     public abstract EREToKBPEventOntologyMapper ontologyMapper();
@@ -353,29 +372,6 @@ final class EREAligner {
     public final boolean aligns(final Response r, final EREArgument ea) {
       final Optional<Symbol> role = ontologyMapper().eventRole(Symbol.from(ea.getRole()));
       return role.isPresent() && role.get().equals(r.role());
-    }
-  }
-
-  private class EREMatcher {
-
-    public Optional<ScoringCorefID> aligns(final Response r,
-        final MentionResponseChecker checker) {
-      final ImmutableSet.Builder<ScoringCorefID> retB = ImmutableSet.builder();
-      for (final EREEvent e : ereDoc.getEvents()) {
-        for (final EREEventMention em : e.getEventMentions()) {
-          for (final EREArgument ea : em.getArguments()) {
-            if (checker.aligns(r, ea)) {
-              retB.add(ScoringUtils.extractScoringEntity(ea, ereDoc));
-            }
-          }
-        }
-      }
-
-      final ImmutableSet<ScoringCorefID> ret = retB.build();
-      if (ret.size() > 1) {
-        log.warn("Multiple matches for response {}: {}", r, ret);
-      }
-      return Optional.fromNullable(Iterables.getFirst(ret, null));
     }
   }
 }
