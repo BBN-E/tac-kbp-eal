@@ -236,6 +236,7 @@ public final class ScoreKBPAgainstERE {
         inputAsSetsOfScoringTuples =
         transformBoth(inputAsResponsesAndLinking, ResponsesAndLinking.argFunction);
 
+    // require exact match between the system arguments and the key responses
     final InspectorTreeNode<ProvenancedAlignment<DocLevelEventArg, DocLevelEventArg, DocLevelEventArg, DocLevelEventArg>>
         alignmentNode = transformed(inputAsSetsOfScoringTuples, EXACT_MATCH_ALIGNER);
 
@@ -263,9 +264,7 @@ public final class ScoreKBPAgainstERE {
     final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredForRealis =
         transformBoth(inputAsResponsesAndLinking, filterLinkingForRealis());
     final InspectorTreeNode<EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>>>
-        linkingNode = transformRight(
-        transformLeft(filteredForRealis, ResponsesAndLinking.linkingFunction),
-        ResponsesAndLinking.linkingFunction);
+        linkingNode = transformBoth(filteredForRealis, ResponsesAndLinking.linkingFunction);
 
     final InspectorTreeNode<EvalPair<ImmutableSet<ImmutableSet<DocLevelEventArg>>, ImmutableSet<ImmutableSet<DocLevelEventArg>>>>
         filteredNode =
