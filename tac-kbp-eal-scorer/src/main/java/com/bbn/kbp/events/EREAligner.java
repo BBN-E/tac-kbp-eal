@@ -46,17 +46,14 @@ final class EREAligner {
   private static final Logger log = LoggerFactory.getLogger(EREAligner.class);
 
   private final boolean relaxUsingCORENLP;
-  private final boolean useExactMatchForCoreNLPRelaxation;
   private final EREDocument ereDoc;
   private final Optional<CoreNLPDocument> coreNLPDoc;
   private final ImmutableList<ResponseToEREEArgAlignmentRule> responseMatchingStrategy;
 
   private EREAligner(final boolean relaxUsingCORENLP,
-      final boolean useExactMatchForCoreNLPRelaxation,
       final EREDocument ereDoc, final Optional<CoreNLPDocument> coreNLPDocument,
       ImmutableList<ResponseToEREEArgAlignmentRule> responseMatchingStrategy) {
     this.relaxUsingCORENLP = relaxUsingCORENLP;
-    this.useExactMatchForCoreNLPRelaxation = useExactMatchForCoreNLPRelaxation;
     this.ereDoc = ereDoc;
     this.coreNLPDoc = coreNLPDocument;
     checkState(!relaxUsingCORENLP || coreNLPDoc.isPresent(),
@@ -65,13 +62,11 @@ final class EREAligner {
   }
 
   static EREAligner create(final boolean relaxUsingCORENLP,
-      final boolean useExactMatchForCoreNLPRelaxation,
       final EREDocument ereDoc, final Optional<CoreNLPDocument> coreNLPDocument,
       final EREToKBPEventOntologyMapper mapping) {
-    return new EREAligner(relaxUsingCORENLP, useExactMatchForCoreNLPRelaxation, ereDoc,
+    return new EREAligner(relaxUsingCORENLP, ereDoc,
         coreNLPDocument,
-        createResponseMatchingStrategy(relaxUsingCORENLP, useExactMatchForCoreNLPRelaxation,
-            coreNLPDocument, mapping));
+        createResponseMatchingStrategy(relaxUsingCORENLP, coreNLPDocument, mapping));
   }
 
   private static final ImmutableList<Function<Response, CharOffsetSpan>> responseSpanFunctions =
@@ -81,7 +76,6 @@ final class EREAligner {
   // build the list of alignment rules which will be applied in order until one matches
   private static ImmutableList<ResponseToEREEArgAlignmentRule> createResponseMatchingStrategy(
       final boolean relaxUsingCORENLP,
-      final boolean useExactMatchForCoreNLPRelaxation,
       Optional<CoreNLPDocument> coreNLPDoc, EREToKBPEventOntologyMapper mapping) {
     final ImmutableList.Builder<ResponseToEREEArgAlignmentRule> ret = ImmutableList.builder();
 

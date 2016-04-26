@@ -153,8 +153,7 @@ public final class ScoreKBPAgainstERE {
     // so we need to keep references to them
     final ResponsesAndLinkingFromKBPExtractor responsesAndLinkingFromKBPExtractor =
         new ResponsesAndLinkingFromKBPExtractor(coreNLPProcessedRawDocs,
-            coreNLPXMLLoader, relaxUsingCORENLP,
-            useExactMatchForCoreNLPRelaxation);
+            coreNLPXMLLoader, relaxUsingCORENLP);
     final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor =
         new ResponsesAndLinkingFromEREExtractor(EREToKBPEventOntologyMapper.create2016Mapping());
 
@@ -513,15 +512,12 @@ public final class ScoreKBPAgainstERE {
     private final ImmutableMap<Symbol, File> ereMapping;
     private final CoreNLPXMLLoader coreNLPXMLLoader;
     private final boolean relaxUsingCORENLP;
-    private final boolean useExactMatchForCoreNLPRelaxation;
 
     public ResponsesAndLinkingFromKBPExtractor(final Map<Symbol, File> ereMapping,
-        final CoreNLPXMLLoader coreNLPXMLLoader, final boolean relaxUsingCORENLP,
-        final boolean useExactMatchForCoreNLPRelaxation) {
+        final CoreNLPXMLLoader coreNLPXMLLoader, final boolean relaxUsingCORENLP) {
       this.ereMapping = ImmutableMap.copyOf(ereMapping);
       this.coreNLPXMLLoader = coreNLPXMLLoader;
       this.relaxUsingCORENLP = relaxUsingCORENLP;
-      this.useExactMatchForCoreNLPRelaxation = useExactMatchForCoreNLPRelaxation;
     }
 
     public ResponsesAndLinking apply(final EREDocAndResponses input) {
@@ -537,7 +533,7 @@ public final class ScoreKBPAgainstERE {
             .of(coreNLPXMLLoader.loadFrom(ereMapping.get(ereID)))
                                                                               : Optional.<CoreNLPDocument>absent();
         ereAligner = EREAligner
-            .create(relaxUsingCORENLP, useExactMatchForCoreNLPRelaxation, doc, coreNLPDoc,
+            .create(relaxUsingCORENLP, doc, coreNLPDoc,
                 EREToKBPEventOntologyMapper.create2016Mapping());
       } catch (IOException e) {
         throw new RuntimeException(e);

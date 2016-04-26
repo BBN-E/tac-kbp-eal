@@ -25,7 +25,5 @@ goldDocIDToFileMap: /nfs/mercury-06/u17/data/kbp-2015-score-with-alternate-heads
 systemOutput: %keepBest%
 scoringOutputRoot: %outputDir%/score/withRealis
 
-# TODO provide instructions on creating this
 coreNLPDocIDMap: /nfs/mercury-06/u17/data/kbp-2015-score-with-alternate-heads/corenlp-out.docidmap
 relaxUsingCoreNLP: true
-useExactMatchForCoreNLPRelaxation: false
