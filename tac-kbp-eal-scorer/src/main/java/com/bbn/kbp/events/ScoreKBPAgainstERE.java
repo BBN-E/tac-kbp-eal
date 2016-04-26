@@ -303,6 +303,9 @@ public final class ScoreKBPAgainstERE {
     private final File outputDir;
     private final ImmutableMap.Builder<Symbol, ExplicitFMeasureInfo> countsB =
         ImmutableMap.builder();
+    private final ImmutableMap.Builder<Symbol, Integer> predictedCountsB = ImmutableMap.builder();
+    private final ImmutableMap.Builder<Symbol, Integer> actualCountsB = ImmutableMap.builder();
+    private final ImmutableMap.Builder<Symbol, Integer> linkingArgsCountB = ImmutableMap.builder();
 
 
     private LinkingInspector(final File outputDir) {
@@ -319,23 +322,56 @@ public final class ScoreKBPAgainstERE {
       checkArgument(ImmutableSet.copyOf(concat(item.key())).containsAll(
           ImmutableSet.copyOf(concat(item.test()))), "Must contain only answers in test set!");
       final ExplicitFMeasureInfo counts = LinkF1.create().score(item.test(), item.key());
-      final ImmutableSet<Symbol> docids = ImmutableSet.copyOf(transform(concat(
+      final ImmutableSet<DocLevelEventArg> args = ImmutableSet.copyOf(concat(
           transform(concat(item.test().eventFrames(), item.key().eventFrames()),
-              ScoringEventFrameFunctions.arguments())), DocLevelEventArgFunctions.docID()));
+              ScoringEventFrameFunctions.arguments())));
+      final ImmutableSet<Symbol> docids =
+          ImmutableSet.copyOf(transform(args, DocLevelEventArgFunctions.docID()));
       final Symbol docid = Iterables.getOnlyElement(docids);
+      predictedCountsB.put(docid, ImmutableSet.copyOf(concat(item.test().eventFrames())).size());
+      actualCountsB.put(docid, ImmutableSet.copyOf(concat(item.key().eventFrames())).size());
       countsB.put(docid, counts);
+      linkingArgsCountB.put(docid, args.size());
     }
 
     @Override
     public void finish() throws IOException {
+      // copies logic from com.bbn.kbp.events2014.scorer.bin.AggregateResultWriter.computeLinkScores()
       final ImmutableMap<Symbol, ExplicitFMeasureInfo> counts = countsB.build();
+      final ImmutableMap<Symbol, Integer> predictedCounts = predictedCountsB.build();
+      final ImmutableMap<Symbol, Integer> actualCounts = actualCountsB.build();
+      final ImmutableMap<Symbol, Integer> linkingArgsCounts = linkingArgsCountB.build();
+
+      double precision = 0;
+      double recall = 0;
+      double f1 = 0;
+      double linkNormalizerSum = 0;
       checkNotNull(counts, "Inspect must be called before Finish!");
       for (final Symbol docid : counts.keySet()) {
         final File docOutput = new File(outputDir, docid.asString());
         final PrintWriter outputWriter = new PrintWriter(new File(docOutput, "linkingF.txt"));
         outputWriter.println(counts.get(docid).toString());
         outputWriter.close();
+
+        precision += counts.get(docid).precision() * predictedCounts.get(docid);
+        recall += counts.get(docid).recall() * actualCounts.get(docid);
+        f1 += counts.get(docid).f1() * actualCounts.get(docid);
+        linkNormalizerSum += linkingArgsCounts.get(docid);
       }
+
+      // the normalizer sum can't actually be negative here, but this minimizes divergence with the source logic.
+      double aggregateLinkScore =
+          (linkNormalizerSum > 0.0) ? f1 / linkNormalizerSum : 0.0;
+      double aggregateLinkPrecision =
+          (linkNormalizerSum > 0.0) ? precision / linkNormalizerSum : 0.0;
+      double aggregateLinkRecall =
+          (linkNormalizerSum > 0.0) ? recall / linkNormalizerSum : 0.0;
+
+      final ExplicitFMeasureInfo aggregate =
+          new ExplicitFMeasureInfo(aggregateLinkPrecision, aggregateLinkRecall, aggregateLinkScore);
+      final PrintWriter outputWriter = new PrintWriter(new File(outputDir, "linkingF.txt"));
+      outputWriter.println(aggregate);
+      outputWriter.close();
     }
   }
 
