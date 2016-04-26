@@ -128,8 +128,6 @@ public final class ScoreKBPAgainstERE {
     final ImmutableMap<Symbol, File> coreNLPProcessedRawDocs = FileUtils.loadSymbolToFileMap(
         Files.asCharSource(params.getExistingFile("coreNLPDocIDMap"), Charsets.UTF_8));
     final boolean relaxUsingCORENLP = params.getBoolean("relaxUsingCoreNLP");
-    final boolean useExactMatchForCoreNLPRelaxation =
-        relaxUsingCORENLP && params.getBoolean("useExactMatchForCoreNLPRelaxation");
     final CoreNLPXMLLoader coreNLPXMLLoader =
         CoreNLPXMLLoader.builder(HeadFinders.<CoreNLPParseNode>getEnglishPTBHeadFinder()).build();
 
