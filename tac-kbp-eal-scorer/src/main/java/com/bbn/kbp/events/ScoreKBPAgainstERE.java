@@ -80,6 +80,7 @@ import static com.google.common.base.Predicates.compose;
 import static com.google.common.base.Predicates.in;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Iterables.filter;
+import static com.google.common.collect.Iterables.transform;
 
 /**
  * Scores KBP 2015 event argument output against an ERE gold standard.  Scoring is in terms of
@@ -274,7 +275,7 @@ public final class ScoreKBPAgainstERE {
     final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
         filteredNode = transformed(linkingNode, RestrictToLinking.INSTANCE);
     final LinkingInspector linkingInspector =
-        LinkingInspector.createOutputtingTo(new File(outputDir, "linkingF.txt"));
+        LinkingInspector.createOutputtingTo(outputDir);
     inspect(filteredNode).with(linkingInspector);
   }
 
@@ -299,11 +300,13 @@ public final class ScoreKBPAgainstERE {
   private static final class LinkingInspector implements
       Inspector<EvalPair<DocLevelArgLinking, DocLevelArgLinking>> {
 
-    private final File outputFile;
-    ExplicitFMeasureInfo counts = null;
+    private final File outputDir;
+    private final ImmutableMap.Builder<Symbol, ExplicitFMeasureInfo> countsB =
+        ImmutableMap.builder();
 
-    private LinkingInspector(final File outputFile) {
-      this.outputFile = outputFile;
+
+    private LinkingInspector(final File outputDir) {
+      this.outputDir = outputDir;
     }
 
     public static LinkingInspector createOutputtingTo(final File outputFile) {
@@ -315,15 +318,24 @@ public final class ScoreKBPAgainstERE {
         final EvalPair<DocLevelArgLinking, DocLevelArgLinking> item) {
       checkArgument(ImmutableSet.copyOf(concat(item.key())).containsAll(
           ImmutableSet.copyOf(concat(item.test()))), "Must contain only answers in test set!");
-      counts = LinkF1.create().score(item.test(), item.key());
+      final ExplicitFMeasureInfo counts = LinkF1.create().score(item.test(), item.key());
+      final ImmutableSet<Symbol> docids = ImmutableSet.copyOf(transform(concat(
+          transform(concat(item.test().eventFrames(), item.key().eventFrames()),
+              ScoringEventFrameFunctions.arguments())), DocLevelEventArgFunctions.docID()));
+      final Symbol docid = Iterables.getOnlyElement(docids);
+      countsB.put(docid, counts);
     }
 
     @Override
     public void finish() throws IOException {
+      final ImmutableMap<Symbol, ExplicitFMeasureInfo> counts = countsB.build();
       checkNotNull(counts, "Inspect must be called before Finish!");
-      final PrintWriter outputWriter = new PrintWriter(outputFile);
-      outputWriter.println(counts.toString());
-      outputWriter.close();
+      for (final Symbol docid : counts.keySet()) {
+        final File docOutput = new File(outputDir, docid.asString());
+        final PrintWriter outputWriter = new PrintWriter(new File(docOutput, "linkingF.txt"));
+        outputWriter.println(counts.get(docid).toString());
+        outputWriter.close();
+      }
     }
   }
 
