@@ -222,7 +222,8 @@ public final class ValidateSystemOutput {
   }
 
   /**
-   * Warns about CAS offsets for
+   * Warns about CAS offsets for Responses being inconsistent with actual document text for non-TIME
+   * roles
    */
   private void warnOnMissingOffsets(final File systemOutputStoreFile, final Symbol docID,
       final ImmutableSet<Response> responses,
