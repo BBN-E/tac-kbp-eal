@@ -77,7 +77,7 @@ public final class ValidateSystemOutput2016 {
               LinkingValidators.banGeneric());
       final ValidateSystemOutput validator =
           ValidateSystemOutput.create(typeAndRoleValidator, linkingValidator,
-              ValidateSystemOutput2015.CONVERT_TO_STANDARD_IDS);
+              ValidateSystemOutput.NO_PREPROCESSING);
 
       final File systemOutputStoreFile = params.getExistingFileOrDirectory("systemOutputStore");
 
