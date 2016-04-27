@@ -46,6 +46,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -77,7 +78,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Predicates.compose;
+import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.in;
+import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterables.transform;
@@ -219,15 +222,18 @@ public final class ScoreKBPAgainstERE {
         inputAsResponsesAndLinking =
         transformRight(transformLeft(input, responsesAndLinkingFromEREExtractor),
             responsesAndLinkingFromKBPExtractor);
-    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredInput =
+    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredFor2016 =
         InspectorTreeDSL.transformBoth(
             inputAsResponsesAndLinking,
             ResponsesAndLinking.filterFunction(ARG_TYPE_IS_ALLOWED_FOR_2016));
 
+    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredForLifeDie =
+        transformed(filteredFor2016, RestrictLifeInjureToLifeDieEvents.INSTANCE);
+
     // set up for event argument scoring in 2015 style
-    eventArgumentScoringSetup(filteredInput, outputDir);
+    eventArgumentScoringSetup(filteredForLifeDie, outputDir);
     // set up for linking scoring in 2015 style
-    linkingScoringSetup(filteredInput, outputDir);
+    linkingScoringSetup(filteredForLifeDie, outputDir);
   }
 
   private static void eventArgumentScoringSetup(
@@ -280,6 +286,44 @@ public final class ScoreKBPAgainstERE {
       compose(in(ALLOWED_ROLES_2016), DocLevelEventArgFunctions.eventArgumentType());
   private static final Predicate<_DocLevelEventArg> REALIS_ALLOWED_FOR_LINKING =
       compose(in(linkableRealis), DocLevelEventArgFunctions.realis());
+
+
+  private enum RestrictLifeInjureToLifeDieEvents implements
+      Function<EvalPair<ResponsesAndLinking, ResponsesAndLinking>, EvalPair<ResponsesAndLinking, ResponsesAndLinking>> {
+    INSTANCE;
+
+    final Symbol LifeDie = Symbol.from("Life.Die");
+
+    @Override
+    public EvalPair<ResponsesAndLinking, ResponsesAndLinking> apply(
+        final EvalPair<ResponsesAndLinking, ResponsesAndLinking> input) {
+      // find all Life.Die event arguments
+      final ImmutableSet<DocLevelEventArg> keyArgs = ImmutableSet.copyOf(filter(input.key().args(),
+          Predicates.compose(equalTo(LifeDie), DocLevelEventArgFunctions.eventType())));
+      // get all possible candidate Life.Injure event arguments that could be derived from these Life.Die arguments
+      final ImmutableSet<DocLevelEventArg> argsToIgnore =
+          ImmutableSet.copyOf(transform(keyArgs, LifeDieToLifeInjure.INSTANCE));
+      // filter both the ERE and the system input to ignore these derived arguments.
+      return EvalPair.of(input.key().filter(not(in(argsToIgnore))),
+          input.test().filter(not(in(argsToIgnore))));
+    }
+  }
+
+  private enum LifeDieToLifeInjure implements Function<DocLevelEventArg, DocLevelEventArg> {
+    INSTANCE {
+
+      final Symbol LifeInjure = Symbol.from("Life.Injure");
+
+      @Nullable
+      @Override
+      public DocLevelEventArg apply(@Nullable final DocLevelEventArg docLevelEventArg) {
+        checkNotNull(docLevelEventArg);
+        checkArgument(docLevelEventArg.eventType()
+            .equalTo(RestrictLifeInjureToLifeDieEvents.INSTANCE.LifeDie));
+        return docLevelEventArg.withEventType(LifeInjure);
+      }
+    }
+  }
 
   private enum RestrictToLinking implements
       Function<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, EvalPair<DocLevelArgLinking, DocLevelArgLinking>> {
