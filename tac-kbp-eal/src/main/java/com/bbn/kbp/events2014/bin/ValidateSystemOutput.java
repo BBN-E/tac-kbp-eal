@@ -5,6 +5,11 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.CharOffsetSpan;
+import com.bbn.kbp.events2014.CorpusEventFrame;
+import com.bbn.kbp.events2014.CorpusEventLinking;
+import com.bbn.kbp.events2014.DocEventFrameReference;
+import com.bbn.kbp.events2014.DocEventFrameReferenceFunctions;
+import com.bbn.kbp.events2014.DocumentSystemOutput;
 import com.bbn.kbp.events2014.KBPEA2015OutputLayout;
 import com.bbn.kbp.events2014.KBPEA2016OutputLayout;
 import com.bbn.kbp.events2014.KBPRealis;
@@ -13,6 +18,7 @@ import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseFunctions;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.SystemOutputLayout;
+import com.bbn.kbp.events2014.io.CorpusEventFrameIO;
 import com.bbn.kbp.events2014.io.LinkingStore;
 import com.bbn.kbp.events2014.io.LinkingStoreSource;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
@@ -26,6 +32,7 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -150,17 +157,24 @@ public final class ValidateSystemOutput {
 
     final SystemOutputStore outputStore;
     final Optional<LinkingStore> linkingStore;
+    final Optional<CorpusEventLinking> corpusEventLinking;
     final Set<Symbol> docIDs;
     try {
       outputStore = outputLayout.open(systemOutputStoreFile);
       if (KBPEA2015OutputLayout.get().equals(outputLayout)) {
         linkingStore = Optional.of(LinkingStoreSource.createFor2015()
             .openLinkingStore(new File(systemOutputStoreFile, "linking")));
+        corpusEventLinking = Optional.absent();
       } else if (KBPEA2016OutputLayout.get().equals(outputLayout)) {
         linkingStore = Optional.of(LinkingStoreSource.createFor2016()
             .openLinkingStore(new File(systemOutputStoreFile, "linking")));
+        corpusEventLinking = Optional.of(CorpusEventFrameIO.loaderFor2016().loadCorpusEventFrames(
+            Files.asCharSource(
+                new File(new File(systemOutputStoreFile, "corpusLinking"), "corpusLinking"),
+                Charsets.UTF_8)));
       } else {
         linkingStore = Optional.absent();
+        corpusEventLinking = Optional.absent();
       }
 
       docIDs = outputStore.docIDs();
@@ -215,6 +229,40 @@ public final class ValidateSystemOutput {
         ++numErrors;
         if (numErrors > maxErrors) {
           return new Result(errors, warnings);
+        }
+      }
+    }
+
+    if (corpusEventLinking.isPresent()) {
+      for (final CorpusEventFrame frame : corpusEventLinking.get().corpusEventFrames()) {
+        try {
+          final ImmutableMultimap<Symbol, DocEventFrameReference> idToFrame =
+              FluentIterable.from(frame.docEventFrames()).index(
+                  DocEventFrameReferenceFunctions.docID());
+          final ImmutableSet.Builder<Response> allLinkedResponsesB = ImmutableSet.builder();
+
+          for (final Symbol docID : idToFrame.keySet()) {
+            final DocumentSystemOutput output = outputStore.read(docID);
+            final Optional<ResponseLinking> linking = linkingStore.get().read(output.arguments());
+
+            for (final DocEventFrameReference docEventFrameReference : idToFrame.get(docID)) {
+              allLinkedResponsesB.addAll(
+                  linking.get().responseSetIds().get().get(docEventFrameReference.eventFrameID()));
+            }
+          }
+
+          final ImmutableSet<Response> allLinkedResponses = allLinkedResponsesB.build();
+          for (final Response a : allLinkedResponses) {
+            for (final Response b : allLinkedResponses) {
+              if (!linkingValidator.validToLink(a, b)) {
+                throw new Exception(String
+                    .format("%s and %s were linked across documents but are of incompatible types!",
+                        a.toString(), b.toString()));
+              }
+            }
+          }
+        } catch (final Exception e) {
+          errors.add(e);
         }
       }
     }
