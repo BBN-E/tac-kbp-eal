@@ -23,9 +23,9 @@ goldDocIDToFileMap: /nfs/mercury-06/u17/data/kbp-2015-score-with-alternate-heads
 
 # - and each subdir of systemOutputsDir should be a 'system' with subdirs 'arguments' and 'linking'
 systemOutput: %keepBest%
+outputLayout: KBP_EAL_2015
 scoringOutputRoot: %outputDir%/score/withRealis
+ereScoringOutput: %scoreOutput%
 
-# TODO provide instructions on creating this
 coreNLPDocIDMap: /nfs/mercury-06/u17/data/kbp-2015-score-with-alternate-heads/corenlp-out.docidmap
 relaxUsingCoreNLP: true
-useExactMatchForCoreNLPRelaxation: false

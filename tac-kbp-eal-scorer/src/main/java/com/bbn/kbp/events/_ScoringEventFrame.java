@@ -4,6 +4,7 @@ import com.bbn.bue.common.TextGroupPackageImmutable;
 
 import com.google.common.collect.ImmutableSet;
 
+import org.immutables.func.Functional;
 import org.immutables.value.Value;
 
 import java.util.AbstractSet;
@@ -12,6 +13,7 @@ import java.util.Iterator;
 import static com.google.common.base.Preconditions.checkArgument;
 
 @TextGroupPackageImmutable
+@Functional
 @Value.Immutable
 public abstract class _ScoringEventFrame extends AbstractSet<DocLevelEventArg> {
 
