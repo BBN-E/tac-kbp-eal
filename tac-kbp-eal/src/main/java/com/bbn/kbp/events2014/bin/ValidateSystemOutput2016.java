@@ -5,6 +5,8 @@ import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.KBPEA2016OutputLayout;
+import com.bbn.kbp.events2014.validation.LinkingValidator;
+import com.bbn.kbp.events2014.validation.LinkingValidators;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 
 import com.google.common.base.Charsets;
@@ -66,8 +68,13 @@ public final class ValidateSystemOutput2016 {
       final TypeAndRoleValidator typeAndRoleValidator = TypeAndRoleValidator
           .create(ImmutableSet.<Symbol>of(), FileUtils.loadSymbolMultimap(
               Files.asCharSource(params.getExistingFile("validRoles"), Charsets.UTF_8)));
-      final ValidateSystemOutput validator = ValidateSystemOutput.create(typeAndRoleValidator,
-          ValidateSystemOutput2015.CONVERT_TO_STANDARD_IDS);
+      // for performing additional validation
+      final LinkingValidator linkingValidator = LinkingValidators.validatorFromMap(FileUtils
+          .loadSymbolMultimap(
+              Files.asCharSource(params.getExistingFile("linkableTypes"), Charsets.UTF_8)));
+      final ValidateSystemOutput validator =
+          ValidateSystemOutput.create(typeAndRoleValidator, linkingValidator,
+              ValidateSystemOutput2015.CONVERT_TO_STANDARD_IDS);
 
       final File systemOutputStoreFile = params.getExistingFileOrDirectory("systemOutputStore");
 

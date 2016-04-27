@@ -6,6 +6,7 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events2014.KBPEA2014OutputLayout;
 import com.bbn.kbp.events2014.SystemOutputLayout;
+import com.bbn.kbp.events2014.validation.LinkingValidators;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 
 import com.google.common.base.Charsets;
@@ -71,7 +72,7 @@ public final class NISTValidator {
     final ValidateSystemOutput validator = ValidateSystemOutput.create(
         TypeAndRoleValidator.create(SymbolUtils.setFrom("Time", "Place"),
             FileUtils.loadSymbolMultimap(Files.asCharSource(rolesFile, Charsets.UTF_8))),
-        ValidateSystemOutput.NO_PREPROCESSING);
+        LinkingValidators.alwaysValidValidator(), ValidateSystemOutput.NO_PREPROCESSING);
 
     Verbosity verbosity = null;
 

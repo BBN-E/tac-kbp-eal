@@ -4,6 +4,7 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.KBPEA2015OutputLayout;
 import com.bbn.kbp.events2014.io.ImportForeignIDs;
+import com.bbn.kbp.events2014.validation.LinkingValidators;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 
 import com.google.common.io.Files;
@@ -65,7 +66,7 @@ public final class ValidateSystemOutput2015 {
       final TypeAndRoleValidator typeAndRoleValidator =
           TypeAndRoleValidator.createFromParameters(params);
       final ValidateSystemOutput validator = ValidateSystemOutput.create(typeAndRoleValidator,
-          CONVERT_TO_STANDARD_IDS);
+          LinkingValidators.alwaysValidValidator(), CONVERT_TO_STANDARD_IDS);
 
       final File systemOutputStoreFile = params.getExistingFileOrDirectory("systemOutputStore");
 

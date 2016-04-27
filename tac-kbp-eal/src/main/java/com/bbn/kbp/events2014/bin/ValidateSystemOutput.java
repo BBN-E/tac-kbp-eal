@@ -16,6 +16,8 @@ import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.LinkingStore;
 import com.bbn.kbp.events2014.io.LinkingStoreSource;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.events2014.validation.LinkingValidator;
+import com.bbn.kbp.events2014.validation.LinkingValidators;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 
 import com.google.common.base.Charsets;
@@ -52,6 +54,7 @@ public final class ValidateSystemOutput {
 
   private final TypeAndRoleValidator typeAndRoleValidator;
   private final Preprocessor preprocessor;
+  private final LinkingValidator linkingValidator;
 
   private static final Symbol MOVEMENTTRANSPORT = Symbol.from("Movement.Transport");
   private static final Symbol PLACE = Symbol.from("Place");
@@ -70,14 +73,15 @@ public final class ValidateSystemOutput {
   };
 
   private ValidateSystemOutput(TypeAndRoleValidator typeAndRoleValidator,
-      Preprocessor preprocessor) {
+      final LinkingValidator linkingValidator, Preprocessor preprocessor) {
+    this.linkingValidator = checkNotNull(linkingValidator);
     this.typeAndRoleValidator = checkNotNull(typeAndRoleValidator);
     this.preprocessor = checkNotNull(preprocessor);
   }
 
   public static ValidateSystemOutput create(TypeAndRoleValidator typeAndRoleValidator,
-      Preprocessor preprocessor) {
-    return new ValidateSystemOutput(typeAndRoleValidator, preprocessor);
+      final LinkingValidator linkingValidator, Preprocessor preprocessor) {
+    return new ValidateSystemOutput(typeAndRoleValidator, linkingValidator, preprocessor);
   }
 
   private static void usage() {
@@ -270,6 +274,7 @@ public final class ValidateSystemOutput {
       }
       throw new RuntimeException(msg.toString());
     }
+    linkingValidator.validate(responseLinking.get());
   }
 
   private static final Predicate<Response> NOT_GENERIC = compose(not(equalTo(
@@ -468,7 +473,8 @@ public final class ValidateSystemOutput {
 
       final TypeAndRoleValidator typeAndRoleValidator =
           TypeAndRoleValidator.createFromParameters(params);
-      final ValidateSystemOutput validator = create(typeAndRoleValidator, NO_PREPROCESSING);
+      final ValidateSystemOutput validator =
+          create(typeAndRoleValidator, LinkingValidators.alwaysValidValidator(), NO_PREPROCESSING);
 
       final File systemOutputStoreFile = params.getExistingFileOrDirectory("systemOutputStore");
       final SystemOutputLayout layout = SystemOutputLayout.ParamParser.fromParamVal(
