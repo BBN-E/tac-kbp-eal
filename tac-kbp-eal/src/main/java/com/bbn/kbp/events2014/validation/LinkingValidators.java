@@ -31,8 +31,8 @@ final class AlwaysValid implements LinkingValidator {
   }
 
   @Override
-  public void validate(final ResponseLinking linking) {
-
+  public boolean validate(final ResponseLinking linking) {
+    return true;
   }
 
   @Override
@@ -54,17 +54,17 @@ final class MapLinkingValidator implements LinkingValidator {
   }
 
   @Override
-  public void validate(final ResponseLinking linking) {
+  public boolean validate(final ResponseLinking linking) {
     for (final ResponseSet rs : linking.responseSets()) {
       for (final Response r : rs) {
         for (final Response s : rs) {
           if (!validToLink(r, s)) {
-            throw new RuntimeException(
-                String.format("Response %s and %s were unlinkable", r.toString(), s.toString()));
+            return false;
           }
         }
       }
     }
+    return true;
   }
 
   @Override

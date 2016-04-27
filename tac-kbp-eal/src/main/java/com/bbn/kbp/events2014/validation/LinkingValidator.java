@@ -12,7 +12,7 @@ public interface LinkingValidator {
    * Establishes the validity of an {@link ResponseLinking}
    * @param linking
    */
-  void validate(ResponseLinking linking);
+  boolean validate(ResponseLinking linking);
 
   /**
    * Determines if two Responses are valid to link.

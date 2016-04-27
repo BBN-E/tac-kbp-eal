@@ -274,7 +274,10 @@ public final class ValidateSystemOutput {
       }
       throw new RuntimeException(msg.toString());
     }
-    linkingValidator.validate(responseLinking.get());
+    if (!linkingValidator.validate(responseLinking.get())) {
+      throw new RuntimeException(String.format("Validation failed for %s with validator %s", docID,
+          linkingValidator.getClass().toString()));
+    }
   }
 
   private static final Predicate<Response> NOT_GENERIC = compose(not(equalTo(
