@@ -6,7 +6,9 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.KBPEA2015OutputLayout;
+import com.bbn.kbp.events2014.KBPEA2016OutputLayout;
 import com.bbn.kbp.events2014.KBPRealis;
+import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseFunctions;
 import com.bbn.kbp.events2014.ResponseLinking;
@@ -19,6 +21,8 @@ import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -51,6 +55,7 @@ public final class ValidateSystemOutput {
 
   private static final Symbol MOVEMENTTRANSPORT = Symbol.from("Movement.Transport");
   private static final Symbol PLACE = Symbol.from("Place");
+  private static final Symbol TIME = Symbol.from("Time");
 
   interface Preprocessor {
 
@@ -124,27 +129,36 @@ public final class ValidateSystemOutput {
         return Result.forErrors(ImmutableList.of(e));
       }
     }
+    if (KBPEA2016OutputLayout.get().equals(outputLayout)) {
+      try {
+        assertExactly2016Subdirectories(originalSystemOutputStoreFile);
+      } catch (Exception e) {
+        return Result.forErrors(ImmutableList.of(e));
+      }
+    }
 
     final File systemOutputStoreFile = preprocessor.preprocess(originalSystemOutputStoreFile);
     final List<String> warnings = Lists.newArrayList();
     final List<Throwable> errors = Lists.newArrayList();
 
-
     log.info("Validating system output store {} with max errors {}", systemOutputStoreFile,
         maxErrors);
 
-    // these are only non-final because the compiler isn't clever enough
-    // to figure out they cannot fail to be initialized
-    SystemOutputStore outputStore = null;
-    Optional<LinkingStore> linkingStore = null;
-    Set<Symbol> docIDs = null;
+    final SystemOutputStore outputStore;
+    final Optional<LinkingStore> linkingStore;
+    final Set<Symbol> docIDs;
     try {
       outputStore = outputLayout.open(systemOutputStoreFile);
       if (KBPEA2015OutputLayout.get().equals(outputLayout)) {
         linkingStore = Optional.of(LinkingStoreSource.createFor2015()
             .openLinkingStore(new File(systemOutputStoreFile, "linking")));
-
+      } else if (KBPEA2016OutputLayout.get().equals(outputLayout)) {
+        linkingStore = Optional.of(LinkingStoreSource.createFor2016()
+            .openLinkingStore(new File(systemOutputStoreFile, "linking")));
+      } else {
+        linkingStore = Optional.absent();
       }
+
       docIDs = outputStore.docIDs();
     } catch (Exception e) {
       errors.add(e);
@@ -170,10 +184,11 @@ public final class ValidateSystemOutput {
         final ArgumentOutput docOutput = outputStore.read(docID).arguments();
         log.info("For document {} got {} responses", docID, docOutput.size());
 
-
         for (final Response response : docOutput.responses()) {
+          assertIdenticalDocID(response, docID);
           assertValidTypes(response);
         }
+        warnOnMissingOffsets(systemOutputStoreFile, docID, docOutput.responses(), docIDMap);
 
         for (final Response response : docOutput.responses()) {
           // lets keep all hacks as high level as possible
@@ -200,11 +215,29 @@ public final class ValidateSystemOutput {
       }
     }
 
-
     // this might not get called, but for read-only use with the default
     // implementation this is not a problem
     outputStore.close();
     return new Result(errors, warnings);
+  }
+
+  /**
+   * Warns about CAS offsets for
+   */
+  private void warnOnMissingOffsets(final File systemOutputStoreFile, final Symbol docID,
+      final ImmutableSet<Response> responses,
+      final Map<Symbol, File> docIDMap) throws IOException {
+    final String text = Files.asCharSource(docIDMap.get(docID), Charsets.UTF_8).read();
+    for (final Response r : FluentIterable.from(responses)
+        .filter(Predicates.compose(not(equalTo(TIME)), ResponseFunctions.role()))) {
+      final KBPString cas = r.canonicalArgument();
+      final String casTextInRaw = resolveCharOffsets(cas.charOffsetSpan(), docID, text);
+      // allow whitespace
+      if (!casTextInRaw.contains(cas.string())) {
+        log.warn("Warning for {} - response {} CAS does not match text span of {} ",
+            systemOutputStoreFile.getAbsolutePath(), renderResponse(r, text), casTextInRaw);
+      }
+    }
   }
 
   private void checkLinkingValidity(final Symbol docID, final ArgumentOutput docOutput,
@@ -244,14 +277,35 @@ public final class ValidateSystemOutput {
   private void assertExactlyTwoSubdirectories(final File outputStoreDir) throws IOException {
     checkArgument(outputStoreDir.isDirectory());
     if (!new File(outputStoreDir, "arguments").isDirectory()) {
-      throw new IOException("Expected system output to be contain a subdirectory named 'arguments");
+      throw new IOException(
+          "Expected system output to be contain a subdirectory named 'arguments'");
     }
     if (!new File(outputStoreDir, "linking").isDirectory()) {
-      throw new IOException("Expected system output to be contain a subdirectory named 'linking");
+      throw new IOException("Expected system output to be contain a subdirectory named 'linking'");
     }
     if (outputStoreDir.listFiles().length != 2) {
       throw new IOException(
           "Expected system output to contain exactly two sub-directories, but it contains "
+              + outputStoreDir.listFiles() + " things");
+    }
+  }
+
+  private void assertExactly2016Subdirectories(final File outputStoreDir) throws IOException {
+    checkArgument(outputStoreDir.isDirectory());
+    if (!new File(outputStoreDir, "arguments").isDirectory()) {
+      throw new IOException(
+          "Expected system output to be contain a subdirectory named 'arguments'");
+    }
+    if (!new File(outputStoreDir, "linking").isDirectory()) {
+      throw new IOException("Expected system output to be contain a subdirectory named 'linking'");
+    }
+    if (!new File(outputStoreDir, "corpusLinking").isDirectory()) {
+      throw new IOException(
+          "Expected system output to be contain a subdirectory named 'corpusLinking'");
+    }
+    if (outputStoreDir.listFiles().length != 3) {
+      throw new IOException(
+          "Expected system output to contain exactly three sub-directories, but it contains "
               + outputStoreDir.listFiles() + " things");
     }
   }
@@ -299,6 +353,12 @@ public final class ValidateSystemOutput {
     }
   }
 
+  private void assertIdenticalDocID(final Response response, final Symbol docID) {
+    if (!response.docID().equalTo(docID)) {
+      throw new RuntimeException(String
+          .format("%s was in a file for %s but docID does not match!", response.toString(), docID));
+    }
+  }
 
   private void assertValidTypes(Response response) {
     if (typeAndRoleValidator.isValidEventType(response)) {
