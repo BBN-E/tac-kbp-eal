@@ -70,9 +70,11 @@ public final class ValidateSystemOutput2016 {
           .create(ImmutableSet.<Symbol>of(), FileUtils.loadSymbolMultimap(
               Files.asCharSource(params.getExistingFile("validRoles"), Charsets.UTF_8)));
       // for performing additional validation
-      final LinkingValidator linkingValidator = LinkingValidators.validatorFromMap(FileUtils
-          .loadSymbolMultimap(
-              Files.asCharSource(params.getExistingFile("linkableTypes"), Charsets.UTF_8)));
+      final LinkingValidator linkingValidator =
+          LinkingValidators.compose(LinkingValidators.validatorFromMap(FileUtils
+                  .loadSymbolMultimap(
+                      Files.asCharSource(params.getExistingFile("linkableTypes"), Charsets.UTF_8))),
+              LinkingValidators.banGeneric());
       final ValidateSystemOutput validator =
           ValidateSystemOutput.create(typeAndRoleValidator, linkingValidator,
               ValidateSystemOutput2015.CONVERT_TO_STANDARD_IDS);
