@@ -193,3 +193,7 @@ For questions concerning the software, please contact `rgabbard@bbn.com`.  If yo
 have bugs or feature requests, you can use the GitHub Issue Tracker. The issue tracker is
 preferred so future users can benefit from the answers to your questions. To track changes to
 this repository, follow https://github.com/BBN-E/tac-kbp-eal/commits/master.atom in an RSS reader.
+
+## Export Control Marking
+
+The project, DARPA DEFT, was previously assessed and assigned a final determination of EAR99. The JCAT part number is PN-BBN-E-14230.
