@@ -50,9 +50,10 @@ public final class ValidateSystemOutput2016 {
             "Parameters:\n\tsystemOutputStore: the system output to be validated. This should be the directory with 'argument' and 'linking' subdirectories \n"
             +
             "\tdump: whether to dump a human-readable form of the input to standard output\n" +
-            "\tdocIDMap: (only if dump is true) a list of tab-separated pairs of doc ID and path to original text.\n"
+            "\tdocIDMap: a list of tab-separated pairs of doc ID and path to original text.\n"
             +
-            "\tvalidRoles: is data/2016.types.txt (for KBP 2016)\n");
+            "\tvalidRoles: is data/2016.types.txt (for KBP 2016)\n"
+            + "\tlinkableTypes: is data/2016.linkable.txt - for each event argument type, valid argument types for it to be linked to.\n");
     System.exit(1);
   }
 
