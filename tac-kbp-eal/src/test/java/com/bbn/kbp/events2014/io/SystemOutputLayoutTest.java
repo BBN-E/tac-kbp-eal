@@ -9,6 +9,7 @@ import com.bbn.kbp.events2014.DocEventFrameReference;
 import com.bbn.kbp.events2014.DocumentSystemOutput;
 import com.bbn.kbp.events2014.DocumentSystemOutput2015;
 import com.bbn.kbp.events2014.KBPEA2016OutputLayout;
+import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseFunctions;
 import com.bbn.kbp.events2014.ResponseLinking;
@@ -32,6 +33,10 @@ import java.io.IOException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Predicates.compose;
+import static com.google.common.base.Predicates.in;
+import static com.google.common.base.Predicates.not;
+import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterables.getFirst;
 
 public final class SystemOutputLayoutTest {
@@ -80,7 +85,8 @@ public final class SystemOutputLayoutTest {
       final ResponseLinking.Builder responseLinkingB = ResponseLinking.builder().docID(docID);
       for (final Symbol type : typeToResponse.keySet()) {
         checkState(typeToResponse.get(type).size() > 0);
-        final ResponseSet r = ResponseSet.of(typeToResponse.get(type));
+        final ResponseSet r = ResponseSet.of(filter(typeToResponse.get(type), compose(not(in(ImmutableSet.of(
+            KBPRealis.Generic))), ResponseFunctions.realis())));
         responseLinkingB.addResponseSets(r);
         responseSetIDs.put(Integer.toString(responseIDCount++), r);
       }
