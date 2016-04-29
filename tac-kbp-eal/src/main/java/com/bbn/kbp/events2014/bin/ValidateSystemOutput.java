@@ -51,6 +51,7 @@ import java.util.Set;
 import static com.bbn.bue.common.files.FileUtils.loadSymbolToFileMap;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Predicates.compose;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.not;
@@ -244,8 +245,15 @@ public final class ValidateSystemOutput {
           for (final Symbol docID : idToFrame.keySet()) {
             final DocumentSystemOutput output = outputStore.read(docID);
             final Optional<ResponseLinking> linking = linkingStore.get().read(output.arguments());
+            checkState(linking.isPresent());
+            checkNotNull(linking.get().responseSetIds());
+            checkState(linking.get().responseSetIds().isPresent());
 
             for (final DocEventFrameReference docEventFrameReference : idToFrame.get(docID)) {
+              checkNotNull(docEventFrameReference);
+              checkNotNull(docEventFrameReference.eventFrameID());
+              checkNotNull(
+                  linking.get().responseSetIds().get().get(docEventFrameReference.eventFrameID()));
               allLinkedResponsesB.addAll(
                   linking.get().responseSetIds().get().get(docEventFrameReference.eventFrameID()));
             }
