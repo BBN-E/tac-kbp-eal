@@ -36,7 +36,6 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Predicates.compose;
 import static com.google.common.base.Predicates.in;
 import static com.google.common.base.Predicates.not;
-import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterables.getFirst;
 
 public final class SystemOutputLayoutTest {
@@ -76,8 +75,11 @@ public final class SystemOutputLayoutTest {
       log.info("Processing {}", docID);
       final DocumentSystemOutput answerKey = sourceLayout.read(docID);
 
-      // coref everything in the same document
-      final ImmutableSet<Response> responses = answerKey.arguments().responses();
+      // coref everything non-generic of the same event type in the same document
+      final ImmutableSet<Response> responses =
+          FluentIterable.from(answerKey.arguments().responses())
+              .filter(compose(not(in(ImmutableSet.of(
+                  KBPRealis.Generic))), ResponseFunctions.realis())).toSet();
       final ImmutableMultimap<Symbol, Response> typeToResponse =
           FluentIterable.from(responses).index(
               ResponseFunctions.type());
@@ -85,9 +87,9 @@ public final class SystemOutputLayoutTest {
       final ResponseLinking.Builder responseLinkingB = ResponseLinking.builder().docID(docID);
       for (final Symbol type : typeToResponse.keySet()) {
         checkState(typeToResponse.get(type).size() > 0);
-        final ResponseSet r = ResponseSet.of(filter(typeToResponse.get(type), compose(not(in(ImmutableSet.of(
-            KBPRealis.Generic))), ResponseFunctions.realis())));
+        final ResponseSet r = ResponseSet.of(typeToResponse.get(type));
         responseLinkingB.addResponseSets(r);
+
         responseSetIDs.put(Integer.toString(responseIDCount++), r);
       }
       responseLinkingB.responseSetIds(responseSetIDs.build());
