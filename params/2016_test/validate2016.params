@@ -1,0 +1,5 @@
+systemOutputStore: tac-kbp-eal/src/test/resources/com/bbn/kbp/events2014/io/CorpusEventTest/
+dump: false
+docIDMap: /nfs/mercury-06/u17/tmp/LDC2015E29.docidmap
+validRoles: data/2016.types.txt
+linkableTypes: data/2016.linkable.txt
