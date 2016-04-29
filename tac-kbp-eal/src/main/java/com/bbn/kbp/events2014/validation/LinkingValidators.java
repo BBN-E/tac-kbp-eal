@@ -20,7 +20,7 @@ public class LinkingValidators {
   }
 
   public static LinkingValidator alwaysValidValidator() {
-    return AlwaysValid.create();
+    return AlwaysValid.INSTANCE;
   }
 
   public static LinkingValidator banGeneric() {
@@ -32,16 +32,10 @@ public class LinkingValidators {
   }
 }
 
-final class AlwaysValid implements LinkingValidator {
+enum AlwaysValid implements LinkingValidator {
 
-  private AlwaysValid() {
-
-  }
-
-  public static AlwaysValid create() {
-    return new AlwaysValid();
-  }
-
+  INSTANCE;
+  
   @Override
   public boolean validate(final ResponseLinking linking) {
     return true;
@@ -67,8 +61,8 @@ final class ValidatorComposer implements LinkingValidator {
 
   @Override
   public boolean validate(final ResponseLinking linking) {
-    for(final LinkingValidator v: validators) {
-      if(!v.validate(linking)) {
+    for (final LinkingValidator v : validators) {
+      if (!v.validate(linking)) {
         return false;
       }
     }
@@ -77,8 +71,8 @@ final class ValidatorComposer implements LinkingValidator {
 
   @Override
   public boolean validToLink(final Response a, final Response b) {
-    for(final LinkingValidator v: validators) {
-      if(!v.validToLink(a, b)) {
+    for (final LinkingValidator v : validators) {
+      if (!v.validToLink(a, b)) {
         return false;
       }
     }
