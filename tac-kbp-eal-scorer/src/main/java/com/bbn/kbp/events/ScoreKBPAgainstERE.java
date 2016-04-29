@@ -86,7 +86,7 @@ import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterables.transform;
 
 /**
- * Scores KBP 2015 event argument output against an ERE gold standard.  Scoring is in terms of
+ * Scores KBP 2016 event argument output against an ERE gold standard.  Scoring is in terms of
  * (Event Type, Event Role, Entity) tuples. This program is an experimental rough draft and has a
  * number of limitations: <ul> <li>We only handle arguments which are entity mentions; others are
  * ignored according to the ERE structure on the gold side and by filtering out a (currently

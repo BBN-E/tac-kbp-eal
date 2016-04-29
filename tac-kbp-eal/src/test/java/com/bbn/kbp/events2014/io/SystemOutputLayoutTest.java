@@ -2,23 +2,20 @@ package com.bbn.kbp.events2014.io;
 
 
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.events2014.CorefAnnotation;
 import com.bbn.kbp.events2014.CorpusEventFrame;
 import com.bbn.kbp.events2014.CorpusEventLinking;
 import com.bbn.kbp.events2014.DocEventFrameReference;
 import com.bbn.kbp.events2014.DocumentSystemOutput;
 import com.bbn.kbp.events2014.DocumentSystemOutput2015;
 import com.bbn.kbp.events2014.KBPEA2016OutputLayout;
+import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseFunctions;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
-import com.bbn.kbp.events2014.TypeRoleFillerRealis;
-import com.bbn.kbp.events2014.TypeRoleFillerRealisSet;
 
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableBiMap;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 
@@ -32,7 +29,9 @@ import java.io.IOException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.Iterables.getFirst;
+import static com.google.common.base.Predicates.compose;
+import static com.google.common.base.Predicates.in;
+import static com.google.common.base.Predicates.not;
 
 public final class SystemOutputLayoutTest {
 
@@ -63,16 +62,19 @@ public final class SystemOutputLayoutTest {
     final File dir = new File(args[0]);
 
     final SystemOutputStore sourceLayout = KBPEA2016OutputLayout.get().open(dir);
-    final ImmutableMap.Builder<String, TypeRoleFillerRealisSet> completeTRFRMap =
-        ImmutableMap.builder();
+    final ImmutableMultimap.Builder<Symbol, DocEventFrameReference>
+        eventTypeToEventFrameReferenceB = ImmutableMultimap.builder();
 
     int responseIDCount = 0;
     for (final Symbol docID : sourceLayout.docIDs()) {
       log.info("Processing {}", docID);
       final DocumentSystemOutput answerKey = sourceLayout.read(docID);
 
-      // coref everything in the same document
-      final ImmutableSet<Response> responses = answerKey.arguments().responses();
+      // coref everything non-generic of the same event type in the same document
+      final ImmutableSet<Response> responses =
+          FluentIterable.from(answerKey.arguments().responses())
+              .filter(compose(not(in(ImmutableSet.of(
+                  KBPRealis.Generic))), ResponseFunctions.realis())).toSet();
       final ImmutableMultimap<Symbol, Response> typeToResponse =
           FluentIterable.from(responses).index(
               ResponseFunctions.type());
@@ -82,7 +84,9 @@ public final class SystemOutputLayoutTest {
         checkState(typeToResponse.get(type).size() > 0);
         final ResponseSet r = ResponseSet.of(typeToResponse.get(type));
         responseLinkingB.addResponseSets(r);
-        responseSetIDs.put(Integer.toString(responseIDCount++), r);
+        final String id = Integer.toString(responseIDCount++);
+        responseSetIDs.put(id, r);
+        eventTypeToEventFrameReferenceB.put(type, DocEventFrameReference.of(docID, id));
       }
       responseLinkingB.responseSetIds(responseSetIDs.build());
       final ResponseLinking responseLinking = responseLinkingB.build();
@@ -91,18 +95,6 @@ public final class SystemOutputLayoutTest {
       final DocumentSystemOutput2015 documentSystemOutput2015 = DocumentSystemOutput2015
           .from(answerKey.arguments(), responseLinking);
       sourceLayout.write(documentSystemOutput2015);
-
-      final ImmutableMultimap<TypeRoleFillerRealis, Response> trfrs = FluentIterable.from(responses)
-          .index(TypeRoleFillerRealis
-              .extractFromSystemResponse(
-                  CorefAnnotation.laxBuilder(docID).build().laxCASNormalizerFunction()));
-      final ImmutableMap.Builder<String, TypeRoleFillerRealisSet> idMapB = ImmutableMap.builder();
-      for (final TypeRoleFillerRealis trfr : trfrs.keySet()) {
-        final TypeRoleFillerRealisSet trfrSet =
-            TypeRoleFillerRealisSet.create(ImmutableSet.of(trfr));
-        idMapB.put(trfr.uniqueIdentifier(), trfrSet);
-      }
-      completeTRFRMap.putAll(idMapB.build());
     }
     sourceLayout.close();
 
@@ -110,14 +102,12 @@ public final class SystemOutputLayoutTest {
     final SystemOutputStore2016 outputStore = KBPEA2016OutputLayout.get().openOrCreate(dir);
 
     final CorpusEventLinking.Builder corpusEventLinkingB = CorpusEventLinking.builder();
-    final ImmutableMap<String, TypeRoleFillerRealisSet> hopperIDs =
-        completeTRFRMap.build();
-    for (final String id : hopperIDs.keySet()) {
-      corpusEventLinkingB.addCorpusEventFrames(CorpusEventFrame.of(id,
-          ImmutableSet.of(DocEventFrameReference
-              .of(checkNotNull(getFirst(hopperIDs.get(id), null)).docID(), id))));
+    final ImmutableMultimap<Symbol, DocEventFrameReference> eventTypeToHoppers =
+        eventTypeToEventFrameReferenceB.build();
+    for (final Symbol ET : eventTypeToHoppers.keySet()) {
+      corpusEventLinkingB.addCorpusEventFrames(CorpusEventFrame
+          .of(Integer.toString(eventTypeToHoppers.get(ET).hashCode()), eventTypeToHoppers.get(ET)));
     }
-    checkState(hopperIDs.size() > 0);
     outputStore.writeCorpusEventFrames(corpusEventLinkingB.build());
 
     outputStore.close();

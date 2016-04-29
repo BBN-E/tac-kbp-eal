@@ -5,21 +5,34 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.CharOffsetSpan;
+import com.bbn.kbp.events2014.CorpusEventFrame;
+import com.bbn.kbp.events2014.CorpusEventLinking;
+import com.bbn.kbp.events2014.DocEventFrameReference;
+import com.bbn.kbp.events2014.DocEventFrameReferenceFunctions;
+import com.bbn.kbp.events2014.DocumentSystemOutput;
 import com.bbn.kbp.events2014.KBPEA2015OutputLayout;
+import com.bbn.kbp.events2014.KBPEA2016OutputLayout;
 import com.bbn.kbp.events2014.KBPRealis;
+import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseFunctions;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.SystemOutputLayout;
+import com.bbn.kbp.events2014.io.CorpusEventFrameIO;
 import com.bbn.kbp.events2014.io.LinkingStore;
 import com.bbn.kbp.events2014.io.LinkingStoreSource;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.events2014.validation.LinkingValidator;
+import com.bbn.kbp.events2014.validation.LinkingValidators;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -38,6 +51,7 @@ import java.util.Set;
 import static com.bbn.bue.common.files.FileUtils.loadSymbolToFileMap;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Predicates.compose;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.not;
@@ -48,9 +62,11 @@ public final class ValidateSystemOutput {
 
   private final TypeAndRoleValidator typeAndRoleValidator;
   private final Preprocessor preprocessor;
+  private final LinkingValidator linkingValidator;
 
   private static final Symbol MOVEMENTTRANSPORT = Symbol.from("Movement.Transport");
   private static final Symbol PLACE = Symbol.from("Place");
+  private static final Symbol TIME = Symbol.from("Time");
 
   interface Preprocessor {
 
@@ -65,14 +81,15 @@ public final class ValidateSystemOutput {
   };
 
   private ValidateSystemOutput(TypeAndRoleValidator typeAndRoleValidator,
-      Preprocessor preprocessor) {
+      final LinkingValidator linkingValidator, Preprocessor preprocessor) {
+    this.linkingValidator = checkNotNull(linkingValidator);
     this.typeAndRoleValidator = checkNotNull(typeAndRoleValidator);
     this.preprocessor = checkNotNull(preprocessor);
   }
 
   public static ValidateSystemOutput create(TypeAndRoleValidator typeAndRoleValidator,
-      Preprocessor preprocessor) {
-    return new ValidateSystemOutput(typeAndRoleValidator, preprocessor);
+      final LinkingValidator linkingValidator, Preprocessor preprocessor) {
+    return new ValidateSystemOutput(typeAndRoleValidator, linkingValidator, preprocessor);
   }
 
   private static void usage() {
@@ -124,27 +141,43 @@ public final class ValidateSystemOutput {
         return Result.forErrors(ImmutableList.of(e));
       }
     }
+    if (KBPEA2016OutputLayout.get().equals(outputLayout)) {
+      try {
+        assertExactly2016Subdirectories(originalSystemOutputStoreFile);
+      } catch (Exception e) {
+        return Result.forErrors(ImmutableList.of(e));
+      }
+    }
 
     final File systemOutputStoreFile = preprocessor.preprocess(originalSystemOutputStoreFile);
     final List<String> warnings = Lists.newArrayList();
     final List<Throwable> errors = Lists.newArrayList();
 
-
     log.info("Validating system output store {} with max errors {}", systemOutputStoreFile,
         maxErrors);
 
-    // these are only non-final because the compiler isn't clever enough
-    // to figure out they cannot fail to be initialized
-    SystemOutputStore outputStore = null;
-    Optional<LinkingStore> linkingStore = null;
-    Set<Symbol> docIDs = null;
+    final SystemOutputStore outputStore;
+    final Optional<LinkingStore> linkingStore;
+    final Optional<CorpusEventLinking> corpusEventLinking;
+    final Set<Symbol> docIDs;
     try {
       outputStore = outputLayout.open(systemOutputStoreFile);
       if (KBPEA2015OutputLayout.get().equals(outputLayout)) {
         linkingStore = Optional.of(LinkingStoreSource.createFor2015()
             .openLinkingStore(new File(systemOutputStoreFile, "linking")));
-
+        corpusEventLinking = Optional.absent();
+      } else if (KBPEA2016OutputLayout.get().equals(outputLayout)) {
+        linkingStore = Optional.of(LinkingStoreSource.createFor2016()
+            .openLinkingStore(new File(systemOutputStoreFile, "linking")));
+        corpusEventLinking = Optional.of(CorpusEventFrameIO.loaderFor2016().loadCorpusEventFrames(
+            Files.asCharSource(
+                new File(new File(systemOutputStoreFile, "corpusLinking"), "corpusLinking"),
+                Charsets.UTF_8)));
+      } else {
+        linkingStore = Optional.absent();
+        corpusEventLinking = Optional.absent();
       }
+
       docIDs = outputStore.docIDs();
     } catch (Exception e) {
       errors.add(e);
@@ -170,10 +203,11 @@ public final class ValidateSystemOutput {
         final ArgumentOutput docOutput = outputStore.read(docID).arguments();
         log.info("For document {} got {} responses", docID, docOutput.size());
 
-
         for (final Response response : docOutput.responses()) {
+          assertIdenticalDocID(response, docID);
           assertValidTypes(response);
         }
+        warnOnMissingOffsets(systemOutputStoreFile, docID, docOutput.responses(), docIDMap);
 
         for (final Response response : docOutput.responses()) {
           // lets keep all hacks as high level as possible
@@ -200,11 +234,77 @@ public final class ValidateSystemOutput {
       }
     }
 
+    if (corpusEventLinking.isPresent()) {
+      try {
+        validateCorpusEventFrame(outputStore, linkingStore, corpusEventLinking.get());
+      } catch (Exception e) {
+        errors.add(e);
+      }
+    }
 
     // this might not get called, but for read-only use with the default
     // implementation this is not a problem
     outputStore.close();
     return new Result(errors, warnings);
+  }
+
+  private void validateCorpusEventFrame(final SystemOutputStore outputStore,
+      final Optional<LinkingStore> linkingStore,
+      final CorpusEventLinking corpusEventLinking) throws Exception {
+    for (final CorpusEventFrame frame : corpusEventLinking.corpusEventFrames()) {
+      final ImmutableMultimap<Symbol, DocEventFrameReference> idToFrame =
+          FluentIterable.from(frame.docEventFrames()).index(
+              DocEventFrameReferenceFunctions.docID());
+      final ImmutableSet.Builder<Response> allLinkedResponsesB = ImmutableSet.builder();
+
+      for (final Symbol docID : idToFrame.keySet()) {
+        final DocumentSystemOutput output = outputStore.read(docID);
+        final Optional<ResponseLinking> linking = linkingStore.get().read(output.arguments());
+        checkState(linking.isPresent());
+        checkNotNull(linking.get().responseSetIds());
+        checkState(linking.get().responseSetIds().isPresent());
+
+        for (final DocEventFrameReference docEventFrameReference : idToFrame.get(docID)) {
+          checkNotNull(docEventFrameReference);
+          checkNotNull(docEventFrameReference.eventFrameID());
+          checkNotNull(
+              linking.get().responseSetIds().get().get(docEventFrameReference.eventFrameID()));
+          allLinkedResponsesB.addAll(
+              linking.get().responseSetIds().get().get(docEventFrameReference.eventFrameID()));
+        }
+      }
+
+      final ImmutableSet<Response> allLinkedResponses = allLinkedResponsesB.build();
+      for (final Response a : allLinkedResponses) {
+        for (final Response b : allLinkedResponses) {
+          if (!linkingValidator.validToLink(a, b)) {
+            throw new Exception(String
+                .format("%s and %s were linked across documents but are of incompatible types!",
+                    a.toString(), b.toString()));
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Warns about CAS offsets for Responses being inconsistent with actual document text for non-TIME
+   * roles
+   */
+  private void warnOnMissingOffsets(final File systemOutputStoreFile, final Symbol docID,
+      final ImmutableSet<Response> responses,
+      final Map<Symbol, File> docIDMap) throws IOException {
+    final String text = Files.asCharSource(docIDMap.get(docID), Charsets.UTF_8).read();
+    for (final Response r : FluentIterable.from(responses)
+        .filter(Predicates.compose(not(equalTo(TIME)), ResponseFunctions.role()))) {
+      final KBPString cas = r.canonicalArgument();
+      final String casTextInRaw = resolveCharOffsets(cas.charOffsetSpan(), docID, text);
+      // allow whitespace
+      if (!casTextInRaw.contains(cas.string())) {
+        log.warn("Warning for {} - response {} CAS does not match text span of {} ",
+            systemOutputStoreFile.getAbsolutePath(), renderResponse(r, text), casTextInRaw);
+      }
+    }
   }
 
   private void checkLinkingValidity(final Symbol docID, final ArgumentOutput docOutput,
@@ -236,6 +336,10 @@ public final class ValidateSystemOutput {
       }
       throw new RuntimeException(msg.toString());
     }
+    if (!linkingValidator.validate(responseLinking.get())) {
+      throw new RuntimeException(String.format("Validation failed for %s with validator %s", docID,
+          linkingValidator.getClass().toString()));
+    }
   }
 
   private static final Predicate<Response> NOT_GENERIC = compose(not(equalTo(
@@ -244,14 +348,35 @@ public final class ValidateSystemOutput {
   private void assertExactlyTwoSubdirectories(final File outputStoreDir) throws IOException {
     checkArgument(outputStoreDir.isDirectory());
     if (!new File(outputStoreDir, "arguments").isDirectory()) {
-      throw new IOException("Expected system output to be contain a subdirectory named 'arguments");
+      throw new IOException(
+          "Expected system output to be contain a subdirectory named 'arguments'");
     }
     if (!new File(outputStoreDir, "linking").isDirectory()) {
-      throw new IOException("Expected system output to be contain a subdirectory named 'linking");
+      throw new IOException("Expected system output to be contain a subdirectory named 'linking'");
     }
     if (outputStoreDir.listFiles().length != 2) {
       throw new IOException(
           "Expected system output to contain exactly two sub-directories, but it contains "
+              + outputStoreDir.listFiles() + " things");
+    }
+  }
+
+  private void assertExactly2016Subdirectories(final File outputStoreDir) throws IOException {
+    checkArgument(outputStoreDir.isDirectory());
+    if (!new File(outputStoreDir, "arguments").isDirectory()) {
+      throw new IOException(
+          "Expected system output to be contain a subdirectory named 'arguments'");
+    }
+    if (!new File(outputStoreDir, "linking").isDirectory()) {
+      throw new IOException("Expected system output to be contain a subdirectory named 'linking'");
+    }
+    if (!new File(outputStoreDir, "corpusLinking").isDirectory()) {
+      throw new IOException(
+          "Expected system output to be contain a subdirectory named 'corpusLinking'");
+    }
+    if (outputStoreDir.listFiles().length != 3) {
+      throw new IOException(
+          "Expected system output to contain exactly three sub-directories, but it contains "
               + outputStoreDir.listFiles() + " things");
     }
   }
@@ -299,6 +424,12 @@ public final class ValidateSystemOutput {
     }
   }
 
+  private void assertIdenticalDocID(final Response response, final Symbol docID) {
+    if (!response.docID().equalTo(docID)) {
+      throw new RuntimeException(String
+          .format("%s was in a file for %s but docID does not match!", response.toString(), docID));
+    }
+  }
 
   private void assertValidTypes(Response response) {
     if (typeAndRoleValidator.isValidEventType(response)) {
@@ -407,7 +538,8 @@ public final class ValidateSystemOutput {
 
       final TypeAndRoleValidator typeAndRoleValidator =
           TypeAndRoleValidator.createFromParameters(params);
-      final ValidateSystemOutput validator = create(typeAndRoleValidator, NO_PREPROCESSING);
+      final ValidateSystemOutput validator =
+          create(typeAndRoleValidator, LinkingValidators.alwaysValidValidator(), NO_PREPROCESSING);
 
       final File systemOutputStoreFile = params.getExistingFileOrDirectory("systemOutputStore");
       final SystemOutputLayout layout = SystemOutputLayout.ParamParser.fromParamVal(
