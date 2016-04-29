@@ -235,43 +235,10 @@ public final class ValidateSystemOutput {
     }
 
     if (corpusEventLinking.isPresent()) {
-      for (final CorpusEventFrame frame : corpusEventLinking.get().corpusEventFrames()) {
-        try {
-          final ImmutableMultimap<Symbol, DocEventFrameReference> idToFrame =
-              FluentIterable.from(frame.docEventFrames()).index(
-                  DocEventFrameReferenceFunctions.docID());
-          final ImmutableSet.Builder<Response> allLinkedResponsesB = ImmutableSet.builder();
-
-          for (final Symbol docID : idToFrame.keySet()) {
-            final DocumentSystemOutput output = outputStore.read(docID);
-            final Optional<ResponseLinking> linking = linkingStore.get().read(output.arguments());
-            checkState(linking.isPresent());
-            checkNotNull(linking.get().responseSetIds());
-            checkState(linking.get().responseSetIds().isPresent());
-
-            for (final DocEventFrameReference docEventFrameReference : idToFrame.get(docID)) {
-              checkNotNull(docEventFrameReference);
-              checkNotNull(docEventFrameReference.eventFrameID());
-              checkNotNull(
-                  linking.get().responseSetIds().get().get(docEventFrameReference.eventFrameID()));
-              allLinkedResponsesB.addAll(
-                  linking.get().responseSetIds().get().get(docEventFrameReference.eventFrameID()));
-            }
-          }
-
-          final ImmutableSet<Response> allLinkedResponses = allLinkedResponsesB.build();
-          for (final Response a : allLinkedResponses) {
-            for (final Response b : allLinkedResponses) {
-              if (!linkingValidator.validToLink(a, b)) {
-                throw new Exception(String
-                    .format("%s and %s were linked across documents but are of incompatible types!",
-                        a.toString(), b.toString()));
-              }
-            }
-          }
-        } catch (final Exception e) {
-          errors.add(e);
-        }
+      try {
+        validateCorpusEventFrame(outputStore, linkingStore, corpusEventLinking.get());
+      } catch (Exception e) {
+        errors.add(e);
       }
     }
 
@@ -279,6 +246,45 @@ public final class ValidateSystemOutput {
     // implementation this is not a problem
     outputStore.close();
     return new Result(errors, warnings);
+  }
+
+  private void validateCorpusEventFrame(final SystemOutputStore outputStore,
+      final Optional<LinkingStore> linkingStore,
+      final CorpusEventLinking corpusEventLinking) throws Exception {
+    for (final CorpusEventFrame frame : corpusEventLinking.corpusEventFrames()) {
+      final ImmutableMultimap<Symbol, DocEventFrameReference> idToFrame =
+          FluentIterable.from(frame.docEventFrames()).index(
+              DocEventFrameReferenceFunctions.docID());
+      final ImmutableSet.Builder<Response> allLinkedResponsesB = ImmutableSet.builder();
+
+      for (final Symbol docID : idToFrame.keySet()) {
+        final DocumentSystemOutput output = outputStore.read(docID);
+        final Optional<ResponseLinking> linking = linkingStore.get().read(output.arguments());
+        checkState(linking.isPresent());
+        checkNotNull(linking.get().responseSetIds());
+        checkState(linking.get().responseSetIds().isPresent());
+
+        for (final DocEventFrameReference docEventFrameReference : idToFrame.get(docID)) {
+          checkNotNull(docEventFrameReference);
+          checkNotNull(docEventFrameReference.eventFrameID());
+          checkNotNull(
+              linking.get().responseSetIds().get().get(docEventFrameReference.eventFrameID()));
+          allLinkedResponsesB.addAll(
+              linking.get().responseSetIds().get().get(docEventFrameReference.eventFrameID()));
+        }
+      }
+
+      final ImmutableSet<Response> allLinkedResponses = allLinkedResponsesB.build();
+      for (final Response a : allLinkedResponses) {
+        for (final Response b : allLinkedResponses) {
+          if (!linkingValidator.validToLink(a, b)) {
+            throw new Exception(String
+                .format("%s and %s were linked across documents but are of incompatible types!",
+                    a.toString(), b.toString()));
+          }
+        }
+      }
+    }
   }
 
   /**
