@@ -1,2 +1,2 @@
 maven-build:
-  script: mvn clean compile test package verify
+  script: mvn -U clean compile test package verify
