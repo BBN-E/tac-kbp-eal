@@ -194,11 +194,11 @@ have bugs or feature requests, you can use the GitHub Issue Tracker. The issue t
 preferred so future users can benefit from the answers to your questions. To track changes to
 this repository, follow https://github.com/BBN-E/tac-kbp-eal/commits/master.atom in an RSS reader.
 
-## Export Control Marking
+<sub>**Export Control Marking**</sub>
 
-Distribution Statement "A" (Approved for Public Release, Distribution Unlimited)
+<sub>Distribution Statement "A" (Approved for Public Release, Distribution Unlimited)</sub>
 
-WARNING - This document contains technology whose export or disclosure to
+<sub>WARNING - This document contains technology whose export or disclosure to
 Non-U.S. persons, wherever located, is subject to the Export Administrations
 Regulations (EAR) (15 C.F.R. Sections 730-774). Violations are subject to
-severe criminal penalties.
+severe criminal penalties.</sub>
