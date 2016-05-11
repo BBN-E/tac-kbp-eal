@@ -298,4 +298,17 @@
         <developerConnection>scm:git:http://e-gitlab.bbn.com/text-group/kbp-2014-event-arguments.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
+
+<!-- this prevents Javadoc errors from breaking builds on Java 8 -->
+<profiles>
+    <profile>
+        <id>disable-java8-doclint</id>
+        <activation>
+            <jdk>[1.8,)</jdk>
+        </activation>
+        <properties>
+            <additionalparam>-Xdoclint:none</additionalparam>
+        </properties>
+    </profile>
+</profiles>
 </project>
