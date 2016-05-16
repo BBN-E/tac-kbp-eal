@@ -128,11 +128,17 @@ public final class ScoreKBPAgainstERE {
     final SystemOutputStore outputStore =
         outputLayout.open(params.getExistingDirectory("systemOutput"));
 
-    final ImmutableMap<Symbol, File> coreNLPProcessedRawDocs = FileUtils.loadSymbolToFileMap(
-        Files.asCharSource(params.getExistingFile("coreNLPDocIDMap"), Charsets.UTF_8));
-    final boolean relaxUsingCORENLP = params.getBoolean("relaxUsingCoreNLP");
     final CoreNLPXMLLoader coreNLPXMLLoader =
         CoreNLPXMLLoader.builder(HeadFinders.<CoreNLPParseNode>getEnglishPTBHeadFinder()).build();
+    final boolean relaxUsingCORENLP = params.getBoolean("relaxUsingCoreNLP");
+    final ImmutableMap<Symbol, File> coreNLPProcessedRawDocs;
+    if (relaxUsingCORENLP) {
+      log.info("Relaxing scoring using CoreNLP");
+      coreNLPProcessedRawDocs = FileUtils.loadSymbolToFileMap(
+          Files.asCharSource(params.getExistingFile("coreNLPDocIDMap"), Charsets.UTF_8));
+    } else {
+      coreNLPProcessedRawDocs = ImmutableMap.of();
+    }
 
     log.info("Scoring over {} documents", docIDsToScore.size());
 
