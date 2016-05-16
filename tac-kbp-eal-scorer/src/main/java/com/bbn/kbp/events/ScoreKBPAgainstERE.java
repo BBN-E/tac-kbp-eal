@@ -176,8 +176,9 @@ public final class ScoreKBPAgainstERE {
         throw new RuntimeException("Missing key file for " + docID);
       }
       final EREDocument ereDoc = loader.loadFrom(ereFileName);
-      checkState(ereDoc.getDocId().equals(docID.asString()),
-          "fetched document ID must be equal to stored");
+      if (!ereDoc.getDocId().equals(docID.asString())) {
+        log.warn("Fetched document ID {} does not equal stored {}", ereDoc.getDocId(), docID);
+      }
       final Iterable<Response>
           responses = filter(outputStore.read(docID).arguments().responses(), bannedRolesFilter);
       final ResponseLinking linking =
