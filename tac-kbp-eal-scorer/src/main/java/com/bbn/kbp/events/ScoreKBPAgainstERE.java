@@ -26,7 +26,6 @@ import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
 import com.bbn.kbp.events2014.SystemOutputLayout;
-import com.bbn.kbp.events2014.TACKBPEALException;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.linking.ExplicitFMeasureInfo;
 import com.bbn.kbp.linking.LinkF1;
@@ -369,16 +368,15 @@ public final class ScoreKBPAgainstERE {
         final EvalPair<DocLevelArgLinking, DocLevelArgLinking> item) {
       checkArgument(ImmutableSet.copyOf(concat(item.key())).containsAll(
           ImmutableSet.copyOf(concat(item.test()))), "Must contain only answers in test set!");
+      if (!item.key().docID().equalTo(item.test().docID())) {
+        log.warn("DocIDs do not match: {} vs {}", item.key().docID(), item.test().docID());
+      }
+
       final ExplicitFMeasureInfo counts = LinkF1.create().score(item.test(), item.key());
       final ImmutableSet<DocLevelEventArg> args = ImmutableSet.copyOf(concat(
           transform(concat(item.test().eventFrames(), item.key().eventFrames()),
               ScoringEventFrameFunctions.arguments())));
-      final ImmutableSet<Symbol> docids =
-          ImmutableSet.copyOf(transform(args, DocLevelEventArgFunctions.docID()));
-      if (docids.size() > 1) {
-        throw new TACKBPEALException("Inconsistent docIDs: " + docids);
-      }
-      final Symbol docid = Iterables.getOnlyElement(docids);
+      final Symbol docid = item.key().docID();
       predictedCountsB.put(docid, ImmutableSet.copyOf(concat(item.test().eventFrames())).size());
       actualCountsB.put(docid, ImmutableSet.copyOf(concat(item.key().eventFrames())).size());
       countsB.put(docid, counts);
@@ -454,7 +452,8 @@ public final class ScoreKBPAgainstERE {
     public ResponsesAndLinking apply(final EREDocument doc) {
       final ImmutableSet.Builder<DocLevelEventArg> ret = ImmutableSet.builder();
       // every event mention argument within a hopper is linked
-      final DocLevelArgLinking.Builder linking = DocLevelArgLinking.builder();
+      final DocLevelArgLinking.Builder linking = DocLevelArgLinking.builder()
+          .docID(Symbol.from(doc.getDocId()));
       for (final EREEvent ereEvent : doc.getEvents()) {
         final ScoringEventFrame.Builder eventFrame = ScoringEventFrame.builder();
         boolean addedArg = false;
@@ -622,7 +621,8 @@ public final class ScoreKBPAgainstERE {
     ResponsesAndLinking fromResponses(final ImmutableSet<Response> originalResponses,
         final ImmutableMap<Response, DocLevelEventArg> responseToDocLevelEventArg,
         final ResponseLinking responseLinking) {
-      final DocLevelArgLinking.Builder linkingBuilder = DocLevelArgLinking.builder();
+      final DocLevelArgLinking.Builder linkingBuilder = DocLevelArgLinking.builder()
+          .docID(responseLinking.docID());
       for (final ResponseSet rs : responseLinking.responseSets()) {
         final ScoringEventFrame.Builder eventFrameBuilder = ScoringEventFrame.builder();
         boolean addedArg = false;

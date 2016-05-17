@@ -1,6 +1,7 @@
 package com.bbn.kbp.events;
 
 import com.bbn.bue.common.TextGroupPackageImmutable;
+import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
@@ -14,7 +15,8 @@ import java.util.Iterator;
 @Value.Immutable
 @TextGroupPackageImmutable
 public abstract class _DocLevelArgLinking implements Iterable<ScoringEventFrame> {
-
+  @Value.Parameter
+  public abstract Symbol docID();
   @Value.Parameter
   public abstract ImmutableSet<ScoringEventFrame> eventFrames();
 
@@ -25,7 +27,8 @@ public abstract class _DocLevelArgLinking implements Iterable<ScoringEventFrame>
 
   public final DocLevelArgLinking filterArguments(
       Predicate<? super DocLevelEventArg> argPredicate) {
-    final DocLevelArgLinking.Builder ret = DocLevelArgLinking.builder();
+    final DocLevelArgLinking.Builder ret = DocLevelArgLinking.builder()
+        .docID(docID());
     for (final ScoringEventFrame eventFrame : eventFrames()) {
       final ImmutableSet<DocLevelEventArg> filteredFrame =
           FluentIterable.from(eventFrame).filter(argPredicate).toSet();
