@@ -26,6 +26,7 @@ import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
 import com.bbn.kbp.events2014.SystemOutputLayout;
+import com.bbn.kbp.events2014.TACKBPEALException;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.linking.ExplicitFMeasureInfo;
 import com.bbn.kbp.linking.LinkF1;
@@ -76,7 +77,6 @@ import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformRight;
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformed;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Predicates.compose;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.in;
@@ -375,6 +375,9 @@ public final class ScoreKBPAgainstERE {
               ScoringEventFrameFunctions.arguments())));
       final ImmutableSet<Symbol> docids =
           ImmutableSet.copyOf(transform(args, DocLevelEventArgFunctions.docID()));
+      if (docids.size() > 1) {
+        throw new TACKBPEALException("Inconsistent docIDs: " + docids);
+      }
       final Symbol docid = Iterables.getOnlyElement(docids);
       predictedCountsB.put(docid, ImmutableSet.copyOf(concat(item.test().eventFrames())).size());
       actualCountsB.put(docid, ImmutableSet.copyOf(concat(item.key().eventFrames())).size());
