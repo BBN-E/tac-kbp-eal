@@ -8,8 +8,8 @@ Justice.Arrest-Jail	Agent	Crime	Person	Place	Time
 Life.Die	Agent	Instrument	Victim	Place	Time
 Life.Injure	Agent	Instrument	Victim	Place	Time
 Manufacture.Artifact	Agent	Artifact	Instrument	Place	Time
-Movement.Transport-Artifact	Agent	Artifact	Destination	Instrument	Origin
-Movement.Transport-Person	Agent	Destination	Instrument	Origin	Person
+Movement.Transport-Artifact	Agent	Artifact	Destination	Instrument	Origin	Time
+Movement.Transport-Person	Agent	Destination	Instrument	Origin	Person	Time
 Personnel.Elect	Agent	Person	Position	Place	Time
 Personnel.End-Position	Entity	Person	Position	Place	Time
 Personnel.Start-Position	Entity	Person	Position	Place	Time
