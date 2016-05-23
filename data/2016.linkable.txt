@@ -1,6 +1,6 @@
 Conflict.Attack	Conflict.Attack
 Conflict.Demonstrate	Conflict.Demonstrate
-Contact.Broadcast	Contact.Broadcast   Contact.Contact
+Contact.Broadcast	Contact.Broadcast	Contact.Contact
 Contact.Contact	Contact.Contact	Contact.Broadcast	Contact.Correspondence	Contact.Meet
 Contact.Correspondence	Contact.Correspondence	Contact.Contact
 Contact.Meet	Contact.Meet	Contact.Contact
@@ -14,5 +14,5 @@ Personnel.Elect	Personnel.Elect
 Personnel.End-Position	Personnel.End-Position
 Personnel.Start-Position	Personnel.Start-Position
 Transaction.Transaction	Transaction.Transaction	Transaction.Transfer-Money	Transaction.Transfer-Ownership
-Transaction.Transfer-Money	Transaction.Transfer-Money  Transaction.Transaction
+Transaction.Transfer-Money	Transaction.Transfer-Money	Transaction.Transaction
 Transaction.Transfer-Ownership	Transaction.Transfer-Ownership	Transaction.Transfer-Ownership
