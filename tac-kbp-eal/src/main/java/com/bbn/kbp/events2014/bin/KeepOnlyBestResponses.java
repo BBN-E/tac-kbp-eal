@@ -5,6 +5,7 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.DocumentSystemOutput;
 import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.events2014.io.SystemOutputStore2016;
 import com.bbn.kbp.events2014.transformers.KeepBestJustificationOnly;
 import com.bbn.kbp.events2014.transformers.ResponseMapping;
 
@@ -57,6 +58,10 @@ public final class KeepOnlyBestResponses {
           docID, numFiltered);
 
       outputStore.write(filtered);
+    }
+    if (outputStore instanceof SystemOutputStore2016) {
+      ((SystemOutputStore2016) outputStore)
+          .writeCorpusEventFrames(((SystemOutputStore2016) outputStore).readCorpusEventFrames());
     }
 
     inputStore.close();
