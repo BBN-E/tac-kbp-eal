@@ -17,7 +17,12 @@ import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Random;
@@ -31,6 +36,8 @@ import static com.google.common.base.Predicates.not;
  * system outputs, and response linkings.
  */
 public final class ResponseMapping {
+
+  private static final Logger log = LoggerFactory.getLogger(ResponseMapping.class);
 
   private final ImmutableMap<Response, Response> replacedResponses;
   private final ImmutableSet<Response> deletedResponses;
@@ -103,8 +110,7 @@ public final class ResponseMapping {
     final Predicate<Response> notDeleted = not(in(deletedResponses));
 
     final ImmutableSet.Builder<ResponseSet> newResponseSetsB = ImmutableSet.builder();
-    final ImmutableBiMap.Builder<ResponseSet, ResponseSet> oldResponseSetToNewB =
-        ImmutableBiMap.builder();
+    final ImmutableMap.Builder<ResponseSet, ResponseSet> oldResponseSetToNewB = ImmutableMap.builder();
     for (final ResponseSet responseSet : responseLinking.responseSets()) {
       final ImmutableSet<Response> filteredResponses = FluentIterable.from(responseSet)
           .filter(notDeleted)
@@ -129,12 +135,20 @@ public final class ResponseMapping {
     final Optional<ImmutableBiMap<String, ResponseSet>> newResponseSetIDMap;
     if (responseLinking.responseSetIds().isPresent()) {
       final BiMap<String, ResponseSet> responseSetIDs = responseLinking.responseSetIds().get();
-      final BiMap<ResponseSet, ResponseSet> oldResponseSetToNew = oldResponseSetToNewB.build();
+      final ImmutableMap<ResponseSet, ResponseSet> oldResponseSetToNew = oldResponseSetToNewB.build();
+      final Multimap<ResponseSet, ResponseSet> newResponseToOld = oldResponseSetToNew.asMultimap().inverse();
       final ImmutableBiMap.Builder<String, ResponseSet> newResponseSetIDMapB =
           ImmutableBiMap.builder();
-      for (final ResponseSet old : oldResponseSetToNew.keySet()) {
-        final String id = responseSetIDs.inverse().get(old);
-        newResponseSetIDMapB.put(id, oldResponseSetToNew.get(old));
+      // since response sets may lose responses and no longer be unique, we choose the earliest alphabetical ID
+      for(final ResponseSet nu: newResponseToOld.keySet()) {
+        final ImmutableSet.Builder<String> candidateIDsB = ImmutableSet.builder();
+        for(final ResponseSet old: newResponseToOld.get(nu)) {
+          candidateIDsB.add(responseSetIDs.inverse().get(old));
+        }
+        final ImmutableSet<String> candidateIDs = candidateIDsB.build();
+        final String newID = Ordering.natural().sortedCopy(candidateIDs).get(0);
+        log.debug("Collapsing response sets {} to {}", candidateIDs, newID);
+        newResponseSetIDMapB.put(newID, nu);
       }
       newResponseSetIDMap = Optional.of(newResponseSetIDMapB.build());
     } else {
