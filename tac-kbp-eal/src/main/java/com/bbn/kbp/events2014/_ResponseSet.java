@@ -6,6 +6,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
 
+import org.immutables.func.Functional;
 import org.immutables.value.Value;
 
 import java.util.Arrays;
@@ -17,6 +18,7 @@ import java.util.Iterator;
  */
 @Value.Immutable(prehash = true)
 @TextGroupPublicImmutable
+@Functional
 abstract class _ResponseSet implements Comparable<ResponseSet>, Iterable<Response> {
 
   @Value.Parameter
