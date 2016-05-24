@@ -15,8 +15,10 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharSink;
@@ -24,6 +26,8 @@ import com.google.common.io.CharSource;
 import com.google.common.io.Files;
 
 import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -205,6 +209,8 @@ class KBPSpec2015LinkingLoader extends AbstractKBPSpecLinkingLoader {
 
 class KBPSpec2016LinkingLoader extends AbstractKBPSpecLinkingLoader {
 
+  private static final Logger log = LoggerFactory.getLogger(KBPSpec2016LinkingLoader.class);
+
   @Override
   protected void handleResponseSetIDs(final ResponseLinking.Builder responseLinking,
       final ImmutableSet<ResponseSet> responseSets,
@@ -218,10 +224,18 @@ class KBPSpec2016LinkingLoader extends AbstractKBPSpecLinkingLoader {
   }
 
   @Override
-  protected ImmutableLinkingLine parseResponseSetLine(final List<String> parts,
+  protected ImmutableLinkingLine parseResponseSetLine(List<String> parts,
       final Optional<ImmutableMap<String, String>> foreignIDToLocal,
       final Map<String, Response> responsesByUID)
       throws IOException {
+    if (parts.size() > 2) {
+      log.warn(
+          "IDs provided using tabs! This is contrary to the guidelines for the 2016 eval and may be changed!");
+    }
+    if (parts.size() == 2 && parts.get(1).contains(" ")) {
+      final List<String> responseIDs = StringUtils.onSpaces().splitToList(parts.get(1));
+      parts = ImmutableList.copyOf(Iterables.concat(ImmutableList.of(parts.get(0)), responseIDs));
+    }
     if (parts.size() >= 2) {
       return ImmutableLinkingLine.of(ResponseSet.of(parseResponses(parts.subList(1, parts.size()),
           foreignIDToLocal, responsesByUID)), Optional.of(parts.get(0)));
@@ -268,7 +282,7 @@ class LinkingWriter2016 extends AbstractKBPSpecLinkingWriter {
   @Override
   String renderLine(final ResponseSet responseSet, final ResponseLinking responseLinking)
       throws IOException {
-    return getEventFrameID(responseSet, responseLinking) + "\t" + Joiner.on("\t").join(
+    return getEventFrameID(responseSet, responseLinking) + "\t" + StringUtils.spaceJoiner().join(
         transform(responseSet.asSet(), ResponseFunctions.uniqueIdentifier()));
   }
 
