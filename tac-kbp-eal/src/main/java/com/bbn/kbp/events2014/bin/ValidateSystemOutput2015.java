@@ -3,7 +3,9 @@ package com.bbn.kbp.events2014.bin;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.KBPEA2015OutputLayout;
+import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.ImportForeignIDs;
+import com.bbn.kbp.events2014.io.LinkingStoreSource;
 import com.bbn.kbp.events2014.validation.LinkingValidators;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 
@@ -66,7 +68,8 @@ public final class ValidateSystemOutput2015 {
       final TypeAndRoleValidator typeAndRoleValidator =
           TypeAndRoleValidator.createFromParameters(params);
       final ValidateSystemOutput validator = ValidateSystemOutput.create(typeAndRoleValidator,
-          LinkingValidators.alwaysValidValidator(), CONVERT_TO_STANDARD_IDS);
+          LinkingValidators.alwaysValidValidator(),
+          convertToStandardIds(LinkingStoreSource.createFor2015(), KBPEA2015OutputLayout.get()));
 
       final File systemOutputStoreFile = params.getExistingFileOrDirectory("systemOutputStore");
 
@@ -93,13 +96,22 @@ public final class ValidateSystemOutput2015 {
     }
   }
 
-  static final ValidateSystemOutput.Preprocessor CONVERT_TO_STANDARD_IDS =
-      new ValidateSystemOutput.Preprocessor() {
-        @Override
-        public File preprocess(final File uncompressedSubmissionDir) throws IOException {
-          final File outputDir = Files.createTempDir();
-          ImportForeignIDs.importForeignIDs(uncompressedSubmissionDir, outputDir);
-          return outputDir;
+  static final ValidateSystemOutput.Preprocessor convertToStandardIds(
+      final LinkingStoreSource linkingStoreSource, final SystemOutputLayout outputLayout) {
+    return new ValidateSystemOutput.Preprocessor() {
+      @Override
+      public File preprocess(final File uncompressedSubmissionDir) throws IOException {
+        final File outputDir = Files.createTempDir();
+        ImportForeignIDs.importForeignIDs(uncompressedSubmissionDir, outputDir, linkingStoreSource,
+            outputLayout);
+        final File corpusLinking = new File(uncompressedSubmissionDir, "corpusLinking");
+        if (corpusLinking.exists()) {
+          final File target = new File(outputDir, "corpusLinking");
+          target.mkdir();
+          Files.copy(new File(corpusLinking, "corpusLinking"), new File(target, "corpusLinking"));
         }
-      };
+        return outputDir;
+      }
+    };
+  }
 }
