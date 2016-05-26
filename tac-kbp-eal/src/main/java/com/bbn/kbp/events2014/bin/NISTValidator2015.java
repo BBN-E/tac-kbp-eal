@@ -4,6 +4,7 @@ import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events2014.KBPEA2015OutputLayout;
+import com.bbn.kbp.events2014.io.LinkingStoreSource;
 import com.bbn.kbp.events2014.validation.LinkingValidators;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 
@@ -53,7 +54,8 @@ public final class NISTValidator2015  {
     final ValidateSystemOutput validator = ValidateSystemOutput.create(
         TypeAndRoleValidator.create(SymbolUtils.setFrom("Time", "Place"),
             FileUtils.loadSymbolMultimap(Files.asCharSource(rolesFile, Charsets.UTF_8))),
-        LinkingValidators.alwaysValidValidator(), ValidateSystemOutput2015.CONVERT_TO_STANDARD_IDS);
+        LinkingValidators.alwaysValidValidator(), ValidateSystemOutput2015.convertToStandardIds(
+            LinkingStoreSource.createFor2015(), KBPEA2015OutputLayout.get()));
 
     NISTValidator.Verbosity verbosity = null;
 

@@ -6,6 +6,7 @@ import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.DocumentSystemOutput2015;
 import com.bbn.kbp.events2014.KBPEA2015OutputLayout;
 import com.bbn.kbp.events2014.ResponseLinking;
+import com.bbn.kbp.events2014.SystemOutputLayout;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableBiMap;
@@ -45,7 +46,8 @@ public final class ImportForeignIDs {
     } else {
       File outputStoreBase = params.getExistingDirectory("input");
       final File outputDirectory = params.getCreatableDirectory("output");
-      importForeignIDs(outputStoreBase, outputDirectory);
+      importForeignIDs(outputStoreBase, outputDirectory, LinkingStoreSource.createFor2015(),
+          KBPEA2015OutputLayout.get());
     }
   }
 
@@ -56,21 +58,23 @@ public final class ImportForeignIDs {
       if (f.isDirectory()) {
         final File outputDir = new File(outputBase, f.getName());
         outputDir.mkdirs();
-        importForeignIDs(f, outputDir);
+        importForeignIDs(f, outputDir, LinkingStoreSource.createFor2015(),
+            KBPEA2015OutputLayout.get());
       }
     }
   }
 
-  public static void importForeignIDs(final File source, final File outputDirectory)
+  public static void importForeignIDs(final File source, final File outputDirectory,
+      final LinkingStoreSource linkingStoreSource, final SystemOutputLayout outputLayout)
       throws IOException {
     final ArgumentStore originalArgumentStore =
         AssessmentSpecFormats.openSystemOutputStore(new File(source, "arguments"),
             AssessmentSpecFormats.Format.KBP2015);
-    final LinkingStore originalLinkingStore =
-        LinkingStoreSource.createFor2015().openLinkingStore(new File(source, "linking"));
 
-    final SystemOutputStore newOutput =
-        KBPEA2015OutputLayout.get().openOrCreate(outputDirectory);
+    final LinkingStore originalLinkingStore =
+        linkingStoreSource.openLinkingStore(new File(source, "linking"));
+
+    final SystemOutputStore newOutput = outputLayout.openOrCreate(outputDirectory);
 
     for (final Symbol docid : originalArgumentStore.docIDs()) {
       log.info("Converting {}", docid);
@@ -79,7 +83,8 @@ public final class ImportForeignIDs {
           .uncachedReadFromArgumentStoreCachingOldIDS(originalArgumentStore, docid,
               originalToSystem);
 
-      final Optional<ResponseLinking> transformedLinking = originalLinkingStore.readTransformingIDs(docid,
+      final Optional<ResponseLinking> transformedLinking =
+          originalLinkingStore.readTransformingIDs(docid,
               originalArguments.responses(),
               Optional.<ImmutableMap<String, String>>of(originalToSystem.build()));
       if (transformedLinking.isPresent()) {

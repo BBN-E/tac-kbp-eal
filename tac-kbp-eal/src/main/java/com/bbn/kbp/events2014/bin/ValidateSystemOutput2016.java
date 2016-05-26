@@ -5,6 +5,7 @@ import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.KBPEA2016OutputLayout;
+import com.bbn.kbp.events2014.io.LinkingStoreSource;
 import com.bbn.kbp.events2014.validation.LinkingValidator;
 import com.bbn.kbp.events2014.validation.LinkingValidators;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
@@ -77,7 +78,8 @@ public final class ValidateSystemOutput2016 {
               LinkingValidators.banGeneric());
       final ValidateSystemOutput validator =
           ValidateSystemOutput.create(typeAndRoleValidator, linkingValidator,
-              ValidateSystemOutput.NO_PREPROCESSING);
+              ValidateSystemOutput2015.convertToStandardIds(LinkingStoreSource.createFor2016(),
+                  KBPEA2016OutputLayout.get()));
 
       final File systemOutputStoreFile = params.getExistingFileOrDirectory("systemOutputStore");
 
