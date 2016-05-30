@@ -68,7 +68,7 @@ public final class QueryResponseFromERE {
     final ImmutableMap<String, SystemOutputStore2016> outputStores =
         loadStores(params.getExistingDirectory("com.bbn.tac.eal.storeDir"),
             params.getStringList("com.bbn.tac.eal.storesToProcess"));
-    final File outputFile = params.getCreatableDirectory("com.bbn.tac.eal.outputFile");
+    final File outputFile = params.getCreatableFile("com.bbn.tac.eal.outputFile");
 
     final CorpusQueryAssessments.Builder corpusQueryAssessmentsB = CorpusQueryAssessments.builder();
     final SingleFileQueryStoreWriter queryStoreWriter =
