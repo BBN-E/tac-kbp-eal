@@ -186,7 +186,8 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
     final EREDocument ereDoc = ereLoader.loadFrom(ereFile);
     EREEntity ereEntity = null;
     for (final EREEntity e : ereDoc.getEntities()) {
-      if (e.getID().equals(entityID.asString())) {
+      // .endsWith because the ERELoader prefixes the entity ID with the docID.
+      if (e.getID().endsWith(entityID.asString())) {
         ereEntity = e;
         break;
       }
@@ -195,7 +196,8 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
 
     EREEvent ereEvent = null;
     for (final EREEvent e : ereDoc.getEvents()) {
-      if (e.getID().equals(hopperID.asString())) {
+      // .endsWith because the ERELoader prefixes the event ID with the docID.
+      if (e.getID().contains(hopperID.asString())) {
         ereEvent = e;
         break;
       }
