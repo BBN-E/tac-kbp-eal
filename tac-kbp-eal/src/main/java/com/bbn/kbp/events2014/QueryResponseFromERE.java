@@ -7,6 +7,7 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.strings.offsets.CharOffset;
 import com.bbn.bue.common.strings.offsets.OffsetRange;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events2014.io.SingleFileQueryStoreWriter;
 import com.bbn.kbp.events2014.io.SystemOutputStore2016;
 import com.bbn.nlp.corpora.ere.EREArgument;
 import com.bbn.nlp.corpora.ere.EREDocument;
@@ -21,6 +22,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
@@ -66,10 +68,14 @@ public final class QueryResponseFromERE {
     final ImmutableMap<String, SystemOutputStore2016> outputStores =
         loadStores(params.getExistingDirectory("com.bbn.tac.eal.storeDir"),
             params.getStringList("com.bbn.tac.eal.storesToProcess"));
+    final File outputFile = params.getCreatableDirectory("com.bbn.tac.eal.outputFile");
+
+    final CorpusQueryAssessments.Builder corpusQueryAssessmentsB = CorpusQueryAssessments.builder();
+    final SingleFileQueryStoreWriter queryStoreWriter =
+        SingleFileQueryStoreWriter.builder().build();
 
     final CorpusQueryExecutor2016 queryExecutor =
         DefaultCorpusQueryExecutor.createDefaultFor2016();
-    final ImmutableSet.Builder<QueryResponse2016> queryResponses = ImmutableSet.builder();
 
     for (final Map.Entry<String, SystemOutputStore2016> store : outputStores.entrySet()) {
       for (final CorpusQuery2016 query : queries.queries()) {
@@ -87,12 +93,17 @@ public final class QueryResponseFromERE {
           final QueryResponse2016 queryResponse2016 =
               QueryResponse2016.builder().docID(docEventFrameReference.docID()).queryID(query.id())
                   .addAllPredicateJustifications(spans).build();
-          queryResponses.add(queryResponse2016);
+          corpusQueryAssessmentsB.putAllQueryResponsesToSystemIDs(queryResponse2016,
+              ImmutableList.of(Symbol.from(store.getKey())));
+          corpusQueryAssessmentsB.addQueryReponses(queryResponse2016);
+          corpusQueryAssessmentsB.putAssessments(queryResponse2016, QueryAssessment2016.UNASSASSED);
         }
       }
     }
 
-    
+    queryStoreWriter
+        .saveTo(corpusQueryAssessmentsB.build(), Files.asCharSink(outputFile, Charsets.UTF_8));
+
 
   }
 
