@@ -18,6 +18,9 @@ import com.bbn.nlp.corpora.ere.EREEventMention;
 import com.bbn.nlp.corpora.ere.ERELoader;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Optional;
+import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
@@ -35,6 +38,7 @@ import java.util.Map;
 
 import static com.bbn.bue.common.symbols.SymbolUtils.byStringOrdering;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 public final class QueryResponseFromERE {
 
@@ -65,13 +69,30 @@ public final class QueryResponseFromERE {
 
     final CorpusQueryExecutor2016 queryExecutor =
         DefaultCorpusQueryExecutor.createDefaultFor2016();
+    final ImmutableSet.Builder<QueryResponse2016> queryResponses = ImmutableSet.builder();
 
     for (final Map.Entry<String, SystemOutputStore2016> store : outputStores.entrySet()) {
       for (final CorpusQuery2016 query : queries.queries()) {
-        final ImmutableSet<DocEventFrameReference> ref =
+        final ImmutableSet<DocEventFrameReference> docEventFrameReferences =
             queryExecutor.queryEventFrames(store.getValue(), query);
+        for (final DocEventFrameReference docEventFrameReference : docEventFrameReferences) {
+          final Optional<ImmutableBiMap<String, ResponseSet>> responseSetMap =
+              store.getValue().read(docEventFrameReference.docID()).linking().responseSetIds();
+          checkState(responseSetMap.isPresent());
+          final ImmutableSet<Response> responses =
+              responseSetMap.get().get(docEventFrameReference.eventFrameID()).asSet();
+          // TODO do we want PJs instead of CAS?
+          final ImmutableSet<CharOffsetSpan> spans =
+              FluentIterable.from(responses).transform(ResponseFunctions.baseFiller()).toSet();
+          final QueryResponse2016 queryResponse2016 =
+              QueryResponse2016.builder().docID(docEventFrameReference.docID()).queryID(query.id())
+                  .addAllPredicateJustifications(spans).build();
+          queryResponses.add(queryResponse2016);
+        }
       }
     }
+
+    
 
   }
 
