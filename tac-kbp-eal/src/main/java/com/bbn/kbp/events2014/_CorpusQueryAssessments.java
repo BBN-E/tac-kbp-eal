@@ -95,10 +95,5 @@ public abstract class _CorpusQueryAssessments {
     checkArgument(all(systemIDStrings, not(isEmpty())), "System IDs may not be empty");
     checkArgument(all(systemIDStrings, not(anyCharMatches(CharMatcher.WHITESPACE))),
         "System IDs may not contain whitespace");
-
-    for (final QueryResponse2016 q : assessments().keySet()) {
-      checkArgument(!assessments().get(q).equals(QueryAssessment2016.UNASSASSED),
-          "No storing of UNASSESSED queries in the assessments allowed");
-    }
   }
 }
