@@ -91,18 +91,24 @@ public final class QueryResponseFromERE {
       for (final CorpusQuery2016 query : queries.queries()) {
         final ImmutableSet<DocEventFrameReference> docEventFrameReferences =
             queryExecutor.queryEventFrames(store.getValue(), query);
-        for (final DocEventFrameReference docEventFrameReference : docEventFrameReferences) {
+        final ImmutableMultimap<Symbol, DocEventFrameReference> refsByDocID =
+            FluentIterable.from(docEventFrameReferences)
+                .index(DocEventFrameReferenceFunctions.docID());
+        for (final Symbol docID : refsByDocID.keys()) {
           final Optional<ImmutableBiMap<String, ResponseSet>> responseSetMap =
-              store.getValue().read(docEventFrameReference.docID()).linking().responseSetIds();
+              store.getValue().read(docID).linking().responseSetIds();
           checkState(responseSetMap.isPresent());
-          final ImmutableSet<Response> responses =
-              responseSetMap.get().get(docEventFrameReference.eventFrameID()).asSet();
-          // TODO do we want PJs instead of CAS?
-          final ImmutableSet<CharOffsetSpan> spans =
-              FluentIterable.from(responses).transform(ResponseFunctions.baseFiller()).toSet();
+          final ImmutableSet.Builder<CharOffsetSpan> offsetsB = ImmutableSet.builder();
+          for (final DocEventFrameReference docEventFrameReference : refsByDocID.get(docID)) {
+            final ImmutableSet<Response> responses =
+                responseSetMap.get().get(docEventFrameReference.eventFrameID()).asSet();
+            final ImmutableSet<CharOffsetSpan> spans = FluentIterable.from(responses)
+                .transformAndConcat(ResponseFunctions.predicateJustifications()).toSet();
+            offsetsB.addAll(spans);
+          }
           final QueryResponse2016 queryResponse2016 =
-              QueryResponse2016.builder().docID(docEventFrameReference.docID()).queryID(query.id())
-                  .addAllPredicateJustifications(spans).build();
+              QueryResponse2016.builder().docID(docID).queryID(query.id())
+                  .addAllPredicateJustifications(offsetsB.build()).build();
           corpusQueryAssessmentsB.putAllQueryResponsesToSystemIDs(queryResponse2016,
               ImmutableList.of(Symbol.from(store.getKey())));
           corpusQueryAssessmentsB.addQueryReponses(queryResponse2016);
@@ -150,7 +156,7 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
   }
 
   public static ERECorpusQueryLoader create(final ERELoader ereLoader,
-      final Map<Symbol, File> ereMap, final int pj_window_size  ) {
+      final Map<Symbol, File> ereMap, final int pj_window_size) {
     return new ERECorpusQueryLoader(ereLoader, ereMap, pj_window_size);
   }
 
@@ -250,12 +256,12 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
     }
 
     // add any match of the same entity in the same role for _any_ event.
-    for(final EREEvent ev: ereDoc.getEvents()) {
-      for(final EREEventMention evm: ev.getEventMentions()) {
-        for(final EREArgument eva: evm.getArguments()) {
-          if(eva instanceof EREEntityArgument) {
+    for (final EREEvent ev : ereDoc.getEvents()) {
+      for (final EREEventMention evm : ev.getEventMentions()) {
+        for (final EREArgument eva : evm.getArguments()) {
+          if (eva instanceof EREEntityArgument) {
             final String id = ((EREEntityArgument) eva).ereEntity().get().getID();
-            if(id.equals(entityID.asString()) && eva.getRole().equals(role.asString())) {
+            if (id.equals(entityID.asString()) && eva.getRole().equals(role.asString())) {
               final CorpusQueryEntryPoint ep = getCorpusQueryEntryPoint(docID, role, eventType, evm,
                   (EREEntityArgument) eva, ((EREEntityArgument) eva).entityMention());
               ret.add(ep);
