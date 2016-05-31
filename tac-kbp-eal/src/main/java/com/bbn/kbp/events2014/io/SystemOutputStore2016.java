@@ -11,6 +11,7 @@ import com.bbn.kbp.events2014.ResponseLinking;
 import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
 import java.io.File;
@@ -54,7 +55,8 @@ public class SystemOutputStore2016 implements SystemOutputStore {
     if (argStore.docIDs().equals(linkingStore.docIDs())) {
       return new SystemOutputStore2016(systemID, argStore, linkingStore, corpusLinkingFile);
     } else {
-      throw new RuntimeException("Argument and linking store docIDs do not match");
+      throw new RuntimeException("Argument and linking store docIDs do not match, missing " + Sets
+          .symmetricDifference(argStore.docIDs(), linkingStore.docIDs()));
     }
   }
 
