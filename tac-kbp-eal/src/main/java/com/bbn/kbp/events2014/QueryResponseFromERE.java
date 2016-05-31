@@ -2,6 +2,8 @@ package com.bbn.kbp.events2014;
 
 
 import com.bbn.bue.common.StringUtils;
+import com.bbn.bue.common.collections.LaxImmutableMapBuilder;
+import com.bbn.bue.common.collections.MapUtils;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.strings.offsets.CharOffset;
@@ -80,6 +82,9 @@ public final class QueryResponseFromERE {
     final CorpusQueryExecutor2016 queryExecutor =
         DefaultCorpusQueryExecutor.createDefaultFor2016();
 
+    final LaxImmutableMapBuilder<QueryResponse2016, QueryAssessment2016> assessmentsB =
+        MapUtils.immutableMapBuilderAllowingSameEntryTwice();
+
     for (final Map.Entry<String, SystemOutputStore2016> store : outputStores.entrySet()) {
       for (final CorpusQuery2016 query : queries.queries()) {
         final ImmutableSet<DocEventFrameReference> docEventFrameReferences =
@@ -99,10 +104,11 @@ public final class QueryResponseFromERE {
           corpusQueryAssessmentsB.putAllQueryResponsesToSystemIDs(queryResponse2016,
               ImmutableList.of(Symbol.from(store.getKey())));
           corpusQueryAssessmentsB.addQueryReponses(queryResponse2016);
-          corpusQueryAssessmentsB.putAssessments(queryResponse2016, QueryAssessment2016.UNASSASSED);
+          assessmentsB.put(queryResponse2016, QueryAssessment2016.UNASSASSED);
         }
       }
     }
+    corpusQueryAssessmentsB.assessments(assessmentsB.build());
 
     queryStoreWriter
         .saveTo(corpusQueryAssessmentsB.build(), Files.asCharSink(outputFile, Charsets.UTF_8));
