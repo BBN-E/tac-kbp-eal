@@ -51,7 +51,8 @@ interface CASMatchCriterion {
  */
 interface PJMatchCriterion {
 
-  boolean matches(ImmutableSet<CharOffsetSpan> responsePJ, OffsetRange<CharOffset> queryPJ);
+  boolean matches(ImmutableSet<CharOffsetSpan> responsePJ,
+      ImmutableSet<OffsetRange<CharOffset>> queryPJ);
 
   String humanFriendlyName();
 }
@@ -230,7 +231,7 @@ class DefaultCorpusQueryExecutor implements CorpusQueryExecutor2016 {
         msg.append("\t").append(alignConfig.casMatchCriterion().humanFriendlyName()).append(" to ")
             .append(response.canonicalArgument()).append("\n");
         final boolean pjMatches = alignConfig.pjMatchCriterion().matches(
-            response.predicateJustifications(), queryEntryPoint.predicateJustification());
+            response.predicateJustifications(), queryEntryPoint.predicateJustifications());
         if (pjMatches) {
           msg.append("\t\tResponse ").append(response).append(" accepted as match\n");
           matchingResponses.add(response);
@@ -275,10 +276,12 @@ enum EntryPointPJContainsResponsePJ implements PJMatchCriterion {
 
   @Override
   public boolean matches(final ImmutableSet<CharOffsetSpan> responsePJ,
-      final OffsetRange<CharOffset> queryPJ) {
+      final ImmutableSet<OffsetRange<CharOffset>> queryPJs) {
     for (final CharOffsetSpan pj : responsePJ) {
-      if (queryPJ.contains(pj.asCharOffsetRange())) {
-        return true;
+      for (final OffsetRange<CharOffset> queryPJ : queryPJs) {
+        if (queryPJ.contains(pj.asCharOffsetRange())) {
+          return true;
+        }
       }
     }
     return false;

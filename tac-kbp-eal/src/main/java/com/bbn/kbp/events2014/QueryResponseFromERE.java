@@ -18,6 +18,7 @@ import com.bbn.nlp.corpora.ere.EREEntityMention;
 import com.bbn.nlp.corpora.ere.EREEvent;
 import com.bbn.nlp.corpora.ere.EREEventMention;
 import com.bbn.nlp.corpora.ere.ERELoader;
+import com.bbn.nlp.corpora.ere.ERESpan;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
@@ -125,7 +126,7 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
   private final Map<Symbol, File> eremap;
   // some arbitrary fixed number of characters
   // TODO use surrounding sentences, e.g. the output of CoreNLP, here.
-  private static final int WINDOW_FOR_PJS = 20;
+  private static final int WINDOW_FOR_PJS = 30;
   private final EREToKBPEventOntologyMapper typeMapper;
 
   ERECorpusQueryLoader(final ERELoader ereLoader, final Map<Symbol, File> eremap) {
@@ -234,12 +235,19 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
             final OffsetRange<CharOffset> casOffsets =
                 OffsetRange.charOffsetRange(em.getExtent().getStart(), em.getExtent().getEnd());
             // TODO make these PJs better
-            final OffsetRange<CharOffset> pj = OffsetRange
-                .charOffsetRange(Math.min(evm.getTrigger().getStart() - WINDOW_FOR_PJS, 0),
+            final OffsetRange<CharOffset> triggerPJ = OffsetRange
+                .charOffsetRange(Math.max(evm.getTrigger().getStart() - WINDOW_FOR_PJS, 0),
                     evm.getTrigger().getEnd() + WINDOW_FOR_PJS);
-
-            ret.add(CorpusQueryEntryPoint.builder().docID(docID).eventType(eventType).role(typeMapper.eventRole(role).get())
-                .casOffsets(casOffsets).predicateJustification(pj).build());
+            final ERESpan mentionSpan = ((EREEntityArgument) eva).entityMention().getExtent();
+            final OffsetRange<CharOffset> mentionSpanPJ = OffsetRange
+                .charOffsetRange(Math.max(mentionSpan.getStart() - WINDOW_FOR_PJS, 0),
+                    mentionSpan.getEnd() + WINDOW_FOR_PJS);
+            final CorpusQueryEntryPoint ep =
+                CorpusQueryEntryPoint.builder().docID(docID).eventType(eventType)
+                    .role(typeMapper.eventRole(role).get())
+                    .casOffsets(casOffsets)
+                    .predicateJustifications(ImmutableSet.of(triggerPJ, mentionSpanPJ)).build();
+            ret.add(ep);
           }
         }
       }

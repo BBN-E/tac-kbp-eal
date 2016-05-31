@@ -10,6 +10,8 @@ import com.bbn.kbp.events2014.CorpusQuerySet2016;
 import com.bbn.kbp.events2014.CorpusQueryWriter;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharSink;
 
@@ -22,8 +24,8 @@ import static com.bbn.bue.common.symbols.SymbolUtils.byStringOrdering;
 import static com.bbn.kbp.events2014.CorpusQueryEntryPointFunctions.casOffsets;
 import static com.bbn.kbp.events2014.CorpusQueryEntryPointFunctions.docID;
 import static com.bbn.kbp.events2014.CorpusQueryEntryPointFunctions.eventType;
-import static com.bbn.kbp.events2014.CorpusQueryEntryPointFunctions.predicateJustification;
 import static com.bbn.kbp.events2014.CorpusQueryEntryPointFunctions.role;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Writes corpus-level queries in the canonical format for KBP EAL 2016
@@ -60,7 +62,19 @@ public final class DefaultCorpusQueryWriter implements CorpusQueryWriter {
       final CorpusQueryEntryPoint entryPoint) {
     return TAB_JOINER.join(query.id(), entryPoint.docID(), entryPoint.eventType(),
         entryPoint.role(), renderSpan(entryPoint.casOffsets()),
-        renderSpan(entryPoint.predicateJustification()));
+        renderSpans(entryPoint.predicateJustifications()));
+  }
+
+  private static final Joiner COMMA = Joiner.on(",");
+
+  private String renderSpans(final ImmutableSet<OffsetRange<CharOffset>> offsetRanges) {
+    final ImmutableList<OffsetRange<CharOffset>> orderedSpans =
+        OffsetRange.<CharOffset>byEarlierStartLaterEndOrdering().immutableSortedCopy(offsetRanges);
+    final ImmutableList.Builder<String> parts = ImmutableList.builder();
+    for (final OffsetRange<CharOffset> offset : orderedSpans) {
+      parts.add(renderSpan(offset));
+    }
+    return COMMA.join(parts.build());
   }
 
   // someday we will replace CharOffsetSpan with OffsetRange<CharOffset> and this
@@ -76,6 +90,24 @@ public final class DefaultCorpusQueryWriter implements CorpusQueryWriter {
   private static final Ordering<CorpusQuery2016> QUERY_ORDERING =
       byStringOrdering().onResultOf(CorpusQuery2016Functions.id());
 
+  private static final Ordering<CorpusQueryEntryPoint> PJ_ORDERING =
+      new Ordering<CorpusQueryEntryPoint>() {
+        @Override
+        public int compare(final CorpusQueryEntryPoint l1,
+            final CorpusQueryEntryPoint l2) {
+          checkNotNull(l1);
+          checkNotNull(l2);
+          final ImmutableList<OffsetRange<CharOffset>> l1o =
+              OffsetRange.<CharOffset>byEarlierStartLaterEndOrdering()
+                  .immutableSortedCopy(l1.predicateJustifications());
+          final ImmutableList<OffsetRange<CharOffset>> l2o =
+              OffsetRange.<CharOffset>byEarlierStartLaterEndOrdering()
+                  .immutableSortedCopy(l2.predicateJustifications());
+          return OffsetRange.<CharOffset>byEarlierStartLaterEndOrdering().lexicographical()
+              .compare(l1o, l2o);
+        }
+      };
+
   // order entry points by
   private static final Ordering<CorpusQueryEntryPoint> ENTRY_POINT_ORDERING =
       // docID
@@ -88,6 +120,5 @@ public final class DefaultCorpusQueryWriter implements CorpusQueryWriter {
           .compound(
               OffsetRange.<CharOffset>byEarlierStartEarlierEndOrdering().onResultOf(casOffsets()))
           // then the predicate justification
-          .compound(OffsetRange.<CharOffset>byEarlierStartLaterEndOrdering()
-              .onResultOf(predicateJustification()));
+          .compound(PJ_ORDERING);
 }

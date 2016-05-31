@@ -5,6 +5,8 @@ import com.bbn.bue.common.strings.offsets.CharOffset;
 import com.bbn.bue.common.strings.offsets.OffsetRange;
 import com.bbn.bue.common.symbols.Symbol;
 
+import com.google.common.collect.ImmutableSet;
+
 import org.immutables.func.Functional;
 import org.immutables.value.Value;
 
@@ -32,7 +34,7 @@ abstract class _CorpusQueryEntryPoint {
   public abstract OffsetRange<CharOffset> casOffsets();
 
   @Value.Parameter
-  public abstract OffsetRange<CharOffset> predicateJustification();
+  public abstract ImmutableSet<OffsetRange<CharOffset>> predicateJustifications();
 
   @Value.Check
   protected void check() {
@@ -42,5 +44,6 @@ abstract class _CorpusQueryEntryPoint {
     checkArgument(!eventType().asString().contains("\t"), "Event type may not contain a tab");
     checkArgument(!role().asString().isEmpty(), "Role may not be empty");
     checkArgument(!role().asString().contains("\t"), "Role may not contain a tab");
+    checkArgument(!predicateJustifications().isEmpty(), "Predicate justifications may not be empty");
   }
 }

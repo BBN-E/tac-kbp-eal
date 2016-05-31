@@ -10,6 +10,7 @@ import com.bbn.kbp.events2014.CorpusQueryLoader;
 import com.bbn.kbp.events2014.CorpusQuerySet2016;
 import com.bbn.kbp.events2014.TACKBPEALException;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharSource;
@@ -55,8 +56,7 @@ public final class DefaultCorpusQueryLoader implements CorpusQueryLoader {
         final Symbol role = Symbol.from(parts.get(3));
         final OffsetRange<CharOffset> casOffsets =
             TACKBPEALIOUtils.parseCharOffsetRange(parts.get(4));
-        final OffsetRange<CharOffset> pjOffsets =
-            TACKBPEALIOUtils.parseCharOffsetRange(parts.get(5));
+        final ImmutableList<OffsetRange<CharOffset>> pjOffsets = offsets(parts.get(5));
 
         queriesToEntryPoints.put(queryID,
             CorpusQueryEntryPoint.of(docID, eventType, role, casOffsets, pjOffsets));
@@ -78,6 +78,16 @@ public final class DefaultCorpusQueryLoader implements CorpusQueryLoader {
     log.info("Loaded {} queries with {} entry points from {}", corpusQuerySet.queries().size(),
         numEntryPoints, source);
     return corpusQuerySet;
+  }
+
+  private static ImmutableList<OffsetRange<CharOffset>> offsets(final String parts) {
+    final ImmutableSet.Builder<OffsetRange<CharOffset>> ret = ImmutableSet.builder();
+    for (final String part : parts.split(",")) {
+      ret.add(TACKBPEALIOUtils.parseCharOffsetRange(part));
+    }
+
+    return OffsetRange.<CharOffset>byEarlierStartLaterEndOrdering()
+        .immutableSortedCopy(ret.build());
   }
 }
 

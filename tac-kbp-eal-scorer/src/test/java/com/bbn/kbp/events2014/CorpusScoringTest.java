@@ -60,9 +60,11 @@ public class CorpusScoringTest {
 
     final CorpusQuery2016 gondorInvasionQuery = CorpusQuery2016.of(query1,
         ImmutableSet.of(CorpusQueryEntryPoint.of(doc1ID, conflictAttack, attacker,
-            mordor.charOffsetSpan().asCharOffsetRange(), allDoc1Sent1.asCharOffsetRange()),
+            mordor.charOffsetSpan().asCharOffsetRange(),
+            ImmutableSet.of(allDoc1Sent1.asCharOffsetRange())),
             CorpusQueryEntryPoint.of(doc1ID, conflictAttack, target,
-                gondor.charOffsetSpan().asCharOffsetRange(), allDoc1Sent1.asCharOffsetRange())));
+                gondor.charOffsetSpan().asCharOffsetRange(),
+                ImmutableSet.of(allDoc1Sent1.asCharOffsetRange()))));
     final CorpusQuerySet2016 querySet = CorpusQuerySet2016.builder()
         .addQueries(gondorInvasionQuery).build();
 
