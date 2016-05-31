@@ -182,6 +182,10 @@ class DefaultCorpusQueryExecutor implements CorpusQueryExecutor2016 {
     return docEventsInMatchedCorpusEvents;
   }
 
+  /**
+   * Only tries lower ranked alignment strategies if no matches have been found yet, hence the array
+   * of matchingResponses.
+   */
   private void gatherResponsesMatchingEntryPoints(final CorpusQueryEntryPoint queryEntryPoint,
       final DocumentSystemOutput2015 docSystemOutput, final List<Response> matchingResponses,
       final StringBuilder msg) {
