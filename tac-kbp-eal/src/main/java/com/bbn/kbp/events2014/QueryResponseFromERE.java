@@ -122,6 +122,9 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
 
   private final ERELoader ereLoader;
   private final Map<Symbol, File> eremap;
+  // some arbitrary fixed number of characters
+  // TODO use surrounding sentences, e.g. the output of CoreNLP, here.
+  private static final int WINDOW_FOR_PJS = 20;
 
   ERECorpusQueryLoader(final ERELoader ereLoader, final Map<Symbol, File> eremap) {
     this.ereLoader = ereLoader;
@@ -220,9 +223,13 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
             // TODO these are not CAS offsets
             final OffsetRange<CharOffset> casOffsets =
                 OffsetRange.charOffsetRange(em.getExtent().getStart(), em.getExtent().getEnd());
-            // TODO what are the PJs in this case?
+            // TODO make these PJs better
+            final OffsetRange<CharOffset> pj = OffsetRange
+                .charOffsetRange(Math.min(evm.getTrigger().getStart() - WINDOW_FOR_PJS, 0),
+                    evm.getTrigger().getEnd() + WINDOW_FOR_PJS);
+
             ret.add(CorpusQueryEntryPoint.builder().docID(docID).eventType(eventType).role(role)
-                .casOffsets(casOffsets).build());
+                .casOffsets(casOffsets).predicateJustification(pj).build());
           }
         }
       }
