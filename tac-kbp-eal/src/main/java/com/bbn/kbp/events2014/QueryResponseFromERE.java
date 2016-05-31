@@ -62,8 +62,9 @@ public final class QueryResponseFromERE {
     final File queryFile = params.getExistingFile("com.bbn.tac.eal.queryFile");
     final ImmutableMap<Symbol, File> ereMap =
         FileUtils.loadSymbolToFileMap(params.getExistingFile("com.bbn.tac.eal.eremap"));
-    final CorpusQuerySet2016 queries = ERECorpusQueryLoader.create(ERELoader.create(), ereMap)
-        .loadQueries(Files.asCharSource(queryFile, Charsets.UTF_8));
+    final CorpusQuerySet2016 queries =
+        ERECorpusQueryLoader.create(ERELoader.builder().prefixDocIDToAllIDs(false).build(), ereMap)
+            .loadQueries(Files.asCharSource(queryFile, Charsets.UTF_8));
 
     final ImmutableMap<String, SystemOutputStore2016> outputStores =
         loadStores(params.getExistingDirectory("com.bbn.tac.eal.storeDir"),
@@ -185,8 +186,7 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
     final EREDocument ereDoc = ereLoader.loadFrom(ereFile);
     EREEntity ereEntity = null;
     for (final EREEntity e : ereDoc.getEntities()) {
-      // .endsWith because the ERELoader prefixes the entity ID with the docID.
-      if (e.getID().endsWith(entityID.asString())) {
+      if (e.getID().equals(entityID.asString())) {
         ereEntity = e;
         break;
       }
@@ -195,8 +195,7 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
 
     EREEvent ereEvent = null;
     for (final EREEvent e : ereDoc.getEvents()) {
-      // .endsWith because the ERELoader prefixes the event ID with the docID.
-      if (e.getID().contains(hopperID.asString())) {
+      if (e.getID().equals(hopperID.asString())) {
         ereEvent = e;
         break;
       }
@@ -216,7 +215,7 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
           checkState(ereEntityOptional.isPresent(),
               "EREEntity ids must be provided in input ERE markup");
           if (ereEntityOptional.isPresent() && ereEntityOptional.get().getID()
-              .endsWith(entityID.asString()) && eva.getRole().equals(role.asString())) {
+              .equals(entityID.asString()) && eva.getRole().equals(role.asString())) {
             final EREEntityMention em = ((EREEntityArgument) eva).entityMention();
             // TODO these are not CAS offsets
             final OffsetRange<CharOffset> casOffsets =
