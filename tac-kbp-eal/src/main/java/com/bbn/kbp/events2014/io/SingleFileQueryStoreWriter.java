@@ -54,9 +54,9 @@ public final class SingleFileQueryStoreWriter {
         pjStrings.add(dashJoiner.join(pj.startInclusive(), pj.endInclusive()));
       }
       final String pjString = commaJoiner.join(pjStrings.build());
-      final String systemIDs = FluentIterable.from(store.queryResponsesToSystemIDs().get(q))
-          .transform(SymbolUtils.desymbolizeFunction())
-          .join(StringUtils.commaJoiner());
+      final String systemIDs = StringUtils.commaJoiner()
+          .join(FluentIterable.from(store.queryResponsesToSystemIDs().get(q))
+              .transform(SymbolUtils.desymbolizeFunction()).toSet());
 
       final String line =
           tabJoiner.join(q.queryID(), q.docID(), systemIDs, pjString, assessment.name());
