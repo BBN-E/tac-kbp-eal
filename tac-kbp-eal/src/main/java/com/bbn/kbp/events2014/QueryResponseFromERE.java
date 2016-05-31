@@ -66,8 +66,10 @@ public final class QueryResponseFromERE {
     final File queryFile = params.getExistingFile("com.bbn.tac.eal.queryFile");
     final ImmutableMap<Symbol, File> ereMap =
         FileUtils.loadSymbolToFileMap(params.getExistingFile("com.bbn.tac.eal.eremap"));
+    final int pj_window_size = params.getInteger("com.bbn.tac.eal.pjWindow");
     final CorpusQuerySet2016 queries =
-        ERECorpusQueryLoader.create(ERELoader.builder().prefixDocIDToAllIDs(false).build(), ereMap)
+        ERECorpusQueryLoader.create(ERELoader.builder().prefixDocIDToAllIDs(false).build(), ereMap,
+            pj_window_size)
             .loadQueries(Files.asCharSource(queryFile, Charsets.UTF_8));
 
     final ImmutableMap<String, SystemOutputStore2016> outputStores =
@@ -132,12 +134,14 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
   private final Map<Symbol, File> eremap;
   // some arbitrary fixed number of characters
   // TODO use surrounding sentences, e.g. the output of CoreNLP, here.
-  private static final int WINDOW_FOR_PJS = 150;
+  private final int pj_window_size;
   private final EREToKBPEventOntologyMapper typeMapper;
 
-  ERECorpusQueryLoader(final ERELoader ereLoader, final Map<Symbol, File> eremap) {
+  ERECorpusQueryLoader(final ERELoader ereLoader, final Map<Symbol, File> eremap,
+      final int pj_window_size) {
     this.ereLoader = ereLoader;
     this.eremap = eremap;
+    this.pj_window_size = pj_window_size;
     try {
       typeMapper = EREToKBPEventOntologyMapper.create2016Mapping();
     } catch (IOException e) {
@@ -146,8 +150,8 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
   }
 
   public static ERECorpusQueryLoader create(final ERELoader ereLoader,
-      final Map<Symbol, File> ereMap) {
-    return new ERECorpusQueryLoader(ereLoader, ereMap);
+      final Map<Symbol, File> ereMap, final int pj_window_size  ) {
+    return new ERECorpusQueryLoader(ereLoader, ereMap, pj_window_size);
   }
 
   @Override
@@ -272,12 +276,12 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
         OffsetRange.charOffsetRange(em.getExtent().getStart(), em.getExtent().getEnd());
     // TODO make these PJs better
     final OffsetRange<CharOffset> triggerPJ = OffsetRange
-        .charOffsetRange(Math.max(evm.getTrigger().getStart() - WINDOW_FOR_PJS, 0),
-            evm.getTrigger().getEnd() + WINDOW_FOR_PJS);
+        .charOffsetRange(Math.max(evm.getTrigger().getStart() - pj_window_size, 0),
+            evm.getTrigger().getEnd() + pj_window_size);
     final ERESpan mentionSpan = eva.entityMention().getExtent();
     final OffsetRange<CharOffset> mentionSpanPJ = OffsetRange
-        .charOffsetRange(Math.max(mentionSpan.getStart() - WINDOW_FOR_PJS, 0),
-            mentionSpan.getEnd() + WINDOW_FOR_PJS);
+        .charOffsetRange(Math.max(mentionSpan.getStart() - pj_window_size, 0),
+            mentionSpan.getEnd() + pj_window_size);
     return CorpusQueryEntryPoint.builder().docID(docID).eventType(eventType)
         .role(typeMapper.eventRole(role).get())
         .casOffsets(casOffsets)
