@@ -35,12 +35,12 @@ End-Position	End-Position
 EndPosition	End-Position
 end-position	End-Position
 endPosition	End-Position
-endposition	EndPosition
+endposition	End-Position
 Start-Position	Start-Position
 StartPosition	Start-Position
 start-position	Start-Position
 startPosition	Start-Position
-startposition	StartPosition
+startposition	Start-Position
 Transaction	Transaction
 transaction	Transaction
 Transfer-Money	Transfer-Money
