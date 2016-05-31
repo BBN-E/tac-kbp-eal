@@ -237,28 +237,50 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
           if (ereEntityOptional.isPresent() && ereEntityOptional.get().getID()
               .equals(entityID.asString()) && eva.getRole().equals(role.asString())) {
             final EREEntityMention em = ((EREEntityArgument) eva).entityMention();
-            // TODO these are not CAS offsets
-            final OffsetRange<CharOffset> casOffsets =
-                OffsetRange.charOffsetRange(em.getExtent().getStart(), em.getExtent().getEnd());
-            // TODO make these PJs better
-            final OffsetRange<CharOffset> triggerPJ = OffsetRange
-                .charOffsetRange(Math.max(evm.getTrigger().getStart() - WINDOW_FOR_PJS, 0),
-                    evm.getTrigger().getEnd() + WINDOW_FOR_PJS);
-            final ERESpan mentionSpan = ((EREEntityArgument) eva).entityMention().getExtent();
-            final OffsetRange<CharOffset> mentionSpanPJ = OffsetRange
-                .charOffsetRange(Math.max(mentionSpan.getStart() - WINDOW_FOR_PJS, 0),
-                    mentionSpan.getEnd() + WINDOW_FOR_PJS);
-            final CorpusQueryEntryPoint ep =
-                CorpusQueryEntryPoint.builder().docID(docID).eventType(eventType)
-                    .role(typeMapper.eventRole(role).get())
-                    .casOffsets(casOffsets)
-                    .predicateJustifications(ImmutableSet.of(triggerPJ, mentionSpanPJ)).build();
+            final CorpusQueryEntryPoint ep = getCorpusQueryEntryPoint(docID, role, eventType, evm,
+                (EREEntityArgument) eva, em);
             ret.add(ep);
           }
         }
       }
     }
 
+    // add any match of the same entity in the same role for _any_ event.
+    for(final EREEvent ev: ereDoc.getEvents()) {
+      for(final EREEventMention evm: ev.getEventMentions()) {
+        for(final EREArgument eva: evm.getArguments()) {
+          if(eva instanceof EREEntityArgument) {
+            final String id = ((EREEntityArgument) eva).ereEntity().get().getID();
+            if(id.equals(entityID.asString()) && eva.getRole().equals(role.asString())) {
+              final CorpusQueryEntryPoint ep = getCorpusQueryEntryPoint(docID, role, eventType, evm,
+                  (EREEntityArgument) eva, ((EREEntityArgument) eva).entityMention());
+              ret.add(ep);
+            }
+          }
+        }
+      }
+    }
+
     return ret.build();
+  }
+
+  private CorpusQueryEntryPoint getCorpusQueryEntryPoint(final Symbol docID, final Symbol role,
+      final Symbol eventType, final EREEventMention evm, final EREEntityArgument eva,
+      final EREEntityMention em) {
+    // TODO these are not CAS offsets
+    final OffsetRange<CharOffset> casOffsets =
+        OffsetRange.charOffsetRange(em.getExtent().getStart(), em.getExtent().getEnd());
+    // TODO make these PJs better
+    final OffsetRange<CharOffset> triggerPJ = OffsetRange
+        .charOffsetRange(Math.max(evm.getTrigger().getStart() - WINDOW_FOR_PJS, 0),
+            evm.getTrigger().getEnd() + WINDOW_FOR_PJS);
+    final ERESpan mentionSpan = eva.entityMention().getExtent();
+    final OffsetRange<CharOffset> mentionSpanPJ = OffsetRange
+        .charOffsetRange(Math.max(mentionSpan.getStart() - WINDOW_FOR_PJS, 0),
+            mentionSpan.getEnd() + WINDOW_FOR_PJS);
+    return CorpusQueryEntryPoint.builder().docID(docID).eventType(eventType)
+        .role(typeMapper.eventRole(role).get())
+        .casOffsets(casOffsets)
+        .predicateJustifications(ImmutableSet.of(triggerPJ, mentionSpanPJ)).build();
   }
 }
