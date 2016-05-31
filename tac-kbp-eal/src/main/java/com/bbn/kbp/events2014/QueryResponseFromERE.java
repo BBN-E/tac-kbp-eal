@@ -7,6 +7,7 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.strings.offsets.CharOffset;
 import com.bbn.bue.common.strings.offsets.OffsetRange;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events.ontology.EREToKBPEventOntologyMapper;
 import com.bbn.kbp.events2014.io.SingleFileQueryStoreWriter;
 import com.bbn.kbp.events2014.io.SystemOutputStore2016;
 import com.bbn.nlp.corpora.ere.EREArgument;
@@ -125,10 +126,16 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
   // some arbitrary fixed number of characters
   // TODO use surrounding sentences, e.g. the output of CoreNLP, here.
   private static final int WINDOW_FOR_PJS = 20;
+  private final EREToKBPEventOntologyMapper typeMapper;
 
   ERECorpusQueryLoader(final ERELoader ereLoader, final Map<Symbol, File> eremap) {
     this.ereLoader = ereLoader;
     this.eremap = eremap;
+    try {
+      typeMapper = EREToKBPEventOntologyMapper.create2016Mapping();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public static ERECorpusQueryLoader create(final ERELoader ereLoader,
@@ -207,8 +214,11 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
 
     // TODO handle mixed type event hoppers
     final Symbol eventType = Symbol.from(
-        ereEvent.getEventMentions().get(0).getType() + "." + ereEvent.getEventMentions().get(0)
-            .getSubtype());
+        typeMapper.eventType(Symbol.from(ereEvent.getEventMentions().get(0).getType())).get()
+            .asString() + "." + typeMapper
+            .eventSubtype(Symbol.from(ereEvent.getEventMentions().get(0).getSubtype())).get()
+            .asString());
+
     // TODO what else do we need to include in the resulting events?
     for (final EREEventMention evm : ereEvent.getEventMentions()) {
       for (final EREArgument eva : evm.getArguments()) {
@@ -228,7 +238,7 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
                 .charOffsetRange(Math.min(evm.getTrigger().getStart() - WINDOW_FOR_PJS, 0),
                     evm.getTrigger().getEnd() + WINDOW_FOR_PJS);
 
-            ret.add(CorpusQueryEntryPoint.builder().docID(docID).eventType(eventType).role(role)
+            ret.add(CorpusQueryEntryPoint.builder().docID(docID).eventType(eventType).role(typeMapper.eventRole(role).get())
                 .casOffsets(casOffsets).predicateJustification(pj).build());
           }
         }
