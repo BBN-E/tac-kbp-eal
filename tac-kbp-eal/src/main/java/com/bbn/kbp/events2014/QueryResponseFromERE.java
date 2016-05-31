@@ -132,7 +132,7 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
   private final Map<Symbol, File> eremap;
   // some arbitrary fixed number of characters
   // TODO use surrounding sentences, e.g. the output of CoreNLP, here.
-  private static final int WINDOW_FOR_PJS = 30;
+  private static final int WINDOW_FOR_PJS = 150;
   private final EREToKBPEventOntologyMapper typeMapper;
 
   ERECorpusQueryLoader(final ERELoader ereLoader, final Map<Symbol, File> eremap) {
