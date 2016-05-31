@@ -103,8 +103,6 @@ public final class QueryResponseFromERE {
 
     queryStoreWriter
         .saveTo(corpusQueryAssessmentsB.build(), Files.asCharSink(outputFile, Charsets.UTF_8));
-
-
   }
 
   private static ImmutableMap<String, SystemOutputStore2016> loadStores(
@@ -139,10 +137,6 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
     final ImmutableMultimap.Builder<Symbol, CorpusQueryEntryPoint> queriesToEntryPoints =
         ImmutableMultimap.<Symbol, CorpusQueryEntryPoint>builder().orderKeysBy(byStringOrdering());
     final ImmutableSet.Builder<CorpusQuery2016> ret = ImmutableSet.builder();
-    for (final Map.Entry<Symbol, Collection<CorpusQueryEntryPoint>> e
-        : queriesToEntryPoints.build().asMap().entrySet()) {
-      ret.add(CorpusQuery2016.of(e.getKey(), e.getValue()));
-    }
 
     int numEntryPoints = 0;
     int lineNo = 1;
@@ -168,6 +162,11 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
       } catch (Exception e) {
         throw new IOException("Invalid query line " + lineNo + " in " + source + ": " + line, e);
       }
+    }
+
+    for (final Map.Entry<Symbol, Collection<CorpusQueryEntryPoint>> e
+        : queriesToEntryPoints.build().asMap().entrySet()) {
+      ret.add(CorpusQuery2016.of(e.getKey(), e.getValue()));
     }
 
     final CorpusQuerySet2016 corpusQuerySet = CorpusQuerySet2016.of(ret.build());
