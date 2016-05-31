@@ -209,17 +209,22 @@ final class ERECorpusQueryLoader implements CorpusQueryLoader {
             .getSubtype());
     // TODO what else do we need to include in the resulting events?
     for (final EREEventMention evm : ereEvent.getEventMentions()) {
-
       for (final EREArgument eva : evm.getArguments()) {
-        // for an entity argument, the ID is the entity id.
-        if (eva.getID().equals(entityID.asString()) && eva.getRole().equals(role.asString())) {
-          final EREEntityMention em = ((EREEntityArgument) eva).entityMention();
-          // TODO these are not CAS offsets
-          final OffsetRange<CharOffset> casOffsets =
-              OffsetRange.charOffsetRange(em.getExtent().getStart(), em.getExtent().getEnd());
-          // TODO what are the PJs in this case?
-          ret.add(CorpusQueryEntryPoint.builder().docID(docID).eventType(eventType).role(role)
-              .casOffsets(casOffsets).build());
+        // for an entity argument, the ID is the entity mention id.
+        if (eva instanceof EREEntityArgument) {
+          final Optional<EREEntity> ereEntityOptional = ((EREEntityArgument) eva).ereEntity();
+          checkState(ereEntityOptional.isPresent(),
+              "EREEntity ids must be provided in input ERE markup");
+          if (ereEntityOptional.isPresent() && ereEntityOptional.get().getID()
+              .endsWith(entityID.asString()) && eva.getRole().equals(role.asString())) {
+            final EREEntityMention em = ((EREEntityArgument) eva).entityMention();
+            // TODO these are not CAS offsets
+            final OffsetRange<CharOffset> casOffsets =
+                OffsetRange.charOffsetRange(em.getExtent().getStart(), em.getExtent().getEnd());
+            // TODO what are the PJs in this case?
+            ret.add(CorpusQueryEntryPoint.builder().docID(docID).eventType(eventType).role(role)
+                .casOffsets(casOffsets).build());
+          }
         }
       }
     }
