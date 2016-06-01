@@ -1,26 +1,16 @@
 package com.bbn.kbp.events2014;
 
 
-import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.collections.LaxImmutableMapBuilder;
 import com.bbn.bue.common.collections.MapUtils;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
-import com.bbn.bue.common.strings.offsets.CharOffset;
-import com.bbn.bue.common.strings.offsets.OffsetRange;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events.ontology.EREToKBPEventOntologyMapper;
+import com.bbn.kbp.events2014.io.DefaultCorpusQueryLoader;
 import com.bbn.kbp.events2014.io.SingleFileQueryStoreWriter;
 import com.bbn.kbp.events2014.io.SystemOutputStore2016;
-import com.bbn.nlp.corpora.ere.EREArgument;
-import com.bbn.nlp.corpora.ere.EREDocument;
-import com.bbn.nlp.corpora.ere.EREEntity;
-import com.bbn.nlp.corpora.ere.EREEntityArgument;
-import com.bbn.nlp.corpora.ere.EREEntityMention;
-import com.bbn.nlp.corpora.ere.EREEvent;
-import com.bbn.nlp.corpora.ere.EREEventMention;
 import com.bbn.nlp.corpora.ere.ERELoader;
-import com.bbn.nlp.corpora.ere.ERESpan;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
@@ -30,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.io.CharSource;
 import com.google.common.io.Files;
 
 import org.slf4j.Logger;
@@ -38,12 +27,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import static com.bbn.bue.common.symbols.SymbolUtils.byStringOrdering;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
@@ -74,11 +60,9 @@ public final class QueryResponseFromERE {
     final File queryFile = params.getExistingFile("com.bbn.tac.eal.queryFile");
     final ImmutableMap<Symbol, File> ereMap =
         FileUtils.loadSymbolToFileMap(params.getExistingFile("com.bbn.tac.eal.eremap"));
-    final int pj_window_size = params.getInteger("com.bbn.tac.eal.pjWindow");
-    final CorpusQuerySet2016 queries =
-        ERECorpusQueryLoader.create(ERELoader.builder().prefixDocIDToAllIDs(false).build(), ereMap,
-            pj_window_size)
-            .loadQueries(Files.asCharSource(queryFile, Charsets.UTF_8));
+    final CorpusQuerySet2016 queries = DefaultCorpusQueryLoader.create().loadQueries(
+        Files.asCharSource(queryFile, Charsets.UTF_8));
+    final int slack = params.getNonNegativeInteger("com.bbn.tac.eal.slack");
 
     final ImmutableMap<String, SystemOutputStore2016> outputStores =
         loadStores(params.getExistingDirectory("com.bbn.tac.eal.storeDir"),
@@ -90,7 +74,8 @@ public final class QueryResponseFromERE {
         SingleFileQueryStoreWriter.builder().build();
 
     final CorpusQueryExecutor2016 queryExecutor =
-        DefaultCorpusQueryExecutor.createDefaultFor2016();
+        EREBasedCorpusQueryExecutor.createDefaultFor2016(ereMap, ERELoader.builder().build(),
+            EREToKBPEventOntologyMapper.create2016Mapping(), slack);
 
     final LaxImmutableMapBuilder<QueryResponse2016, QueryAssessment2016> assessmentsB =
         MapUtils.immutableMapBuilderAllowingSameEntryTwice();
@@ -137,168 +122,5 @@ public final class QueryResponseFromERE {
       ret.put(storeName, SystemOutputStore2016.open(new File(storeDir, storeName)));
     }
     return ret.build();
-  }
-}
-
-final class ERECorpusQueryLoader implements CorpusQueryLoader {
-
-  private static final Logger log = LoggerFactory.getLogger(ERECorpusQueryLoader.class);
-
-  private final ERELoader ereLoader;
-  private final Map<Symbol, File> eremap;
-  // some arbitrary fixed number of characters
-  // TODO use surrounding sentences, e.g. the output of CoreNLP, here.
-  private final int pj_window_size;
-  private final EREToKBPEventOntologyMapper typeMapper;
-
-  ERECorpusQueryLoader(final ERELoader ereLoader, final Map<Symbol, File> eremap,
-      final int pj_window_size) {
-    this.ereLoader = ereLoader;
-    this.eremap = eremap;
-    this.pj_window_size = pj_window_size;
-    try {
-      typeMapper = EREToKBPEventOntologyMapper.create2016Mapping();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  public static ERECorpusQueryLoader create(final ERELoader ereLoader,
-      final Map<Symbol, File> ereMap, final int pj_window_size) {
-    return new ERECorpusQueryLoader(ereLoader, ereMap, pj_window_size);
-  }
-
-  @Override
-  public CorpusQuerySet2016 loadQueries(final CharSource source) throws IOException {
-    final ImmutableMultimap.Builder<Symbol, CorpusQueryEntryPoint> queriesToEntryPoints =
-        ImmutableMultimap.<Symbol, CorpusQueryEntryPoint>builder().orderKeysBy(byStringOrdering());
-    final ImmutableSet.Builder<CorpusQuery2016> ret = ImmutableSet.builder();
-
-    int numEntryPoints = 0;
-    int lineNo = 1;
-    for (final String line : source.readLines()) {
-      try {
-        final List<String> parts = StringUtils.onTabs().splitToList(line);
-        if (parts.size() != 5) {
-          throw new TACKBPEALException("Expected 5 tab-separated fields but got " + parts.size());
-        }
-        final Symbol queryID = Symbol.from(parts.get(0));
-        final Symbol docID = Symbol.from(parts.get(1));
-        final Symbol hopperID = Symbol.from(parts.get(2));
-        final Symbol role = Symbol.from(parts.get(3));
-        final Symbol entityID = Symbol.from(parts.get(4));
-
-        final ImmutableSet<CorpusQueryEntryPoint> entryPoints =
-            extractEntryPoints(docID, hopperID, role, entityID);
-        queriesToEntryPoints.putAll(queryID, entryPoints);
-
-        ++lineNo;
-        ++numEntryPoints;
-
-      } catch (Exception e) {
-        throw new IOException("Invalid query line " + lineNo + " in " + source + ": " + line, e);
-      }
-    }
-
-    for (final Map.Entry<Symbol, Collection<CorpusQueryEntryPoint>> e
-        : queriesToEntryPoints.build().asMap().entrySet()) {
-      ret.add(CorpusQuery2016.of(e.getKey(), e.getValue()));
-    }
-
-    final CorpusQuerySet2016 corpusQuerySet = CorpusQuerySet2016.of(ret.build());
-    log.info("Loaded {} queries with {} entry points from {}", corpusQuerySet.queries().size(),
-        numEntryPoints, source);
-    return corpusQuerySet;
-
-  }
-
-  private ImmutableSet<CorpusQueryEntryPoint> extractEntryPoints(final Symbol docID,
-      final Symbol hopperID, final Symbol role,
-      final Symbol entityID) throws IOException {
-    final ImmutableSet.Builder<CorpusQueryEntryPoint> ret = ImmutableSet.builder();
-
-    final File ereFile = checkNotNull(eremap.get(docID));
-    final EREDocument ereDoc = ereLoader.loadFrom(ereFile);
-    EREEntity ereEntity = null;
-    for (final EREEntity e : ereDoc.getEntities()) {
-      if (e.getID().equals(entityID.asString())) {
-        ereEntity = e;
-        break;
-      }
-    }
-    checkNotNull(ereEntity);
-
-    EREEvent ereEvent = null;
-    for (final EREEvent e : ereDoc.getEvents()) {
-      if (e.getID().equals(hopperID.asString())) {
-        ereEvent = e;
-        break;
-      }
-    }
-    checkNotNull(ereEvent);
-
-    // TODO handle mixed type event hoppers
-    final Symbol eventType = Symbol.from(
-        typeMapper.eventType(Symbol.from(ereEvent.getEventMentions().get(0).getType())).get()
-            .asString() + "." + typeMapper
-            .eventSubtype(Symbol.from(ereEvent.getEventMentions().get(0).getSubtype())).get()
-            .asString());
-
-    // TODO what else do we need to include in the resulting events?
-    for (final EREEventMention evm : ereEvent.getEventMentions()) {
-      for (final EREArgument eva : evm.getArguments()) {
-        // for an entity argument, the ID is the entity mention id.
-        if (eva instanceof EREEntityArgument) {
-          final Optional<EREEntity> ereEntityOptional = ((EREEntityArgument) eva).ereEntity();
-          checkState(ereEntityOptional.isPresent(),
-              "EREEntity ids must be provided in input ERE markup");
-          if (ereEntityOptional.isPresent() && ereEntityOptional.get().getID()
-              .equals(entityID.asString()) && eva.getRole().equals(role.asString())) {
-            final EREEntityMention em = ((EREEntityArgument) eva).entityMention();
-            final CorpusQueryEntryPoint ep = getCorpusQueryEntryPoint(docID, role, eventType, evm,
-                (EREEntityArgument) eva, em);
-            ret.add(ep);
-          }
-        }
-      }
-    }
-
-    // add any match of the same entity in the same role for _any_ event.
-    for (final EREEvent ev : ereDoc.getEvents()) {
-      for (final EREEventMention evm : ev.getEventMentions()) {
-        for (final EREArgument eva : evm.getArguments()) {
-          if (eva instanceof EREEntityArgument) {
-            final String id = ((EREEntityArgument) eva).ereEntity().get().getID();
-            if (id.equals(entityID.asString()) && eva.getRole().equals(role.asString())) {
-              final CorpusQueryEntryPoint ep = getCorpusQueryEntryPoint(docID, role, eventType, evm,
-                  (EREEntityArgument) eva, ((EREEntityArgument) eva).entityMention());
-              ret.add(ep);
-            }
-          }
-        }
-      }
-    }
-
-    return ret.build();
-  }
-
-  private CorpusQueryEntryPoint getCorpusQueryEntryPoint(final Symbol docID, final Symbol role,
-      final Symbol eventType, final EREEventMention evm, final EREEntityArgument eva,
-      final EREEntityMention em) {
-    // TODO these are not CAS offsets
-    final OffsetRange<CharOffset> casOffsets =
-        OffsetRange.charOffsetRange(em.getExtent().getStart(), em.getExtent().getEnd());
-    // TODO make these PJs better
-    final OffsetRange<CharOffset> triggerPJ = OffsetRange
-        .charOffsetRange(Math.max(evm.getTrigger().getStart() - pj_window_size, 0),
-            evm.getTrigger().getEnd() + pj_window_size);
-    final ERESpan mentionSpan = eva.entityMention().getExtent();
-    final OffsetRange<CharOffset> mentionSpanPJ = OffsetRange
-        .charOffsetRange(Math.max(mentionSpan.getStart() - pj_window_size, 0),
-            mentionSpan.getEnd() + pj_window_size);
-    return CorpusQueryEntryPoint.builder().docID(docID).eventType(eventType)
-        .role(typeMapper.eventRole(role).get())
-        .casOffsets(casOffsets)
-        .predicateJustifications(ImmutableSet.of(triggerPJ, mentionSpanPJ)).build();
   }
 }

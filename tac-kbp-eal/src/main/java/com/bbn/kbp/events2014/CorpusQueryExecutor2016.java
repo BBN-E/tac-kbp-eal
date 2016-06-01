@@ -3,8 +3,20 @@ package com.bbn.kbp.events2014;
 import com.bbn.bue.common.TextGroupPublicImmutable;
 import com.bbn.bue.common.strings.offsets.CharOffset;
 import com.bbn.bue.common.strings.offsets.OffsetRange;
+import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events.ontology.EREToKBPEventOntologyMapper;
 import com.bbn.kbp.events2014.io.SystemOutputStore2016;
+import com.bbn.nlp.corpora.ere.EREDocument;
+import com.bbn.nlp.corpora.ere.EREEntity;
+import com.bbn.nlp.corpora.ere.EREEntityMention;
+import com.bbn.nlp.corpora.ere.EREEvent;
+import com.bbn.nlp.corpora.ere.EREEventMention;
+import com.bbn.nlp.corpora.ere.ERELoader;
 
+import com.google.common.base.Predicates;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -13,12 +25,20 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
+import static com.bbn.bue.common.symbols.SymbolUtils.concat;
 import static com.bbn.kbp.events2014.ResponseFunctions.role;
 import static com.bbn.kbp.events2014.ResponseFunctions.type;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Predicates.compose;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.in;
@@ -35,12 +55,12 @@ public interface CorpusQueryExecutor2016 {
 }
 
 /**
- * Determines whether a system response canonical argument string is close enough to a query
- * canonical argument string to "match"
+ * Determines whether a system response canonical argument string is close enough to one of
+ * acceptable CASes for a query.
  */
 interface CASMatchCriterion {
 
-  boolean matches(KBPString response, OffsetRange<CharOffset> query);
+  boolean matches(KBPString response, Set<OffsetRange<CharOffset>> queryValidCASes);
 
   String humanFriendlyName();
 }
@@ -51,8 +71,7 @@ interface CASMatchCriterion {
  */
 interface PJMatchCriterion {
 
-  boolean matches(ImmutableSet<CharOffsetSpan> responsePJ,
-      ImmutableSet<OffsetRange<CharOffset>> queryPJ);
+  boolean matches(Set<CharOffsetSpan> responsePJ, Set<OffsetRange<CharOffset>> queryPJ);
 
   String humanFriendlyName();
 }
@@ -66,25 +85,48 @@ interface PJMatchCriterion {
  * <li>Collect all document-level events which occur in the same corpus-level event as one of these
  * responses</li> </ul>
  */
-class DefaultCorpusQueryExecutor implements CorpusQueryExecutor2016 {
+class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
 
-  private static final Logger log = LoggerFactory.getLogger(DefaultCorpusQueryExecutor.class);
+  private static final Logger log = LoggerFactory.getLogger(EREBasedCorpusQueryExecutor.class);
 
   private final ImmutableList<AlignmentConfiguration> alignmentConfigurations;
+  private final LoadingCache<Symbol, EREDocument> ereDocCache;
+  private final EREToKBPEventOntologyMapper ontologyMapper;
 
-  DefaultCorpusQueryExecutor(final Iterable<AlignmentConfiguration> alignmentConfigurations) {
+  EREBasedCorpusQueryExecutor(final Iterable<AlignmentConfiguration> alignmentConfigurations,
+      final LoadingCache<Symbol, EREDocument> ereDocCache,
+      final EREToKBPEventOntologyMapper ontologyMapper) {
+    this.ereDocCache = checkNotNull(ereDocCache);
+    this.ontologyMapper = checkNotNull(ontologyMapper);
     this.alignmentConfigurations = ImmutableList.copyOf(alignmentConfigurations);
   }
 
   /**
    * The default query matching strategy for the 2016 evaluation.
    */
-  public static DefaultCorpusQueryExecutor createDefaultFor2016() {
-    return new DefaultCorpusQueryExecutor(ImmutableList.of(
-        AlignmentConfiguration.of(ExactCASMatch.INSTANCE, EntryPointPJContainsResponsePJ.INSTANCE),
+  public static EREBasedCorpusQueryExecutor createDefaultFor2016(
+      final Map<Symbol, File> docIdToEREMap,
+      final ERELoader ereLoader, final EREToKBPEventOntologyMapper ontologyMapper,
+      int slack) {
+    final LoadingCache<Symbol, EREDocument> ereDocCache = CacheBuilder.newBuilder()
+        .maximumSize(50)
+        .build(new CacheLoader<Symbol, EREDocument>() {
+          @Override
+          public EREDocument load(final Symbol docID) throws Exception {
+            final File ereFileName = docIdToEREMap.get(docID);
+            if (ereFileName != null) {
+              return ereLoader.loadFrom(ereFileName);
+            } else {
+              throw new TACKBPEALException("Cannot find ERE file for " + docID);
+            }
+          }
+        });
+
+    return new EREBasedCorpusQueryExecutor(ImmutableList.of(
+        AlignmentConfiguration
+            .of(ExactCASMatch.INSTANCE, new ResponsePJContainsEntryPJWithSlack(slack)),
         AlignmentConfiguration.of(QueryCASContainsSystemCAS.INSTANCE,
-            EntryPointPJContainsResponsePJ.INSTANCE)
-    ));
+            new ResponsePJContainsEntryPJWithSlack(slack))), ereDocCache, ontologyMapper);
   }
 
   @Value.Immutable
@@ -163,8 +205,8 @@ class DefaultCorpusQueryExecutor implements CorpusQueryExecutor2016 {
 
     final ImmutableSet<DocEventFrameReference> docEventsMatchingEntryPoints =
         docEventsMatchingEntryPointsB.build();
-    msg.append(matchingResponses.size() + " responses match entry points\n");
-    msg.append(docEventsMatchingEntryPoints.size() + " document events match entry points\n");
+    msg.append(matchingResponses.size()).append(" responses match entry points\n");
+    msg.append(docEventsMatchingEntryPoints.size()).append(" document events match entry points\n");
     return docEventsMatchingEntryPoints;
   }
 
@@ -190,18 +232,100 @@ class DefaultCorpusQueryExecutor implements CorpusQueryExecutor2016 {
   private void gatherResponsesMatchingEntryPoints(final CorpusQueryEntryPoint queryEntryPoint,
       final DocumentSystemOutput2015 docSystemOutput, final List<Response> matchingResponses,
       final StringBuilder msg) {
+    final EREEvent ereEventForEntryPoint =
+        ereEventMentionForEntryPoint(queryEntryPoint);
+    final ImmutableSet<Symbol> entryPointEventTypes = gatherTypes(ereEventForEntryPoint);
+
+    final Symbol mappedRole = ontologyMapper.eventRole(queryEntryPoint.role()).get();
     final ImmutableList<Response> argumentsMatchingInTypeAndEventType =
         FluentIterable.from(docSystemOutput.arguments().responses())
-            .filter(compose(equalTo(queryEntryPoint.eventType()), type()))
-            .filter(compose(equalTo(queryEntryPoint.role()), role())).toList();
+            .filter(compose(in(entryPointEventTypes), type()))
+            .filter(compose(equalTo(mappedRole), role())).toList();
     msg.append(argumentsMatchingInTypeAndEventType.size())
         .append(" arguments matched in type and role\n");
+
+    final ImmutableSet<OffsetRange<CharOffset>> validCASOffsets =
+        gatherValidCASOffsets(queryEntryPoint);
+    checkState(!validCASOffsets.isEmpty());
+    final ImmutableSet<OffsetRange<CharOffset>> eventPJs =
+        gatherEventPJs(ereEventForEntryPoint);
+    checkState(!eventPJs.isEmpty());
+
+    msg.append("Query valid CASes are ").append(validCASOffsets).append("\n");
     for (AlignmentConfiguration alignConfig : alignmentConfigurations) {
       if (matchingResponses.isEmpty()) {
-        addMatchingResponses(queryEntryPoint, matchingResponses, alignConfig,
+        addMatchingResponses(validCASOffsets, eventPJs, matchingResponses, alignConfig,
             argumentsMatchingInTypeAndEventType, msg);
       }
     }
+  }
+
+  private ImmutableSet<Symbol> gatherTypes(final EREEvent ereEvent) {
+    final ImmutableSet.Builder<Symbol> ret = ImmutableSet.builder();
+    for (final EREEventMention ereEventMention : ereEvent.getEventMentions()) {
+      final Symbol mappedMainType = ontologyMapper.eventType(
+          Symbol.from(ereEventMention.getType())).get();
+      final Symbol mappedSubType = ontologyMapper.eventSubtype(
+          Symbol.from(ereEventMention.getSubtype())).get();
+
+      ret.add(concat(concat(mappedMainType, "."), mappedSubType));
+    }
+    return ret.build();
+  }
+
+  private EREEvent ereEventMentionForEntryPoint(
+      final CorpusQueryEntryPoint queryEntryPoint) {
+    final EREDocument ereDoc;
+    try {
+      ereDoc = ereDocCache.get(queryEntryPoint.docID());
+    } catch (ExecutionException e) {
+      throw new TACKBPEALException(e);
+    }
+    for (final EREEvent ereEvent : ereDoc.getEvents()) {
+      if (ereEvent.getID().equals(queryEntryPoint.hopperID().asString())) {
+        return ereEvent;
+      }
+    }
+    throw new TACKBPEALException("Could not find ERE event hopper with ID "
+        + queryEntryPoint.hopperID() + " for doc ID " + queryEntryPoint.docID());
+  }
+
+  private EREEntity ereEntityForQuery(final CorpusQueryEntryPoint queryEntryPoint) {
+    final EREDocument ereDoc;
+    try {
+      ereDoc = ereDocCache.get(queryEntryPoint.docID());
+    } catch (ExecutionException e) {
+      throw new TACKBPEALException(e);
+    }
+
+    for (final EREEntity ereEntity : ereDoc.getEntities()) {
+      if (ereEntity.getID().equals(queryEntryPoint.entity().asString())) {
+        return ereEntity;
+      }
+    }
+    throw new TACKBPEALException("Could not find entity " + queryEntryPoint.entity()
+        + " in document " + queryEntryPoint.docID());
+  }
+
+  private ImmutableSet<OffsetRange<CharOffset>> gatherEventPJs(final EREEvent ereEvent) {
+    final ImmutableSet.Builder<OffsetRange<CharOffset>> ret = ImmutableSet.builder();
+    for (final EREEventMention ereEventMention : ereEvent) {
+      ret.add(OffsetRange.charOffsetRange(ereEventMention.getTrigger().getStart(),
+          ereEventMention.getTrigger().getEnd()));
+    }
+    return ret.build();
+  }
+
+  private ImmutableSet<OffsetRange<CharOffset>> gatherValidCASOffsets(
+      final CorpusQueryEntryPoint entryPoint) {
+    final EREEntity entityForQuery = ereEntityForQuery(entryPoint);
+
+    final ImmutableSet.Builder<OffsetRange<CharOffset>> ret = ImmutableSet.builder();
+    for (final EREEntityMention ereEntityMention : entityForQuery.getMentions()) {
+      ret.add(OffsetRange.charOffsetRange(ereEntityMention.getExtent().getStart(),
+          ereEntityMention.getExtent().getEnd()));
+    }
+    return ret.build();
   }
 
   private void gatherDocumentEventsForResponses(final List<Response> matchingResponses,
@@ -219,25 +343,32 @@ class DefaultCorpusQueryExecutor implements CorpusQueryExecutor2016 {
     }
   }
 
-  private void addMatchingResponses(final CorpusQueryEntryPoint queryEntryPoint,
+  private void addMatchingResponses(final Set<OffsetRange<CharOffset>> queryValidCASOffsets,
+      final Set<OffsetRange<CharOffset>> queryPJOffsets,
       final List<Response> matchingResponses,
       final AlignmentConfiguration alignConfig,
       final ImmutableList<Response> argumentsMatchingInTypeAndEventType, final StringBuilder msg) {
     for (final Response response : filter(argumentsMatchingInTypeAndEventType,
         not(in(matchingResponses)))) {
       final boolean casMatches = alignConfig.casMatchCriterion()
-          .matches(response.canonicalArgument(), queryEntryPoint.casOffsets());
+          .matches(response.canonicalArgument(), queryValidCASOffsets);
       if (casMatches) {
         msg.append("\t").append(alignConfig.casMatchCriterion().humanFriendlyName()).append(" to ")
             .append(response.canonicalArgument()).append("\n");
         final boolean pjMatches = alignConfig.pjMatchCriterion().matches(
-            response.predicateJustifications(), queryEntryPoint.predicateJustifications());
+            response.predicateJustifications(), queryPJOffsets);
         if (pjMatches) {
           msg.append("\t\tResponse ").append(response).append(" accepted as match\n");
           matchingResponses.add(response);
         } else {
-          msg.append("\t\tResponse rejected due to insufficient PJ overlap\n");
+          msg.append("\t\tResponse rejected due to insufficient PJ overlap. Response PJs:")
+              .append(response.predicateJustifications()).append("; query PJs: ")
+              .append(queryPJOffsets).append("\n");
         }
+      } else {
+        msg.append("\t").append(alignConfig.casMatchCriterion().humanFriendlyName())
+            .append(" failed on ")
+            .append(response.canonicalArgument()).append("\n");
       }
     }
   }
@@ -247,8 +378,11 @@ enum ExactCASMatch implements CASMatchCriterion {
   INSTANCE;
 
   @Override
-  public boolean matches(final KBPString response, final OffsetRange<CharOffset> query) {
-    return response.charOffsetSpan().asCharOffsetRange().equals(query);
+  public boolean matches(final KBPString response,
+      final Set<OffsetRange<CharOffset>> queryValidCASes) {
+    return !FluentIterable.from(queryValidCASes)
+        .filter(Predicates.equalTo(response.charOffsetSpan().asCharOffsetRange()))
+        .isEmpty();
   }
 
   @Override
@@ -261,8 +395,14 @@ enum QueryCASContainsSystemCAS implements CASMatchCriterion {
   INSTANCE;
 
   @Override
-  public boolean matches(final KBPString response, final OffsetRange<CharOffset> query) {
-    return query.contains(response.charOffsetSpan().asCharOffsetRange());
+  public boolean matches(final KBPString response,
+      final Set<OffsetRange<CharOffset>> queryValidCASes) {
+    for (final OffsetRange<CharOffset> queryValidCAS : queryValidCASes) {
+      if (queryValidCAS.contains(response.charOffsetSpan().asCharOffsetRange())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override
@@ -275,8 +415,8 @@ enum EntryPointPJContainsResponsePJ implements PJMatchCriterion {
   INSTANCE;
 
   @Override
-  public boolean matches(final ImmutableSet<CharOffsetSpan> responsePJ,
-      final ImmutableSet<OffsetRange<CharOffset>> queryPJs) {
+  public boolean matches(final Set<CharOffsetSpan> responsePJ,
+      final Set<OffsetRange<CharOffset>> queryPJs) {
     for (final CharOffsetSpan pj : responsePJ) {
       for (final OffsetRange<CharOffset> queryPJ : queryPJs) {
         if (queryPJ.contains(pj.asCharOffsetRange())) {
@@ -290,5 +430,45 @@ enum EntryPointPJContainsResponsePJ implements PJMatchCriterion {
   @Override
   public String humanFriendlyName() {
     return "Entry-point-PJ-contains-response-PJ";
+  }
+}
+
+final class ResponsePJContainsEntryPJWithSlack implements PJMatchCriterion {
+
+  private final int slack;
+
+  public ResponsePJContainsEntryPJWithSlack(final int slack) {
+    this.slack = slack;
+    checkArgument(slack >= 0);
+  }
+
+  @Override
+  public boolean matches(final Set<CharOffsetSpan> responsePJs,
+      final Set<OffsetRange<CharOffset>> queryPJs) {
+    for (final OffsetRange<CharOffset> queryPJ : queryPJs) {
+      for (final CharOffsetSpan responsePJ : responsePJs) {
+        if (withinSlack(responsePJ.asCharOffsetRange(), queryPJ)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private boolean withinSlack(final OffsetRange<CharOffset> container,
+      final OffsetRange<CharOffset> containee) {
+    return OffsetRange.charOffsetRange(Math.max(0, container.startInclusive().asInt() - slack),
+        container.endInclusive().asInt() + slack).contains(containee);
+  }
+
+  private OffsetRange<CharOffset> extendRight(final OffsetRange<CharOffset> source,
+      final int rightShift) {
+    return OffsetRange.charOffsetRange(source.startInclusive().asInt(),
+        source.endInclusive().asInt() + rightShift);
+  }
+
+  @Override
+  public String humanFriendlyName() {
+    return "Response-PJ-contains-entryPoint-PJ-with-slack-" + slack;
   }
 }

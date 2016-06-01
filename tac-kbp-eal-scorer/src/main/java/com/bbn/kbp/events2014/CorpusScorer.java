@@ -90,7 +90,7 @@ public final class CorpusScorer {
   }
 
   private static final CorpusQueryExecutor2016 queryExecutor =
-      DefaultCorpusQueryExecutor.createDefaultFor2016();
+      EREBasedCorpusQueryExecutor.createDefaultFor2016();
 
   private static void score(final CorpusQuerySet2016 queries,
       final CorpusQueryAssessments queryAssessments,

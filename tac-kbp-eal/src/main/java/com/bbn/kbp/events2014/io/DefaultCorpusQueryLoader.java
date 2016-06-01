@@ -46,20 +46,18 @@ public final class DefaultCorpusQueryLoader implements CorpusQueryLoader {
     for (final String line : source.readLines()) {
       try {
         final List<String> parts = StringUtils.onTabs().splitToList(line);
-        if (parts.size() != 6) {
-          throw new TACKBPEALException("Expected 6 tab-separated fields but got " + parts.size());
+        if (parts.size() != 5) {
+          throw new TACKBPEALException("Expected 5 tab-separated fields but got " + parts.size());
         }
 
         final Symbol queryID = Symbol.from(parts.get(0));
         final Symbol docID = Symbol.from(parts.get(1));
-        final Symbol eventType = Symbol.from(parts.get(2));
+        final Symbol hopperID = Symbol.from(parts.get(2));
         final Symbol role = Symbol.from(parts.get(3));
-        final OffsetRange<CharOffset> casOffsets =
-            TACKBPEALIOUtils.parseCharOffsetRange(parts.get(4));
-        final ImmutableList<OffsetRange<CharOffset>> pjOffsets = offsets(parts.get(5));
+        final Symbol entityID = Symbol.from(parts.get(4));
 
-        queriesToEntryPoints.put(queryID,
-            CorpusQueryEntryPoint.of(docID, eventType, role, casOffsets, pjOffsets));
+        queriesToEntryPoints
+            .put(queryID, CorpusQueryEntryPoint.of(docID, hopperID, role, entityID));
 
         ++lineNo;
         ++numEntryPoints;
