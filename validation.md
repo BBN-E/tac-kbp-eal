@@ -1,5 +1,6 @@
 Instructions for processing input repositories:
 `tac-kbp-eal` refers to your clone of the github repository or the `tac-kbp-eal` subproject.
+Any docidmap is a File with, one per line, a document id, a tab character, and a path to an existing file.
 
 1. Convert to BBN IDs using `tac-kbp-eal/target/appassembler/bin/importForeignIDs`:
 Params:
