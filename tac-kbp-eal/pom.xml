@@ -237,7 +237,11 @@
                             <mainClass>com.bbn.kbp.events2014.QueryResponseFromERE</mainClass>
                             <id>queryResponseFromERE</id>
                         </program>
-
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.FilterLinkingStore
+                            </mainClass>
+                            <id>filterLinkingStore</id>
+                        </program>
                     </programs>
                 </configuration>
             </plugin>
