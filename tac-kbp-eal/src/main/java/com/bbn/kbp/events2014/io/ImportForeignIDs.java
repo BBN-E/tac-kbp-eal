@@ -3,13 +3,15 @@ package com.bbn.kbp.events2014.io;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
+import com.bbn.kbp.events2014.CorpusEventLinking;
 import com.bbn.kbp.events2014.DocumentSystemOutput2015;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.SystemOutputLayout;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.Files;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,7 +103,7 @@ public final class ImportForeignIDs {
       final Optional<ResponseLinking> transformedLinking =
           originalLinkingStore.readTransformingIDs(docid,
               originalArguments.responses(),
-              Optional.<ImmutableMap<String, String>>of(originalToSystem.build()));
+              Optional.of(originalToSystem.build()));
       if (transformedLinking.isPresent()) {
         // create system output
         final DocumentSystemOutput2015 newSystemOutput =
@@ -111,6 +113,14 @@ public final class ImportForeignIDs {
         throw new IOException("No linking found for " + docid);
       }
     }
+    final File corpusLinkingdir = new File(source, "corpusLinking");
+    if (corpusLinkingdir.exists()) {
+      final CorpusEventLinking corpusEventLinking = new CorpusEventFrameLoader2016()
+          .loadCorpusEventFrames(
+              Files.asCharSource(new File(corpusLinkingdir, "corpusLinking"), Charsets.UTF_8));
+      ((SystemOutputStore2016) newOutput).writeCorpusEventFrames(corpusEventLinking);
+    }
+
     originalArgumentStore.close();
     originalLinkingStore.close();
     newOutput.close();
