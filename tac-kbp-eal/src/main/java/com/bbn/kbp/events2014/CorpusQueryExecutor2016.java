@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import static com.bbn.bue.common.collections.CollectionUtils.isEmptyPredicate;
 import static com.bbn.bue.common.symbols.SymbolUtils.concat;
 import static com.bbn.kbp.events2014.ResponseFunctions.role;
 import static com.bbn.kbp.events2014.ResponseFunctions.type;
@@ -92,13 +93,16 @@ class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
   private final ImmutableList<AlignmentConfiguration> alignmentConfigurations;
   private final LoadingCache<Symbol, EREDocument> ereDocCache;
   private final EREToKBPEventOntologyMapper ontologyMapper;
+  private final boolean requireBestCASType;
 
   EREBasedCorpusQueryExecutor(final Iterable<AlignmentConfiguration> alignmentConfigurations,
       final LoadingCache<Symbol, EREDocument> ereDocCache,
-      final EREToKBPEventOntologyMapper ontologyMapper) {
+      final EREToKBPEventOntologyMapper ontologyMapper,
+      final boolean requireBestCASType) {
     this.ereDocCache = checkNotNull(ereDocCache);
     this.ontologyMapper = checkNotNull(ontologyMapper);
     this.alignmentConfigurations = ImmutableList.copyOf(alignmentConfigurations);
+    this.requireBestCASType = requireBestCASType;
   }
 
   /**
@@ -107,7 +111,8 @@ class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
   public static EREBasedCorpusQueryExecutor createDefaultFor2016(
       final Map<Symbol, File> docIdToEREMap,
       final ERELoader ereLoader, final EREToKBPEventOntologyMapper ontologyMapper,
-      int slack) {
+      int slack,
+      boolean requireBestCASType) {
     final LoadingCache<Symbol, EREDocument> ereDocCache = CacheBuilder.newBuilder()
         .maximumSize(50)
         .build(new CacheLoader<Symbol, EREDocument>() {
@@ -126,7 +131,8 @@ class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
         AlignmentConfiguration
             .of(ExactCASMatch.INSTANCE, new ResponsePJContainsEntryPJWithSlack(slack)),
         AlignmentConfiguration.of(QueryCASContainsSystemCAS.INSTANCE,
-            new ResponsePJContainsEntryPJWithSlack(slack))), ereDocCache, ontologyMapper);
+            new ResponsePJContainsEntryPJWithSlack(slack))), ereDocCache, ontologyMapper,
+        requireBestCASType);
   }
 
   @Value.Immutable
@@ -320,12 +326,41 @@ class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
       final CorpusQueryEntryPoint entryPoint) {
     final EREEntity entityForQuery = ereEntityForQuery(entryPoint);
 
-    final ImmutableSet.Builder<OffsetRange<CharOffset>> ret = ImmutableSet.builder();
+    final ImmutableSet.Builder<OffsetRange<CharOffset>> nameCASes = ImmutableSet.builder();
+    final ImmutableSet.Builder<OffsetRange<CharOffset>> descCASes = ImmutableSet.builder();
+    final ImmutableSet.Builder<OffsetRange<CharOffset>> pronCASes = ImmutableSet.builder();
+
     for (final EREEntityMention ereEntityMention : entityForQuery.getMentions()) {
-      ret.add(OffsetRange.charOffsetRange(ereEntityMention.getExtent().getStart(),
-          ereEntityMention.getExtent().getEnd()));
+      final OffsetRange<CharOffset> casOffsets =
+          OffsetRange.charOffsetRange(ereEntityMention.getExtent().getStart(),
+              ereEntityMention.getExtent().getEnd());
+      if ("NAM".equals(ereEntityMention.getType())) {
+        nameCASes.add(casOffsets);
+      } else if ("NOM".equals(ereEntityMention.getType())) {
+        descCASes.add(casOffsets);
+      } else if ("PRO".equals(ereEntityMention.getType())) {
+        pronCASes.add(casOffsets);
+      } else {
+        throw new TACKBPEALException("Unknown entity mention type " + ereEntityMention.getType());
+      }
     }
-    return ret.build();
+
+    if (requireBestCASType) {
+      // only allow matching against the most informative type of CAS available
+      return FluentIterable
+          .from(ImmutableList.of(nameCASes.build(), descCASes.build(), pronCASes.build()))
+          .filter(not(isEmptyPredicate()))
+          // use only name CASes if possible, otherwise only DESC,
+          // and only fall back to pronouns if desperate
+          .first()
+          .or(ImmutableSet.<OffsetRange<CharOffset>>of());
+    } else {
+      // use all CASes of all types
+      return FluentIterable.from(nameCASes.build())
+          .append(descCASes.build())
+          .append(pronCASes.build())
+          .toSet();
+    }
   }
 
   private void gatherDocumentEventsForResponses(final List<Response> matchingResponses,

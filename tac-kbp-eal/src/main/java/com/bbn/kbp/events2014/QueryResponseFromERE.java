@@ -62,7 +62,6 @@ public final class QueryResponseFromERE {
         FileUtils.loadSymbolToFileMap(params.getExistingFile("com.bbn.tac.eal.eremap"));
     final CorpusQuerySet2016 queries = DefaultCorpusQueryLoader.create().loadQueries(
         Files.asCharSource(queryFile, Charsets.UTF_8));
-    final int slack = params.getNonNegativeInteger("com.bbn.tac.eal.slack");
 
     final ImmutableMap<String, SystemOutputStore2016> outputStores =
         loadStores(params.getExistingDirectory("com.bbn.tac.eal.storeDir"),
@@ -75,7 +74,9 @@ public final class QueryResponseFromERE {
 
     final CorpusQueryExecutor2016 queryExecutor =
         EREBasedCorpusQueryExecutor.createDefaultFor2016(ereMap, ERELoader.builder().build(),
-            EREToKBPEventOntologyMapper.create2016Mapping(), slack);
+            EREToKBPEventOntologyMapper.create2016Mapping(),
+            params.getNonNegativeInteger("com.bbn.tac.eal.slack"),
+            params.getBoolean("com.bbn.tac.eal.matchBestCASTypesOnly"));
 
     final LaxImmutableMapBuilder<QueryResponse2016, QueryAssessment2016> assessmentsB =
         MapUtils.immutableMapBuilderAllowingSameEntryTwice();
