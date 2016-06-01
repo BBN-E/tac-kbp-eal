@@ -251,6 +251,10 @@
                             </mainClass>
                             <id>filterLinkingStore</id>
                         </program>
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.FilterOutInvalidArguments</mainClass>
+                            <id>filterOutInvalidArguments</id>
+                        </program>
                     </programs>
                 </configuration>
             </plugin>
