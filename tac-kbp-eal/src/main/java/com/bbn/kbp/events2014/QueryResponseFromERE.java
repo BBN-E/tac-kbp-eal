@@ -46,9 +46,17 @@ import static com.bbn.bue.common.symbols.SymbolUtils.byStringOrdering;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+/**
+ * Extracts QueryResponses from LDC queries that are specified by: a QueryID, a document ID, an
+ * event hopper, a role, and an entity within that hopper.
+ */
 public final class QueryResponseFromERE {
 
   private static final Logger log = LoggerFactory.getLogger(QueryResponseFromERE.class);
+
+  private QueryResponseFromERE() {
+    throw new UnsupportedOperationException();
+  }
 
   public static void main(String[] argv) {
     // we wrap the main method in this way to
