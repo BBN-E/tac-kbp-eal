@@ -57,6 +57,7 @@
                         </links>
                     </configuration>
                     <!-- Uncomment this configuration to produce one huge RTF of javadoc. -->
+                    <!-- This is to provide javadoc for DARPA review -->
                     <!--
                     <configuration>
                     <doclet>com.tarsec.javadoc.pdfdoclet.PDFDoclet</doclet>
