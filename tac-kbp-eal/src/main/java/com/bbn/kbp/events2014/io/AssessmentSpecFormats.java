@@ -1,6 +1,8 @@
 package com.bbn.kbp.events2014.io;
 
 import com.bbn.bue.common.StringUtils;
+import com.bbn.bue.common.collections.LaxImmutableMapBuilder;
+import com.bbn.bue.common.collections.MapUtils;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.scoring.Scored;
 import com.bbn.bue.common.symbols.Symbol;
@@ -27,7 +29,6 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.FluentIterable;
-import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -184,9 +185,10 @@ public final class AssessmentSpecFormats {
     }
   }
 
-  /* package-private */ static ArgumentOutput uncachedReadFromArgumentStoreCachingOldIDS(
+  /* package-private */
+  static ArgumentOutput uncachedReadFromArgumentStoreCachingOldIDS(
       final ArgumentStore directoryArgumentStore, final Symbol docID,
-      final ImmutableBiMap.Builder<String, String> originalIDToSystem) throws IOException {
+      final ImmutableMap.Builder<String, String> originalIDToSystem) throws IOException {
     if (directoryArgumentStore instanceof DirectorySystemOutputStore) {
       return ((DirectorySystemOutputStore) directoryArgumentStore).readAndCacheIDs(docID,
           originalIDToSystem);
@@ -218,12 +220,14 @@ public final class AssessmentSpecFormats {
       return readAndCacheIDs(docid, ImmutableMap.<String, String>builder());
     }
 
-    /* package-private */ ArgumentOutput readAndCacheIDs(final Symbol docid, final ImmutableMap.Builder<String, String> idMap) throws IOException {
+    /* package-private */ ArgumentOutput readAndCacheIDs(final Symbol docid,
+        final ImmutableMap.Builder<String, String> idMap) throws IOException {
       final File f = bareOrWithSuffix(directory, docid.asString(), ACCEPTABLE_SUFFIXES);
 
       final ImmutableList.Builder<Scored<Response>> ret = ImmutableList.builder();
-      final ImmutableMap.Builder<Response, String> responseToMetadata =
-          new ImmutableMap.Builder<Response, String>();
+
+      final LaxImmutableMapBuilder<Response, String> responseToMetadata =
+          MapUtils.immutableMapBuilderAllowingSameEntryTwice();
 
       int lineNo = 0;
       String lastLine = ArgumentOutput.DEFAULT_METADATA;

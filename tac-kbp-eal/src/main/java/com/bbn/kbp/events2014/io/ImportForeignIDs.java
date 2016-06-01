@@ -93,7 +93,7 @@ public final class ImportForeignIDs {
 
     for (final Symbol docid : originalArgumentStore.docIDs()) {
       log.info("Converting {}", docid);
-      final ImmutableBiMap.Builder<String, String> originalToSystem = ImmutableBiMap.builder();
+      final ImmutableMap.Builder<String, String> originalToSystem = ImmutableMap.builder();
       final ArgumentOutput originalArguments = AssessmentSpecFormats
           .uncachedReadFromArgumentStoreCachingOldIDS(originalArgumentStore, docid,
               originalToSystem);
