@@ -76,6 +76,7 @@ public final class QueryResponseFromERE {
         EREBasedCorpusQueryExecutor.createDefaultFor2016(ereMap, ERELoader.builder().build(),
             EREToKBPEventOntologyMapper.create2016Mapping(),
             params.getNonNegativeInteger("com.bbn.tac.eal.slack"),
+            params.getPositiveDouble("com.bbn.tac.eal.minNominalCASOverlap"),
             params.getBoolean("com.bbn.tac.eal.matchBestCASTypesOnly"));
 
     final LaxImmutableMapBuilder<QueryResponse2016, QueryAssessment2016> assessmentsB =

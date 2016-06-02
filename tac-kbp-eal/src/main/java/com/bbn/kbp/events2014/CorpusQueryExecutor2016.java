@@ -1,5 +1,6 @@
 package com.bbn.kbp.events2014;
 
+import com.bbn.bue.common.TextGroupPackageImmutable;
 import com.bbn.bue.common.TextGroupPublicImmutable;
 import com.bbn.bue.common.strings.offsets.CharOffset;
 import com.bbn.bue.common.strings.offsets.OffsetRange;
@@ -13,7 +14,8 @@ import com.bbn.nlp.corpora.ere.EREEvent;
 import com.bbn.nlp.corpora.ere.EREEventMention;
 import com.bbn.nlp.corpora.ere.ERELoader;
 
-import com.google.common.base.Predicates;
+import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -21,6 +23,7 @@ import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
+import org.immutables.func.Functional;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +38,8 @@ import java.util.concurrent.ExecutionException;
 
 import static com.bbn.bue.common.collections.CollectionUtils.isEmptyPredicate;
 import static com.bbn.bue.common.symbols.SymbolUtils.concat;
+import static com.bbn.kbp.events2014.QueryCASFunctions.casType;
+import static com.bbn.kbp.events2014.QueryCASFunctions.charOffsets;
 import static com.bbn.kbp.events2014.ResponseFunctions.role;
 import static com.bbn.kbp.events2014.ResponseFunctions.type;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -55,13 +60,31 @@ public interface CorpusQueryExecutor2016 {
       CorpusQuery2016 query) throws IOException;
 }
 
+enum CASType {
+  NAME, NOMINAL, PRONOUN;
+}
+
+@TextGroupPackageImmutable
+@Value.Immutable
+@Functional
+abstract class _QueryCAS {
+
+  @Value.Parameter
+  abstract OffsetRange<CharOffset> charOffsets();
+
+  @Value.Parameter
+  abstract CASType casType();
+
+  abstract Optional<OffsetRange<CharOffset>> head();
+}
+
 /**
  * Determines whether a system response canonical argument string is close enough to one of
  * acceptable CASes for a query.
  */
 interface CASMatchCriterion {
 
-  boolean matches(KBPString response, Set<OffsetRange<CharOffset>> queryValidCASes);
+  boolean matches(KBPString response, Set<QueryCAS> queryValidCASes);
 
   String humanFriendlyName();
 }
@@ -111,7 +134,7 @@ class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
   public static EREBasedCorpusQueryExecutor createDefaultFor2016(
       final Map<Symbol, File> docIdToEREMap,
       final ERELoader ereLoader, final EREToKBPEventOntologyMapper ontologyMapper,
-      int slack,
+      int slack, double minNominalCASOverlap,
       boolean requireBestCASType) {
     final LoadingCache<Symbol, EREDocument> ereDocCache = CacheBuilder.newBuilder()
         .maximumSize(50)
@@ -130,7 +153,12 @@ class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
     return new EREBasedCorpusQueryExecutor(ImmutableList.of(
         AlignmentConfiguration
             .of(ExactCASMatch.INSTANCE, new ResponsePJContainsEntryPJWithSlack(slack)),
-        AlignmentConfiguration.of(QueryCASContainsSystemCAS.INSTANCE,
+        AlignmentConfiguration.of(QueryNameContainsSystemCAS.INSTANCE,
+            new ResponsePJContainsEntryPJWithSlack(slack)),
+        AlignmentConfiguration.of(QueryNameContainedBySystemCAS.INSTANCE,
+            new ResponsePJContainsEntryPJWithSlack(slack)),
+        AlignmentConfiguration
+            .of(new NominalsContainOneAnotherWithMinimumOverlap(minNominalCASOverlap),
             new ResponsePJContainsEntryPJWithSlack(slack))), ereDocCache, ontologyMapper,
         requireBestCASType);
   }
@@ -250,8 +278,7 @@ class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
     msg.append(argumentsMatchingInTypeAndEventType.size())
         .append(" arguments matched in type and role\n");
 
-    final ImmutableSet<OffsetRange<CharOffset>> validCASOffsets =
-        gatherValidCASOffsets(queryEntryPoint);
+    final ImmutableSet<QueryCAS> validCASOffsets = gatherValidCASOffsets(queryEntryPoint);
     checkState(!validCASOffsets.isEmpty());
     final ImmutableSet<OffsetRange<CharOffset>> eventPJs =
         gatherEventPJs(ereEventForEntryPoint);
@@ -322,24 +349,33 @@ class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
     return ret.build();
   }
 
-  private ImmutableSet<OffsetRange<CharOffset>> gatherValidCASOffsets(
+  private ImmutableSet<QueryCAS> gatherValidCASOffsets(
       final CorpusQueryEntryPoint entryPoint) {
     final EREEntity entityForQuery = ereEntityForQuery(entryPoint);
 
-    final ImmutableSet.Builder<OffsetRange<CharOffset>> nameCASes = ImmutableSet.builder();
-    final ImmutableSet.Builder<OffsetRange<CharOffset>> descCASes = ImmutableSet.builder();
-    final ImmutableSet.Builder<OffsetRange<CharOffset>> pronCASes = ImmutableSet.builder();
+    final ImmutableSet.Builder<QueryCAS> nameCASes = ImmutableSet.builder();
+    final ImmutableSet.Builder<QueryCAS> descCASes = ImmutableSet.builder();
+    final ImmutableSet.Builder<QueryCAS> pronCASes = ImmutableSet.builder();
 
     for (final EREEntityMention ereEntityMention : entityForQuery.getMentions()) {
       final OffsetRange<CharOffset> casOffsets =
           OffsetRange.charOffsetRange(ereEntityMention.getExtent().getStart(),
               ereEntityMention.getExtent().getEnd());
       if ("NAM".equals(ereEntityMention.getType())) {
-        nameCASes.add(casOffsets);
+        nameCASes.add(QueryCAS.of(casOffsets, CASType.NAME));
       } else if ("NOM".equals(ereEntityMention.getType())) {
-        descCASes.add(casOffsets);
+        final Optional<OffsetRange<CharOffset>> headSpan;
+        if (ereEntityMention.getHead().isPresent()) {
+          headSpan = Optional.of(OffsetRange.charOffsetRange(
+              ereEntityMention.getHead().get().getStart(),
+              ereEntityMention.getHead().get().getEnd()));
+        } else {
+          headSpan = Optional.absent();
+        }
+        descCASes.add(QueryCAS.of(casOffsets, CASType.NOMINAL)
+            .withHead(headSpan));
       } else if ("PRO".equals(ereEntityMention.getType())) {
-        pronCASes.add(casOffsets);
+        pronCASes.add(QueryCAS.of(casOffsets, CASType.PRONOUN));
       } else {
         throw new TACKBPEALException("Unknown entity mention type " + ereEntityMention.getType());
       }
@@ -353,7 +389,7 @@ class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
           // use only name CASes if possible, otherwise only DESC,
           // and only fall back to pronouns if desperate
           .first()
-          .or(ImmutableSet.<OffsetRange<CharOffset>>of());
+          .or(ImmutableSet.<QueryCAS>of());
     } else {
       // use all CASes of all types
       return FluentIterable.from(nameCASes.build())
@@ -378,7 +414,7 @@ class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
     }
   }
 
-  private void addMatchingResponses(final Set<OffsetRange<CharOffset>> queryValidCASOffsets,
+  private void addMatchingResponses(final Set<QueryCAS> queryValidCASOffsets,
       final Set<OffsetRange<CharOffset>> queryPJOffsets,
       final List<Response> matchingResponses,
       final AlignmentConfiguration alignConfig,
@@ -414,9 +450,10 @@ enum ExactCASMatch implements CASMatchCriterion {
 
   @Override
   public boolean matches(final KBPString response,
-      final Set<OffsetRange<CharOffset>> queryValidCASes) {
+      final Set<QueryCAS> queryValidCASes) {
     return !FluentIterable.from(queryValidCASes)
-        .filter(Predicates.equalTo(response.charOffsetSpan().asCharOffsetRange()))
+        .transform(charOffsets())
+        .filter(equalTo(response.charOffsetSpan().asCharOffsetRange()))
         .isEmpty();
   }
 
@@ -426,14 +463,21 @@ enum ExactCASMatch implements CASMatchCriterion {
   }
 }
 
-enum QueryCASContainsSystemCAS implements CASMatchCriterion {
+enum QueryNameContainsSystemCAS implements CASMatchCriterion {
   INSTANCE;
+
+  static final Predicate<_QueryCAS> IS_A_NAME = compose(equalTo(CASType.NAME), casType());
 
   @Override
   public boolean matches(final KBPString response,
-      final Set<OffsetRange<CharOffset>> queryValidCASes) {
-    for (final OffsetRange<CharOffset> queryValidCAS : queryValidCASes) {
-      if (queryValidCAS.contains(response.charOffsetSpan().asCharOffsetRange())) {
+      final Set<QueryCAS> queryValidCASes) {
+    final Iterable<OffsetRange<CharOffset>> offsetsOfQueryNames =
+        FluentIterable.from(queryValidCASes)
+            .filter(IS_A_NAME)
+            .transform(charOffsets());
+
+    for (final OffsetRange<CharOffset> queryNameCAS : offsetsOfQueryNames) {
+      if (queryNameCAS.contains(response.charOffsetSpan().asCharOffsetRange())) {
         return true;
       }
     }
@@ -442,7 +486,85 @@ enum QueryCASContainsSystemCAS implements CASMatchCriterion {
 
   @Override
   public String humanFriendlyName() {
-    return "Query-CAS-contains-system-CAS";
+    return "Query-Name-contains-system-CAS";
+  }
+}
+
+enum QueryNameContainedBySystemCAS implements CASMatchCriterion {
+  INSTANCE;
+
+  static final Predicate<_QueryCAS> IS_A_NAME = compose(equalTo(CASType.NAME), casType());
+
+  @Override
+  public boolean matches(final KBPString response,
+      final Set<QueryCAS> queryValidCASes) {
+    final Iterable<OffsetRange<CharOffset>> offsetsOfQueryNames =
+        FluentIterable.from(queryValidCASes)
+            .filter(IS_A_NAME)
+            .transform(charOffsets());
+
+    for (final OffsetRange<CharOffset> queryNameCAS : offsetsOfQueryNames) {
+      if (response.charOffsetSpan().asCharOffsetRange().contains(queryNameCAS)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public String humanFriendlyName() {
+    return "Query-Name-contained-by-system-CAS";
+  }
+}
+
+class NominalsContainOneAnotherWithMinimumOverlap implements CASMatchCriterion {
+
+  private final double minimumOverlap;
+
+  static final Predicate<_QueryCAS> IS_A_NOMINAL = compose(equalTo(CASType.NOMINAL), casType());
+
+  public NominalsContainOneAnotherWithMinimumOverlap(final double minimumOverlap) {
+    checkArgument(minimumOverlap >= 0.0 && minimumOverlap <= 1.0);
+    this.minimumOverlap = minimumOverlap;
+  }
+
+  @Override
+  public boolean matches(final KBPString response, final Set<QueryCAS> queryValidCASes) {
+    final FluentIterable<QueryCAS> offsetsOfQueryNominals =
+        FluentIterable.from(queryValidCASes)
+            .filter(IS_A_NOMINAL);
+
+    final OffsetRange<CharOffset> responseCASOffsets =
+        response.charOffsetSpan().asCharOffsetRange();
+    for (final QueryCAS queryNominal : offsetsOfQueryNominals) {
+      final boolean queryNominalHeadContainedIfPresent = !queryNominal.head().isPresent()
+          || responseCASOffsets.contains(queryNominal.head().get());
+      final boolean queryNominalProperlyContainsSystemNominal =
+          queryNominal.charOffsets().contains(responseCASOffsets)
+              && queryNominalHeadContainedIfPresent
+              && minOverlap(queryNominal.charOffsets(), responseCASOffsets);
+      // we don't have heads available when going the other direction, so we can't check
+      final boolean systemNominalProperlyContainsQueryNominal =
+          responseCASOffsets.contains(queryNominal.charOffsets())
+              && minOverlap(responseCASOffsets, queryNominal.charOffsets());
+
+      if (queryNominalProperlyContainsSystemNominal || systemNominalProperlyContainsQueryNominal) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private boolean minOverlap(final OffsetRange<CharOffset> bigger,
+      final OffsetRange<CharOffset> smaller) {
+    checkArgument(smaller.length() > 0);
+    checkArgument(bigger.contains(smaller));
+    return bigger.intersection(smaller).get().length() >= minimumOverlap * bigger.length();
+  }
+
+  @Override
+  public String humanFriendlyName() {
+    return "nominals-contain-with-min-overlap";
   }
 }
 
