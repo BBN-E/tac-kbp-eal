@@ -60,10 +60,17 @@ public interface CorpusQueryExecutor2016 {
       CorpusQuery2016 query) throws IOException;
 }
 
+/**
+ * The type of a canonical argument string
+ */
 enum CASType {
   NAME, NOMINAL, PRONOUN;
 }
 
+/**
+ * The "canonical argument string" for a query entry point. These are derived from the entities in
+ * the ERE associated with the query entry points.
+ */
 @TextGroupPackageImmutable
 @Value.Immutable
 @Functional
@@ -150,16 +157,17 @@ class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
           }
         });
 
-    return new EREBasedCorpusQueryExecutor(ImmutableList.of(
-        AlignmentConfiguration
-            .of(ExactCASMatch.INSTANCE, new ResponsePJContainsEntryPJWithSlack(slack)),
-        AlignmentConfiguration.of(QueryNameContainsSystemCAS.INSTANCE,
-            new ResponsePJContainsEntryPJWithSlack(slack)),
-        AlignmentConfiguration.of(QueryNameContainedBySystemCAS.INSTANCE,
-            new ResponsePJContainsEntryPJWithSlack(slack)),
-        AlignmentConfiguration
-            .of(new NominalsContainOneAnotherWithMinimumOverlap(minNominalCASOverlap),
-            new ResponsePJContainsEntryPJWithSlack(slack))), ereDocCache, ontologyMapper,
+    final ResponsePJContainsEntryPJWithSlack commonPJMatchStrategy =
+        new ResponsePJContainsEntryPJWithSlack(slack);
+    final ImmutableList<AlignmentConfiguration> alignmentConfigs = ImmutableList.of(
+        AlignmentConfiguration.of(ExactCASMatch.INSTANCE, commonPJMatchStrategy),
+        AlignmentConfiguration.of(QueryNameContainsSystemCAS.INSTANCE, commonPJMatchStrategy),
+        AlignmentConfiguration.of(QueryNameContainedBySystemCAS.INSTANCE, commonPJMatchStrategy),
+        AlignmentConfiguration.of(
+            new NominalsContainOneAnotherWithMinimumOverlap(minNominalCASOverlap),
+            commonPJMatchStrategy));
+
+    return new EREBasedCorpusQueryExecutor(alignmentConfigs, ereDocCache, ontologyMapper,
         requireBestCASType);
   }
 
@@ -445,6 +453,9 @@ class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
   }
 }
 
+/**
+ * Requires CASes to match exactly.
+ */
 enum ExactCASMatch implements CASMatchCriterion {
   INSTANCE;
 
@@ -463,6 +474,10 @@ enum ExactCASMatch implements CASMatchCriterion {
   }
 }
 
+/**
+ * Matches if the query CAS is a name which contains the system CAS e.g. query CAS = President
+ * Barack Obama system CAS = Barack Obama
+ */
 enum QueryNameContainsSystemCAS implements CASMatchCriterion {
   INSTANCE;
 
@@ -490,6 +505,11 @@ enum QueryNameContainsSystemCAS implements CASMatchCriterion {
   }
 }
 
+/**
+ * Matches if the query CAS is a name contained by the system CAS.
+ * system CAS = Barack Obama
+ * e.g. query CAS = President Barack Obama
+ */
 enum QueryNameContainedBySystemCAS implements CASMatchCriterion {
   INSTANCE;
 
@@ -517,6 +537,11 @@ enum QueryNameContainedBySystemCAS implements CASMatchCriterion {
   }
 }
 
+/**
+ * Matches if the query CAS is a nominal and one of the system and query CASes contain
+ * the other with some minimum degree of overlap.  Furthermore, if the query CAS is
+ * the contain*er*, we require the contain*ee* to contain its head, if available.
+ */
 class NominalsContainOneAnotherWithMinimumOverlap implements CASMatchCriterion {
 
   private final double minimumOverlap;
