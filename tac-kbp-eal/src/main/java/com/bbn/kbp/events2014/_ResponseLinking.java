@@ -98,11 +98,16 @@ abstract class _ResponseLinking {
   public ResponseLinking copyWithFilteredResponses(final Predicate<Response> toKeepCondition) {
     final Set<Response> newIncompletes = Sets.filter(incompleteResponses(), toKeepCondition);
     final ImmutableSet.Builder<ResponseSet> newResponseSetsB = ImmutableSet.builder();
+    final ImmutableBiMap.Builder<String, ResponseSet> responseSetsIdB = ImmutableBiMap.builder();
     for (final ResponseSet responseSet : responseSets()) {
       final ImmutableSet<Response> okResponses = FluentIterable.from(responseSet.asSet())
           .filter(toKeepCondition).toSet();
       if (!okResponses.isEmpty()) {
-        newResponseSetsB.add(ResponseSet.from(okResponses));
+        final ResponseSet newResponseSet = ResponseSet.from(okResponses);
+        newResponseSetsB.add(newResponseSet);
+        if (responseSetIds().isPresent()) {
+          responseSetsIdB.put(responseSetIds().get().inverse().get(responseSet), newResponseSet);
+        }
       }
     }
 
@@ -110,8 +115,7 @@ abstract class _ResponseLinking {
     final ResponseLinking.Builder ret = ResponseLinking.builder().docID(docID())
         .responseSets(newResponseSets).incompleteResponses(newIncompletes);
     if (responseSetIds().isPresent()) {
-      ret.responseSetIds(
-          ImmutableBiMap.copyOf(Maps.filterValues(responseSetIds().get(), in(newResponseSets))));
+      ret.responseSetIds(responseSetsIdB.build());
     }
     return ret.build();
   }
