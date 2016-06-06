@@ -69,15 +69,7 @@ public final class QueryResponseFromERE {
             params.getStringList("com.bbn.tac.eal.storesToProcess"));
     final File outputFile = params.getCreatableFile("com.bbn.tac.eal.outputFile");
 
-    final CorpusQueryExecutor2016 queryExecutor =
-        EREBasedCorpusQueryExecutor.createDefaultFor2016(ereMap, ERELoader.builder().build(),
-            EREToKBPEventOntologyMapper.create2016Mapping(),
-            // how much difference in PJ offsets we allow
-            params.getNonNegativeInteger("com.bbn.tac.eal.slack"),
-            // the minimum fraction of overlap requires to match nominal CASes against each other
-            params.getPositiveDouble("com.bbn.tac.eal.minNominalCASOverlap"),
-            // can we match an entry point against a nominal if a name is available?
-            params.getBoolean("com.bbn.tac.eal.matchBestCASTypesOnly"));
+    final CorpusQueryExecutor2016 queryExecutor = queryExecutorFromParamsFor2016(params);
 
     final ImmutableMultimap.Builder<QueryResponse2016, Symbol> queryResponseToFindingSystemB =
         ImmutableMultimap.builder();
@@ -131,6 +123,20 @@ public final class QueryResponseFromERE {
     log.info("Writing {} query matches to {}", corpusQueryAssessments.queryReponses().size(),
         outputFile);
     queryStoreWriter.saveTo(corpusQueryAssessments, Files.asCharSink(outputFile, Charsets.UTF_8));
+  }
+
+  public static EREBasedCorpusQueryExecutor queryExecutorFromParamsFor2016(final Parameters params)
+      throws IOException {
+    return EREBasedCorpusQueryExecutor.createDefaultFor2016(
+        FileUtils.loadSymbolToFileMap(params.getExistingFile("com.bbn.tac.eal.eremap")),
+        ERELoader.builder().build(),
+        EREToKBPEventOntologyMapper.create2016Mapping(),
+        // how much difference in PJ offsets we allow
+        params.getNonNegativeInteger("com.bbn.tac.eal.slack"),
+        // the minimum fraction of overlap requires to match nominal CASes against each other
+        params.getPositiveDouble("com.bbn.tac.eal.minNominalCASOverlap"),
+        // can we match an entry point against a nominal if a name is available?
+        params.getBoolean("com.bbn.tac.eal.matchBestCASTypesOnly"));
   }
 
   private static ImmutableSet<CharOffsetSpan> matchJustificationsForDoc(
