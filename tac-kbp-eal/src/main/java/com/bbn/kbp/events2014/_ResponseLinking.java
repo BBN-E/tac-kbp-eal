@@ -99,11 +99,17 @@ abstract class _ResponseLinking {
     final Set<Response> newIncompletes = Sets.filter(incompleteResponses(), toKeepCondition);
     final ImmutableSet.Builder<ResponseSet> newResponseSetsB = ImmutableSet.builder();
     final ImmutableBiMap.Builder<String, ResponseSet> responseSetsIdB = ImmutableBiMap.builder();
+    // to account for ResponseSets merging due to lost annotation
+    final Set<ResponseSet> alreadyAdded = Sets.newHashSet();
     for (final ResponseSet responseSet : responseSets()) {
       final ImmutableSet<Response> okResponses = FluentIterable.from(responseSet.asSet())
           .filter(toKeepCondition).toSet();
       if (!okResponses.isEmpty()) {
         final ResponseSet newResponseSet = ResponseSet.from(okResponses);
+        if(alreadyAdded.contains(newResponseSet)) {
+          continue;
+        }
+        alreadyAdded.add(newResponseSet);
         newResponseSetsB.add(newResponseSet);
         if (responseSetIds().isPresent()) {
           responseSetsIdB.put(responseSetIds().get().inverse().get(responseSet), newResponseSet);
