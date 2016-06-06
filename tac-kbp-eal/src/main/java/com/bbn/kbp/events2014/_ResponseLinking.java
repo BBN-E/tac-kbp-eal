@@ -11,7 +11,6 @@ import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import org.immutables.func.Functional;
@@ -20,7 +19,6 @@ import org.immutables.value.Value;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Predicates.in;
 import static com.google.common.collect.Iterables.concat;
 
 /**
@@ -34,8 +32,11 @@ import static com.google.common.collect.Iterables.concat;
 @TextGroupPublicImmutable
 @Functional
 abstract class _ResponseLinking {
+
   public abstract Symbol docID();
+
   public abstract ImmutableSet<ResponseSet> responseSets();
+
   public abstract ImmutableSet<Response> incompleteResponses();
 
   public abstract Optional<ImmutableBiMap<String, ResponseSet>> responseSetIds();
@@ -65,7 +66,9 @@ abstract class _ResponseLinking {
         checkArgument(!id.contains("-"), "Event frame IDs may not contain -s");
         checkArgument(!id.contains("\t"), "Event frame IDs may not contain tabs");
       }
-      checkArgument(!responseSetIds().get().isEmpty(), "Response set IDs are missing");
+      // we can have an empty output file, verify that all the responseSets have an id
+      checkArgument(responseSets().size() == responseSetIds().get().size(),
+          "Response set IDs are missing");
       checkArgument(responseSetIds().get().keySet().size() == responseSets().size(),
           "All response set IDs must be unique");
       CollectionUtils.assertSameElementsOrIllegalArgument(responseSets(),
