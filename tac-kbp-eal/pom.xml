@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>tac-kbp-eal-all</artifactId>
         <groupId>com.bbn.kbp.eal</groupId>
@@ -28,11 +30,13 @@
                             <id>importForeignIDs</id>
                         </program>
                         <program>
-                            <mainClass>com.bbn.nlp.corpora.ere.BuildRichEREDocIDToFileList</mainClass>
+                            <mainClass>com.bbn.nlp.corpora.ere.BuildRichEREDocIDToFileList
+                            </mainClass>
                             <id>BuildRichEREDocIDToFileList</id>
                         </program>
                         <program>
-                            <mainClass>com.bbn.kbp.events2014.scorer.bin.KBP2014ScorerBin</mainClass>
+                            <mainClass>com.bbn.kbp.events2014.scorer.bin.KBP2014ScorerBin
+                            </mainClass>
                             <id>kbpScorer</id>
                             <jvmSettings>
                                 <maxMemorySize>4G</maxMemorySize>
@@ -40,7 +44,9 @@
                         </program>
 
                         <program>
-                            <mainClass>com.bbn.kbp.events2014.bin.Convert2014TransportTo2015Variants</mainClass>
+                            <mainClass>
+                                com.bbn.kbp.events2014.bin.Convert2014TransportTo2015Variants
+                            </mainClass>
                             <id>convert2014MovementTransports</id>
                             <jvmSettings>
                                 <maxMemorySize>4G</maxMemorySize>
@@ -97,7 +103,8 @@
                         </program>
 
                         <program>
-                            <mainClass>com.bbn.kbp.events2014.bin.DualAnnotationAgreement</mainClass>
+                            <mainClass>com.bbn.kbp.events2014.bin.DualAnnotationAgreement
+                            </mainClass>
                             <id>dualAgreeement</id>
                         </program>
 
@@ -111,7 +118,8 @@
                         </program>
 
                         <program>
-                            <mainClass>com.bbn.kbp.events2014.bin.ValidateSystemOutput2015</mainClass>
+                            <mainClass>com.bbn.kbp.events2014.bin.ValidateSystemOutput2015
+                            </mainClass>
                             <id>validateSystemOutput2015</id>
                             <jvmSettings>
                                 <maxMemorySize>1g</maxMemorySize>
@@ -119,7 +127,8 @@
                         </program>
 
                         <program>
-                            <mainClass>com.bbn.kbp.events2014.bin.ValidateSystemOutput2016</mainClass>
+                            <mainClass>com.bbn.kbp.events2014.bin.ValidateSystemOutput2016
+                            </mainClass>
                             <id>validateSystemOutput2016</id>
                         </program>
 
@@ -233,7 +242,19 @@
                             <mainClass>com.bbn.kbp.events2014.bin.ExploreEALScorer</mainClass>
                             <id>exploreEalScorer</id>
                         </program>
-
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.QueryResponseFromERE</mainClass>
+                            <id>queryResponseFromERE</id>
+                        </program>
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.FilterLinkingStore
+                            </mainClass>
+                            <id>filterLinkingStore</id>
+                        </program>
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.FilterOutInvalidArguments</mainClass>
+                            <id>filterOutInvalidArguments</id>
+                        </program>
                     </programs>
                 </configuration>
             </plugin>

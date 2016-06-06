@@ -104,12 +104,6 @@ public final class ValidateSystemOutput2015 {
         final File outputDir = Files.createTempDir();
         ImportForeignIDs.importForeignIDs(uncompressedSubmissionDir, outputDir, linkingStoreSource,
             outputLayout);
-        final File corpusLinking = new File(uncompressedSubmissionDir, "corpusLinking");
-        if (corpusLinking.exists()) {
-          final File target = new File(outputDir, "corpusLinking");
-          target.mkdir();
-          Files.copy(new File(corpusLinking, "corpusLinking"), new File(target, "corpusLinking"));
-        }
         return outputDir;
       }
     };

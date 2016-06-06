@@ -65,6 +65,7 @@ abstract class _ResponseLinking {
         checkArgument(!id.contains("-"), "Event frame IDs may not contain -s");
         checkArgument(!id.contains("\t"), "Event frame IDs may not contain tabs");
       }
+      checkArgument(!responseSetIds().get().isEmpty(), "Response set IDs are missing");
       checkArgument(responseSetIds().get().keySet().size() == responseSets().size(),
           "All response set IDs must be unique");
       CollectionUtils.assertSameElementsOrIllegalArgument(responseSets(),

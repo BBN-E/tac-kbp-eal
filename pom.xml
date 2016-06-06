@@ -32,7 +32,7 @@
         <skipITs>true</skipITs>
 
         <junit.version>4.11</junit.version>
-        <bueopen.version>4.1.2</bueopen.version>
+        <bueopen.version>4.7.0</bueopen.version>
 
         <!-- Sonar server properties. These only work BBN-internally -->
         <sonar.host.url>http://e-apache-2.bbn.com:9000</sonar.host.url>
@@ -57,30 +57,31 @@
                         </links>
                     </configuration>
                     <!-- Uncomment this configuration to produce one huge RTF of javadoc. -->
+                    <!-- This is to provide javadoc for DARPA review -->
                     <!--
-                    <configuration> 
-                    <doclet>com.tarsec.javadoc.pdfdoclet.PDFDoclet</doclet> 
-                    <docletPath>${settings.localRepository}/net/sf/pdfdoclet/1.0.2/pdfdoclet-1.0.2.jar</docletPath> 
-                    <useStandardDocletOptions>false</useStandardDocletOptions> 
-                            <maxmemory>512m</maxmemory> 
-                            <doclet>com.docflex.javadoc.Doclet</doclet> 
-                            <docletPath>/nfs/raid59/u12/DEFT/tools/docflex-doclet-1.6.1/lib/docflex-doclet.jar</docletPath> 
-                            <additionalparam> 
-                            -template /nfs/raid59/u12/DEFT/tools/docflex-doclet-1.6.1/templates/javadoc/PlainDoc.tpl 
+                    <configuration>
+                    <doclet>com.tarsec.javadoc.pdfdoclet.PDFDoclet</doclet>
+                    <docletPath>${settings.localRepository}/net/sf/pdfdoclet/1.0.2/pdfdoclet-1.0.2.jar</docletPath>
+                    <useStandardDocletOptions>false</useStandardDocletOptions>
+                            <maxmemory>512m</maxmemory>
+                            <doclet>com.docflex.javadoc.Doclet</doclet>
+                            <docletPath>/nfs/raid59/u12/DEFT/tools/docflex-doclet-1.6.1/lib/docflex-doclet.jar</docletPath>
+                            <additionalparam>
+                            -template /nfs/raid59/u12/DEFT/tools/docflex-doclet-1.6.1/templates/javadoc/PlainDoc.tpl
                             -p:windowTitle "BBN TAC KBP Open Source Code"
-                            -p:docTitle "BBN TAC KBP Open Source Code" 
-                            -format RTF 
-                            -nodialog 
-                            -launchviewer=false 
-                            -d ${project.build.directory}/site/ 
-                            -f ${project.build.directory}/site/javadoc.rtf 
-                            </additionalparam> 
-                            <destDir>site</destDir> 
-                            <name>site</name> 
-                            <description> 
+                            -p:docTitle "BBN TAC KBP Open Source Code"
+                            -format RTF
+                            -nodialog
+                            -launchviewer=false
+                            -d ${project.build.directory}/site/
+                            -f ${project.build.directory}/site/javadoc.rtf
+                            </additionalparam>
+                            <destDir>site</destDir>
+                            <name>site</name>
+                            <description>
                             BBN TAC KBP Open Source Code
-                            </description> 
-                    </configuration> 
+                            </description>
+                    </configuration>
                     -->
                 </plugin>
                 <plugin>

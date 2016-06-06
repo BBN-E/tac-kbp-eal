@@ -167,7 +167,8 @@ public final class ScoreKBPAgainstERE {
     setupScoring(input, responsesAndLinkingFromKBPExtractor, responsesAndLinkingFromEREExtractor,
         outputDir);
 
-    final ERELoader loader = ERELoader.create();
+    // we want globally unique IDs here
+    final ERELoader loader = ERELoader.builder().prefixDocIDToAllIDs(true).build();
 
     for (final Symbol docID : docIDsToScore) {
       final File ereFileName = goldDocIDToFileMap.get(docID);

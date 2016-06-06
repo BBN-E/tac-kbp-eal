@@ -10,6 +10,7 @@ import com.bbn.kbp.events2014.CorpusQueryLoader;
 import com.bbn.kbp.events2014.CorpusQuerySet2016;
 import com.bbn.kbp.events2014.TACKBPEALException;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharSource;
@@ -45,21 +46,18 @@ public final class DefaultCorpusQueryLoader implements CorpusQueryLoader {
     for (final String line : source.readLines()) {
       try {
         final List<String> parts = StringUtils.onTabs().splitToList(line);
-        if (parts.size() != 6) {
-          throw new TACKBPEALException("Expected 6 tab-separated fields but got " + parts.size());
+        if (parts.size() != 5) {
+          throw new TACKBPEALException("Expected 5 tab-separated fields but got " + parts.size());
         }
 
         final Symbol queryID = Symbol.from(parts.get(0));
         final Symbol docID = Symbol.from(parts.get(1));
-        final Symbol eventType = Symbol.from(parts.get(2));
+        final Symbol hopperID = Symbol.from(parts.get(2));
         final Symbol role = Symbol.from(parts.get(3));
-        final OffsetRange<CharOffset> casOffsets =
-            TACKBPEALIOUtils.parseCharOffsetRange(parts.get(4));
-        final OffsetRange<CharOffset> pjOffsets =
-            TACKBPEALIOUtils.parseCharOffsetRange(parts.get(5));
+        final Symbol entityID = Symbol.from(parts.get(4));
 
-        queriesToEntryPoints.put(queryID,
-            CorpusQueryEntryPoint.of(docID, eventType, role, casOffsets, pjOffsets));
+        queriesToEntryPoints
+            .put(queryID, CorpusQueryEntryPoint.of(docID, hopperID, role, entityID));
 
         ++lineNo;
         ++numEntryPoints;
@@ -78,6 +76,16 @@ public final class DefaultCorpusQueryLoader implements CorpusQueryLoader {
     log.info("Loaded {} queries with {} entry points from {}", corpusQuerySet.queries().size(),
         numEntryPoints, source);
     return corpusQuerySet;
+  }
+
+  private static ImmutableList<OffsetRange<CharOffset>> offsets(final String parts) {
+    final ImmutableSet.Builder<OffsetRange<CharOffset>> ret = ImmutableSet.builder();
+    for (final String part : parts.split(",")) {
+      ret.add(TACKBPEALIOUtils.parseCharOffsetRange(part));
+    }
+
+    return OffsetRange.<CharOffset>byEarlierStartLaterEndOrdering()
+        .immutableSortedCopy(ret.build());
   }
 }
 

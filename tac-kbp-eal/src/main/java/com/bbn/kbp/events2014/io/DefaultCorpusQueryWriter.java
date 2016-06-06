@@ -1,8 +1,5 @@
 package com.bbn.kbp.events2014.io;
 
-import com.bbn.bue.common.strings.offsets.CharOffset;
-import com.bbn.bue.common.strings.offsets.OffsetRange;
-import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.CorpusQuery2016;
 import com.bbn.kbp.events2014.CorpusQuery2016Functions;
 import com.bbn.kbp.events2014.CorpusQueryEntryPoint;
@@ -19,10 +16,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 import static com.bbn.bue.common.symbols.SymbolUtils.byStringOrdering;
-import static com.bbn.kbp.events2014.CorpusQueryEntryPointFunctions.casOffsets;
 import static com.bbn.kbp.events2014.CorpusQueryEntryPointFunctions.docID;
-import static com.bbn.kbp.events2014.CorpusQueryEntryPointFunctions.eventType;
-import static com.bbn.kbp.events2014.CorpusQueryEntryPointFunctions.predicateJustification;
+import static com.bbn.kbp.events2014.CorpusQueryEntryPointFunctions.entity;
+import static com.bbn.kbp.events2014.CorpusQueryEntryPointFunctions.hopperID;
 import static com.bbn.kbp.events2014.CorpusQueryEntryPointFunctions.role;
 
 /**
@@ -58,19 +54,8 @@ public final class DefaultCorpusQueryWriter implements CorpusQueryWriter {
 
   private String entryPointString(final CorpusQuery2016 query,
       final CorpusQueryEntryPoint entryPoint) {
-    return TAB_JOINER.join(query.id(), entryPoint.docID(), entryPoint.eventType(),
-        entryPoint.role(), renderSpan(entryPoint.casOffsets()),
-        renderSpan(entryPoint.predicateJustification()));
-  }
-
-  // someday we will replace CharOffsetSpan with OffsetRange<CharOffset> and this
-  // will go away
-  private String renderSpan(final CharOffsetSpan span) {
-    return span.startInclusive() + "-" + span.endInclusive();
-  }
-
-  private String renderSpan(final OffsetRange<CharOffset> span) {
-    return span.startInclusive().asInt() + "-" + span.endInclusive().asInt();
+    return TAB_JOINER.join(query.id(), entryPoint.docID(), entryPoint.hopperID(),
+        entryPoint.role(), entryPoint.entity());
   }
 
   private static final Ordering<CorpusQuery2016> QUERY_ORDERING =
@@ -80,14 +65,10 @@ public final class DefaultCorpusQueryWriter implements CorpusQueryWriter {
   private static final Ordering<CorpusQueryEntryPoint> ENTRY_POINT_ORDERING =
       // docID
       byStringOrdering().onResultOf(docID())
-          // then event type
-          .compound(byStringOrdering().onResultOf(eventType()))
+          // then hopper ID
+          .compound(byStringOrdering().onResultOf(hopperID()))
           // then the role
           .compound(byStringOrdering().onResultOf(role()))
-          // then the CAS text
-          .compound(
-              OffsetRange.<CharOffset>byEarlierStartEarlierEndOrdering().onResultOf(casOffsets()))
-          // then the predicate justification
-          .compound(OffsetRange.<CharOffset>byEarlierStartLaterEndOrdering()
-              .onResultOf(predicateJustification()));
+          // then the entity ID
+          .compound(byStringOrdering().onResultOf(entity()));
 }

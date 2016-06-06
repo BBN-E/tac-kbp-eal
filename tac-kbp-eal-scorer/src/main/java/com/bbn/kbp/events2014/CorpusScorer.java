@@ -84,18 +84,17 @@ public final class CorpusScorer {
 
     for (final SystemOutputStore2016 systemOutputStore : systemOutputsByName.values()) {
       score(queries, queryAssessments, systemOutputStore,
+          QueryResponseFromERE.queryExecutorFromParamsFor2016(params),
           new File(outputDir, systemOutputStore.systemID().asString()));
       systemOutputStore.close();
     }
   }
 
-  private static final CorpusQueryExecutor2016 queryExecutor =
-      DefaultCorpusQueryExecutor.createDefaultFor2016();
-
   private static void score(final CorpusQuerySet2016 queries,
       final CorpusQueryAssessments queryAssessments,
       final SystemOutputStore2016 systemOutputStore,
-      File outputDir) throws IOException {
+      final CorpusQueryExecutor2016 queryExecutor,
+      final File outputDir) throws IOException {
     final TypeToken<Set<QueryDocMatch>> setOfQueryMatches = new TypeToken<Set<QueryDocMatch>>() {
     };
     final InspectionNode<EvalPair<Set<QueryDocMatch>, Set<QueryDocMatch>>> input =

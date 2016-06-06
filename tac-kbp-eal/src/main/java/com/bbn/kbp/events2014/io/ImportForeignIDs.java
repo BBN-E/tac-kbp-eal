@@ -3,14 +3,15 @@ package com.bbn.kbp.events2014.io;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
+import com.bbn.kbp.events2014.CorpusEventLinking;
 import com.bbn.kbp.events2014.DocumentSystemOutput2015;
-import com.bbn.kbp.events2014.KBPEA2015OutputLayout;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.SystemOutputLayout;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.Files;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,20 +47,36 @@ public final class ImportForeignIDs {
     } else {
       File outputStoreBase = params.getExistingDirectory("input");
       final File outputDirectory = params.getCreatableDirectory("output");
-      importForeignIDs(outputStoreBase, outputDirectory, LinkingStoreSource.createFor2015(),
-          KBPEA2015OutputLayout.get());
+      final SystemOutputLayout outputLayout =
+          SystemOutputLayout.ParamParser.fromParamVal(params.getString("outputLayout"));
+      final LinkingStoreSource linkingStoreSource;
+      if (params.getString("outputLayout").contains("2016")) {
+        linkingStoreSource = LinkingStoreSource.createFor2016();
+      } else {
+        linkingStoreSource = LinkingStoreSource.createFor2015();
+      }
+      importForeignIDs(outputStoreBase, outputDirectory, linkingStoreSource,
+          outputLayout);
     }
   }
+
 
   private static void processMultipleStores(Parameters params) throws IOException {
     final File inputBase = params.getExistingDirectory("inputBase");
     final File outputBase = params.getCreatableFile("outputBase");
+    final SystemOutputLayout outputLayout =
+        SystemOutputLayout.ParamParser.fromParamVal(params.getString("outputLayout"));
+    final LinkingStoreSource linkingStoreSource;
+    if (params.getString("outputLayout").contains("2016")) {
+      linkingStoreSource = LinkingStoreSource.createFor2016();
+    } else {
+      linkingStoreSource = LinkingStoreSource.createFor2015();
+    }
     for (final File f : inputBase.listFiles()) {
       if (f.isDirectory()) {
         final File outputDir = new File(outputBase, f.getName());
         outputDir.mkdirs();
-        importForeignIDs(f, outputDir, LinkingStoreSource.createFor2015(),
-            KBPEA2015OutputLayout.get());
+        importForeignIDs(f, outputDir, linkingStoreSource, outputLayout);
       }
     }
   }
@@ -78,7 +95,7 @@ public final class ImportForeignIDs {
 
     for (final Symbol docid : originalArgumentStore.docIDs()) {
       log.info("Converting {}", docid);
-      final ImmutableBiMap.Builder<String, String> originalToSystem = ImmutableBiMap.builder();
+      final ImmutableMap.Builder<String, String> originalToSystem = ImmutableMap.builder();
       final ArgumentOutput originalArguments = AssessmentSpecFormats
           .uncachedReadFromArgumentStoreCachingOldIDS(originalArgumentStore, docid,
               originalToSystem);
@@ -86,7 +103,7 @@ public final class ImportForeignIDs {
       final Optional<ResponseLinking> transformedLinking =
           originalLinkingStore.readTransformingIDs(docid,
               originalArguments.responses(),
-              Optional.<ImmutableMap<String, String>>of(originalToSystem.build()));
+              Optional.of(originalToSystem.build()));
       if (transformedLinking.isPresent()) {
         // create system output
         final DocumentSystemOutput2015 newSystemOutput =
@@ -96,6 +113,14 @@ public final class ImportForeignIDs {
         throw new IOException("No linking found for " + docid);
       }
     }
+    final File corpusLinkingdir = new File(source, "corpusLinking");
+    if (corpusLinkingdir.exists()) {
+      final CorpusEventLinking corpusEventLinking = new CorpusEventFrameLoader2016()
+          .loadCorpusEventFrames(
+              Files.asCharSource(new File(corpusLinkingdir, "corpusLinking"), Charsets.UTF_8));
+      ((SystemOutputStore2016) newOutput).writeCorpusEventFrames(corpusEventLinking);
+    }
+
     originalArgumentStore.close();
     originalLinkingStore.close();
     newOutput.close();
