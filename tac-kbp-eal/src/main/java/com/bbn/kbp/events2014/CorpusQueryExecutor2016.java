@@ -275,7 +275,7 @@ class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
       final DocumentSystemOutput2015 docSystemOutput, final List<Response> matchingResponses,
       final StringBuilder msg) {
     final EREEvent ereEventForEntryPoint =
-        ereEventMentionForEntryPoint(queryEntryPoint);
+        ereEventForEntryPoint(queryEntryPoint);
     final ImmutableSet<Symbol> entryPointEventTypes = gatherTypes(ereEventForEntryPoint);
 
     final Symbol mappedRole = ontologyMapper.eventRole(queryEntryPoint.role()).get();
@@ -314,7 +314,7 @@ class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
     return ret.build();
   }
 
-  private EREEvent ereEventMentionForEntryPoint(
+  private EREEvent ereEventForEntryPoint(
       final CorpusQueryEntryPoint queryEntryPoint) {
     final EREDocument ereDoc;
     try {
@@ -562,11 +562,11 @@ class NominalsContainOneAnotherWithMinimumOverlap implements CASMatchCriterion {
     final OffsetRange<CharOffset> responseCASOffsets =
         response.charOffsetSpan().asCharOffsetRange();
     for (final QueryCAS queryNominal : offsetsOfQueryNominals) {
-      final boolean queryNominalHeadContainedIfPresent = !queryNominal.head().isPresent()
+      final boolean queryNominalHeadContainedOrAbsent = !queryNominal.head().isPresent()
           || responseCASOffsets.contains(queryNominal.head().get());
       final boolean queryNominalProperlyContainsSystemNominal =
           queryNominal.charOffsets().contains(responseCASOffsets)
-              && queryNominalHeadContainedIfPresent
+              && queryNominalHeadContainedOrAbsent
               && minOverlap(queryNominal.charOffsets(), responseCASOffsets);
       // we don't have heads available when going the other direction, so we can't check
       final boolean systemNominalProperlyContainsQueryNominal =
