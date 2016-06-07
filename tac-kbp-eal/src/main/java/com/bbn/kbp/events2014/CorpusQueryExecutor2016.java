@@ -562,11 +562,11 @@ class NominalsContainOneAnotherWithMinimumOverlap implements CASMatchCriterion {
     final OffsetRange<CharOffset> responseCASOffsets =
         response.charOffsetSpan().asCharOffsetRange();
     for (final QueryCAS queryNominal : offsetsOfQueryNominals) {
-      final boolean queryNominalHeadContainedIfPresent = !queryNominal.head().isPresent()
+      final boolean queryNominalHeadContainedOrAbsent = !queryNominal.head().isPresent()
           || responseCASOffsets.contains(queryNominal.head().get());
       final boolean queryNominalProperlyContainsSystemNominal =
           queryNominal.charOffsets().contains(responseCASOffsets)
-              && queryNominalHeadContainedIfPresent
+              && queryNominalHeadContainedOrAbsent
               && minOverlap(queryNominal.charOffsets(), responseCASOffsets);
       // we don't have heads available when going the other direction, so we can't check
       final boolean systemNominalProperlyContainsQueryNominal =
