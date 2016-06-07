@@ -275,7 +275,7 @@ class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
       final DocumentSystemOutput2015 docSystemOutput, final List<Response> matchingResponses,
       final StringBuilder msg) {
     final EREEvent ereEventForEntryPoint =
-        ereEventMentionForEntryPoint(queryEntryPoint);
+        ereEventForEntryPoint(queryEntryPoint);
     final ImmutableSet<Symbol> entryPointEventTypes = gatherTypes(ereEventForEntryPoint);
 
     final Symbol mappedRole = ontologyMapper.eventRole(queryEntryPoint.role()).get();
@@ -314,7 +314,7 @@ class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
     return ret.build();
   }
 
-  private EREEvent ereEventMentionForEntryPoint(
+  private EREEvent ereEventForEntryPoint(
       final CorpusQueryEntryPoint queryEntryPoint) {
     final EREDocument ereDoc;
     try {
