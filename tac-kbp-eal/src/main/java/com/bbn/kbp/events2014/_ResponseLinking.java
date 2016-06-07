@@ -11,7 +11,6 @@ import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import org.immutables.func.Functional;
@@ -20,7 +19,6 @@ import org.immutables.value.Value;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Predicates.in;
 import static com.google.common.collect.Iterables.concat;
 
 /**
@@ -34,8 +32,11 @@ import static com.google.common.collect.Iterables.concat;
 @TextGroupPublicImmutable
 @Functional
 abstract class _ResponseLinking {
+
   public abstract Symbol docID();
+
   public abstract ImmutableSet<ResponseSet> responseSets();
+
   public abstract ImmutableSet<Response> incompleteResponses();
 
   public abstract Optional<ImmutableBiMap<String, ResponseSet>> responseSetIds();
@@ -65,7 +66,9 @@ abstract class _ResponseLinking {
         checkArgument(!id.contains("-"), "Event frame IDs may not contain -s");
         checkArgument(!id.contains("\t"), "Event frame IDs may not contain tabs");
       }
-      checkArgument(!responseSetIds().get().isEmpty(), "Response set IDs are missing");
+      // we can have an empty output file, verify that all the responseSets have an id
+      checkArgument(responseSets().size() == responseSetIds().get().size(),
+          "Response set IDs are missing");
       checkArgument(responseSetIds().get().keySet().size() == responseSets().size(),
           "All response set IDs must be unique");
       CollectionUtils.assertSameElementsOrIllegalArgument(responseSets(),
@@ -95,11 +98,22 @@ abstract class _ResponseLinking {
   public ResponseLinking copyWithFilteredResponses(final Predicate<Response> toKeepCondition) {
     final Set<Response> newIncompletes = Sets.filter(incompleteResponses(), toKeepCondition);
     final ImmutableSet.Builder<ResponseSet> newResponseSetsB = ImmutableSet.builder();
+    final ImmutableBiMap.Builder<String, ResponseSet> responseSetsIdB = ImmutableBiMap.builder();
+    // to account for ResponseSets merging due to lost annotation
+    final Set<ResponseSet> alreadyAdded = Sets.newHashSet();
     for (final ResponseSet responseSet : responseSets()) {
       final ImmutableSet<Response> okResponses = FluentIterable.from(responseSet.asSet())
           .filter(toKeepCondition).toSet();
       if (!okResponses.isEmpty()) {
-        newResponseSetsB.add(ResponseSet.from(okResponses));
+        final ResponseSet newResponseSet = ResponseSet.from(okResponses);
+        if(alreadyAdded.contains(newResponseSet)) {
+          continue;
+        }
+        alreadyAdded.add(newResponseSet);
+        newResponseSetsB.add(newResponseSet);
+        if (responseSetIds().isPresent()) {
+          responseSetsIdB.put(responseSetIds().get().inverse().get(responseSet), newResponseSet);
+        }
       }
     }
 
@@ -107,8 +121,7 @@ abstract class _ResponseLinking {
     final ResponseLinking.Builder ret = ResponseLinking.builder().docID(docID())
         .responseSets(newResponseSets).incompleteResponses(newIncompletes);
     if (responseSetIds().isPresent()) {
-      ret.responseSetIds(
-          ImmutableBiMap.copyOf(Maps.filterValues(responseSetIds().get(), in(newResponseSets))));
+      ret.responseSetIds(responseSetsIdB.build());
     }
     return ret.build();
   }

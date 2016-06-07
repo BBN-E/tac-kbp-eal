@@ -399,6 +399,7 @@ public final class ScoreKBPAgainstERE {
       checkNotNull(counts, "Inspect must be called before Finish!");
       for (final Symbol docid : counts.keySet()) {
         final File docOutput = new File(outputDir, docid.asString());
+        docOutput.mkdirs();
         final PrintWriter outputWriter = new PrintWriter(new File(docOutput, "linkingF.txt"));
         outputWriter.println(counts.get(docid).toString());
         outputWriter.close();
