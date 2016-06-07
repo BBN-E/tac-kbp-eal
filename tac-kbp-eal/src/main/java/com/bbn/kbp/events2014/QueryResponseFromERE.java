@@ -1,6 +1,7 @@
 package com.bbn.kbp.events2014;
 
 
+import com.bbn.bue.common.collections.ShufflingIterable;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
@@ -29,8 +30,10 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.Iterables.limit;
 
 /**
  * Extracts QueryResponses from LDC queries that are specified by: a QueryID, a document ID, an
@@ -64,6 +67,11 @@ public final class QueryResponseFromERE {
     final CorpusQuerySet2016 queries = DefaultCorpusQueryLoader.create().loadQueries(
         Files.asCharSource(queryFile, Charsets.UTF_8));
 
+    final int maxResponsesPerQueryPerSystem = params.getOptionalPositiveInteger(
+        "com.bbn.tac.eal.maxResponsesPerQueryPerSystem").or(Integer.MAX_VALUE);
+    final Random rng = new Random(params.getOptionalPositiveInteger(
+        "com.bbn.tac.eal.randSeed").or(0));
+
     final ImmutableMap<String, SystemOutputStore2016> outputStores =
         loadStores(params.getExistingDirectory("com.bbn.tac.eal.storeDir"),
             params.getStringList("com.bbn.tac.eal.storesToProcess"));
@@ -87,8 +95,12 @@ public final class QueryResponseFromERE {
             FluentIterable.from(systemMatchesForQuery)
                 .index(DocEventFrameReferenceFunctions.docID());
 
-        for (final Map.Entry<Symbol, Collection<DocEventFrameReference>> matchEntry : matchesByDocID
-            .asMap().entrySet()) {
+        // we potentially limit the number of responses returned for each system/query combination
+        final Iterable<Map.Entry<Symbol, Collection<DocEventFrameReference>>> matchesByDocument =
+            limit(ShufflingIterable.from(matchesByDocID.asMap().entrySet(), rng),
+                maxResponsesPerQueryPerSystem);
+
+        for (final Map.Entry<Symbol, Collection<DocEventFrameReference>> matchEntry : matchesByDocument) {
           final Symbol docID = matchEntry.getKey();
           final Collection<DocEventFrameReference> eventFramesMatchedInDoc =
               matchEntry.getValue();
