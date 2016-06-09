@@ -356,9 +356,9 @@ public final class ScoreKBPAgainstERE {
     // beta as defined by the EAL task guidelines.
     private static final double beta = 0.25;
     private final File outputDir;
-    private double accumulator = 0.0;
-    private int tp = 0;
-    private int fp = 0;
+    private double scoreAggregator = 0.0;
+    private int aggregateTPs = 0;
+    private int aggregateFPs = 0;
 
     final ImmutableMap.Builder<Symbol, Integer> truePositives = ImmutableMap.builder();
     final ImmutableMap.Builder<Symbol, Integer> falsePositives = ImmutableMap.builder();
@@ -383,21 +383,22 @@ public final class ScoreKBPAgainstERE {
       }
       final Symbol docid = checkNotNull(getFirst(args, null)).docID();
       log.info("Gathering arg scores for {}", docid);
-      int tp = evalPair.leftAligned().size();
-      this.tp += tp;
-      int fp = evalPair.leftUnaligned().size();
-      this.fp += fp;
-      double score = tp - beta * fp;
-      accumulator += score;
-      truePositives.put(docid, tp);
-      falsePositives.put(docid, fp);
+      int docTPs = evalPair.leftAligned().size();
+      this.aggregateTPs += docTPs;
+      int docFPs = evalPair.leftUnaligned().size();
+      this.aggregateFPs += docFPs;
+      double score = docTPs - beta * docFPs;
+      scoreAggregator += score;
+      truePositives.put(docid, docTPs);
+      falsePositives.put(docid, docFPs);
       scores.put(docid, score);
     }
 
     @Override
     public void finish() throws IOException {
       final String scorePattern = "TP: %d, FP: %d, Score: %f\n";
-      final String scoreString = String.format(scorePattern, tp, fp, accumulator);
+      final String scoreString = String.format(scorePattern, aggregateTPs, aggregateFPs,
+          scoreAggregator);
       Files.asCharSink(new File(outputDir, "argScores.txt"), Charsets.UTF_8).write(scoreString);
       final ImmutableMap<Symbol, Double> scores = this.scores.build();
       final ImmutableMap<Symbol, Integer> falsePositives = this.falsePositives.build();
