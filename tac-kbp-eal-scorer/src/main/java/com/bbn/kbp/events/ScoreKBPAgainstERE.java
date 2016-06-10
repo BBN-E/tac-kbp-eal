@@ -15,6 +15,7 @@ import com.bbn.bue.common.evaluation.InspectionNode;
 import com.bbn.bue.common.evaluation.InspectorTreeDSL;
 import com.bbn.bue.common.evaluation.InspectorTreeNode;
 import com.bbn.bue.common.evaluation.ProvenancedAlignment;
+import com.bbn.bue.common.evaluation.ScoringEventObserver;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
@@ -50,11 +51,17 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.google.common.reflect.TypeToken;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.MapBinder;
 
 import org.immutables.func.Functional;
 import org.immutables.value.Value;
@@ -103,20 +110,21 @@ public final class ScoreKBPAgainstERE {
     throw new UnsupportedOperationException();
   }
 
-  public static void main(String[] argv) {
-    // we wrap the main method in this way to
-    // ensure a non-zero return value on failure
-    try {
-      trueMain(argv);
-    } catch (Exception e) {
-      e.printStackTrace();
-      System.exit(1);
-    }
+  // left over from pre-Guice version
+  private final Parameters params;
+  private final ImmutableMap<String, ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>
+    scoringEventObservers;
+
+  @Inject
+  ScoreKBPAgainstERE(
+      final Parameters params,
+      final Map<String, ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>> scoringEventObservers) {
+    this.params = checkNotNull(params);
+    // we use a sorted map because the binding of plugins may be non-deterministic
+    this.scoringEventObservers = ImmutableSortedMap.copyOf(scoringEventObservers);
   }
 
-  private static void trueMain(String[] argv) throws IOException {
-    Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
-    log.info(params.dump());
+  public void go() throws IOException {
     final ImmutableSet<Symbol> docIDsToScore = ImmutableSet.copyOf(
         FileUtils.loadSymbolList(params.getExistingFile("docIDsToScore")));
     final ImmutableMap<Symbol, File> goldDocIDToFileMap = FileUtils.loadSymbolToFileMap(
@@ -165,7 +173,7 @@ public final class ScoreKBPAgainstERE {
 
     // this sets it up so that everything fed to input will be scored in various ways
     setupScoring(input, responsesAndLinkingFromKBPExtractor, responsesAndLinkingFromEREExtractor,
-        outputDir);
+        scoringEventObservers.values(), outputDir);
 
     // we want globally unique IDs here
     final ERELoader loader = ERELoader.builder().prefixDocIDToAllIDs(true).build();
@@ -224,6 +232,7 @@ public final class ScoreKBPAgainstERE {
       final InspectionNode<EvalPair<EREDocument, EREDocAndResponses>> input,
       final ResponsesAndLinkingFromKBPExtractor responsesAndLinkingFromKBPExtractor,
       final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor,
+      Iterable<? extends ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>> scoringEventObservers,
       final File outputDir) {
     final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
         inputAsResponsesAndLinking =
@@ -238,14 +247,16 @@ public final class ScoreKBPAgainstERE {
         transformed(filteredFor2016, RestrictLifeInjureToLifeDieEvents.INSTANCE);
 
     // set up for event argument scoring in 2015 style
-    eventArgumentScoringSetup(filteredForLifeDie, outputDir);
+    eventArgumentScoringSetup(filteredForLifeDie, scoringEventObservers, outputDir);
     // set up for linking scoring in 2015 style
     linkingScoringSetup(filteredForLifeDie, outputDir);
   }
 
   private static void eventArgumentScoringSetup(
       final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
-          inputAsResponsesAndLinking, final File outputDir) {
+          inputAsResponsesAndLinking,
+      Iterable<? extends ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>> scoringEventObservers,
+      final File outputDir) {
     final InspectorTreeNode<EvalPair<ImmutableSet<DocLevelEventArg>, ImmutableSet<DocLevelEventArg>>>
         inputAsSetsOfScoringTuples =
         transformBoth(inputAsResponsesAndLinking, ResponsesAndLinkingFunctions.args());
@@ -255,8 +266,9 @@ public final class ScoreKBPAgainstERE {
         alignmentNode = transformed(inputAsSetsOfScoringTuples, EXACT_MATCH_ALIGNER);
 
     // overall F score
-    final AggregateBinaryFScoresInspector<Object, Object> scoreAndWriteOverallFScore =
-        AggregateBinaryFScoresInspector.createOutputtingTo("aggregateF.txt", outputDir);
+    final AggregateBinaryFScoresInspector<DocLevelEventArg, DocLevelEventArg> scoreAndWriteOverallFScore =
+        AggregateBinaryFScoresInspector.createWithScoringObservers("aggregateF.txt", outputDir,
+            scoringEventObservers);
     inspect(alignmentNode).with(scoreAndWriteOverallFScore);
 
     // log errors
@@ -655,6 +667,43 @@ public final class ScoreKBPAgainstERE {
               +numResponses.count(errKey), errKey, mentionAlignmentFailures.count(errKey));
         }
       }
+    }
+  }
+
+  // code for running as a standalone executable
+  public static void main(String[] argv) {
+    // we wrap the main method in this way to
+    // ensure a non-zero return value on failure
+    try {
+      trueMain(argv);
+    } catch (Exception e) {
+      e.printStackTrace();
+      System.exit(1);
+    }
+  }
+
+  public static void trueMain(String[] argv) throws IOException {
+    final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
+    Guice.createInjector(new ScoreKBPAgainstERE.GuiceModule(params))
+        .getInstance(ScoreKBPAgainstERE.class).go();
+  }
+
+
+  // sets up a plugin architecture for additional scoring observers
+  public static final class GuiceModule extends AbstractModule {
+    private final Parameters params;
+
+    GuiceModule(final Parameters params) {
+      this.params = checkNotNull(params);
+    }
+
+    @Override
+    protected void configure() {
+      bind(Parameters.class).toInstance(params);
+      // declare that people can provide scoring observer plugins, even though none are
+      // provided by default
+      MapBinder.newMapBinder(binder(), TypeLiteral.get(String.class),
+          new TypeLiteral<ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>(){});
     }
   }
 }
