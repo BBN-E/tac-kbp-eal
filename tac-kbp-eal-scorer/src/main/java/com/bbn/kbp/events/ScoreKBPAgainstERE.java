@@ -49,6 +49,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultiset;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
@@ -248,6 +249,7 @@ public final class ScoreKBPAgainstERE {
 
     // set up for event argument scoring in 2015 style
     eventArgumentScoringSetup(filteredForLifeDie, scoringEventObservers, outputDir);
+
     // set up for linking scoring in 2015 style
     linkingScoringSetup(filteredForLifeDie, outputDir);
   }
@@ -260,13 +262,29 @@ public final class ScoreKBPAgainstERE {
     final InspectorTreeNode<EvalPair<ImmutableSet<DocLevelEventArg>, ImmutableSet<DocLevelEventArg>>>
         inputAsSetsOfScoringTuples =
         transformBoth(inputAsResponsesAndLinking, ResponsesAndLinkingFunctions.args());
+    final InspectorTreeNode<EvalPair<ImmutableSet<DocLevelEventArg>, ImmutableSet<DocLevelEventArg>>>
+        inputAsSetsOfRealisNeutralizedTuples =
+        transformBoth(inputAsResponsesAndLinking, NeutralizeRealis.INSTANCE);
 
+    argScoringSetup(inputAsSetsOfScoringTuples,
+        ImmutableList.<ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>of(),
+        new File(outputDir, "withRealis"));
+    // we apply scoring observers only to the realis neutralized version
+    argScoringSetup(inputAsSetsOfRealisNeutralizedTuples,
+        scoringEventObservers, new File(outputDir, "noRealis"));
+  }
+
+  private static void argScoringSetup(
+      final InspectorTreeNode<EvalPair<ImmutableSet<DocLevelEventArg>, ImmutableSet<DocLevelEventArg>>> inputAsSetsOfScoringTuples,
+      final Iterable<? extends ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>> scoringEventObservers,
+      final File outputDir) {
     // require exact match between the system arguments and the key responses
     final InspectorTreeNode<ProvenancedAlignment<DocLevelEventArg, DocLevelEventArg, DocLevelEventArg, DocLevelEventArg>>
         alignmentNode = transformed(inputAsSetsOfScoringTuples, EXACT_MATCH_ALIGNER);
 
     // overall F score
-    final AggregateBinaryFScoresInspector<DocLevelEventArg, DocLevelEventArg> scoreAndWriteOverallFScore =
+    final AggregateBinaryFScoresInspector<DocLevelEventArg, DocLevelEventArg>
+        scoreAndWriteOverallFScore =
         AggregateBinaryFScoresInspector.createWithScoringObservers("aggregateF.txt", outputDir,
             scoringEventObservers);
     inspect(alignmentNode).with(scoreAndWriteOverallFScore);
@@ -341,6 +359,22 @@ public final class ScoreKBPAgainstERE {
             .equalTo(RestrictLifeInjureToLifeDieEvents.INSTANCE.LifeDie));
         return docLevelEventArg.withEventType(LifeInjure);
       }
+    }
+  }
+
+  private enum NeutralizeRealis
+      implements Function<ResponsesAndLinking, ImmutableSet<DocLevelEventArg>> {
+    INSTANCE;
+
+    static final Symbol NEUTRALIZED = Symbol.from("neutralized");
+
+    @Override
+    public ImmutableSet<DocLevelEventArg> apply(final ResponsesAndLinking input) {
+      final ImmutableSet.Builder<DocLevelEventArg> ret = ImmutableSet.builder();
+      for (final DocLevelEventArg arg : input.args()) {
+        ret.add(arg.withRealis(NEUTRALIZED));
+      }
+      return ret.build();
     }
   }
 
