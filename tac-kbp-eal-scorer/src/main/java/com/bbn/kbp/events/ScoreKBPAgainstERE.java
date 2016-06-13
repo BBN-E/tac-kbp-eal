@@ -109,6 +109,8 @@ import static com.google.common.collect.Iterables.transform;
 public final class ScoreKBPAgainstERE {
 
   private static final Logger log = LoggerFactory.getLogger(ScoreKBPAgainstERE.class);
+  public static final String ALIGNMENT_FAILURE_PREFIX = "align-fail-";
+
   private final EREToKBPEventOntologyMapper ontologyMapper;
 
   private ScoreKBPAgainstERE() {
@@ -657,6 +659,7 @@ public final class ScoreKBPAgainstERE {
         // we don't care
         final ScoringCorefID alignedCorefID = alignedCorefIDOpt.or(
             ScoringCorefID.of(ScoringEntityType.AlignmentFailure,
+                ALIGNMENT_FAILURE_PREFIX +
                 Integer.toString(alignmentFailureIDs.nextID())));
 
         final DocLevelEventArg res = DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
