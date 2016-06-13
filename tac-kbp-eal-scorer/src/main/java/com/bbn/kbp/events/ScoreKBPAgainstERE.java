@@ -4,6 +4,7 @@ import com.bbn.bue.common.Finishable;
 import com.bbn.bue.common.HasDocID;
 import com.bbn.bue.common.Inspector;
 import com.bbn.bue.common.IntIDSequence;
+import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.TextGroupPackageImmutable;
 import com.bbn.bue.common.evaluation.AggregateBinaryFScoresInspector;
 import com.bbn.bue.common.evaluation.BinaryErrorLogger;
@@ -52,6 +53,7 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
@@ -606,7 +608,8 @@ public final class ScoreKBPAgainstERE {
     // each system item which fails to align to any reference item gets put in its own
     // coreference class, numbered using this sequence
     private IntIDSequence alignmentFailureIDs = IntIDSequence.startingFrom(0);
-    private Multiset<String> mentionAlignmentFailures = HashMultiset.create();
+    private ImmutableSetMultimap.Builder<String, String> mentionAlignmentFailuresB =
+        ImmutableSetMultimap.builder();
     private Multiset<String> numResponses = HashMultiset.create();
     private final ImmutableMap<Symbol, File> ereMapping;
     private final CoreNLPXMLLoader coreNLPXMLLoader;
@@ -659,7 +662,7 @@ public final class ScoreKBPAgainstERE {
 
         // record alignment failures
         if (!alignedCorefIDOpt.isPresent()) {
-          mentionAlignmentFailures.add(errKey(response));
+          mentionAlignmentFailuresB.put(errKey(response), response.toString());
         }
       }
       return fromResponses(ImmutableSet.copyOf(input.responses()),
@@ -692,13 +695,17 @@ public final class ScoreKBPAgainstERE {
     }
 
     public void finish() {
+      final ImmutableSetMultimap<String, String> mentionAlignmentFailures =
+          mentionAlignmentFailuresB.build();
       log.info(
           "Of {} system responses, got {} mention alignment failures",
           numResponses.size(), mentionAlignmentFailures.size());
       for (final String errKey : numResponses.elementSet()) {
-        if (mentionAlignmentFailures.count(errKey) > 0) {
-          log.info("Of {} {} responses, {} mention alignment failures",
-              +numResponses.count(errKey), errKey, mentionAlignmentFailures.count(errKey));
+        final ImmutableSet<String> failuresForKey = mentionAlignmentFailures.get(errKey);
+        if (failuresForKey != null) {
+          log.info("Of {} {} responses, {} mention alignment failures:\n{}",
+              +numResponses.count(errKey), errKey, failuresForKey.size(),
+              StringUtils.unixNewlineJoiner().join(failuresForKey));
         }
       }
     }

@@ -32,8 +32,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 
 /**
  * Aligns a TAC KBP {@link Response} to ERE entities or fillers by offset matching. Offset matching
@@ -45,27 +45,24 @@ final class EREAligner {
 
   private static final Logger log = LoggerFactory.getLogger(EREAligner.class);
 
-  private final boolean relaxUsingCORENLP;
   private final EREDocument ereDoc;
   private final Optional<CoreNLPDocument> coreNLPDoc;
   private final ImmutableList<ResponseToEREEArgAlignmentRule> responseMatchingStrategy;
 
-  private EREAligner(final boolean relaxUsingCORENLP,
+  private EREAligner(
       final EREDocument ereDoc, final Optional<CoreNLPDocument> coreNLPDocument,
       ImmutableList<ResponseToEREEArgAlignmentRule> responseMatchingStrategy) {
-    this.relaxUsingCORENLP = relaxUsingCORENLP;
     this.ereDoc = ereDoc;
     this.coreNLPDoc = coreNLPDocument;
-    checkState(!relaxUsingCORENLP || coreNLPDoc.isPresent(),
-        "Either we have our CoreNLPDocument or we are not relaxing using it");
     this.responseMatchingStrategy = responseMatchingStrategy;
   }
 
   static EREAligner create(final boolean relaxUsingCORENLP,
       final EREDocument ereDoc, final Optional<CoreNLPDocument> coreNLPDocument,
       final EREToKBPEventOntologyMapper mapping) {
-    return new EREAligner(relaxUsingCORENLP, ereDoc,
-        coreNLPDocument,
+    checkArgument(!relaxUsingCORENLP || coreNLPDocument.isPresent(), "CoreNLP relaxation "
+        + "requested but no CoreNLP document provided for " + ereDoc.getDocId());
+    return new EREAligner(ereDoc, coreNLPDocument,
         createResponseMatchingStrategy(relaxUsingCORENLP, coreNLPDocument, mapping));
   }
 
