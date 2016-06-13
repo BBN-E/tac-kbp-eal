@@ -654,6 +654,9 @@ public final class ScoreKBPAgainstERE {
         final Symbol realis = Symbol.from(response.realis().name());
 
         final Optional<ScoringCorefID> alignedCorefIDOpt = ereAligner.argumentForResponse(response);
+        if (!alignedCorefIDOpt.isPresent()) {
+          log.info("Alignment failed for {}", response);
+        }
         // this increments the alignment failure ID regardless of success or failure, but
         // we don't care
         final ScoringCorefID alignedCorefID = alignedCorefIDOpt.or(
