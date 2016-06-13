@@ -28,6 +28,7 @@ import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
 import com.bbn.kbp.events2014.SystemOutputLayout;
+import com.bbn.kbp.events2014.TACKBPEALException;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.linking.ExplicitFMeasureInfo;
 import com.bbn.kbp.linking.LinkF1;
@@ -108,6 +109,7 @@ import static com.google.common.collect.Iterables.transform;
 public final class ScoreKBPAgainstERE {
 
   private static final Logger log = LoggerFactory.getLogger(ScoreKBPAgainstERE.class);
+  private final EREToKBPEventOntologyMapper ontologyMapper;
 
   private ScoreKBPAgainstERE() {
     throw new UnsupportedOperationException();
@@ -121,10 +123,12 @@ public final class ScoreKBPAgainstERE {
   @Inject
   ScoreKBPAgainstERE(
       final Parameters params,
-      final Map<String, ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>> scoringEventObservers) {
+      final Map<String, ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>> scoringEventObservers,
+      final EREToKBPEventOntologyMapper ontologyMapper) {
     this.params = checkNotNull(params);
     // we use a sorted map because the binding of plugins may be non-deterministic
     this.scoringEventObservers = ImmutableSortedMap.copyOf(scoringEventObservers);
+    this.ontologyMapper = checkNotNull(ontologyMapper);
   }
 
   public void go() throws IOException {
@@ -170,7 +174,7 @@ public final class ScoreKBPAgainstERE {
     // so we need to keep references to them
     final ResponsesAndLinkingFromKBPExtractor responsesAndLinkingFromKBPExtractor =
         new ResponsesAndLinkingFromKBPExtractor(coreNLPProcessedRawDocs,
-            coreNLPXMLLoader, relaxUsingCORENLP);
+            coreNLPXMLLoader, relaxUsingCORENLP, ontologyMapper);
     final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor =
         new ResponsesAndLinkingFromEREExtractor(EREToKBPEventOntologyMapper.create2016Mapping());
 
@@ -614,12 +618,15 @@ public final class ScoreKBPAgainstERE {
     private final ImmutableMap<Symbol, File> ereMapping;
     private final CoreNLPXMLLoader coreNLPXMLLoader;
     private final boolean relaxUsingCORENLP;
+    private final EREToKBPEventOntologyMapper ontologyMapper;
 
     public ResponsesAndLinkingFromKBPExtractor(final Map<Symbol, File> ereMapping,
-        final CoreNLPXMLLoader coreNLPXMLLoader, final boolean relaxUsingCORENLP) {
+        final CoreNLPXMLLoader coreNLPXMLLoader, final boolean relaxUsingCORENLP,
+        final EREToKBPEventOntologyMapper ontologyMapper) {
       this.ereMapping = ImmutableMap.copyOf(ereMapping);
       this.coreNLPXMLLoader = coreNLPXMLLoader;
       this.relaxUsingCORENLP = relaxUsingCORENLP;
+      this.ontologyMapper = checkNotNull(ontologyMapper);
     }
 
     public ResponsesAndLinking apply(final EREDocAndResponses input) {
@@ -634,9 +641,7 @@ public final class ScoreKBPAgainstERE {
         coreNLPDoc = Optional.fromNullable(ereMapping.get(ereID)).isPresent() ? Optional
             .of(coreNLPXMLLoader.loadFrom(ereMapping.get(ereID)))
                                                                               : Optional.<CoreNLPDocument>absent();
-        ereAligner = EREAligner
-            .create(relaxUsingCORENLP, doc, coreNLPDoc,
-                EREToKBPEventOntologyMapper.create2016Mapping());
+        ereAligner = EREAligner.create(relaxUsingCORENLP, doc, coreNLPDoc, ontologyMapper);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -745,6 +750,12 @@ public final class ScoreKBPAgainstERE {
       // provided by default
       MapBinder.newMapBinder(binder(), TypeLiteral.get(String.class),
           new TypeLiteral<ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>(){});
+      try {
+        bind(EREToKBPEventOntologyMapper.class)
+            .toInstance(EREToKBPEventOntologyMapper.create2016Mapping());
+      } catch (IOException ioe) {
+        throw new TACKBPEALException(ioe);
+      }
     }
   }
 }
