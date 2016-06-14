@@ -95,6 +95,7 @@ import static com.google.common.base.Predicates.in;
 import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Iterables.filter;
+import static com.google.common.collect.Iterables.getFirst;
 import static com.google.common.collect.Iterables.transform;
 
 /**
@@ -298,6 +299,10 @@ public final class ScoreKBPAgainstERE {
             scoringEventObservers);
     inspect(alignmentNode).with(scoreAndWriteOverallFScore);
 
+    // "arg" score with weighted TP/FP
+    final ArgumentScoringInspector argScorer =
+        ArgumentScoringInspector.createOutputtingTo(outputDir);
+    inspect(alignmentNode).with(argScorer);
     // log errors
     final BinaryErrorLogger<HasDocID, HasDocID> logWrongAnswers = BinaryErrorLogger
         .forStringifierAndOutputDir(Functions.<HasDocID>toStringFunction(), outputDir);
@@ -397,6 +402,70 @@ public final class ScoreKBPAgainstERE {
       final DocLevelArgLinking newTest =
           input.test().filterArguments(in(input.key().allArguments()));
       return EvalPair.of(input.key(), newTest);
+    }
+  }
+
+  private static final class ArgumentScoringInspector implements
+      Inspector<ProvenancedAlignment<DocLevelEventArg, DocLevelEventArg, DocLevelEventArg, DocLevelEventArg>> {
+
+    // beta as defined by the EAL task guidelines.
+    private static final double beta = 0.25;
+    private final File outputDir;
+    private double scoreAggregator = 0.0;
+    private int aggregateTPs = 0;
+    private int aggregateFPs = 0;
+
+    final ImmutableMap.Builder<Symbol, Integer> truePositives = ImmutableMap.builder();
+    final ImmutableMap.Builder<Symbol, Integer> falsePositives = ImmutableMap.builder();
+    final ImmutableMap.Builder<Symbol, Double> scores = ImmutableMap.builder();
+
+    private ArgumentScoringInspector(final File outputDir) {
+      this.outputDir = outputDir;
+    }
+
+    public static ArgumentScoringInspector createOutputtingTo(final File outputDir) {
+      return new ArgumentScoringInspector(outputDir);
+    }
+
+    @Override
+    public void inspect(
+        final ProvenancedAlignment<DocLevelEventArg, DocLevelEventArg, DocLevelEventArg, DocLevelEventArg> evalPair) {
+      final Iterable<DocLevelEventArg> args =
+          concat(evalPair.allLeftItems(), evalPair.allRightItems());
+      if (Iterables.size(args) == 0) {
+        log.warn("No output for eval pair {}", evalPair);
+        return;
+      }
+      final Symbol docid = checkNotNull(getFirst(args, null)).docID();
+      log.info("Gathering arg scores for {}", docid);
+      int docTPs = evalPair.leftAligned().size();
+      this.aggregateTPs += docTPs;
+      int docFPs = evalPair.leftUnaligned().size();
+      this.aggregateFPs += docFPs;
+      double score = docTPs - beta * docFPs;
+      scoreAggregator += score;
+      truePositives.put(docid, docTPs);
+      falsePositives.put(docid, docFPs);
+      scores.put(docid, score);
+    }
+
+    @Override
+    public void finish() throws IOException {
+      final String scorePattern = "TP: %d, FP: %d, Score: %f\n";
+      final String scoreString = String.format(scorePattern, aggregateTPs, aggregateFPs,
+          scoreAggregator);
+      Files.asCharSink(new File(outputDir, "argScores.txt"), Charsets.UTF_8).write(scoreString);
+      final ImmutableMap<Symbol, Double> scores = this.scores.build();
+      final ImmutableMap<Symbol, Integer> falsePositives = this.falsePositives.build();
+      final ImmutableMap<Symbol, Integer> truePositives = this.truePositives.build();
+      for (final Symbol docid : scores.keySet()) {
+        final File docDir = new File(outputDir, docid.asString());
+        docDir.mkdirs();
+        final File docScore = new File(docDir, "argScores.txt");
+        Files.asCharSink(docScore, Charsets.UTF_8).write(String
+            .format(scorePattern, truePositives.get(docid), falsePositives.get(docid),
+                scores.get(docid)));
+      }
     }
   }
 
@@ -801,7 +870,7 @@ abstract class _ResponsesAndLinking {
 
   @Value.Check
   protected void check() {
-    checkArgument(args().containsAll(ImmutableSet.copyOf(Iterables.concat(linking()))));
+    checkArgument(args().containsAll(ImmutableSet.copyOf(concat(linking()))));
   }
 
   public final ResponsesAndLinking filter(Predicate<? super DocLevelEventArg> predicate) {
