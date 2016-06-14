@@ -656,7 +656,11 @@ public final class ScoreKBPAgainstERE {
         final Optional<ScoringCorefID> alignedCorefIDOpt = ereAligner.argumentForResponse(response);
         if (!alignedCorefIDOpt.isPresent()) {
           log.info("Alignment failed for {}", response);
+        } else if (alignedCorefIDOpt.get().scoringEntityType()
+            .equals(ScoringEntityType.InsufficientEntityLevel)) {
+          log.info("Insufficient entity level for {}", response);
         }
+
         // this increments the alignment failure ID regardless of success or failure, but
         // we don't care
         final ScoringCorefID alignedCorefID = alignedCorefIDOpt.or(

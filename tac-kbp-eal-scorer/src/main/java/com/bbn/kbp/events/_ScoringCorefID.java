@@ -4,6 +4,8 @@ import com.bbn.bue.common.TextGroupPackageImmutable;
 
 import org.immutables.value.Value;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 /**
  * Represents a participant in a document-level entity for purposes of scoring.  This can be either
  * an entity, a value-like filler, or something in the system output which fails to align to
@@ -23,5 +25,10 @@ abstract class _ScoringCorefID {
   @Value.Derived
   public String globalID() {
     return scoringEntityType().name() + "-" + withinTypeID();
+  }
+
+  @Value.Check
+  protected void check() {
+    checkArgument(!withinTypeID().isEmpty());
   }
 }
