@@ -1,17 +1,15 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>tac-kbp-eal-all</artifactId>
         <groupId>com.bbn.kbp.eal</groupId>
-        <version>3.3.1-SNAPSHOT</version>
+        <version>3.4.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>tac-kbp-eal</artifactId>
-    <version>3.3.1-SNAPSHOT</version>
+    <version>3.4.0</version>
     <packaging>jar</packaging>
 
     <name>Core code for KBP 2014 Event Arguments Task</name>
@@ -330,7 +328,7 @@
         <dependency>
             <groupId>com.bbn.kbp.eal</groupId>
             <artifactId>bue-common-awaiting-review</artifactId>
-            <version>3.3.1-SNAPSHOT</version>
+            <version>3.4.0</version>
         </dependency>
 
         <dependency>
