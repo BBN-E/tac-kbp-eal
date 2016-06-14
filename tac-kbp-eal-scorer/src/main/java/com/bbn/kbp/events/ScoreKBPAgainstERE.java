@@ -88,6 +88,7 @@ import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformRight;
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformed;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Predicates.compose;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.in;
@@ -652,7 +653,9 @@ public final class ScoreKBPAgainstERE {
         coreNLPDoc = Optional.fromNullable(ereMapping.get(ereID)).isPresent() ? Optional
             .of(coreNLPXMLLoader.loadFrom(ereMapping.get(ereID)))
                                                                               : Optional.<CoreNLPDocument>absent();
-        ereAligner = EREAligner.create(relaxUsingCORENLP, doc, coreNLPDoc, ontologyMapper);
+        checkState(coreNLPDoc.isPresent() || !relaxUsingCORENLP, "Must have CoreNLP document "
+            + "if using Core NLP relaxation");
+        ereAligner = EREAligner.create(doc, coreNLPDoc, ontologyMapper);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }

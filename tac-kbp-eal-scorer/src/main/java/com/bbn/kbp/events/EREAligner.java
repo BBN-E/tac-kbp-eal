@@ -52,13 +52,16 @@ import static com.google.common.base.Predicates.compose;
  * Aligns a TAC KBP {@link Response} to ERE entities or fillers by offset matching. Offset matching
  * may be relaxed in two ways: <ul> <li>By fuzzier offset matching (e.g. allowing containment or
  * overlap)</li> <li>By finding the head of the KBP {@link Response} and aligning with the ERE head
- * (if any)</li> </ul>
+ * (if any)</li>. See {@link #createResponseMatchingStrategy(Optional)} for a full
+ * description of the match criteria</ul>
  */
 final class EREAligner {
 
   private static final Logger log = LoggerFactory.getLogger(EREAligner.class);
 
+  // the set of rules used to determine if a system response matches an ERE object
   private final ImmutableList<ResponseToEREAlignmentRule> responseMatchingStrategy;
+  // the ERE objects which could be aligned to.
   private final ImmutableSet<CandidateAlignmentTarget> candidateEREObjects;
 
   private EREAligner(
@@ -68,11 +71,9 @@ final class EREAligner {
     this.responseMatchingStrategy = responseMatchingStrategy;
   }
 
-  static EREAligner create(final boolean relaxUsingCORENLP,
-      final EREDocument ereDoc, final Optional<CoreNLPDocument> coreNLPDocument,
+  static EREAligner create(final EREDocument ereDoc,
+      final Optional<CoreNLPDocument> coreNLPDocument,
       final EREToKBPEventOntologyMapper mapping) {
-    checkArgument(!relaxUsingCORENLP || coreNLPDocument.isPresent(), "CoreNLP relaxation "
-        + "requested but no CoreNLP document provided for " + ereDoc.getDocId());
     return new EREAligner(
         // first we need to collect the correct entities and fillers
         // A CandidateAlignmentTarget abstracts over the difference between the two
@@ -82,14 +83,17 @@ final class EREAligner {
   }
 
 
-  Optional<ScoringCorefID> argumentForResponse(final Response response) {
+  /**
+   * Gets an identifier corresponding to the ERE object the response aligns to, if any.
+   */
+  public Optional<ScoringCorefID> argumentForResponse(final Response response) {
     final MappedEventTypeRole systemTypeRole = typeRoleForResponse(response);
     final ImmutableSet<CandidateAlignmentTarget> searchOrder =
         FluentIterable.from(candidateEREObjects)
             // alignment candidates which match the response in event type
             // and argument role will always be searched before other candidates
             // in order to be as generous as possible to systems.
-            // Note ImmutableSets have a deterministic iteration order
+            // Note ImmutableSets iterate deterministically in the order of insertion
             .filter(compose(containsElement(systemTypeRole), typeRolesSeen()))
             .append(candidateEREObjects)
             .toSet();
@@ -106,26 +110,22 @@ final class EREAligner {
     return Optional.absent();
   }
 
-  private static MappedEventTypeRole typeRoleForResponse(final Response response) {
-    return MappedEventTypeRole.of(
-        response.type(), response.role());
-  }
-
-
   // build the list of alignment rules which will be applied in order until one matches
   private static ImmutableList<ResponseToEREAlignmentRule> createResponseMatchingStrategy(
       Optional<CoreNLPDocument> coreNLPDoc) {
     final ImmutableList.Builder<ResponseToEREAlignmentRule> ret = ImmutableList.builder();
 
-    final Function<Response, OffsetRange<CharOffset>> responseComputdHead;
+    // if a CoreNLP analysis is available, we can use it to compute heads for both system and ERE
+    // objects.
+    final Function<Response, OffsetRange<CharOffset>> responseComputedHead;
     final Function<CandidateAlignmentTarget, OffsetRange<CharOffset>> ereComputedHead;
     // if a CoreNLP analysis is provided we will use it to find the heads of response spans
     if (coreNLPDoc.isPresent()) {
       final CoreNLPHeadExtractor coreNLPHeadExtractor = CoreNLPHeadExtractor.of(coreNLPDoc.get());
-      responseComputdHead = Functions.compose(coreNLPHeadExtractor, CasExtractor.INSTANCE);
+      responseComputedHead = Functions.compose(coreNLPHeadExtractor, CasExtractor.INSTANCE);
       ereComputedHead = Functions.compose(coreNLPHeadExtractor, ERE_HEAD_IF_DECLARED);
     } else {
-      responseComputdHead = CasExtractor.INSTANCE;
+      responseComputedHead = CasExtractor.INSTANCE;
       ereComputedHead = ERE_HEAD_IF_DECLARED;
     }
 
@@ -133,17 +133,17 @@ final class EREAligner {
         // response CAS matches ERE extent exactly
         new SpansMatchExactly(CasExtractor.INSTANCE, offsets()),
         // response CAS head matches ERE extent exactly
-        new SpansMatchExactly(responseComputdHead, offsets()),
+        new SpansMatchExactly(responseComputedHead, offsets()),
         // response CAS matches ERE declared head exactly
         new SpansMatchExactly(CasExtractor.INSTANCE, ERE_HEAD_IF_DECLARED),
         // response CAS head matches ERE declared head exactly
-        new SpansMatchExactly(responseComputdHead, ERE_HEAD_IF_DECLARED),
+        new SpansMatchExactly(responseComputedHead, ERE_HEAD_IF_DECLARED),
         // response CAS matches ERE computed head exactly
         new SpansMatchExactly(CasExtractor.INSTANCE, ereComputedHead),
         // response CAS head matches ERE computed head exactly
-        new SpansMatchExactly(responseComputdHead, ereComputedHead),
+        new SpansMatchExactly(responseComputedHead, ereComputedHead),
         // finally we do a more aggressive alignment attempt by containment
-        new ContainmentSpanChecker(CasExtractor.INSTANCE, responseComputdHead)
+        new ContainmentSpanChecker(CasExtractor.INSTANCE, responseComputedHead)
     ));
     return ret.build();
   }
@@ -153,6 +153,8 @@ final class EREAligner {
       EREToKBPEventOntologyMapper ontologyMapper) {
     final ImmutableSet.Builder<CandidateAlignmentTarget> ret = ImmutableSet.builder();
 
+    // because we prioritize matches against entities which appear with "desirable" type
+    // and role, we need to find out what events all entities and fillers are involved with
     final ImmutableMultimap.Builder<EREEntity, MappedEventTypeRole> entitiesToRolesPlayedB =
         ImmutableMultimap.builder();
     final ImmutableMultimap.Builder<EREFiller, MappedEventTypeRole> fillersToRolesPlayedB =
@@ -199,6 +201,8 @@ final class EREAligner {
     final ImmutableMultimap<EREEntity, MappedEventTypeRole> entitiesToRolesPlayed =
         entitiesToRolesPlayedB.build();
 
+    // crucially, any entity and filler can be aligned with, not just those
+    // involved in events
     for (final EREEntity entity : ereDoc.getEntities()) {
       final Collection<MappedEventTypeRole> rolesPlayed = entitiesToRolesPlayed.get(entity);
 
@@ -211,7 +215,7 @@ final class EREAligner {
       for (final EREEntityMention ereEntityMention : entity.getMentions()) {
         final CASType casType = CASType.parseFromERE(ereEntityMention.getType());
         // if this is e.g. a nominal when a name is available as an entity, we use
-        // a special entity type to ensure this is counted wrong.
+        // a special entity type to ensure this is always counted wrong.
         final ScoringEntityType scoringEntityType = (casType.equals(bestCASType))
                                                     ? ScoringEntityType.Entity
                                                     : ScoringEntityType.InsufficientEntityLevel;
@@ -244,6 +248,11 @@ final class EREAligner {
 
   private static OffsetRange<CharOffset> extentForERE(ERESpan span) {
     return OffsetRange.charOffsetRange(span.getStart(), span.getEnd());
+  }
+
+  private static MappedEventTypeRole typeRoleForResponse(final Response response) {
+    return MappedEventTypeRole.of(
+        response.type(), response.role());
   }
 
   // falling back to the extent won't harm us since we'll always run this after the ereExtentExtractor
@@ -290,7 +299,6 @@ final class EREAligner {
   }
 
   interface ResponseToEREAlignmentRule {
-
     boolean aligns(Response r, CandidateAlignmentTarget candidateAlignment);
   }
 
@@ -362,36 +370,6 @@ final class EREAligner {
     }
   }
 
-  @TextGroupPackageImmutable
-  @Value.Immutable
-  static abstract class _And implements ResponseToEREAlignmentRule {
-
-    @Value.Parameter
-    public abstract ResponseToEREAlignmentRule first();
-
-    @Value.Parameter
-    public abstract ResponseToEREAlignmentRule second();
-
-    @Override
-    public final boolean aligns(final Response r, final CandidateAlignmentTarget ea) {
-      return first().aligns(r, ea) && second().aligns(r, ea);
-    }
-
-    @Override
-    public String toString() {
-      return "And(" + first() + ", " + second() + ")";
-    }
-  }
-
-  @TextGroupPackageImmutable
-  @Value.Immutable
-  static abstract class _MappedRolesMatch implements ResponseToEREAlignmentRule {
-    @Override
-    public final boolean aligns(final Response r, final CandidateAlignmentTarget ea) {
-      return ea.typeRolesSeen().contains(typeRoleForResponse(r));
-    }
-  }
-
   @MoveToBUECommon
   static <T> Predicate<Collection<T>> containsElement(final T element) {
     return new Predicate<Collection<T>>() {
@@ -434,9 +412,4 @@ abstract class _CandidateAlignmentTarget {
   abstract ScoringCorefID id();
   abstract OffsetRange<CharOffset> offsets();
   abstract Optional<OffsetRange<CharOffset>> headOffsets();
-}
-
-enum AlignmentFailureCause {
-  NoAlignment,
-  InsufficientMentionLevel
 }
