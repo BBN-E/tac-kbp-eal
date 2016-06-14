@@ -131,14 +131,14 @@ final class EREAligner {
     ret.addAll(ImmutableList.of(
         // response CAS matches ERE extent exactly
         new SpansMatchExactly(CasExtractor.INSTANCE, offsets()),
-        // response CAS head matches ERE extent exactly
-        new SpansMatchExactly(responseComputedHead, offsets()),
         // response CAS matches ERE declared head exactly
         new SpansMatchExactly(CasExtractor.INSTANCE, ERE_HEAD_IF_DECLARED),
-        // response CAS head matches ERE declared head exactly
-        new SpansMatchExactly(responseComputedHead, ERE_HEAD_IF_DECLARED),
         // response CAS matches ERE computed head exactly
         new SpansMatchExactly(CasExtractor.INSTANCE, ereComputedHead),
+        // response CAS head matches ERE extent exactly
+        new SpansMatchExactly(responseComputedHead, offsets()),
+        // response CAS head matches ERE declared head exactly
+        new SpansMatchExactly(responseComputedHead, ERE_HEAD_IF_DECLARED),
         // response CAS head matches ERE computed head exactly
         new SpansMatchExactly(responseComputedHead, ereComputedHead),
         // finally we do a more aggressive alignment attempt by containment
