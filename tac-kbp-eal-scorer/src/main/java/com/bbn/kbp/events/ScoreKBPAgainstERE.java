@@ -408,7 +408,7 @@ public final class ScoreKBPAgainstERE {
         docDir.mkdirs();
         final File docScore = new File(docDir, "argScores.txt");
         Files.asCharSink(docScore, Charsets.UTF_8).write(String
-            .format(scoreString, truePositives.get(docid), falsePositives.get(docid),
+            .format(scorePattern, truePositives.get(docid), falsePositives.get(docid),
                 scores.get(docid)));
       }
     }
