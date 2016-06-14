@@ -119,7 +119,6 @@ final class EREAligner {
     // objects.
     final Function<Response, OffsetRange<CharOffset>> responseComputedHead;
     final Function<CandidateAlignmentTarget, OffsetRange<CharOffset>> ereComputedHead;
-    // if a CoreNLP analysis is provided we will use it to find the heads of response spans
     if (coreNLPDoc.isPresent()) {
       final CoreNLPHeadExtractor coreNLPHeadExtractor = CoreNLPHeadExtractor.of(coreNLPDoc.get());
       responseComputedHead = Functions.compose(coreNLPHeadExtractor, CasExtractor.INSTANCE);
