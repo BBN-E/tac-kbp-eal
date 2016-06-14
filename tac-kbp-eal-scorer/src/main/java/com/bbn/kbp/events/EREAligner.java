@@ -39,7 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -154,9 +153,9 @@ final class EREAligner {
       EREToKBPEventOntologyMapper ontologyMapper) {
     final ImmutableSet.Builder<CandidateAlignmentTarget> ret = ImmutableSet.builder();
 
-    final ImmutableMultimap.Builder<EREEntity, MappedEventTypeRole> entitiesToRolesPlayed =
+    final ImmutableMultimap.Builder<EREEntity, MappedEventTypeRole> entitiesToRolesPlayedB =
         ImmutableMultimap.builder();
-    final ImmutableMultimap.Builder<EREFiller, MappedEventTypeRole> fillersToRolesPlayed =
+    final ImmutableMultimap.Builder<EREFiller, MappedEventTypeRole> fillersToRolesPlayedB =
         ImmutableMultimap.builder();
 
     for (final EREEvent ereEvent : ereDoc.getEvents()) {
@@ -180,12 +179,12 @@ final class EREAligner {
                 final Optional<EREEntity> containingEntity =
                     ereDoc.getEntityContaining(((EREEntityArgument) ereArgument).entityMention());
                 if (containingEntity.isPresent()) {
-                  entitiesToRolesPlayed.put(containingEntity.get(), mappedTypeRole);
+                  entitiesToRolesPlayedB.put(containingEntity.get(), mappedTypeRole);
                 } else {
                   throw new TACKBPEALException("Entity filler without entity: " + ereArgument);
                 }
               } else if (ereArgument instanceof EREFillerArgument) {
-                fillersToRolesPlayed
+                fillersToRolesPlayedB
                     .put(((EREFillerArgument) ereArgument).filler(), mappedTypeRole);
               } else {
                 throw new TACKBPEALException(
@@ -197,10 +196,11 @@ final class EREAligner {
       }
     }
 
-    for (final Map.Entry<EREEntity, Collection<MappedEventTypeRole>> e :
-        entitiesToRolesPlayed.build().asMap().entrySet()) {
-      final EREEntity entity = e.getKey();
-      final Collection<MappedEventTypeRole> rolesPlayed = e.getValue();
+    final ImmutableMultimap<EREEntity, MappedEventTypeRole> entitiesToRolesPlayed =
+        entitiesToRolesPlayedB.build();
+
+    for (final EREEntity entity : ereDoc.getEntities()) {
+      final Collection<MappedEventTypeRole> rolesPlayed = entitiesToRolesPlayed.get(entity);
 
       CASType bestCASType = CASType.PRONOUN;
       for (final EREEntityMention ereEntityMention : entity.getMentions()) {
@@ -227,10 +227,10 @@ final class EREAligner {
       }
     }
 
-    for (final Map.Entry<EREFiller, Collection<MappedEventTypeRole>> e : fillersToRolesPlayed
-        .build().asMap().entrySet()) {
-      final EREFiller filler = e.getKey();
-      final Collection<MappedEventTypeRole> rolesPlayed = e.getValue();
+    final ImmutableMultimap<EREFiller, MappedEventTypeRole> fillersToRolesPlayed =
+        fillersToRolesPlayedB.build();
+    for (final EREFiller filler : ereDoc.getFillers()) {
+      final Collection<MappedEventTypeRole> rolesPlayed = fillersToRolesPlayed.get(filler);
 
       ret.add(CandidateAlignmentTarget.builder()
           .id(ScoringCorefID.of(ScoringEntityType.Filler, filler.getID()))
