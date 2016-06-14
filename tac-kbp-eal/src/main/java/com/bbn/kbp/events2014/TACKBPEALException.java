@@ -6,11 +6,11 @@ public class TACKBPEALException extends RuntimeException {
     super(msg);
   }
 
-  public TACKBPEALException(String msg, Exception e) {
+  public TACKBPEALException(String msg, Throwable e) {
     super(msg, e);
   }
 
-  public TACKBPEALException(Exception e) {
+  public TACKBPEALException(Throwable e) {
     super(e);
   }
 }

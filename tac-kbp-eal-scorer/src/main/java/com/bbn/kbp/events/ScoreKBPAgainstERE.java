@@ -4,6 +4,7 @@ import com.bbn.bue.common.Finishable;
 import com.bbn.bue.common.HasDocID;
 import com.bbn.bue.common.Inspector;
 import com.bbn.bue.common.IntIDSequence;
+import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.TextGroupPackageImmutable;
 import com.bbn.bue.common.evaluation.AggregateBinaryFScoresInspector;
 import com.bbn.bue.common.evaluation.BinaryErrorLogger;
@@ -15,6 +16,7 @@ import com.bbn.bue.common.evaluation.InspectionNode;
 import com.bbn.bue.common.evaluation.InspectorTreeDSL;
 import com.bbn.bue.common.evaluation.InspectorTreeNode;
 import com.bbn.bue.common.evaluation.ProvenancedAlignment;
+import com.bbn.bue.common.evaluation.ScoringEventObserver;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
@@ -26,6 +28,7 @@ import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
 import com.bbn.kbp.events2014.SystemOutputLayout;
+import com.bbn.kbp.events2014.TACKBPEALException;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.linking.ExplicitFMeasureInfo;
 import com.bbn.kbp.linking.LinkF1;
@@ -48,13 +51,21 @@ import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultiset;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.google.common.reflect.TypeToken;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.MapBinder;
 
 import org.immutables.func.Functional;
 import org.immutables.value.Value;
@@ -66,6 +77,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -76,6 +88,7 @@ import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformRight;
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformed;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Predicates.compose;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.in;
@@ -99,24 +112,29 @@ public final class ScoreKBPAgainstERE {
 
   private static final Logger log = LoggerFactory.getLogger(ScoreKBPAgainstERE.class);
 
+  private final EREToKBPEventOntologyMapper ontologyMapper;
+
   private ScoreKBPAgainstERE() {
     throw new UnsupportedOperationException();
   }
 
-  public static void main(String[] argv) {
-    // we wrap the main method in this way to
-    // ensure a non-zero return value on failure
-    try {
-      trueMain(argv);
-    } catch (Exception e) {
-      e.printStackTrace();
-      System.exit(1);
-    }
+  // left over from pre-Guice version
+  private final Parameters params;
+  private final ImmutableMap<String, ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>
+    scoringEventObservers;
+
+  @Inject
+  ScoreKBPAgainstERE(
+      final Parameters params,
+      final Map<String, ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>> scoringEventObservers,
+      final EREToKBPEventOntologyMapper ontologyMapper) {
+    this.params = checkNotNull(params);
+    // we use a sorted map because the binding of plugins may be non-deterministic
+    this.scoringEventObservers = ImmutableSortedMap.copyOf(scoringEventObservers);
+    this.ontologyMapper = checkNotNull(ontologyMapper);
   }
 
-  private static void trueMain(String[] argv) throws IOException {
-    Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
-    log.info(params.dump());
+  public void go() throws IOException {
     final ImmutableSet<Symbol> docIDsToScore = ImmutableSet.copyOf(
         FileUtils.loadSymbolList(params.getExistingFile("docIDsToScore")));
     final ImmutableMap<Symbol, File> goldDocIDToFileMap = FileUtils.loadSymbolToFileMap(
@@ -159,13 +177,13 @@ public final class ScoreKBPAgainstERE {
     // so we need to keep references to them
     final ResponsesAndLinkingFromKBPExtractor responsesAndLinkingFromKBPExtractor =
         new ResponsesAndLinkingFromKBPExtractor(coreNLPProcessedRawDocs,
-            coreNLPXMLLoader, relaxUsingCORENLP);
+            coreNLPXMLLoader, relaxUsingCORENLP, ontologyMapper);
     final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor =
         new ResponsesAndLinkingFromEREExtractor(EREToKBPEventOntologyMapper.create2016Mapping());
 
     // this sets it up so that everything fed to input will be scored in various ways
     setupScoring(input, responsesAndLinkingFromKBPExtractor, responsesAndLinkingFromEREExtractor,
-        outputDir);
+        scoringEventObservers.values(), outputDir);
 
     // we want globally unique IDs here
     final ERELoader loader = ERELoader.builder().prefixDocIDToAllIDs(true).build();
@@ -224,6 +242,7 @@ public final class ScoreKBPAgainstERE {
       final InspectionNode<EvalPair<EREDocument, EREDocAndResponses>> input,
       final ResponsesAndLinkingFromKBPExtractor responsesAndLinkingFromKBPExtractor,
       final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor,
+      Iterable<? extends ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>> scoringEventObservers,
       final File outputDir) {
     final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
         inputAsResponsesAndLinking =
@@ -238,25 +257,45 @@ public final class ScoreKBPAgainstERE {
         transformed(filteredFor2016, RestrictLifeInjureToLifeDieEvents.INSTANCE);
 
     // set up for event argument scoring in 2015 style
-    eventArgumentScoringSetup(filteredForLifeDie, outputDir);
+    eventArgumentScoringSetup(filteredForLifeDie, scoringEventObservers, outputDir);
+
     // set up for linking scoring in 2015 style
     linkingScoringSetup(filteredForLifeDie, outputDir);
   }
 
   private static void eventArgumentScoringSetup(
       final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
-          inputAsResponsesAndLinking, final File outputDir) {
+          inputAsResponsesAndLinking,
+      Iterable<? extends ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>> scoringEventObservers,
+      final File outputDir) {
     final InspectorTreeNode<EvalPair<ImmutableSet<DocLevelEventArg>, ImmutableSet<DocLevelEventArg>>>
         inputAsSetsOfScoringTuples =
         transformBoth(inputAsResponsesAndLinking, ResponsesAndLinkingFunctions.args());
+    final InspectorTreeNode<EvalPair<ImmutableSet<DocLevelEventArg>, ImmutableSet<DocLevelEventArg>>>
+        inputAsSetsOfRealisNeutralizedTuples =
+        transformBoth(inputAsResponsesAndLinking, NeutralizeRealis.INSTANCE);
 
+    argScoringSetup(inputAsSetsOfScoringTuples,
+        ImmutableList.<ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>of(),
+        new File(outputDir, "withRealis"));
+    // we apply scoring observers only to the realis neutralized version
+    argScoringSetup(inputAsSetsOfRealisNeutralizedTuples,
+        scoringEventObservers, new File(outputDir, "noRealis"));
+  }
+
+  private static void argScoringSetup(
+      final InspectorTreeNode<EvalPair<ImmutableSet<DocLevelEventArg>, ImmutableSet<DocLevelEventArg>>> inputAsSetsOfScoringTuples,
+      final Iterable<? extends ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>> scoringEventObservers,
+      final File outputDir) {
     // require exact match between the system arguments and the key responses
     final InspectorTreeNode<ProvenancedAlignment<DocLevelEventArg, DocLevelEventArg, DocLevelEventArg, DocLevelEventArg>>
         alignmentNode = transformed(inputAsSetsOfScoringTuples, EXACT_MATCH_ALIGNER);
 
     // overall F score
-    final AggregateBinaryFScoresInspector<Object, Object> scoreAndWriteOverallFScore =
-        AggregateBinaryFScoresInspector.createOutputtingTo("aggregateF.txt", outputDir);
+    final AggregateBinaryFScoresInspector<DocLevelEventArg, DocLevelEventArg>
+        scoreAndWriteOverallFScore =
+        AggregateBinaryFScoresInspector.createWithScoringObservers("aggregateF.txt", outputDir,
+            scoringEventObservers);
     inspect(alignmentNode).with(scoreAndWriteOverallFScore);
 
     // log errors
@@ -329,6 +368,22 @@ public final class ScoreKBPAgainstERE {
             .equalTo(RestrictLifeInjureToLifeDieEvents.INSTANCE.LifeDie));
         return docLevelEventArg.withEventType(LifeInjure);
       }
+    }
+  }
+
+  private enum NeutralizeRealis
+      implements Function<ResponsesAndLinking, ImmutableSet<DocLevelEventArg>> {
+    INSTANCE;
+
+    static final Symbol NEUTRALIZED = Symbol.from("neutralized");
+
+    @Override
+    public ImmutableSet<DocLevelEventArg> apply(final ResponsesAndLinking input) {
+      final ImmutableSet.Builder<DocLevelEventArg> ret = ImmutableSet.builder();
+      for (final DocLevelEventArg arg : input.args()) {
+        ret.add(arg.withRealis(NEUTRALIZED));
+      }
+      return ret.build();
     }
   }
 
@@ -444,6 +499,10 @@ public final class ScoreKBPAgainstERE {
     // for tracking things from the answer key discarded due to not being entity mentions
     private final Multiset<String> allGoldArgs = HashMultiset.create();
     private final Multiset<String> discarded = HashMultiset.create();
+    private final Set<Symbol> unknownEventTypes = Sets.newHashSet();
+    private final Set<Symbol> unknownEventSubtypes = Sets.newHashSet();
+    private final Set<Symbol> unknownRoles = Sets.newHashSet();
+
     private final SimpleEventOntologyMapper mapper;
 
     private ResponsesAndLinkingFromEREExtractor(final SimpleEventOntologyMapper mapper) {
@@ -469,15 +528,15 @@ public final class ScoreKBPAgainstERE {
 
             boolean skip = false;
             if (!mapper.eventType(ereEventMentionType).isPresent()) {
-              log.debug("EventType {} is not known to the KBP ontology", ereEventMentionType);
+              unknownEventTypes.add(ereEventMentionType);
               skip = true;
             }
             if (!mapper.eventRole(ereArgumentRole).isPresent()) {
-              log.debug("EventRole {} is not known to the KBP ontology", ereArgumentRole);
+              unknownRoles.add(ereArgumentRole);
               skip = true;
             }
             if (!mapper.eventSubtype(ereEventMentionSubtype).isPresent()) {
-              log.debug("EventSubtype {} is not known to the KBP ontology", ereEventMentionSubtype);
+              unknownEventSubtypes.add(ereEventMentionSubtype);
               skip = true;
             }
             if (skip) {
@@ -510,13 +569,6 @@ public final class ScoreKBPAgainstERE {
       return ResponsesAndLinking.of(ret.build(), linking.build());
     }
 
-    /*
-    {EventMentionRealis,ArgumentRealis}=event argument realis
-    {Generic,*}=Generic
-    {X, True}=X
-    {Actual, False}=Other
-    {Other,False}=Other
-     */
     private ArgumentRealis getRealis(final String ERERealis, final LinkRealis linkRealis) {
       // generic event mention realis overrides everything
       if (ERERealis.equals(ERERealisEnum.generic.name())) {
@@ -550,6 +602,18 @@ public final class ScoreKBPAgainstERE {
               +allGoldArgs.count(errKey), errKey, discarded.count(errKey));
         }
       }
+      if (!unknownEventTypes.isEmpty()) {
+        log.info("The following ERE event types were ignored as outside the ontology: {}",
+            SymbolUtils.byStringOrdering().immutableSortedCopy(unknownEventTypes));
+      }
+      if (!unknownEventSubtypes.isEmpty()) {
+        log.info("The following ERE event subtypes were ignored as outside the ontology: {}",
+            SymbolUtils.byStringOrdering().immutableSortedCopy(unknownEventSubtypes));
+      }
+      if (!unknownRoles.isEmpty()) {
+        log.info("The following ERE event argument roles were ignored as outside the ontology: {}",
+            SymbolUtils.byStringOrdering().immutableSortedCopy(unknownRoles));
+      }
     }
   }
 
@@ -560,17 +624,21 @@ public final class ScoreKBPAgainstERE {
     // each system item which fails to align to any reference item gets put in its own
     // coreference class, numbered using this sequence
     private IntIDSequence alignmentFailureIDs = IntIDSequence.startingFrom(0);
-    private Multiset<String> mentionAlignmentFailures = HashMultiset.create();
+    private ImmutableSetMultimap.Builder<String, String> mentionAlignmentFailuresB =
+        ImmutableSetMultimap.builder();
     private Multiset<String> numResponses = HashMultiset.create();
     private final ImmutableMap<Symbol, File> ereMapping;
     private final CoreNLPXMLLoader coreNLPXMLLoader;
     private final boolean relaxUsingCORENLP;
+    private final EREToKBPEventOntologyMapper ontologyMapper;
 
     public ResponsesAndLinkingFromKBPExtractor(final Map<Symbol, File> ereMapping,
-        final CoreNLPXMLLoader coreNLPXMLLoader, final boolean relaxUsingCORENLP) {
+        final CoreNLPXMLLoader coreNLPXMLLoader, final boolean relaxUsingCORENLP,
+        final EREToKBPEventOntologyMapper ontologyMapper) {
       this.ereMapping = ImmutableMap.copyOf(ereMapping);
       this.coreNLPXMLLoader = coreNLPXMLLoader;
       this.relaxUsingCORENLP = relaxUsingCORENLP;
+      this.ontologyMapper = checkNotNull(ontologyMapper);
     }
 
     public ResponsesAndLinking apply(final EREDocAndResponses input) {
@@ -585,9 +653,9 @@ public final class ScoreKBPAgainstERE {
         coreNLPDoc = Optional.fromNullable(ereMapping.get(ereID)).isPresent() ? Optional
             .of(coreNLPXMLLoader.loadFrom(ereMapping.get(ereID)))
                                                                               : Optional.<CoreNLPDocument>absent();
-        ereAligner = EREAligner
-            .create(relaxUsingCORENLP, doc, coreNLPDoc,
-                EREToKBPEventOntologyMapper.create2016Mapping());
+        checkState(coreNLPDoc.isPresent() || !relaxUsingCORENLP, "Must have CoreNLP document "
+            + "if using Core NLP relaxation");
+        ereAligner = EREAligner.create(doc, coreNLPDoc, ontologyMapper);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -595,29 +663,43 @@ public final class ScoreKBPAgainstERE {
           ImmutableMap.builder();
 
       for (final Response response : responses) {
-        numResponses.add(errKey(response));
-        final Symbol realis = Symbol.from(response.realis().name());
+        final DocLevelEventArg res = resolveToERE(doc, ereAligner, response);
 
-        final Optional<ScoringCorefID> alignedCorefIDOpt = ereAligner.argumentForResponse(response);
-        // this increments the alignment failure ID regardless of success or failure, but
-        // we don't care
-        final ScoringCorefID alignedCorefID = alignedCorefIDOpt.or(
-            ScoringCorefID.of(ScoringEntityType.AlignmentFailure,
-                Integer.toString(alignmentFailureIDs.nextID())));
-
-        final DocLevelEventArg res = DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
-            .eventType(response.type()).eventArgumentType(response.role())
-            .corefID(alignedCorefID.globalID()).realis(realis).build();
         ret.add(res);
         responseToDocLevelArg.put(response, res);
 
-        // record alignment failures
-        if (!alignedCorefIDOpt.isPresent()) {
-          mentionAlignmentFailures.add(errKey(response));
-        }
+
       }
       return fromResponses(ImmutableSet.copyOf(input.responses()),
           responseToDocLevelArg.build(), input.linking());
+    }
+
+    private DocLevelEventArg resolveToERE(final EREDocument doc, final EREAligner ereAligner,
+        final Response response) {
+      numResponses.add(errKey(response));
+      final Symbol realis = Symbol.from(response.realis().name());
+
+      final Optional<ScoringCorefID> alignedCorefIDOpt = ereAligner.argumentForResponse(response);
+      if (!alignedCorefIDOpt.isPresent()) {
+        log.info("Alignment failed for {}", response);
+        mentionAlignmentFailuresB.put(errKey(response), response.toString());
+      } else if (alignedCorefIDOpt.get().scoringEntityType()
+          .equals(ScoringEntityType.InsufficientEntityLevel)) {
+        log.info("Insufficient entity level for {}", response);
+      }
+
+      // this increments the alignment failure ID regardless of success or failure, but
+      // we don't care
+      final ScoringCorefID alignedCorefID = alignedCorefIDOpt.or(
+          // in case of alignment failure, we make a pseudo-entity from the CAS offsets
+          // it will always be wrong, but will be consistent for the same extent appearing in
+          // different event roles
+          ScoringCorefID.of(ScoringEntityType.AlignmentFailure,
+              response.canonicalArgument().charOffsetSpan().asCharOffsetRange().toString()));
+
+      return DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
+          .eventType(response.type()).eventArgumentType(response.role())
+          .corefID(alignedCorefID.globalID()).realis(realis).build();
     }
 
     ResponsesAndLinking fromResponses(final ImmutableSet<Response> originalResponses,
@@ -646,14 +728,61 @@ public final class ScoreKBPAgainstERE {
     }
 
     public void finish() {
+      final ImmutableSetMultimap<String, String> mentionAlignmentFailures =
+          mentionAlignmentFailuresB.build();
       log.info(
           "Of {} system responses, got {} mention alignment failures",
           numResponses.size(), mentionAlignmentFailures.size());
       for (final String errKey : numResponses.elementSet()) {
-        if (mentionAlignmentFailures.count(errKey) > 0) {
-          log.info("Of {} {} responses, {} mention alignment failures",
-              +numResponses.count(errKey), errKey, mentionAlignmentFailures.count(errKey));
+        final ImmutableSet<String> failuresForKey = mentionAlignmentFailures.get(errKey);
+        if (failuresForKey != null) {
+          log.info("Of {} {} responses, {} mention alignment failures:\n{}",
+              +numResponses.count(errKey), errKey, failuresForKey.size(),
+              StringUtils.unixNewlineJoiner().join(failuresForKey));
         }
+      }
+    }
+  }
+
+  // code for running as a standalone executable
+  public static void main(String[] argv) {
+    // we wrap the main method in this way to
+    // ensure a non-zero return value on failure
+    try {
+      trueMain(argv);
+    } catch (Exception e) {
+      e.printStackTrace();
+      System.exit(1);
+    }
+  }
+
+  public static void trueMain(String[] argv) throws IOException {
+    final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
+    Guice.createInjector(new ScoreKBPAgainstERE.GuiceModule(params))
+        .getInstance(ScoreKBPAgainstERE.class).go();
+  }
+
+
+  // sets up a plugin architecture for additional scoring observers
+  public static final class GuiceModule extends AbstractModule {
+    private final Parameters params;
+
+    GuiceModule(final Parameters params) {
+      this.params = checkNotNull(params);
+    }
+
+    @Override
+    protected void configure() {
+      bind(Parameters.class).toInstance(params);
+      // declare that people can provide scoring observer plugins, even though none are
+      // provided by default
+      MapBinder.newMapBinder(binder(), TypeLiteral.get(String.class),
+          new TypeLiteral<ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>(){});
+      try {
+        bind(EREToKBPEventOntologyMapper.class)
+            .toInstance(EREToKBPEventOntologyMapper.create2016Mapping());
+      } catch (IOException ioe) {
+        throw new TACKBPEALException(ioe);
       }
     }
   }

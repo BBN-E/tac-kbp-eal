@@ -61,13 +61,6 @@ public interface CorpusQueryExecutor2016 {
 }
 
 /**
- * The type of a canonical argument string
- */
-enum CASType {
-  NAME, NOMINAL, PRONOUN;
-}
-
-/**
  * The "canonical argument string" for a query entry point. These are derived from the entities in
  * the ERE associated with the query entry points.
  */
