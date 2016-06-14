@@ -24,6 +24,7 @@ import com.bbn.nlp.corpora.ere.EREFillerArgument;
 import com.bbn.nlp.corpora.ere.ERESpan;
 
 import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
@@ -117,43 +118,33 @@ final class EREAligner {
       Optional<CoreNLPDocument> coreNLPDoc) {
     final ImmutableList.Builder<ResponseToEREAlignmentRule> ret = ImmutableList.builder();
 
-    final Function<Response, OffsetRange<CharOffset>> responseExtractor = CasExtractor.INSTANCE;
-    final Function<Response, OffsetRange<CharOffset>> responseHeadExtractor;
+    final Function<Response, OffsetRange<CharOffset>> responseComputdHead;
+    final Function<CandidateAlignmentTarget, OffsetRange<CharOffset>> ereComputedHead;
     // if a CoreNLP analysis is provided we will use it to find the heads of response spans
     if (coreNLPDoc.isPresent()) {
-      responseHeadExtractor = CoreNLPHeadExtractor.of(coreNLPDoc.get(), responseExtractor);
+      final CoreNLPHeadExtractor coreNLPHeadExtractor = CoreNLPHeadExtractor.of(coreNLPDoc.get());
+      responseComputdHead = Functions.compose(coreNLPHeadExtractor, CasExtractor.INSTANCE);
+      ereComputedHead = Functions.compose(coreNLPHeadExtractor, ERE_HEAD_IF_DECLARED);
     } else {
-      responseHeadExtractor = responseExtractor;
+      responseComputdHead = CasExtractor.INSTANCE;
+      ereComputedHead = ERE_HEAD_IF_DECLARED;
     }
 
-    // these are atoms out of which more complex rules will be built
-    final SpansMatchExactly responseMatchesEREExtentExactly =
-        new SpansMatchExactly(responseExtractor, offsets());
-    final SpansMatchExactly responseHeadMatchesEREExtentExactly =
-        new SpansMatchExactly(responseHeadExtractor, offsets());
-    final MappedRolesMatch mappedRolesMatch = MappedRolesMatch.builder().build();
-    final SpansMatchExactly responseHeadMatchesEREHeadExactly =
-        new SpansMatchExactly(responseHeadExtractor, ereHeadIfPresent);
-    final SpansMatchExactly responseMatchesEREHeadExactly =
-        new SpansMatchExactly(responseExtractor, ereHeadIfPresent);
-    final ContainmentSpanChecker alignByContainment =
-        new ContainmentSpanChecker(responseExtractor, responseHeadExtractor);
-
     ret.addAll(ImmutableList.of(
-        // first search for matches subject to a requirement that the response role
-        // match the ERE argument role, to be generous
-        And.of(responseMatchesEREExtentExactly, mappedRolesMatch),
-        And.of(responseHeadMatchesEREHeadExactly, mappedRolesMatch),
-        And.of(responseHeadMatchesEREExtentExactly, mappedRolesMatch),
-        And.of(responseMatchesEREHeadExactly, mappedRolesMatch),
-        // then do the same search without that restriction
-        responseMatchesEREExtentExactly,
-        responseHeadMatchesEREHeadExactly,
-        responseHeadMatchesEREExtentExactly,
-        responseMatchesEREHeadExactly,
+        // response CAS matches ERE extent exactly
+        new SpansMatchExactly(CasExtractor.INSTANCE, offsets()),
+        // response CAS head matches ERE extent exactly
+        new SpansMatchExactly(responseComputdHead, offsets()),
+        // response CAS matches ERE declared head exactly
+        new SpansMatchExactly(CasExtractor.INSTANCE, ERE_HEAD_IF_DECLARED),
+        // response CAS head matches ERE declared head exactly
+        new SpansMatchExactly(responseComputdHead, ERE_HEAD_IF_DECLARED),
+        // response CAS matches ERE computed head exactly
+        new SpansMatchExactly(CasExtractor.INSTANCE, ereComputedHead),
+        // response CAS head matches ERE computed head exactly
+        new SpansMatchExactly(responseComputdHead, ereComputedHead),
         // finally we do a more aggressive alignment attempt by containment
-        And.of(alignByContainment, mappedRolesMatch),
-        alignByContainment
+        new ContainmentSpanChecker(CasExtractor.INSTANCE, responseComputdHead)
     ));
     return ret.build();
   }
@@ -257,7 +248,7 @@ final class EREAligner {
 
   // falling back to the extent won't harm us since we'll always run this after the ereExtentExtractor
   private static final Function<CandidateAlignmentTarget, OffsetRange<CharOffset>>
-      ereHeadIfPresent =
+      ERE_HEAD_IF_DECLARED =
       new Function<CandidateAlignmentTarget, OffsetRange<CharOffset>>() {
         @Override
         public OffsetRange<CharOffset> apply(final CandidateAlignmentTarget candidate) {
@@ -278,16 +269,12 @@ final class EREAligner {
   @TextGroupPackageImmutable
   @Value.Immutable
   static abstract class _CoreNLPHeadExtractor
-      implements Function<Response, OffsetRange<CharOffset>> {
+      implements Function<OffsetRange<CharOffset>, OffsetRange<CharOffset>> {
 
     @Value.Parameter
     public abstract CoreNLPDocument coreNLPDoc();
 
-    @Value.Parameter
-    public abstract Function<Response, OffsetRange<CharOffset>> rangeFinder();
-
-    public OffsetRange<CharOffset> apply(final Response response) {
-      final OffsetRange<CharOffset> off = checkNotNull(rangeFinder().apply(response));
+    public OffsetRange<CharOffset> apply(final OffsetRange<CharOffset> off) {
       final Optional<CoreNLPSentence> sent = coreNLPDoc().firstSentenceContaining(off);
       if (sent.isPresent()) {
         final Optional<CoreNLPParseNode> node = sent.get().nodeForOffsets(off);
@@ -333,6 +320,12 @@ final class EREAligner {
       return checkNotNull(responseSpanExtractor.apply(r))
           .equals(ereArgSpanExtractor.apply(candidate));
     }
+
+    @Override
+    public String toString() {
+      return "SpansMatchExactly(" + responseSpanExtractor + ", " + ereArgSpanExtractor + ")";
+    }
+
   }
 
   private static final class ContainmentSpanChecker implements
@@ -362,6 +355,11 @@ final class EREAligner {
       }
       return false;
     }
+
+    @Override
+    public String toString() {
+      return "ContainmentChecker(" + responseSpanExtractor + "," + responseHeadExtractor + ")";
+    }
   }
 
   @TextGroupPackageImmutable
@@ -377,6 +375,11 @@ final class EREAligner {
     @Override
     public final boolean aligns(final Response r, final CandidateAlignmentTarget ea) {
       return first().aligns(r, ea) && second().aligns(r, ea);
+    }
+
+    @Override
+    public String toString() {
+      return "And(" + first() + ", " + second() + ")";
     }
   }
 

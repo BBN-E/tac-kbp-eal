@@ -660,36 +660,43 @@ public final class ScoreKBPAgainstERE {
           ImmutableMap.builder();
 
       for (final Response response : responses) {
-        numResponses.add(errKey(response));
-        final Symbol realis = Symbol.from(response.realis().name());
+        final DocLevelEventArg res = resolveToERE(doc, ereAligner, response);
 
-        final Optional<ScoringCorefID> alignedCorefIDOpt = ereAligner.argumentForResponse(response);
-        if (!alignedCorefIDOpt.isPresent()) {
-          log.info("Alignment failed for {}", response);
-        } else if (alignedCorefIDOpt.get().scoringEntityType()
-            .equals(ScoringEntityType.InsufficientEntityLevel)) {
-          log.info("Insufficient entity level for {}", response);
-        }
-
-        // this increments the alignment failure ID regardless of success or failure, but
-        // we don't care
-        final ScoringCorefID alignedCorefID = alignedCorefIDOpt.or(
-            ScoringCorefID.of(ScoringEntityType.AlignmentFailure,
-                Integer.toString(alignmentFailureIDs.nextID())));
-
-        final DocLevelEventArg res = DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
-            .eventType(response.type()).eventArgumentType(response.role())
-            .corefID(alignedCorefID.globalID()).realis(realis).build();
         ret.add(res);
         responseToDocLevelArg.put(response, res);
 
-        // record alignment failures
-        if (!alignedCorefIDOpt.isPresent()) {
-          mentionAlignmentFailuresB.put(errKey(response), response.toString());
-        }
+
       }
       return fromResponses(ImmutableSet.copyOf(input.responses()),
           responseToDocLevelArg.build(), input.linking());
+    }
+
+    private DocLevelEventArg resolveToERE(final EREDocument doc, final EREAligner ereAligner,
+        final Response response) {
+      numResponses.add(errKey(response));
+      final Symbol realis = Symbol.from(response.realis().name());
+
+      final Optional<ScoringCorefID> alignedCorefIDOpt = ereAligner.argumentForResponse(response);
+      if (!alignedCorefIDOpt.isPresent()) {
+        log.info("Alignment failed for {}", response);
+        mentionAlignmentFailuresB.put(errKey(response), response.toString());
+      } else if (alignedCorefIDOpt.get().scoringEntityType()
+          .equals(ScoringEntityType.InsufficientEntityLevel)) {
+        log.info("Insufficient entity level for {}", response);
+      }
+
+      // this increments the alignment failure ID regardless of success or failure, but
+      // we don't care
+      final ScoringCorefID alignedCorefID = alignedCorefIDOpt.or(
+          // in case of alignment failure, we make a pseudo-entity from the CAS offsets
+          // it will always be wrong, but will be consistent for the same extent appearing in
+          // different event roles
+          ScoringCorefID.of(ScoringEntityType.AlignmentFailure,
+              response.canonicalArgument().charOffsetSpan().asCharOffsetRange().toString()));
+
+      return DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
+          .eventType(response.type()).eventArgumentType(response.role())
+          .corefID(alignedCorefID.globalID()).realis(realis).build();
     }
 
     ResponsesAndLinking fromResponses(final ImmutableSet<Response> originalResponses,
