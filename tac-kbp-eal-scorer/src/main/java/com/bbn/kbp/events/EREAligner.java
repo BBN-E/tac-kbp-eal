@@ -165,33 +165,37 @@ final class EREAligner {
             Symbol.from(ereEventMention.getType()));
         final Optional<Symbol> mappedEventSubType = ontologyMapper.eventSubtype(
             Symbol.from(ereEventMention.getSubtype()));
-        if (mappedEventType.isPresent() && mappedEventSubType.isPresent()) {
-          // there may be events in the ERE outside our ontology. This is okay.
-          for (final EREArgument ereArgument : ereEventMention.getArguments()) {
-            final Optional<Symbol> mappedRole =
-                ontologyMapper.eventRole(Symbol.from(ereArgument.getRole()));
-            if (mappedRole.isPresent()) {
-              // there may be roles outside our ontology. This is also okay.
-              final MappedEventTypeRole mappedTypeRole = MappedEventTypeRole.of(
-                  Symbol.from(mappedEventType.get().asString()
-                      + "." + mappedEventSubType.get().asString()),
-                  mappedRole.get());
-              if (ereArgument instanceof EREEntityArgument) {
-                final Optional<EREEntity> containingEntity =
-                    ereDoc.getEntityContaining(((EREEntityArgument) ereArgument).entityMention());
-                if (containingEntity.isPresent()) {
-                  entitiesToRolesPlayedB.put(containingEntity.get(), mappedTypeRole);
-                } else {
-                  throw new TACKBPEALException("Entity filler without entity: " + ereArgument);
-                }
-              } else if (ereArgument instanceof EREFillerArgument) {
-                fillersToRolesPlayedB
-                    .put(((EREFillerArgument) ereArgument).filler(), mappedTypeRole);
-              } else {
-                throw new TACKBPEALException(
-                    "Unknown ERE event argument type " + ereArgument.getClass());
-              }
+        if (!mappedEventType.isPresent() || !mappedEventSubType.isPresent()) {
+          continue;
+        }
+
+        // there may be events in the ERE outside our ontology. This is okay.
+        for (final EREArgument ereArgument : ereEventMention.getArguments()) {
+          final Optional<Symbol> mappedRole =
+              ontologyMapper.eventRole(Symbol.from(ereArgument.getRole()));
+          if (!mappedRole.isPresent()) {
+            continue;
+          }
+
+          // there may be roles outside our ontology. This is also okay.
+          final MappedEventTypeRole mappedTypeRole = MappedEventTypeRole.of(
+              Symbol.from(mappedEventType.get().asString()
+                  + "." + mappedEventSubType.get().asString()),
+              mappedRole.get());
+          if (ereArgument instanceof EREEntityArgument) {
+            final Optional<EREEntity> containingEntity =
+                ereDoc.getEntityContaining(((EREEntityArgument) ereArgument).entityMention());
+            if (containingEntity.isPresent()) {
+              entitiesToRolesPlayedB.put(containingEntity.get(), mappedTypeRole);
+            } else {
+              throw new TACKBPEALException("Entity filler without entity: " + ereArgument);
             }
+          } else if (ereArgument instanceof EREFillerArgument) {
+            fillersToRolesPlayedB
+                .put(((EREFillerArgument) ereArgument).filler(), mappedTypeRole);
+          } else {
+            throw new TACKBPEALException(
+                "Unknown ERE event argument type " + ereArgument.getClass());
           }
         }
       }
