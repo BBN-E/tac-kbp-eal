@@ -415,6 +415,11 @@ abstract class _MappedEventTypeRole {
     checkArgument(!type().asString().isEmpty());
     checkArgument(!role().asString().isEmpty());
   }
+
+  @Override
+  public String toString() {
+    return type().asString() + "/" + role().asString();
+  }
 }
 
 @Value.Immutable
@@ -422,30 +427,13 @@ abstract class _MappedEventTypeRole {
 @Functional
 abstract class _CandidateAlignmentTarget {
 
-  abstract ScoringCorefID id();
-
   abstract ImmutableSet<MappedEventTypeRole> typeRolesSeen();
-
+  abstract ScoringCorefID id();
   abstract OffsetRange<CharOffset> offsets();
-
   abstract Optional<OffsetRange<CharOffset>> headOffsets();
 }
 
 enum AlignmentFailureCause {
   NoAlignment,
   InsufficientMentionLevel
-}
-
-@Value.Immutable
-@TextGroupPackageImmutable
-abstract class _EREAlignerReturn {
-
-  abstract Optional<ScoringCorefID> scoringCorefID();
-
-  abstract Optional<AlignmentFailureCause> failureCause();
-
-  @Value.Check
-  protected void check() {
-    checkArgument(scoringCorefID().isPresent() != failureCause().isPresent());
-  }
 }

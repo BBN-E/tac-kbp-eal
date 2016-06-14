@@ -31,4 +31,9 @@ abstract class _ScoringCorefID {
   protected void check() {
     checkArgument(!withinTypeID().isEmpty());
   }
+
+  @Override
+  public String toString() {
+    return globalID();
+  }
 }
