@@ -77,6 +77,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -497,6 +498,10 @@ public final class ScoreKBPAgainstERE {
     // for tracking things from the answer key discarded due to not being entity mentions
     private final Multiset<String> allGoldArgs = HashMultiset.create();
     private final Multiset<String> discarded = HashMultiset.create();
+    private final Set<Symbol> unknownEventTypes = Sets.newHashSet();
+    private final Set<Symbol> unknownEventSubtypes = Sets.newHashSet();
+    private final Set<Symbol> unknownRoles = Sets.newHashSet();
+
     private final SimpleEventOntologyMapper mapper;
 
     private ResponsesAndLinkingFromEREExtractor(final SimpleEventOntologyMapper mapper) {
@@ -522,15 +527,15 @@ public final class ScoreKBPAgainstERE {
 
             boolean skip = false;
             if (!mapper.eventType(ereEventMentionType).isPresent()) {
-              log.debug("EventType {} is not known to the KBP ontology", ereEventMentionType);
+              unknownEventTypes.add(ereEventMentionType);
               skip = true;
             }
             if (!mapper.eventRole(ereArgumentRole).isPresent()) {
-              log.debug("EventRole {} is not known to the KBP ontology", ereArgumentRole);
+              unknownRoles.add(ereArgumentRole);
               skip = true;
             }
             if (!mapper.eventSubtype(ereEventMentionSubtype).isPresent()) {
-              log.debug("EventSubtype {} is not known to the KBP ontology", ereEventMentionSubtype);
+              unknownEventSubtypes.add(ereEventMentionSubtype);
               skip = true;
             }
             if (skip) {
@@ -563,13 +568,6 @@ public final class ScoreKBPAgainstERE {
       return ResponsesAndLinking.of(ret.build(), linking.build());
     }
 
-    /*
-    {EventMentionRealis,ArgumentRealis}=event argument realis
-    {Generic,*}=Generic
-    {X, True}=X
-    {Actual, False}=Other
-    {Other,False}=Other
-     */
     private ArgumentRealis getRealis(final String ERERealis, final LinkRealis linkRealis) {
       // generic event mention realis overrides everything
       if (ERERealis.equals(ERERealisEnum.generic.name())) {
@@ -602,6 +600,18 @@ public final class ScoreKBPAgainstERE {
           log.info("Of {} gold {} arguments, {} discarded ",
               +allGoldArgs.count(errKey), errKey, discarded.count(errKey));
         }
+      }
+      if (!unknownEventTypes.isEmpty()) {
+        log.info("The following ERE event types were ignored as outside the ontology: {}",
+            SymbolUtils.byStringOrdering().immutableSortedCopy(unknownEventTypes));
+      }
+      if (!unknownEventSubtypes.isEmpty()) {
+        log.info("The following ERE event subtypes were ignored as outside the ontology: {}",
+            SymbolUtils.byStringOrdering().immutableSortedCopy(unknownEventSubtypes));
+      }
+      if (!unknownRoles.isEmpty()) {
+        log.info("The following ERE event argument roles were ignored as outside the ontology: {}",
+            SymbolUtils.byStringOrdering().immutableSortedCopy(unknownRoles));
       }
     }
   }
