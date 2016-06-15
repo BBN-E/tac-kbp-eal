@@ -412,8 +412,7 @@ public final class ScoreKBPAgainstERE {
 
     @Override
     public DocLevelEventArg apply(final DocLevelEventArg docLevelEventArg) {
-      DocLevelEventArg ret =  docLevelEventArg.withRealis(NEUTRALIZED);
-      return ret;
+      return docLevelEventArg.withRealis(NEUTRALIZED);
     }
   }
 
