@@ -122,7 +122,7 @@ public final class ScoreKBPAgainstERE {
   // left over from pre-Guice version
   private final Parameters params;
   private final ImmutableMap<String, ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>
-    scoringEventObservers;
+      scoringEventObservers;
 
   @Inject
   ScoreKBPAgainstERE(
@@ -322,15 +322,32 @@ public final class ScoreKBPAgainstERE {
     final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredForRealis =
         transformBoth(inputAsResponsesAndLinking,
             ResponsesAndLinking.filterFunction(REALIS_ALLOWED_FOR_LINKING));
-    final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
-        linkingNode = transformBoth(filteredForRealis, ResponsesAndLinkingFunctions.linking());
+    // withRealis
+    {
+      final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
+          linkingNode = transformBoth(filteredForRealis, ResponsesAndLinkingFunctions.linking());
 
-    // we throw out any system responses not found in the key before scoring linking
-    final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
-        filteredNode = transformed(linkingNode, RestrictToLinking.INSTANCE);
-    final LinkingInspector linkingInspector =
-        LinkingInspector.createOutputtingTo(outputDir);
-    inspect(filteredNode).with(linkingInspector);
+      // we throw out any system responses not found in the key before scoring linking
+      final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
+          filteredNode = transformed(linkingNode, RestrictToLinking.INSTANCE);
+      final LinkingInspector linkingInspector =
+          LinkingInspector.createOutputtingTo(new File(outputDir, "withRealis"));
+      inspect(filteredNode).with(linkingInspector);
+    }
+    // without realis
+    {
+      final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
+          neutralizedRealis =
+          transformBoth(filteredForRealis, transformArgs(LinkingRealisNeutralizer.INSTANCE));
+      final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
+          linkingNode = transformBoth(neutralizedRealis, ResponsesAndLinkingFunctions.linking());
+      // we throw out any system responses not found in the key before scoring linking, after neutralizing realis
+      final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
+          filteredNode = transformed(linkingNode, RestrictToLinking.INSTANCE);
+      final LinkingInspector linkingInspector =
+          LinkingInspector.createOutputtingTo(new File(outputDir, "noRealis"));
+      inspect(filteredNode).with(linkingInspector);
+    }
   }
 
   private static final Predicate<_DocLevelEventArg> ARG_TYPE_IS_ALLOWED_FOR_2016 =
@@ -373,6 +390,30 @@ public final class ScoreKBPAgainstERE {
             .equalTo(RestrictLifeInjureToLifeDieEvents.INSTANCE.LifeDie));
         return docLevelEventArg.withEventType(LifeInjure);
       }
+    }
+  }
+
+
+  private static Function<? super ResponsesAndLinking, ResponsesAndLinking> transformArgs(
+      final Function<? super DocLevelEventArg, DocLevelEventArg> transformer) {
+    return new Function<ResponsesAndLinking, ResponsesAndLinking>() {
+      @Override
+      public ResponsesAndLinking apply(final ResponsesAndLinking responsesAndLinking) {
+        return responsesAndLinking.transform(transformer);
+      }
+    };
+  }
+
+  private enum LinkingRealisNeutralizer
+      implements Function<DocLevelEventArg, DocLevelEventArg> {
+    INSTANCE;
+
+    static final Symbol NEUTRALIZED = Symbol.from("neutralized");
+
+    @Override
+    public DocLevelEventArg apply(final DocLevelEventArg docLevelEventArg) {
+      DocLevelEventArg ret =  docLevelEventArg.withRealis(NEUTRALIZED);
+      return ret;
     }
   }
 
@@ -834,6 +875,7 @@ public final class ScoreKBPAgainstERE {
 
   // sets up a plugin architecture for additional scoring observers
   public static final class GuiceModule extends AbstractModule {
+
     private final Parameters params;
 
     GuiceModule(final Parameters params) {
@@ -846,7 +888,8 @@ public final class ScoreKBPAgainstERE {
       // declare that people can provide scoring observer plugins, even though none are
       // provided by default
       MapBinder.newMapBinder(binder(), TypeLiteral.get(String.class),
-          new TypeLiteral<ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>(){});
+          new TypeLiteral<ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>() {
+          });
       try {
         bind(EREToKBPEventOntologyMapper.class)
             .toInstance(EREToKBPEventOntologyMapper.create2016Mapping());
@@ -877,6 +920,12 @@ abstract class _ResponsesAndLinking {
     return ResponsesAndLinking.of(
         Iterables.filter(args(), predicate),
         linking().filterArguments(predicate));
+  }
+
+  public final ResponsesAndLinking transform(
+      final Function<? super DocLevelEventArg, DocLevelEventArg> transformer) {
+    return ResponsesAndLinking
+        .of(Iterables.transform(args(), transformer), linking().transformArguments(transformer));
   }
 
   static final Function<ResponsesAndLinking, ResponsesAndLinking> filterFunction(

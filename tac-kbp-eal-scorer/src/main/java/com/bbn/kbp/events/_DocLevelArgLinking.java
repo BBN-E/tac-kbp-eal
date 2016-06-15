@@ -3,6 +3,7 @@ package com.bbn.kbp.events;
 import com.bbn.bue.common.TextGroupPackageImmutable;
 import com.bbn.bue.common.symbols.Symbol;
 
+import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableSet;
@@ -15,8 +16,10 @@ import java.util.Iterator;
 @Value.Immutable
 @TextGroupPackageImmutable
 public abstract class _DocLevelArgLinking implements Iterable<ScoringEventFrame> {
+
   @Value.Parameter
   public abstract Symbol docID();
+
   @Value.Parameter
   public abstract ImmutableSet<ScoringEventFrame> eventFrames();
 
@@ -35,6 +38,21 @@ public abstract class _DocLevelArgLinking implements Iterable<ScoringEventFrame>
       if (!filteredFrame.isEmpty()) {
         ret.addEventFrames(ScoringEventFrame.of(filteredFrame));
       }
+    }
+    return ret.build();
+  }
+
+  /**
+   * May collapse DocLevelEventArgs as an affect of the transformer
+   */
+  public final DocLevelArgLinking transformArguments(
+      final Function<? super DocLevelEventArg, DocLevelEventArg> transformer) {
+    final DocLevelArgLinking.Builder ret = DocLevelArgLinking.builder();
+    ret.docID(docID());
+    for (final ScoringEventFrame eventFrame : eventFrames()) {
+      final ImmutableSet<DocLevelEventArg> transformedFrame =
+          FluentIterable.from(eventFrame.arguments()).transform(transformer).toSet();
+      ret.addEventFrames(ScoringEventFrame.of(transformedFrame));
     }
     return ret.build();
   }
