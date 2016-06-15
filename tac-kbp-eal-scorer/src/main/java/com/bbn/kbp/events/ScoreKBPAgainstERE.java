@@ -322,15 +322,32 @@ public final class ScoreKBPAgainstERE {
     final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredForRealis =
         transformBoth(inputAsResponsesAndLinking,
             ResponsesAndLinking.filterFunction(REALIS_ALLOWED_FOR_LINKING));
-    final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
-        linkingNode = transformBoth(filteredForRealis, ResponsesAndLinkingFunctions.linking());
+    // withRealis
+    {
+      final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
+          linkingNode = transformBoth(filteredForRealis, ResponsesAndLinkingFunctions.linking());
 
-    // we throw out any system responses not found in the key before scoring linking
-    final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
-        filteredNode = transformed(linkingNode, RestrictToLinking.INSTANCE);
-    final LinkingInspector linkingInspector =
-        LinkingInspector.createOutputtingTo(outputDir);
-    inspect(filteredNode).with(linkingInspector);
+      // we throw out any system responses not found in the key before scoring linking
+      final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
+          filteredNode = transformed(linkingNode, RestrictToLinking.INSTANCE);
+      final LinkingInspector linkingInspector =
+          LinkingInspector.createOutputtingTo(new File(outputDir, "withRealis"));
+      inspect(filteredNode).with(linkingInspector);
+    }
+    // without realis
+    {
+      final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
+          neutralizedRealis =
+          transformBoth(filteredForRealis, transformArgs(LinkingRealisNeutralizer.INSTANCE));
+      final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
+          linkingNode = transformBoth(neutralizedRealis, ResponsesAndLinkingFunctions.linking());
+      // we throw out any system responses not found in the key before scoring linking, after neutralizing realis
+      final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
+          filteredNode = transformed(linkingNode, RestrictToLinking.INSTANCE);
+      final LinkingInspector linkingInspector =
+          LinkingInspector.createOutputtingTo(new File(outputDir, "noRealis"));
+      inspect(filteredNode).with(linkingInspector);
+    }
   }
 
   private static final Predicate<_DocLevelEventArg> ARG_TYPE_IS_ALLOWED_FOR_2016 =
