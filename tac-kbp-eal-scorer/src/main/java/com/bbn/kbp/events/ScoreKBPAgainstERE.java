@@ -122,7 +122,7 @@ public final class ScoreKBPAgainstERE {
   // left over from pre-Guice version
   private final Parameters params;
   private final ImmutableMap<String, ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>
-    scoringEventObservers;
+      scoringEventObservers;
 
   @Inject
   ScoreKBPAgainstERE(
@@ -875,6 +875,7 @@ public final class ScoreKBPAgainstERE {
 
   // sets up a plugin architecture for additional scoring observers
   public static final class GuiceModule extends AbstractModule {
+
     private final Parameters params;
 
     GuiceModule(final Parameters params) {
@@ -887,7 +888,8 @@ public final class ScoreKBPAgainstERE {
       // declare that people can provide scoring observer plugins, even though none are
       // provided by default
       MapBinder.newMapBinder(binder(), TypeLiteral.get(String.class),
-          new TypeLiteral<ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>(){});
+          new TypeLiteral<ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>() {
+          });
       try {
         bind(EREToKBPEventOntologyMapper.class)
             .toInstance(EREToKBPEventOntologyMapper.create2016Mapping());
