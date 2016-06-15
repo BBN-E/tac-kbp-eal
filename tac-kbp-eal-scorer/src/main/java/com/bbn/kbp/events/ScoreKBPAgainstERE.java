@@ -500,8 +500,11 @@ public final class ScoreKBPAgainstERE {
       final String scorePattern = "TP: %d, FP: %d, Score: %f\n";
       // see guidelines section 7.3.1.1.4 for aggregating rules:
       // sum over per document contributions, divide by total number of TRFRs in the answer key
-      final String scoreString = String.format(scorePattern, aggregateTPs, aggregateFPs,
-          100*scoreAggregator/(0.0 + aggregateFNs + aggregateTPs));
+      // Math.max is to skip division by zero errors.
+      final double overAllArgScore =
+          100 * scoreAggregator / Math.max(0.0 + aggregateFNs + aggregateTPs, 1.0);
+      final String scoreString =
+          String.format(scorePattern, aggregateTPs, aggregateFPs, overAllArgScore);
       Files.asCharSink(new File(outputDir, "argScores.txt"), Charsets.UTF_8).write(scoreString);
       final ImmutableMap<Symbol, Double> scores = this.scores.build();
       final ImmutableMap<Symbol, Integer> falsePositives = this.falsePositives.build();
@@ -511,12 +514,13 @@ public final class ScoreKBPAgainstERE {
         final File docDir = new File(outputDir, docid.asString());
         docDir.mkdirs();
         final File docScore = new File(docDir, "argScores.txt");
-        final double normalizer = truePositives.get(docid) + falseNegatives.get(docid);
+        // avoid dividing by zero
+        final double normalizer = Math.max(truePositives.get(docid) + falseNegatives.get(docid), 1);
         // see guidelines referenced above
         // pretends that the corpus is a single document
         Files.asCharSink(docScore, Charsets.UTF_8).write(String
             .format(scorePattern, truePositives.get(docid), falsePositives.get(docid),
-                100*scores.get(docid)/normalizer));
+                100 * scores.get(docid) / normalizer));
       }
     }
   }
