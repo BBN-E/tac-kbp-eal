@@ -376,6 +376,30 @@ public final class ScoreKBPAgainstERE {
     }
   }
 
+
+  private static Function<? super ResponsesAndLinking, ResponsesAndLinking> transformArgs(
+      final Function<? super DocLevelEventArg, DocLevelEventArg> transformer) {
+    return new Function<ResponsesAndLinking, ResponsesAndLinking>() {
+      @Override
+      public ResponsesAndLinking apply(final ResponsesAndLinking responsesAndLinking) {
+        return responsesAndLinking.transform(transformer);
+      }
+    };
+  }
+
+  private enum LinkingRealisNeutralizer
+      implements Function<DocLevelEventArg, DocLevelEventArg> {
+    INSTANCE;
+
+    static final Symbol NEUTRALIZED = Symbol.from("neutralized");
+
+    @Override
+    public DocLevelEventArg apply(final DocLevelEventArg docLevelEventArg) {
+      DocLevelEventArg ret =  docLevelEventArg.withRealis(NEUTRALIZED);
+      return ret;
+    }
+  }
+
   private enum NeutralizeRealis
       implements Function<ResponsesAndLinking, ImmutableSet<DocLevelEventArg>> {
     INSTANCE;
@@ -877,6 +901,12 @@ abstract class _ResponsesAndLinking {
     return ResponsesAndLinking.of(
         Iterables.filter(args(), predicate),
         linking().filterArguments(predicate));
+  }
+
+  public final ResponsesAndLinking transform(
+      final Function<? super DocLevelEventArg, DocLevelEventArg> transformer) {
+    return ResponsesAndLinking
+        .of(Iterables.transform(args(), transformer), linking().transformArguments(transformer));
   }
 
   static final Function<ResponsesAndLinking, ResponsesAndLinking> filterFunction(
