@@ -412,8 +412,7 @@ public final class ScoreKBPAgainstERE {
 
     @Override
     public DocLevelEventArg apply(final DocLevelEventArg docLevelEventArg) {
-      DocLevelEventArg ret =  docLevelEventArg.withRealis(NEUTRALIZED);
-      return ret;
+      return docLevelEventArg.withRealis(NEUTRALIZED);
     }
   }
 
@@ -455,9 +454,11 @@ public final class ScoreKBPAgainstERE {
     private double scoreAggregator = 0.0;
     private int aggregateTPs = 0;
     private int aggregateFPs = 0;
+    private int aggregateFNs = 0;
 
     final ImmutableMap.Builder<Symbol, Integer> truePositives = ImmutableMap.builder();
     final ImmutableMap.Builder<Symbol, Integer> falsePositives = ImmutableMap.builder();
+    final ImmutableMap.Builder<Symbol, Integer> falseNegatives = ImmutableMap.builder();
     final ImmutableMap.Builder<Symbol, Double> scores = ImmutableMap.builder();
 
     private ArgumentScoringInspector(final File outputDir) {
@@ -483,29 +484,43 @@ public final class ScoreKBPAgainstERE {
       this.aggregateTPs += docTPs;
       int docFPs = evalPair.leftUnaligned().size();
       this.aggregateFPs += docFPs;
-      double score = docTPs - beta * docFPs;
+      // scores are clipped at 0.
+      double score = Math.max(docTPs - beta * docFPs, 0);
+      int docFNs = evalPair.rightUnaligned().size();
+      aggregateFNs += docFNs;
       scoreAggregator += score;
       truePositives.put(docid, docTPs);
       falsePositives.put(docid, docFPs);
+      falseNegatives.put(docid, docFNs);
       scores.put(docid, score);
     }
 
     @Override
     public void finish() throws IOException {
       final String scorePattern = "TP: %d, FP: %d, Score: %f\n";
-      final String scoreString = String.format(scorePattern, aggregateTPs, aggregateFPs,
-          scoreAggregator);
+      // see guidelines section 7.3.1.1.4 for aggregating rules:
+      // sum over per document contributions, divide by total number of TRFRs in the answer key
+      // Math.max is to skip division by zero errors.
+      final double overAllArgScore =
+          100 * scoreAggregator / Math.max(0.0 + aggregateFNs + aggregateTPs, 1.0);
+      final String scoreString =
+          String.format(scorePattern, aggregateTPs, aggregateFPs, overAllArgScore);
       Files.asCharSink(new File(outputDir, "argScores.txt"), Charsets.UTF_8).write(scoreString);
       final ImmutableMap<Symbol, Double> scores = this.scores.build();
       final ImmutableMap<Symbol, Integer> falsePositives = this.falsePositives.build();
       final ImmutableMap<Symbol, Integer> truePositives = this.truePositives.build();
+      final ImmutableMap<Symbol, Integer> falseNegatives = this.falseNegatives.build();
       for (final Symbol docid : scores.keySet()) {
         final File docDir = new File(outputDir, docid.asString());
         docDir.mkdirs();
         final File docScore = new File(docDir, "argScores.txt");
+        // avoid dividing by zero
+        final double normalizer = Math.max(truePositives.get(docid) + falseNegatives.get(docid), 1);
+        // see guidelines referenced above
+        // pretends that the corpus is a single document
         Files.asCharSink(docScore, Charsets.UTF_8).write(String
             .format(scorePattern, truePositives.get(docid), falsePositives.get(docid),
-                scores.get(docid)));
+                100 * scores.get(docid) / normalizer));
       }
     }
   }
