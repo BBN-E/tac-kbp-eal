@@ -6,6 +6,38 @@ file system paths. Each mapping entry appears as a single line consisting of the
 document ID followed by a tab character followed by the absolute path to
 the corresponding file.
 
+To verify your submission and run the evaluator:
+```bash
+export KBPOPENREPO=$KBPOPENREPO
+$KBPOPENREPO/bin/evaluate2016.sh params
+```
+
+Where params is similar to the following sample:
+```
+# a scratch directory for writing your output and results
+com.bbn.tac.eal.scratch: /nfs/mercury-06/u17/data/kbp-2016/dry-run/june-validation-script/scratch
+# the uncompressed submissions
+com.bbn.tac.eal.participants: /nfs/mercury-06/u17/data/kbp-2016/dry-run/june-validation-script/stores
+# a docid to file map for the entire input corpus.
+com.bbn.tac.eal.rawTextMap: /nfs/mercury-06/u17/data/kbp-2016/dry-run/input.docidmap
+# a quote filter, built as described in (3) below.
+com.bbn.tac.eal.quoteFilter: /nfs/mercury-06/u17/data/kbp-2016/dry-run/june-validation-script/quoteFilter
+# docids in the richERE
+com.bbn.tac.eal.docIDsToScore: /nfs/mercury-04/u10/kbp/2016/dry-run/docIDsToScore.list
+# richERE documents
+com.bbn.tac.eal.eremap: /nfs/mercury-06/u17/data/kbp-2016/dry-run/processing/LDC2016R14_Rich_ERE_English_Training_Data_R1_with_Augmented_Events.docidmap
+# coreNLP processed raw source documents, see [README](README.md#Using CoreNLP)
+com.bbn.tac.eal.coreNLPDocIDMap: /nfs/mercury-06/u17/data/kbp-2016/dry-run/corenlp/LDC2016R14_Rich_ERE_English_Training_Data_R1_with_Augmented_Events.docidmap
+# LDC query file
+com.bbn.tac.eal.queryFile: /nfs/mercury-06/u17/data/kbp-2016/dry-run/LDC2016E51_TAC_KBP_2016_English_Event_Argument_Linking_Pilot_Queries_and_Manual_Run/data/tac_kbp_2016_english_event_argument_linking_pilot_queries.tab
+# how much the predicate justifications may differ
+com.bbn.tac.eal.slack: 300
+# restrict entry points to NAM (true) or allow NOM, PRO (false) as well?
+com.bbn.tac.eal.matchBestCASTypesOnly: false
+com.bbn.tac.eal.minNominalCASOverlap: 0.3
+com.bbn.tac.eal.maxResponsesPerQueryPerSystem: 200
+```
+
 1. Convert to the canonical IDs used by the scorer  using `$KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/importForeignIDs`:  
     Params:
 
