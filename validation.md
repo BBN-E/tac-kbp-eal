@@ -54,7 +54,21 @@ the corresponding file.
     keepInferenceCases: false
     ```
     
-5. Extract corpus-level query responses using `tac-kbp-eal/target/appassembler/bin/queryResponseFromERE`:  
+5. Score System output against ERE using `tac-kbp-eal-scorer/target/appassembler/bin/scoreKBPAgainstERE`:
+    Params (these will change, we encourage trying different values and sending us feedback):
+    ```
+    outputLayout: KBP_EAL_2016
+    systemOutput: keepBestOutput
+    docIDsToScore:
+    goldDocIDToFileMap: # docid map of richere annotation
+    ereScoringOutput: # output directory
+    coreNLPDocIDMap: # map of core nlp processed documents
+    relaxUsingCoreNLP: true
+    useExactMatchForCoreNLPRelaxation: false
+    ```
+
+
+6. Extract corpus-level query responses using `tac-kbp-eal/target/appassembler/bin/queryResponseFromERE`:  
     Params (these may change come the evaluation and feedback from the LDC):
     ```
     com.bbn.tac.eal.storeDir: /output/dir/of/keep/Best
@@ -67,3 +81,4 @@ the corresponding file.
     com.bbn.tac.eal.minNominalCASOverlap: 0.3
     com.bbn.tac.eal.maxResponsesPerQueryPerSystem: 200
     ```
+
