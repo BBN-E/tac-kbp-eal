@@ -38,6 +38,11 @@ com.bbn.tac.eal.minNominalCASOverlap: 0.3
 com.bbn.tac.eal.maxResponsesPerQueryPerSystem: 200
 ```
 
+
+## Evaluation Steps
+
+Here are the steps that `bin/evaluate2016.sh` performs:
+
 1. Convert to the canonical IDs used by the scorer  using `$KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/importForeignIDs`:  
     Params:
 
