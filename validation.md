@@ -27,7 +27,24 @@ Any docidmap is a File with, one per line, a document id, a tab character, and a
     Note that you may filter out any Generic responses from the linking store and corresponding entries from the CorpusLinking (if any) using `tac-kbp-eal/target/appassembler/bin/filterLinkingStore`.
 
 
-3. Minimize system outputs to just the best it produced using `tac-kbp-eal/target/appassembler/bin/keepOnlyBestResponses`:  
+3. Filter out responses that appear in quotes:
+    Build the quote filter using `tac-kbp-eal/target/appassembler/bin/buildQuoteFilter`:
+    Params:
+    ```
+    quoteFilter: /path/to/output/file
+    docIdToFileMap: a map or docid to raw text
+    ```
+
+    Filter the responses: using `tac-kbp-eal/target/appassembler/bin/applyQuoteFilter`:
+    Params:
+
+    ```
+    inputStore:
+    outputStore:
+    quoteFilter:
+    ```
+
+4. Minimize system outputs to just the best it produced using `tac-kbp-eal/target/appassembler/bin/keepOnlyBestResponses`:  
     Params:
 
     ```
@@ -37,7 +54,7 @@ Any docidmap is a File with, one per line, a document id, a tab character, and a
     keepInferenceCases: false
     ```
     
-4. Extract query responses using `tac-kbp-eal/target/appassembler/bin/queryResponseFromERE`:  
+5. Extract query responses using `tac-kbp-eal/target/appassembler/bin/queryResponseFromERE`:  
     Params (these may change come the evaluation and feedback from the LDC):
     ```
     com.bbn.tac.eal.storeDir: /output/dir/of/keep/Best
