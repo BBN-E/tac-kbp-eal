@@ -195,7 +195,9 @@ public final class ScoreKBPAgainstERE {
         throw new RuntimeException("Missing key file for " + docID);
       }
       final EREDocument ereDoc = loader.loadFrom(ereFileName);
-      if (!ereDoc.getDocId().equals(docID.asString())) {
+      // the LDC provides certain ERE documents with "-kbp" in the name. The -kbp is used by them
+      // internally for some form of tracking but doesn't appear to the world, so we remove it.
+      if (!ereDoc.getDocId().replace("-kbp", "").equals(docID.asString().replace(".kbp", ""))) {
         log.warn("Fetched document ID {} does not equal stored {}", ereDoc.getDocId(), docID);
       }
       final Iterable<Response>
@@ -770,7 +772,9 @@ public final class ScoreKBPAgainstERE {
       final ImmutableSet.Builder<DocLevelEventArg> ret = ImmutableSet.builder();
       final Iterable<Response> responses = input.responses();
       final EREDocument doc = input.ereDoc();
-      final Symbol ereID = Symbol.from(doc.getDocId());
+      // Work around LDC document ID inconsistency; -kbp is used internally by the LDC as a form of
+      // document tracking. Externally the difference does not matter so we just normalize the ID
+      final Symbol ereID = Symbol.from(doc.getDocId().replace("-kbp", ""));
       final Optional<CoreNLPDocument> coreNLPDoc;
       final EREAligner ereAligner;
 
