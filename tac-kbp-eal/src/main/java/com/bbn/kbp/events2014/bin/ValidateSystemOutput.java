@@ -298,7 +298,8 @@ public final class ValidateSystemOutput {
     for (final Response r : FluentIterable.from(responses)
         .filter(Predicates.compose(not(equalTo(TIME)), ResponseFunctions.role()))) {
       final KBPString cas = r.canonicalArgument();
-      final String casTextInRaw = resolveCharOffsets(cas.charOffsetSpan(), docID, text);
+      final String casTextInRaw =
+          resolveCharOffsets(cas.charOffsetSpan(), docID, text).replaceAll("\\s+", " ");
       // allow whitespace
       if (!casTextInRaw.contains(cas.string())) {
         log.warn("Warning for {} - response {} CAS does not match text span of {} ",

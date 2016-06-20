@@ -147,7 +147,10 @@ public final class ResponseMapping {
         }
         final ImmutableSet<String> candidateIDs = candidateIDsB.build();
         final String newID = Ordering.natural().sortedCopy(candidateIDs).get(0);
-        log.debug("Collapsing response sets {} to {}", candidateIDs, newID);
+        if(candidateIDs.size() > 1) {
+          // only log if we're converting multiple sets.
+          log.debug("Collapsing response sets {} to {}", candidateIDs, newID);
+        }
         newResponseSetIDMapB.put(newID, nu);
       }
       newResponseSetIDMap = Optional.of(newResponseSetIDMapB.build());

@@ -1,6 +1,7 @@
 #1/bin/bash
 
-### WARNING / TODO / README - this script is a work in progress for the 2016 eval and only supports working with the provided test store!
+# This script is based around the instructions in Evaluation.md, modified to suit running with multiple systems
+
 
 # enables debug mode
 set -x
@@ -8,73 +9,119 @@ set -e
 set -o nounset
 set -o pipefail
 
-EXPAND=true
-QUOTEFILTER=true
-KEEPBEST=true
 
-# currently just 2016_test
-CONFIG=$1
-
-
-: ${KBPOPENREPO:?"Need to set KBPOPENREPO to path to working copy of kbp-2014-event-arguments"}
-
-EVALDIR=${KBPOPENREPO}/output/${CONFIG}
-LOG=$EVALDIR/log
-PARTICIPANTS=${EVALDIR}/systemsOutput
-ASSESSMENTS=${EVALDIR}/assessments
-
-PARAMSDIR=${KBPOPENREPO}/params/${CONFIG}
-
-mkdir -p ${PARAMSDIR}/generated/${CONFIG}
+function param_value() {
+    params_file="$1"
+    param_name="$2"
+    # get a param and delete the first space.
+    cat $params_file | grep "^$param_name" | cut -d':' -f 2- | sed -re 's/\s+//'
+}
 
 
-echo "Using working copy $KBPOPENREPO"
-echo "Running config $CONFIG"
-echo "Writing log to $EVALDIR/log"
+: ${KBPOPENREPO:?"Need to set KBPOPENREPO to path to working copy of tac-kbp-eal"}
 
-# clear previous run, if any
-echo "Output will be written to $EVALDIR"
-echo "Clearing previous output, if any"
-rm -rf $EVALDIR/expanded
-rm -rf $EVALDIR/graphAnalyses
-rm -rf $EVALDIR/keepBest
-rm -rf $EVALDIR/log
-rm -rf $EVALDIR/quoteFiltered
-rm -rf $EVALDIR/score
+INPUT_PARAMS="$1"
+# input params must define:
+SCRATCH=$(param_value $INPUT_PARAMS com.bbn.tac.eal.scratch)
+PARTICIPANTS=$(param_value $INPUT_PARAMS com.bbn.tac.eal.participants)
+RAW_TEXT_MAP=$(param_value $INPUT_PARAMS com.bbn.tac.eal.rawTextMap)
+QUOTEFILTER=$(param_value $INPUT_PARAMS com.bbn.tac.eal.quoteFilter)
+DOCIDS_TO_SCORE=$(param_value $INPUT_PARAMS com.bbn.tac.eal.docIDsToScore)
+RICHERE_MAP=$(param_value $INPUT_PARAMS com.bbn.tac.eal.eremap)
+CORENLP_MAP=$(param_value $INPUT_PARAMS com.bbn.tac.eal.coreNLPDocIDMap)
+
+# the input params should also inlcude (for extracting corpus level queries)
+# com.bbn.tac.eal.queryFile: # queries from the LDC
+# com.bbn.tac.eal.slack: 300 # how much difference in PJ offsets we allow
+# com.bbn.tac.eal.matchBestCASTypesOnly: false # Only NAM or allow PRO/NOM?
+# com.bbn.tac.eal.minNominalCASOverlap: 0.3 # the minimum fraction of overlap requires to match nominal CASes against each other
+# com.bbn.tac.eal.maxResponsesPerQueryPerSystem: 200 # to cut the outputs so the LDC can actually finish
 
 
-echo "Creating output directory"
-mkdir -p $EVALDIR/log
+rm -fr "$SCRATCH/processing"
+rm -fr "$SCRATCH/params"
+rm -fr "$SCRATCH/log"
+rm -fr "$SCRATCH/finalStores"
 
-# TODO restore decompressing participant submissions
+mkdir -p "$SCRATCH/finalStores"
 
-# quote filter participant submissions
-if [ "$QUOTEFILTER" = true ]; then
-    echo "Applying quote filter to submissions..."
-    $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/applyQuoteFilter $PARAMSDIR/quoteFilter.params > $LOG/quoteFilter.log
-fi
-
-# do keepBest
-if [ "$KEEPBEST" = true ] ; then
-    echo "Applying keep best to systems"
-
-    for f in $EVALDIR/quoteFiltered/*; do
-      if [ -d ${f} ]; then
-        sysId=$(basename $f)
-        mkdir -p $EVALDIR/keepBest/$sysId
-
-	cat <<EOF > $PARAMSDIR/generated/$CONFIG/keepBest_${sysId}.params
-inputStore: $f
-outputStore: $EVALDIR/keepBest/$sysId
-keepInferenceCases: false
+for system in "$PARTICIPANTS"/* ; do
+    echo $system
+    system_name=$(basename $system)
+    LOG="$SCRATCH/log/$system_name"
+    mkdir -p "$SCRATCH/params/$system_name"
+    mkdir -p "$SCRATCH/processing/$system_name"
+    mkdir -p $LOG
+    # evaluation step 1: convert to canonical ids
+    convert_params="$SCRATCH/params/$system_name/convert.params"
+    converted="$SCRATCH/processing/$system_name/converted"
+cat <<EOF > $convert_params
+input: $system
+output: $converted
+doMultipleStores: false
 outputLayout: KBP_EAL_2016
 EOF
+    $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/importForeignIDs $convert_params 2>&1 | tee $LOG/convert.log
 
-        $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/keepOnlyBestResponses $PARAMSDIR/generated/$CONFIG/keepBest_${sysId}.params > $LOG/keepBest_${sysId}.log
-      fi
-    done
-fi
+    # evaluation step 2: validate the system output store
+    validate_params="$SCRATCH/params/$system_name/validate.params"
+cat <<EOF > $validate_params
+systemOutputStore: $converted
+dump: false
+docIDMap: $RAW_TEXT_MAP
+validRoles: $KBPOPENREPO/data/2016.types.txt
+linkableTypes: $KBPOPENREPO/data/2016.linkable.txt
+EOF
+    $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/validateSystemOutput2016 $validate_params 2>&1 | tee $LOG/validate.log
 
+    # evaluation step 3: filter out responses in quotes
+    quote_filter_params="$SCRATCH/params/$system_name/quoteFilter.params"
+    quote_filtered="$SCRATCH/processing/$system_name/quoteFiltered"
+cat <<EOF > $quote_filter_params
+inputStore: $converted
+outputStore: $quote_filtered
+quoteFilter: $QUOTEFILTER
+outputLayout: KBP_EAL_2016
+EOF
+    $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/applyQuoteFilter $quote_filter_params 2>&1 | tee $LOG/quoteFilter.log
 
-$KBPOPENREPO/tac-kbp-eal-scorer/target/appassembler/bin/scoreKBPAgainstERE $PARAMSDIR/scoreAgainstERE.params > $LOG/scorer2016.log
+    # evaluation step 4: keep best
+    keep_best_params="$SCRATCH/params/$system_name/keepBest.params"
+    keep_bested="$SCRATCH/processing/$system_name/keepBested"
+cat <<EOF > $keep_best_params
+inputStore: $quote_filtered
+outputStore: $keep_bested
+outputLayout: KBP_EAL_2016
+keepInferenceCases: false
+EOF
+    $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/keepOnlyBestResponses $keep_best_params 2>&1 | tee $LOG/keepBest.log
 
+    # evaluation step 5, kind of: aggregate the system outputs for the query extraction list
+    ln -s $system $SCRATCH/finalStores/$system_name
+
+    # evaluation step 6: scoreKBPAgainstERE
+    score_kbp_params="$SCRATCH/params/$system_name/scoreKBPAgainstERE.params"
+cat <<EOF > $score_kbp_params
+outputLayout: KBP_EAL_2016
+systemOutput: $keep_bested
+docIDsToScore: $DOCIDS_TO_SCORE
+goldDocIDToFileMap: $RICHERE_MAP
+ereScoringOutput: $SCRATCH/processing/$system_name/scoreKBPAgainstERE
+coreNLPDocIDMap: $CORENLP_MAP
+relaxUsingCoreNLP: true
+useExactMatchForCoreNLPRelaxation: false
+EOF
+    $KBPOPENREPO/tac-kbp-eal-scorer/target/appassembler/bin/scoreKBPAgainstERE $score_kbp_params 2>&1 | tee $LOG/scoreKBPAgainstERE.log
+done
+
+# finish step 5
+# gathering query responses happens at the end since it's a per system step
+query_response_from_ere_params=$SCRATCH/params/queryResponse.params
+system_outputs_list=$(echo $(readlink -e $SCRATCH/finalStores/)/* | xargs -I{} basename {} | tr '\n' ',' | sed -e 's/,$//')
+cat <<EOF  > $query_response_from_ere_params
+com.bbn.tac.eal.storeDir: $SCRATCH/finalStores/
+com.bbn.tac.eal.storesToProcess: $system_outputs_list
+com.bbn.tac.eal.outputFile: $SCRATCH/queryResponses
+INCLUDE $INPUT_PARAMS
+EOF
+$KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/queryResponseFromERE $query_response_from_ere_params 2>&1 | tee $SCRATCH/generateQueryResponses.log 2>&1 | tee $SCRATCH/generateQueryResponses.log
