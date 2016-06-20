@@ -1,11 +1,12 @@
-Instructions for processing input repositories:
-`tac-kbp-eal` refers to your clone of the github repository or the `tac-kbp-eal` subproject.
-A docidmap is a file which specifies a mapping between document IDs and 
+Instructions for evaluating system outputs:
+`$KBPOPENREPO` refers to your clone of the github repository available at https://github.com/BBN-E/tac-kbp-eal
+`tac-kbp-eal` refers to the subproject `tac-kbp-eal` of the `$KBPOPENREPO`
+A docidmap is a file which specifies a mapping between LDC document IDs and 
 file system paths. Each mapping entry appears as a single line consisting of the
 document ID followed by a tab character followed by the absolute path to
 the corresponding file.
 
-1. Convert to the canonical IDs used by the scorer  using `tac-kbp-eal/target/appassembler/bin/importForeignIDs`:  
+1. Convert to the canonical IDs used by the scorer  using `$KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/importForeignIDs`:  
     Params:
 
     ```
@@ -15,26 +16,26 @@ the corresponding file.
     outputLayout: KBP_EAL_2016
     ```
 
-2. Validate system output using `tac-kbp-eal/target/appassembler/bin/validateSystemOutput2016`:  
+2. Validate system output using `$KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/validateSystemOutput2016`:  
     Params:
 
     ```
     systemOutputStore: /path/to/canonical/id/output
     dump: false
     docIDMap: a map of docid to raw text
-    validRoles: tac-kbp-eal/data/2016.types.txt
-    linkableTypes: tac-kbp-eal/data/2016.linkable.txt
+    validRoles: $KBPOPENREPO/data/2016.types.txt
+    linkableTypes: $KBPOPENREPO/data/2016.linkable.txt
     ```
 
 3. Filter out responses that appear in quotes:
-    Build the quote filter using `tac-kbp-eal/target/appassembler/bin/buildQuoteFilter`:
+    Build the quote filter using `$KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/buildQuoteFilter`:
     Params:
     ```
     quoteFilter: /path/to/output/file
     docIdToFileMap: a map or docid to raw text
     ```
 
-    Filter the responses: using `tac-kbp-eal/target/appassembler/bin/applyQuoteFilter`:
+    Filter the responses: using `$KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/applyQuoteFilter`:
     Params:
 
     ```
@@ -44,7 +45,7 @@ the corresponding file.
     ```
 
 4. Restrict system outputs to just the best justification for each assertion
- using `tac-kbp-eal/target/appassembler/bin/keepOnlyBestResponses`:  
+ using `$KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/keepOnlyBestResponses`:  
     Params:
 
     ```
@@ -54,7 +55,7 @@ the corresponding file.
     keepInferenceCases: false
     ```
     
-5. Score System output against ERE using `tac-kbp-eal-scorer/target/appassembler/bin/scoreKBPAgainstERE`:
+5. Score System output against ERE using `$KBPOPENREPO/tac-kbp-eal-scorer/target/appassembler/bin/scoreKBPAgainstERE`:
     Params (these will change, we encourage trying different values and sending us feedback):
     ```
     outputLayout: KBP_EAL_2016
@@ -68,7 +69,7 @@ the corresponding file.
     ```
 
 
-6. Extract corpus-level query responses using `tac-kbp-eal/target/appassembler/bin/queryResponseFromERE`:  
+6. Extract corpus-level query responses using `$KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/queryResponseFromERE`:  
     Params (these may change come the evaluation and feedback from the LDC):
     ```
     com.bbn.tac.eal.storeDir: /output/dir/of/keep/Best
