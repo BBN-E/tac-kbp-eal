@@ -1,8 +1,11 @@
 Instructions for processing input repositories:
 `tac-kbp-eal` refers to your clone of the github repository or the `tac-kbp-eal` subproject.
-Any docidmap is a File with, one per line, a document id, a tab character, and a path to an existing file.
+A docidmap is a file which specifies a mapping between document IDs and 
+file system paths. Each mapping entry appears as a single line consisting of the
+document ID followed by a tab character followed by the absolute path to
+the corresponding file.
 
-1. Convert to canonical using `tac-kbp-eal/target/appassembler/bin/importForeignIDs`:  
+1. Convert to the canonical IDs used by the scorer  using `tac-kbp-eal/target/appassembler/bin/importForeignIDs`:  
     Params:
 
     ```
@@ -23,10 +26,6 @@ Any docidmap is a File with, one per line, a document id, a tab character, and a
     linkableTypes: tac-kbp-eal/data/2016.linkable.txt
     ```
 
-    Note that you may filter out invalid event types/roles using `tac-kbp-eal/target/appassembler/bin/filterOutInvalidArguments`, although this will silently ignore any errors in your system.
-    Note that you may filter out any Generic responses from the linking store and corresponding entries from the CorpusLinking (if any) using `tac-kbp-eal/target/appassembler/bin/filterLinkingStore`.
-
-
 3. Filter out responses that appear in quotes:
     Build the quote filter using `tac-kbp-eal/target/appassembler/bin/buildQuoteFilter`:
     Params:
@@ -44,7 +43,8 @@ Any docidmap is a File with, one per line, a document id, a tab character, and a
     quoteFilter:
     ```
 
-4. Minimize system outputs to just the best it produced using `tac-kbp-eal/target/appassembler/bin/keepOnlyBestResponses`:  
+4. Restrict system outputs to just the best justification for each assertion
+ using `tac-kbp-eal/target/appassembler/bin/keepOnlyBestResponses`:  
     Params:
 
     ```
@@ -54,7 +54,7 @@ Any docidmap is a File with, one per line, a document id, a tab character, and a
     keepInferenceCases: false
     ```
     
-5. Extract query responses using `tac-kbp-eal/target/appassembler/bin/queryResponseFromERE`:  
+5. Extract corpus-level query responses using `tac-kbp-eal/target/appassembler/bin/queryResponseFromERE`:  
     Params (these may change come the evaluation and feedback from the LDC):
     ```
     com.bbn.tac.eal.storeDir: /output/dir/of/keep/Best
