@@ -24,6 +24,7 @@ import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events.ontology.EREToKBPEventOntologyMapper;
 import com.bbn.kbp.events.ontology.SimpleEventOntologyMapper;
 import com.bbn.kbp.events2014.DocumentSystemOutput2015;
+import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
@@ -685,8 +686,13 @@ public final class ScoreKBPAgainstERE {
                     .realis(Symbol.from(argumentRealis.name())).build();
 
             ret.add(arg);
-            eventFrame.addArguments(arg);
-            addedArg = true;
+            // ban generic responses from ERE linking.
+            if (!arg.realis().asString().equalsIgnoreCase(ERERealisEnum.generic.name())) {
+              eventFrame.addArguments(arg);
+              addedArg = true;
+              log.debug("Dropping ERE arg {} from linking in {} due to generic realis", arg,
+                  ereEventMention);
+            }
           }
         }
         if (addedArg) {
@@ -796,9 +802,13 @@ public final class ScoreKBPAgainstERE {
 
         ret.add(res);
         responseToDocLevelArg.put(response, res);
-
-
       }
+      for (final Response response : input.linking().allResponses()) {
+        if (response.realis().equals(KBPRealis.Generic)) {
+          throw new TACKBPEALException("Generic Arguments are not allowed in linking");
+        }
+      }
+
       return fromResponses(ImmutableSet.copyOf(input.responses()),
           responseToDocLevelArg.build(), input.linking());
     }
