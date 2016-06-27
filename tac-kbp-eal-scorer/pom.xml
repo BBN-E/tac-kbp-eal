@@ -2,14 +2,14 @@
     <parent>
         <artifactId>tac-kbp-eal-all</artifactId>
         <groupId>com.bbn.kbp.eal</groupId>
-        <version>3.4.1-SNAPSHOT</version>
+        <version>3.4.1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>tac-kbp-eal-scorer</artifactId>
-    <version>3.4.1-SNAPSHOT</version>
+    <version>3.4.1</version>
     <packaging>jar</packaging>
 
     <name>TAC KBPEvent Argument and Linking Task Scorer</name>
@@ -59,7 +59,7 @@
         <dependency>
             <groupId>com.bbn.kbp.eal</groupId>
             <artifactId>tac-kbp-eal</artifactId>
-            <version>3.4.1-SNAPSHOT</version>
+            <version>3.4.1</version>
         </dependency>
 
         <dependency>
