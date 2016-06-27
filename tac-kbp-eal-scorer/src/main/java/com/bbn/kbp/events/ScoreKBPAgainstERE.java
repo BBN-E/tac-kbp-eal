@@ -60,6 +60,7 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
+import com.google.common.io.CharSink;
 import com.google.common.io.Files;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.AbstractModule;
@@ -179,7 +180,8 @@ public final class ScoreKBPAgainstERE {
     // so we need to keep references to them
     final ResponsesAndLinkingFromKBPExtractor responsesAndLinkingFromKBPExtractor =
         new ResponsesAndLinkingFromKBPExtractor(coreNLPProcessedRawDocs,
-            coreNLPXMLLoader, relaxUsingCORENLP, ontologyMapper);
+            coreNLPXMLLoader, relaxUsingCORENLP, ontologyMapper,
+            Files.asCharSink(new File(outputDir, "alignmentFailures.txt"), Charsets.UTF_8));
     final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor =
         new ResponsesAndLinkingFromEREExtractor(EREToKBPEventOntologyMapper.create2016Mapping());
 
@@ -766,14 +768,17 @@ public final class ScoreKBPAgainstERE {
     private final CoreNLPXMLLoader coreNLPXMLLoader;
     private final boolean relaxUsingCORENLP;
     private final EREToKBPEventOntologyMapper ontologyMapper;
+    private final CharSink alignmentFailuresSink;
 
     public ResponsesAndLinkingFromKBPExtractor(final Map<Symbol, File> ereMapping,
         final CoreNLPXMLLoader coreNLPXMLLoader, final boolean relaxUsingCORENLP,
-        final EREToKBPEventOntologyMapper ontologyMapper) {
+        final EREToKBPEventOntologyMapper ontologyMapper,
+        final CharSink alignmentFailuresSink) {
       this.ereMapping = ImmutableMap.copyOf(ereMapping);
       this.coreNLPXMLLoader = coreNLPXMLLoader;
       this.relaxUsingCORENLP = relaxUsingCORENLP;
       this.ontologyMapper = checkNotNull(ontologyMapper);
+      this.alignmentFailuresSink = checkNotNull(alignmentFailuresSink);
     }
 
     public ResponsesAndLinking apply(final EREDocAndResponses input) {
@@ -868,20 +873,24 @@ public final class ScoreKBPAgainstERE {
       return r.type() + "/" + r.role();
     }
 
-    public void finish() {
+    public void finish() throws IOException {
       final ImmutableSetMultimap<String, String> mentionAlignmentFailures =
           mentionAlignmentFailuresB.build();
       log.info(
           "Of {} system responses, got {} mention alignment failures",
           numResponses.size(), mentionAlignmentFailures.size());
+
+      final StringBuilder msg = new StringBuilder();
       for (final String errKey : numResponses.elementSet()) {
         final ImmutableSet<String> failuresForKey = mentionAlignmentFailures.get(errKey);
         if (failuresForKey != null) {
-          log.info("Of {} {} responses, {} mention alignment failures:\n{}",
-              +numResponses.count(errKey), errKey, failuresForKey.size(),
-              StringUtils.unixNewlineJoiner().join(failuresForKey));
+          msg.append("Of ").append(numResponses.count(errKey)).append(errKey)
+          .append(" responses, ").append(failuresForKey.size())
+              .append(" mention alignment failures:\n")
+              .append(StringUtils.unixNewlineJoiner().join(failuresForKey)).append("\n");
         }
       }
+      alignmentFailuresSink.write(msg.toString());
     }
   }
 
