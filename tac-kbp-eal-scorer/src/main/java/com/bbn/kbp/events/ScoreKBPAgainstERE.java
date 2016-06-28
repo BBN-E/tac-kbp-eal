@@ -23,6 +23,7 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events.ontology.EREToKBPEventOntologyMapper;
 import com.bbn.kbp.events.ontology.SimpleEventOntologyMapper;
+import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.DocumentSystemOutput2015;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
@@ -31,6 +32,7 @@ import com.bbn.kbp.events2014.ResponseSet;
 import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.TACKBPEALException;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
+import com.bbn.kbp.events2014.transformers.QuoteFilter;
 import com.bbn.kbp.linking.ExplicitFMeasureInfo;
 import com.bbn.kbp.linking.LinkF1;
 import com.bbn.nlp.corenlp.CoreNLPDocument;
@@ -41,6 +43,7 @@ import com.bbn.nlp.corpora.ere.EREDocument;
 import com.bbn.nlp.corpora.ere.EREEvent;
 import com.bbn.nlp.corpora.ere.EREEventMention;
 import com.bbn.nlp.corpora.ere.ERELoader;
+import com.bbn.nlp.corpora.ere.ERESpan;
 import com.bbn.nlp.corpora.ere.LinkRealis;
 import com.bbn.nlp.events.HasEventType;
 import com.bbn.nlp.parsing.HeadFinders;
@@ -66,6 +69,7 @@ import com.google.common.reflect.TypeToken;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
+import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
 
@@ -125,16 +129,20 @@ public final class ScoreKBPAgainstERE {
   private final Parameters params;
   private final ImmutableMap<String, ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>
       scoringEventObservers;
+  // we exclude text in quoted regions froms scoring
+  private final QuoteFilter quoteFilter;
 
   @Inject
   ScoreKBPAgainstERE(
       final Parameters params,
       final Map<String, ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>> scoringEventObservers,
-      final EREToKBPEventOntologyMapper ontologyMapper) {
+      final EREToKBPEventOntologyMapper ontologyMapper,
+      final QuoteFilter quoteFilter) {
     this.params = checkNotNull(params);
     // we use a sorted map because the binding of plugins may be non-deterministic
     this.scoringEventObservers = ImmutableSortedMap.copyOf(scoringEventObservers);
     this.ontologyMapper = checkNotNull(ontologyMapper);
+    this.quoteFilter = checkNotNull(quoteFilter);
   }
 
   public void go() throws IOException {
@@ -183,7 +191,8 @@ public final class ScoreKBPAgainstERE {
             coreNLPXMLLoader, relaxUsingCORENLP, ontologyMapper,
             Files.asCharSink(new File(outputDir, "alignmentFailures.txt"), Charsets.UTF_8));
     final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor =
-        new ResponsesAndLinkingFromEREExtractor(EREToKBPEventOntologyMapper.create2016Mapping());
+        new ResponsesAndLinkingFromEREExtractor(EREToKBPEventOntologyMapper.create2016Mapping(),
+            quoteFilter);
 
     // this sets it up so that everything fed to input will be scored in various ways
     setupScoring(input, responsesAndLinkingFromKBPExtractor, responsesAndLinkingFromEREExtractor,
@@ -636,9 +645,16 @@ public final class ScoreKBPAgainstERE {
     private final Set<Symbol> unknownRoles = Sets.newHashSet();
 
     private final SimpleEventOntologyMapper mapper;
+    private final QuoteFilter quoteFilter;
 
-    private ResponsesAndLinkingFromEREExtractor(final SimpleEventOntologyMapper mapper) {
+    private ResponsesAndLinkingFromEREExtractor(final SimpleEventOntologyMapper mapper,
+        final QuoteFilter quoteFilter) {
       this.mapper = checkNotNull(mapper);
+      this.quoteFilter = checkNotNull(quoteFilter);
+    }
+
+    private boolean inQuotedRegion(String docId, ERESpan span) {
+      return quoteFilter.isInQuote(Symbol.from(docId), CharOffsetSpan.of(span.asCharOffsets()));
     }
 
     @Override
@@ -651,56 +667,67 @@ public final class ScoreKBPAgainstERE {
         final ScoringEventFrame.Builder eventFrame = ScoringEventFrame.builder();
         boolean addedArg = false;
         for (final EREEventMention ereEventMention : ereEvent.getEventMentions()) {
-          for (final EREArgument ereArgument : ereEventMention.getArguments()) {
-            final Symbol ereEventMentionType = Symbol.from(ereEventMention.getType());
-            final Symbol ereEventMentionSubtype = Symbol.from(ereEventMention.getSubtype());
-            final Symbol ereArgumentRole = Symbol.from(ereArgument.getRole());
-            final ArgumentRealis argumentRealis =
-                getRealis(ereEventMention.getRealis(), ereArgument.getRealis().get());
+          // events from quoted regions are invalid
+          if (!inQuotedRegion(doc.getDocId(), ereEventMention.getTrigger())) {
+            for (final EREArgument ereArgument : ereEventMention.getArguments()) {
+              if (!inQuotedRegion(doc.getDocId(), ereArgument.getExtent())) {
+                // arguments from quoted regions are invalid
+                final Symbol ereEventMentionType = Symbol.from(ereEventMention.getType());
+                final Symbol ereEventMentionSubtype = Symbol.from(ereEventMention.getSubtype());
+                final Symbol ereArgumentRole = Symbol.from(ereArgument.getRole());
+                final ArgumentRealis argumentRealis =
+                    getRealis(ereEventMention.getRealis(), ereArgument.getRealis().get());
 
-            boolean skip = false;
-            if (!mapper.eventType(ereEventMentionType).isPresent()) {
-              unknownEventTypes.add(ereEventMentionType);
-              skip = true;
-            }
-            if (!mapper.eventRole(ereArgumentRole).isPresent()) {
-              unknownRoles.add(ereArgumentRole);
-              skip = true;
-            }
-            if (!mapper.eventSubtype(ereEventMentionSubtype).isPresent()) {
-              unknownEventSubtypes.add(ereEventMentionSubtype);
-              skip = true;
-            }
-            if (skip) {
-              continue;
-            }
+                boolean skip = false;
+                if (!mapper.eventType(ereEventMentionType).isPresent()) {
+                  unknownEventTypes.add(ereEventMentionType);
+                  skip = true;
+                }
+                if (!mapper.eventRole(ereArgumentRole).isPresent()) {
+                  unknownRoles.add(ereArgumentRole);
+                  skip = true;
+                }
+                if (!mapper.eventSubtype(ereEventMentionSubtype).isPresent()) {
+                  unknownEventSubtypes.add(ereEventMentionSubtype);
+                  skip = true;
+                }
+                if (skip) {
+                  continue;
+                }
 
-            // type.subtype is Response format
-            final String typeRoleKey = mapper.eventType(ereEventMentionType).get() +
-                "." + mapper.eventSubtype(ereEventMentionSubtype).get() +
-                "/" + mapper.eventRole(ereArgumentRole).get();
-            allGoldArgs.add(typeRoleKey);
+                // type.subtype is Response format
+                final String typeRoleKey = mapper.eventType(ereEventMentionType).get() +
+                    "." + mapper.eventSubtype(ereEventMentionSubtype).get() +
+                    "/" + mapper.eventRole(ereArgumentRole).get();
+                allGoldArgs.add(typeRoleKey);
 
-            final DocLevelEventArg arg =
-                DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
-                    .eventType(Symbol.from(mapper.eventType(ereEventMentionType).get() + "." +
-                        mapper.eventSubtype(ereEventMentionSubtype).get()))
-                    .eventArgumentType(mapper.eventRole(ereArgumentRole).get())
-                    .corefID(ScoringUtils.extractScoringEntity(ereArgument, doc).globalID())
-                    .realis(Symbol.from(argumentRealis.name())).build();
+                final DocLevelEventArg arg =
+                    DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
+                        .eventType(Symbol.from(mapper.eventType(ereEventMentionType).get() + "." +
+                            mapper.eventSubtype(ereEventMentionSubtype).get()))
+                        .eventArgumentType(mapper.eventRole(ereArgumentRole).get())
+                        .corefID(ScoringUtils.extractScoringEntity(ereArgument, doc).globalID())
+                        .realis(Symbol.from(argumentRealis.name())).build();
 
-            ret.add(arg);
-            // ban generic responses from ERE linking.
-            if (!arg.realis().asString().equalsIgnoreCase(ERERealisEnum.generic.name())) {
-              eventFrame.addArguments(arg);
-              addedArg = true;
-              log.debug("Dropping ERE arg {} from linking in {} due to generic realis", arg,
-                  ereEventMention);
+                ret.add(arg);
+                // ban generic responses from ERE linking.
+                if (!arg.realis().asString().equalsIgnoreCase(ERERealisEnum.generic.name())) {
+                  eventFrame.addArguments(arg);
+                  addedArg = true;
+                  log.debug("Dropping ERE arg {} from linking in {} due to generic realis", arg,
+                      ereEventMention);
+                }
+              } else {
+                log.info("Ignoring ERE event mention argument {} as within a quoted region",
+                    ereArgument);
+              }
             }
+          } else {
+            log.info("Ignoring ERE event mention {} as within a quoted region", ereEventMention);
           }
-        }
-        if (addedArg) {
-          linking.addEventFrames(eventFrame.build());
+          if (addedArg) {
+            linking.addEventFrames(eventFrame.build());
+          }
         }
       }
       return ResponsesAndLinking.of(ret.build(), linking.build());
@@ -936,6 +963,11 @@ public final class ScoreKBPAgainstERE {
       } catch (IOException ioe) {
         throw new TACKBPEALException(ioe);
       }
+    }
+
+    @Provides
+    QuoteFilter getQuoteFiler(Parameters params) throws IOException {
+      return QuoteFilter.loadFrom(Files.asByteSource(params.getExistingFile("quoteFilter")));
     }
   }
 }

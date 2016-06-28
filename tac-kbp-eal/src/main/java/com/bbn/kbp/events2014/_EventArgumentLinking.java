@@ -32,7 +32,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 @Functional
 abstract class _EventArgumentLinking {
 
-  private static Logger log = LoggerFactory.getLogger(_EventArgumentLinking.class);
+  private static final Logger log = LoggerFactory.getLogger(_EventArgumentLinking.class);
 
   public abstract Symbol docID();
 
