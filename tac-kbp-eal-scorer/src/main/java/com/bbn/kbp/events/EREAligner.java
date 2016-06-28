@@ -209,11 +209,7 @@ final class EREAligner {
     for (final EREEntity entity : ereDoc.getEntities()) {
       final Collection<MappedEventTypeRole> rolesPlayed = entitiesToRolesPlayed.get(entity);
 
-      CASType bestCASType = CASType.PRONOUN;
-      for (final EREEntityMention ereEntityMention : entity.getMentions()) {
-        bestCASType = Ordering.natural().max(bestCASType,
-            CASType.parseFromERE(ereEntityMention.getType()));
-      }
+      final CASType bestCASType = getBestCASType(entity);
 
       for (final EREEntityMention ereEntityMention : entity.getMentions()) {
         final CASType casType = CASType.parseFromERE(ereEntityMention.getType());
@@ -247,6 +243,15 @@ final class EREAligner {
     }
 
     return ret.build();
+  }
+
+  public static CASType getBestCASType(final EREEntity entity) {
+    CASType bestCASType = CASType.PRONOUN;
+    for (final EREEntityMention ereEntityMention : entity.getMentions()) {
+      bestCASType = Ordering.natural().max(bestCASType,
+          CASType.parseFromERE(ereEntityMention.getType()));
+    }
+    return bestCASType;
   }
 
   private static OffsetRange<CharOffset> extentForERE(ERESpan span) {
