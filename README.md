@@ -16,11 +16,12 @@ Requirements:
 * [Maven](http://maven.apache.org/)
 
 Build steps:
-* `grep "<bueopen.version>" pom.xml` and note the version given (e.g. 4.10.0). We'll call this X.
-* checkout https://github.com/BBN-E/bue-common-open . From there, 
-  * `git checkout common-all-open-X`
-  * `mvn install`
-* you can now return to this repository and `mvn install`
+1. `grep "<bueopen.version>" pom.xml` and note the version given (e.g. 4.10.0). We'll call this X.
+2. checkout https://github.com/BBN-E/bue-common-open . From there, 
+  1. `git fetch --tags`
+  2. `git checkout common-all-open-X`
+  3. `mvn install`
+3. you can now return to this repository and `mvn install`
 
 The first two steps need only be repeated when the version of `bue-common-open` depended on changes.
 
