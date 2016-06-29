@@ -16,7 +16,13 @@ Requirements:
 * [Maven](http://maven.apache.org/)
 
 Build steps:
-* Do `mvn install` from the root of this repository.
+* `grep "<bueopen.version>" pom.xml` and note the version given (e.g. 4.10.0). We'll call this X.
+* checkout https://github.com/BBN-E/bue-common-open . From there, 
+  * `git checkout common-all-open-X`
+  * `mvn install`
+* you can now return to this repository and `mvn install`
+
+The first two steps need only be repeated when the version of `bue-common-open` depended on changes.
 
 If you are building from an IDE, you will need to [set up annotation processors](http://immutables.github.io/apt.html)
 
