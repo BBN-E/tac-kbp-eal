@@ -16,11 +16,13 @@ Where params is similar to the following sample:
 ```
 # a scratch directory for writing your output and results
 com.bbn.tac.eal.scratch: /nfs/mercury-06/u17/data/kbp-2016/dry-run/june-validation-script/scratch
-# the uncompressed submissions
+# the uncompressed submissions, this should contain only system outputs and nothing else, e.g. our 
+# system might output /nfs/mercury-06/u17/data/kbp-2016/dry-run/june-validation-script/stores/{BBN1,BBN2},
+# then we would use param:
 com.bbn.tac.eal.participants: /nfs/mercury-06/u17/data/kbp-2016/dry-run/june-validation-script/stores
 # a docid to file map for the entire input corpus.
 com.bbn.tac.eal.rawTextMap: /nfs/mercury-06/u17/data/kbp-2016/dry-run/input.docidmap
-# a quote filter, built as described in (3) below.
+# a quote filter, built as described in (3) below. This should point to a non-existent file in an existing directory.
 com.bbn.tac.eal.quoteFilter: /nfs/mercury-06/u17/data/kbp-2016/dry-run/june-validation-script/quoteFilter
 # docids in the richERE
 com.bbn.tac.eal.docIDsToScore: /nfs/mercury-04/u10/kbp/2016/dry-run/docIDsToScore.list
@@ -100,8 +102,9 @@ Here are the steps that `bin/evaluate2016.sh` performs:
     docIDsToScore:
     goldDocIDToFileMap: # docid map of richere annotation
     ereScoringOutput: # output directory
-    coreNLPDocIDMap: # map of core nlp processed documents
+    # true or false; corresponds to whether or not we use relaxed offsets in scoring
     relaxUsingCoreNLP: true
+    coreNLPDocIDMap: # map of core nlp processed documents, only necessary if relaxUsingCoreNLP is true
     useExactMatchForCoreNLPRelaxation: false
     ```
 

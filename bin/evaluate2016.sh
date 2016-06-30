@@ -96,10 +96,7 @@ keepInferenceCases: false
 EOF
     $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/keepOnlyBestResponses $keep_best_params 2>&1 | tee $LOG/keepBest.log
 
-    # evaluation step 5, kind of: aggregate the system outputs for the query extraction list
-    ln -s $system $SCRATCH/finalStores/$system_name
-
-    # evaluation step 6: scoreKBPAgainstERE
+    # evaluation step 5: scoreKBPAgainstERE
     score_kbp_params="$SCRATCH/params/$system_name/scoreKBPAgainstERE.params"
 cat <<EOF > $score_kbp_params
 outputLayout: KBP_EAL_2016
@@ -112,9 +109,13 @@ relaxUsingCoreNLP: true
 useExactMatchForCoreNLPRelaxation: false
 EOF
     $KBPOPENREPO/tac-kbp-eal-scorer/target/appassembler/bin/scoreKBPAgainstERE $score_kbp_params 2>&1 | tee $LOG/scoreKBPAgainstERE.log
+
+    # evaluation step 6, kind of: aggregate the system outputs for the query extraction list
+    ln -s $system $SCRATCH/finalStores/$system_name
+
 done
 
-# finish step 5
+# finish step 6
 # gathering query responses happens at the end since it's a per system step
 query_response_from_ere_params=$SCRATCH/params/queryResponse.params
 system_outputs_list=$(echo $(readlink -e $SCRATCH/finalStores/)/* | xargs -I{} basename {} | tr '\n' ',' | sed -e 's/,$//')
