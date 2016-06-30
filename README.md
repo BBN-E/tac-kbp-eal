@@ -16,6 +16,7 @@ Requirements:
 * [Maven](http://maven.apache.org/)
 
 Build steps:
+
 1. `grep "<bueopen.version>" pom.xml` and note the version given (e.g. 4.10.0). We'll call this X.
 2. checkout https://github.com/BBN-E/bue-common-open . From there, 
   1. `git fetch --tags`
