@@ -44,6 +44,15 @@ rm -fr "$SCRATCH/log"
 rm -fr "$SCRATCH/finalStores"
 
 mkdir -p "$SCRATCH/finalStores"
+mkdir -p "$SCRATCH/params"
+
+# step 3 part 1: build a quoteFilter (this only needs to be done once and can be reused):
+build_quote_filter_params="$SCRATCH/params/build_quote_filter.params"
+cat <<EOF > $build_quote_filter_params
+docIdToFileMap: $RAW_TEXT_MAP
+quoteFilter: $QUOTEFILTER
+EOF
+$KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/buildQuoteFilter $build_quote_filter_params
 
 for system in "$PARTICIPANTS"/* ; do
     echo $system
