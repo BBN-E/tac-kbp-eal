@@ -115,6 +115,7 @@ goldDocIDToFileMap: $RICHERE_MAP
 ereScoringOutput: $SCRATCH/processing/$system_name/scoreKBPAgainstERE
 coreNLPDocIDMap: $CORENLP_MAP
 relaxUsingCoreNLP: true
+quoteFilter: $QUOTEFILTER
 useExactMatchForCoreNLPRelaxation: false
 EOF
     $KBPOPENREPO/tac-kbp-eal-scorer/target/appassembler/bin/scoreKBPAgainstERE $score_kbp_params 2>&1 | tee $LOG/scoreKBPAgainstERE.log

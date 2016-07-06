@@ -654,7 +654,9 @@ public final class ScoreKBPAgainstERE {
     }
 
     private boolean inQuotedRegion(String docId, ERESpan span) {
-      return quoteFilter.isInQuote(Symbol.from(docId), CharOffsetSpan.of(span.asCharOffsets()));
+      // the kbp replacement is a hack to handle dry run docids having additional tracking information on them sometimes.
+      return quoteFilter.isInQuote(Symbol.from(docId.replaceAll("-kbp", "")),
+          CharOffsetSpan.of(span.asCharOffsets()));
     }
 
     @Override
@@ -912,7 +914,7 @@ public final class ScoreKBPAgainstERE {
         final ImmutableSet<String> failuresForKey = mentionAlignmentFailures.get(errKey);
         if (failuresForKey != null) {
           msg.append("Of ").append(numResponses.count(errKey)).append(errKey)
-          .append(" responses, ").append(failuresForKey.size())
+              .append(" responses, ").append(failuresForKey.size())
               .append(" mention alignment failures:\n")
               .append(StringUtils.unixNewlineJoiner().join(failuresForKey)).append("\n");
         }
