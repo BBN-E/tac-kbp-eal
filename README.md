@@ -161,8 +161,6 @@ This program takes the following parameters:
 * `docIDMap`: (required if `dump` is `true`) a list of tab-separated pairs of doc ID and path to the
 them to standard output.
 
-Note that this currently does not validate document or corpus-level linkings.
-
 ### `ScoreAgainstERE`
 Scores system output against an annotation store.
 
