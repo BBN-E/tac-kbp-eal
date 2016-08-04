@@ -76,8 +76,8 @@ Transaction.Transfer-Money	Recipient	PER	ORG	GPE
 Transaction.Transfer-Money	Place	GPE	LOC	FAC
 Transaction.Transfer-Money	Time	Time
 Transaction.Transfer-Ownership	Beneficiary	PER	ORG	GPE
-Transaction.Transfer-Ownership	Giver	PER	ORG	GPE	ORG	COM
+Transaction.Transfer-Ownership	Giver	PER	ORG	GPE	ORG
 Transaction.Transfer-Ownership	Recipient	PER	ORG	GPE
-Transaction.Transfer-Ownership	Thing	VEH	WEA	FAC
+Transaction.Transfer-Ownership	Thing	VEH	WEA	FAC	ORG	COM
 Transaction.Transfer-Ownership	Place	GPE	LOC	FAC
 Transaction.Transfer-Ownership	Time	Time
