@@ -253,6 +253,10 @@
                             <mainClass>com.bbn.kbp.events2014.bin.FilterOutInvalidArguments</mainClass>
                             <id>filterOutInvalidArguments</id>
                         </program>
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.MergeSystemOutputs</mainClass>
+                            <id>mergeSystemOutputs</id>
+                        </program>
                     </programs>
                 </configuration>
             </plugin>
