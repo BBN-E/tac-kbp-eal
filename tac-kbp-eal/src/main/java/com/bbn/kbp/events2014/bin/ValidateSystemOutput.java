@@ -1,6 +1,7 @@
 package com.bbn.kbp.events2014.bin;
 
 import com.bbn.bue.common.StringUtils;
+import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
@@ -346,6 +347,10 @@ public final class ValidateSystemOutput {
   private static final Predicate<Response> NOT_GENERIC = compose(not(equalTo(
       KBPRealis.Generic)), ResponseFunctions.realis());
 
+  private static final ImmutableSet<String> REQUIRED_SUBDIRS = ImmutableSet.of("arguments", "linking");
+  private static final ImmutableSet<String> ALLOWED_SUBDIRS = ImmutableSet.of("arguments",
+      "linking", "corpusLinking");
+
   private void assertExactlyTwoSubdirectories(final File outputStoreDir) throws IOException {
     checkArgument(outputStoreDir.isDirectory());
     if (!new File(outputStoreDir, "arguments").isDirectory()) {
@@ -355,10 +360,17 @@ public final class ValidateSystemOutput {
     if (!new File(outputStoreDir, "linking").isDirectory()) {
       throw new IOException("Expected system output to be contain a subdirectory named 'linking'");
     }
-    if (outputStoreDir.listFiles().length != 2) {
+    final ImmutableSet<String> subdirectoryNames =
+        FluentIterable.from(ImmutableList.copyOf(outputStoreDir.listFiles()))
+            .transform(FileUtils.ToName)
+            .toSet();
+    final boolean hasValidDirectoryStructure = subdirectoryNames.containsAll(REQUIRED_SUBDIRS)
+        && ALLOWED_SUBDIRS.containsAll(subdirectoryNames);
+
+    if (!hasValidDirectoryStructure) {
       throw new IOException(
-          "Expected system output to contain exactly two sub-directories, but it contains "
-              + outputStoreDir.listFiles() + " things");
+          "Invalid subdirectories ) " + subdirectoryNames + ". Required are: " + REQUIRED_SUBDIRS
+          + "; allowed are " + ALLOWED_SUBDIRS);
     }
   }
 

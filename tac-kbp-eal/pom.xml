@@ -145,7 +145,13 @@
                                 <maxMemorySize>1g</maxMemorySize>
                             </jvmSettings>
                         </program>
-
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.NISTValidator2016</mainClass>
+                            <id>NISTValidator2016</id>
+                            <jvmSettings>
+                                <maxMemorySize>1g</maxMemorySize>
+                            </jvmSettings>
+                        </program>
                         <program>
                             <mainClass>com.bbn.kbp.events2014.bin.BuildQuoteFilter</mainClass>
                             <id>buildQuoteFilter</id>
