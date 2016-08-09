@@ -120,7 +120,7 @@ either `tac-kbp-eal/target/appassembler/bin` or `tac-kbp-eal-scorer/target/appas
 
 * a 'quote filter' to remove material with CAS and BF offsets in quoted regions
 will be built from the original text of the data set.
-* competitor submissions will be validated using `validateSystemOutput`.
+* competitor submissions will be validated using `validateSystemOutput2016`.
 * all material from quoted regions will be removed from competitor submissions.
 * document-level scores will be created using `ScoreAgainstERE` on competitor submissions and LDC
 ERE annotations.
@@ -141,7 +141,7 @@ key3: %key2%/value3
 OVERRIDE key4: value4
 ```
 
-### `validateSystemOutput`
+### `validateSystemOutput2016`
 This program will check that your submission:
 * has the correct format
 * contains only legal event roles and types
