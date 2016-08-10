@@ -146,6 +146,7 @@ public final class ScoreKBPAgainstERE {
   }
 
   public void go() throws IOException {
+    log.info(params.dump());
     final ImmutableSet<Symbol> docIDsToScore = ImmutableSet.copyOf(
         FileUtils.loadSymbolList(params.getExistingFile("docIDsToScore")));
     final ImmutableMap<Symbol, File> goldDocIDToFileMap = FileUtils.loadSymbolToFileMap(
