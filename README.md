@@ -100,7 +100,7 @@ output is fed into the scoring pipeline in a file with newline separated file of
 
 Coming soon.
 
-### Scoring document-level event frames
+### Scoring corpus-level event frames
 
 The LDC will prepare a collection of **queries** for the corpus-level evaluation.  Each query
 will identify a unique event in the document.  `CorpusQueryExecutor2016` will match each query
