@@ -28,8 +28,6 @@ The first two steps need only be repeated when the version of `bue-common-open` 
 
 If you are building from an IDE, you will need to [set up annotation processors](http://immutables.github.io/apt.html)
 
-# [![Build Status](https://semaphoreci.com/api/v1/projects/a11da8fb-4e16-48bf-af3a-a4e1680f161e/467466/badge.svg)](https://semaphoreci.com/rgabbard-bbn/kbp-2014-event-arguments)
-
 ## Using
 
 The event argument linking is a complex task with a necessarily complex scoring process.  We will
