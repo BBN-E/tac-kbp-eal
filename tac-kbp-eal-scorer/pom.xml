@@ -49,6 +49,10 @@
 				<id>KBP2014ScorerBin</id>
 			</program>
 
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.CorpusScorer</mainClass>
+                            <id>corpusScorer</id>
+                        </program>
                     </programs>
                 </configuration>
             </plugin>
