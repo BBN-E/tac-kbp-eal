@@ -58,6 +58,9 @@ public final class QueryResponseFromERE {
     }
   }
 
+  private static final String MULTIPLE_STORES_PARAM =  "com.bbn.tac.eal.storesToProcess";
+  private static final String SINGLE_STORE_PARAM =  "com.bbn.tac.eal.storeToProcess";
+
   private static void trueMain(String[] argv) throws IOException {
     final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
     log.info(params.dump());
@@ -72,9 +75,15 @@ public final class QueryResponseFromERE {
     final Random rng = new Random(params.getOptionalPositiveInteger(
         "com.bbn.tac.eal.randSeed").or(0));
 
-    final ImmutableMap<String, SystemOutputStore2016> outputStores =
-        loadStores(params.getExistingDirectory("com.bbn.tac.eal.storeDir"),
-            params.getStringList("com.bbn.tac.eal.storesToProcess"));
+    params.assertExactlyOneDefined(SINGLE_STORE_PARAM, MULTIPLE_STORES_PARAM);
+    final ImmutableMap<String, SystemOutputStore2016> outputStores;
+    if (params.isPresent(SINGLE_STORE_PARAM)) {
+      outputStores = loadSingleStore(params.getExistingDirectory(SINGLE_STORE_PARAM),
+          params.getString("com.bbn.tac.eal.systemName"));
+    } else {
+      outputStores = loadStores(params.getExistingDirectory(MULTIPLE_STORES_PARAM),
+          params.getStringList("com.bbn.tac.eal.storesToProcess"));
+    }
     final File outputFile = params.getCreatableFile("com.bbn.tac.eal.outputFile");
 
     final CorpusQueryExecutor2016 queryExecutor = queryExecutorFromParamsFor2016(params);
@@ -178,4 +187,10 @@ public final class QueryResponseFromERE {
     }
     return ret.build();
   }
+
+  private static ImmutableMap<String, SystemOutputStore2016> loadSingleStore(
+      final File outputStoreDir, final String systemName) throws IOException {
+    return ImmutableMap.of(systemName, SystemOutputStore2016.open(outputStoreDir));
+  }
+
 }
