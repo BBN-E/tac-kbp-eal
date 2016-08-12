@@ -25,7 +25,19 @@ final class ScoringUtils {
         throw new TACKBPEALException("ERE mention not in any entity");
       }
     } else if (ea instanceof EREFillerArgument) {
-      return ScoringCorefID.of(ScoringEntityType.Filler, ea.getID());
+      if (ea.getRole().equals("time")) {
+        // in the 2016 guidelines we special case time to be resolved to its
+        // TIME form
+        final Optional<String> normalizedTime =
+            ((EREFillerArgument) ea).filler().getNormalizedTime();
+        if (normalizedTime.isPresent()) {
+          return ScoringCorefID.of(ScoringEntityType.Time, normalizedTime.get());
+        } else {
+          throw new TACKBPEALException("Time argument has non-temporal filler");
+        }
+      } else {
+        return ScoringCorefID.of(ScoringEntityType.Filler, ea.getID());
+      }
     } else {
       throw new TACKBPEALException("Unknown ERE argument type " + ea.getClass());
     }
