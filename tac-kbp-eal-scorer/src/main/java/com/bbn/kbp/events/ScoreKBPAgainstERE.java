@@ -717,6 +717,7 @@ public final class ScoreKBPAgainstERE {
                 if (!arg.realis().asString().equalsIgnoreCase(ERERealisEnum.generic.name())) {
                   eventFrame.addArguments(arg);
                   addedArg = true;
+                } else {
                   log.debug("Dropping ERE arg {} from linking in {} due to generic realis", arg,
                       ereEventMention);
                 }
