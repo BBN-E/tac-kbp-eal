@@ -231,8 +231,7 @@ public final class ScoreKBPAgainstERE {
   }
 
   private static final ImmutableSet<Symbol> BANNED_ROLES =
-      SymbolUtils.setFrom("Time", "Crime", "Position",
-          "Fine", "Sentence");
+      SymbolUtils.setFrom("Position", "Fine", "Sentence");
   private static final ImmutableSet<Symbol> ROLES_2016 = SymbolUtils
       .setFrom("Agent", "Artifact", "Attacker", "Audience", "Beneficiary", "Crime", "Destination",
           "Entity", "Giver", "Instrument", "Money", "Origin", "Person", "Place", "Position",

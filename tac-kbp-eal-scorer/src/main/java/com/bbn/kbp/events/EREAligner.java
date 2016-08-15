@@ -83,10 +83,17 @@ final class EREAligner {
   }
 
 
+  private static final Symbol TIME = Symbol.from("Time");
   /**
    * Gets an identifier corresponding to the ERE object the response aligns to, if any.
    */
   public Optional<ScoringCorefID> argumentForResponse(final Response response) {
+    if (response.role().equalTo(TIME)) {
+      // time is a special case; its CAS is always its TIMEX form
+      return Optional.of(ScoringCorefID.of(ScoringEntityType.Time,
+          response.canonicalArgument().string()));
+    }
+
     final MappedEventTypeRole systemTypeRole = typeRoleForResponse(response);
     final ImmutableSet<CandidateAlignmentTarget> searchOrder =
         FluentIterable.from(candidateEREObjects)
