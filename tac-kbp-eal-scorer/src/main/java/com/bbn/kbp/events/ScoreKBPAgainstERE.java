@@ -26,6 +26,7 @@ import com.bbn.kbp.events.ontology.SimpleEventOntologyMapper;
 import com.bbn.kbp.events2014.CharOffsetSpan;
 import com.bbn.kbp.events2014.DocumentSystemOutput2015;
 import com.bbn.kbp.events2014.KBPRealis;
+import com.bbn.kbp.events2014.KBPTIMEXExpression;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
@@ -53,9 +54,10 @@ import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
@@ -81,9 +83,12 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
@@ -92,6 +97,8 @@ import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformBoth;
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformLeft;
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformRight;
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformed;
+import static com.bbn.kbp.events.DocLevelEventArgFunctions.eventArgumentType;
+import static com.bbn.kbp.events.DocLevelEventArgFunctions.eventType;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -271,11 +278,16 @@ public final class ScoreKBPAgainstERE {
     final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredForLifeDie =
         transformed(filteredFor2016, RestrictLifeInjureToLifeDieEvents.INSTANCE);
 
+    // any timex resolution less specific than the most specific correct resolution for a given
+    // argument slot is delete. See 2016 task description Section 5, "temporal arguments" bullet #3
+    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredForTemporal =
+        transformed(filteredForLifeDie, TemporalSpecificityFilter.INSTANCE);
+
     // set up for event argument scoring in 2015 style
-    eventArgumentScoringSetup(filteredForLifeDie, scoringEventObservers, outputDir);
+    eventArgumentScoringSetup(filteredForTemporal, scoringEventObservers, outputDir);
 
     // set up for linking scoring in 2015 style
-    linkingScoringSetup(filteredForLifeDie, outputDir);
+    linkingScoringSetup(filteredForTemporal, outputDir);
   }
 
   private static void eventArgumentScoringSetup(
@@ -365,7 +377,7 @@ public final class ScoreKBPAgainstERE {
   }
 
   private static final Predicate<_DocLevelEventArg> ARG_TYPE_IS_ALLOWED_FOR_2016 =
-      compose(in(ALLOWED_ROLES_2016), DocLevelEventArgFunctions.eventArgumentType());
+      compose(in(ALLOWED_ROLES_2016), eventArgumentType());
   private static final Predicate<_DocLevelEventArg> REALIS_ALLOWED_FOR_LINKING =
       compose(in(linkableRealis), DocLevelEventArgFunctions.realis());
 
@@ -381,7 +393,7 @@ public final class ScoreKBPAgainstERE {
         final EvalPair<ResponsesAndLinking, ResponsesAndLinking> input) {
       // find all Life.Die event arguments
       final ImmutableSet<DocLevelEventArg> keyArgs = ImmutableSet.copyOf(filter(input.key().args(),
-          Predicates.compose(equalTo(LifeDie), DocLevelEventArgFunctions.eventType())));
+          compose(equalTo(LifeDie), eventType())));
       // get all possible candidate Life.Injure event arguments that could be derived from these Life.Die arguments
       final ImmutableSet<DocLevelEventArg> argsToIgnore =
           ImmutableSet.copyOf(transform(keyArgs, LifeDieToLifeInjure.INSTANCE));
@@ -407,8 +419,72 @@ public final class ScoreKBPAgainstERE {
     }
   }
 
+  private enum TemporalSpecificityFilter implements
+      Function<EvalPair<ResponsesAndLinking, ResponsesAndLinking>, EvalPair<ResponsesAndLinking, ResponsesAndLinking>> {
+    INSTANCE;
 
-  private static Function<? super ResponsesAndLinking, ResponsesAndLinking> transformArgs(
+    private static final Symbol TIME = Symbol.from("Time");
+
+    @Override
+    public EvalPair<ResponsesAndLinking, ResponsesAndLinking> apply(
+        final EvalPair<ResponsesAndLinking, ResponsesAndLinking> input) {
+      final ImmutableListMultimap<Symbol, DocLevelEventArg> goldTemporalArgsByEventType =
+          FluentIterable.from(input.key().args())
+              .filter(compose(equalTo(TIME), eventArgumentType()))
+              .index(eventType());
+      final ImmutableListMultimap<Symbol, DocLevelEventArg> systemTemporalArgsByEventType =
+          FluentIterable.from(input.test().args())
+              .filter(compose(equalTo(TIME), eventArgumentType()))
+              .index(eventType());
+
+      final ImmutableSet.Builder<DocLevelEventArg> toDeleteB = ImmutableSet.builder();
+
+      final Sets.SetView<Symbol> eventTypesWithTimesInBoth =
+          Sets.intersection(goldTemporalArgsByEventType.keySet(),
+              systemTemporalArgsByEventType.keySet());
+
+      for (final Symbol eventType : eventTypesWithTimesInBoth) {
+        final ImmutableList<DocLevelEventArg> goldTimeArgsOfType =
+            goldTemporalArgsByEventType.get(eventType);
+
+        final Set<DocLevelEventArg> lessSpecificVersionsOfGoldTimes = new HashSet<>();
+        for (final DocLevelEventArg docLevelEventArg : goldTimeArgsOfType) {
+          try {
+            final Pattern TIME_PAT = Pattern.compile("Time-(.+)");
+            final Matcher m = TIME_PAT.matcher(docLevelEventArg.corefID());
+            if (m.matches()) {
+              final KBPTIMEXExpression time = KBPTIMEXExpression.parseTIMEX(m.group(1));
+
+              for (final KBPTIMEXExpression lessSpecificTime : time.lessSpecificCompatibleTimes()) {
+                lessSpecificVersionsOfGoldTimes.add(docLevelEventArg
+                    .withCorefID("Time-" + lessSpecificTime));
+              }
+            } else {
+              throw new KBPTIMEXExpression.KBPTIMEXException("Illegal temporal corefID "
+                  + docLevelEventArg.corefID());
+            }
+          } catch (KBPTIMEXExpression.KBPTIMEXException timexException) {
+            log.warn(
+                "While applying only-most-specific-temporal rule, encountered an illegal coref ID "
+                    + "for temporal argument " + docLevelEventArg.corefID()
+                    + " in the LDC key!");
+          }
+        }
+
+        toDeleteB.addAll(lessSpecificVersionsOfGoldTimes);
+      }
+
+      final ImmutableSet<DocLevelEventArg> toDelete = toDeleteB.build();
+      final Predicate<DocLevelEventArg> notDeleted = not(in(toDelete));
+      if (Sets.filter(input.test().args(), notDeleted).size() < input.test().args().size()) {
+        log.info("The following argument were deleted by the temporal specificity rule: {}",
+            Sets.filter(input.test().args(), in(toDelete)));
+      }
+      return EvalPair.of(input.key().filter(notDeleted), input.test().filter(notDeleted));
+    }
+  }
+
+    private static Function<? super ResponsesAndLinking, ResponsesAndLinking> transformArgs(
       final Function<? super DocLevelEventArg, DocLevelEventArg> transformer) {
     return new Function<ResponsesAndLinking, ResponsesAndLinking>() {
       @Override
