@@ -74,7 +74,6 @@ referred to by its document ID and event frame ID together, yielding a `DocEvent
  * By exact match for CAS (Canonical Argument String) offsets to `Argument` or the `Argument` head
  * By exact match for `Argument` head and the head of the CAS offsets (see [Using CoreNLP](# using-corenlp) for details)
  * By either the CAS containing the `Argument` or visa versa, and heads being included in both of them. (see [Using CoreNLP](# using-corenlp) for details)
- * The above rules with fallback to matching base filler offsets instead of CAS.
 
  In the code you will occasionally see references to scoring document-level event arguments by
  assessment. This was done in 2014 and 2015 and the code has been kept for backwards compatibility.
