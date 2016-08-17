@@ -125,6 +125,9 @@ public final class CorpusScorer {
           .extractCorrectMatches(query, queryAssessments);
       final SystemOutputMatches systemMatches =
           matchesFromSystemOutputExtractor.extractMatches(query, systemOutputStore);
+      log.info("For query {}, {} key matches, {} assessed and {} unassessed system matches", query.id(),
+          correctMatches.size(), systemMatches.assessedMatches().size(),
+          systemMatches.unassessedMatches().size());
       input.inspect(EvalPair.of(correctMatches, systemMatches));
     }
 
