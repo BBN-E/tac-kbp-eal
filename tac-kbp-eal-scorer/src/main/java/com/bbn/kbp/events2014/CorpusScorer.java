@@ -27,11 +27,13 @@ import com.google.common.base.Functions;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
+import com.google.common.math.DoubleMath;
 import com.google.common.reflect.TypeToken;
 
 import org.immutables.func.Functional;
@@ -53,6 +55,8 @@ import static com.google.common.base.Functions.compose;
 import static com.google.common.base.Functions.toStringFunction;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.Iterables.concat;
+import static com.google.common.collect.Iterables.getFirst;
 
 public final class CorpusScorer {
 
@@ -178,6 +182,13 @@ public final class CorpusScorer {
             BinaryFScoreBootstrapStrategy.createBrokenDownBy("ByQuery",
                 compose(toStringFunction(), queryID()), outputDir),
             1000, new Random(0)));
+
+    // officials core (non-bootstrapped)
+    final File linearScoreDir = new File(outputDir, "linearScore");
+    inspect(alignment)
+        .with(LinearScoringInspector.createOutputtingTo(linearScoreDir));
+
+
   }
 
   private static final String MULTIPLE_SYSTEMS_PARAM = "com.bbn.tac.eal.systemOutputsDir";
@@ -397,5 +408,86 @@ final class LogUnassessed implements Inspector<EvalPair<Set<QueryDocMatch>, Syst
   @Override
   public void finish() throws IOException {
     output.write(StringUtils.unixNewlineJoiner().join(unassessed.build()));
+  }
+}
+
+
+// This and the very similar ArgumentScoringInspector should get refactored together someday
+final class LinearScoringInspector implements
+    Inspector<ProvenancedAlignment<QueryDocMatch, QueryDocMatch, QueryDocMatch, QueryDocMatch>> {
+  private static final Logger log = LoggerFactory.getLogger(LinearScoringInspector.class);
+
+  // gamma as defined by the task guidelines.
+  private static final double gamma = 0.25;
+  private final File outputDir;
+
+  final ImmutableMap.Builder<Symbol, Integer> truePositives = ImmutableMap.builder();
+  final ImmutableMap.Builder<Symbol, Integer> falsePositives = ImmutableMap.builder();
+  final ImmutableMap.Builder<Symbol, Integer> falseNegatives = ImmutableMap.builder();
+  final ImmutableMap.Builder<Symbol, Double> scores = ImmutableMap.builder();
+
+  private LinearScoringInspector(final File outputDir) {
+    this.outputDir = outputDir;
+  }
+
+  public static LinearScoringInspector createOutputtingTo(final File outputDir) {
+    return new LinearScoringInspector(outputDir);
+  }
+
+  @Override
+  public void inspect(
+      final ProvenancedAlignment<QueryDocMatch, QueryDocMatch, QueryDocMatch, QueryDocMatch> evalPair) {
+    // left is ERE, right is system output.
+    final Iterable<QueryDocMatch> args =
+        concat(evalPair.allLeftItems(), evalPair.allRightItems());
+    if (Iterables.isEmpty(args)) {
+      log.warn("Got a query with no matches in key");
+    }
+
+    final ImmutableSet<Symbol> queryIds = FluentIterable.from(args).transform(queryID()).toSet();
+    if (queryIds.size() > 1) {
+      throw new TACKBPEALException("All query matches being compared must be from the same query "
+          + "but got " + queryID());
+    }
+
+    final Symbol queryID = checkNotNull(getFirst(args, null)).queryID();
+    log.info("Gathering scores for {}", queryID);
+    int queryTPs = evalPair.leftAligned().size();
+    checkArgument(evalPair.leftAligned().equals(evalPair.rightAligned()));
+    int queryFPs = evalPair.rightUnaligned().size();
+    // scores are clipped at 0.
+    double score = Math.max(queryTPs - gamma * queryFPs, 0);
+    int queryFNs = evalPair.leftUnaligned().size();
+    truePositives.put(queryID, queryTPs);
+    falsePositives.put(queryID, queryFPs);
+    falseNegatives.put(queryID, queryFNs);
+    scores.put(queryID, score);
+  }
+
+  private static final String SCORE_PATTERN = "TP: %d, FP: %d, FN: %d, Score: %f\n";
+  @Override
+  public void finish() throws IOException {
+    final ImmutableMap<Symbol, Double> scores = this.scores.build();
+    final ImmutableMap<Symbol, Integer> falsePositives = this.falsePositives.build();
+    final ImmutableMap<Symbol, Integer> truePositives = this.truePositives.build();
+    final ImmutableMap<Symbol, Integer> falseNegatives = this.falseNegatives.build();
+
+    // see guidelines section 7.3.1.1.3 for aggregating rules:
+    final double meanScore = scores.isEmpty()?Double.NaN:DoubleMath.mean(scores.values());
+    Files.asCharSink(new File(outputDir, "linearScore.txt"), Charsets.UTF_8)
+        .write(Double.toString(meanScore));
+
+    for (final Symbol queryId : scores.keySet()) {
+      final File queryDir = new File(outputDir, queryId.asString());
+      queryDir.mkdirs();
+      final File queryScoreFile = new File(queryDir, "score.txt");
+      // avoid dividing by zero
+      final double normalizer = Math.max(truePositives.get(queryId) + falseNegatives.get(queryId), 1);
+      // see guidelines referenced above
+      // pretends that the corpus is a single document
+      Files.asCharSink(queryScoreFile, Charsets.UTF_8).write(String
+          .format(SCORE_PATTERN, truePositives.get(queryId), falsePositives.get(queryId),
+              falseNegatives.get(queryId), 100 * scores.get(queryId) / normalizer));
+    }
   }
 }
