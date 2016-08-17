@@ -47,7 +47,10 @@ import java.util.Set;
 
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.inspect;
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformRight;
+import static com.bbn.kbp.events2014.QueryDocMatchFunctions.queryID;
 import static com.bbn.kbp.events2014.ResponseFunctions.predicateJustifications;
+import static com.google.common.base.Functions.compose;
+import static com.google.common.base.Functions.toStringFunction;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -167,6 +170,13 @@ public final class CorpusScorer {
     inspect(alignment)
         .with(BootstrapInspector.forStrategy(
             BinaryFScoreBootstrapStrategy.create("Aggregate", outputDir),
+            1000, new Random(0)));
+
+    // bootstrapped scores per-query
+    inspect(alignment)
+        .with(BootstrapInspector.forStrategy(
+            BinaryFScoreBootstrapStrategy.createBrokenDownBy("ByQuery",
+                compose(toStringFunction(), queryID()), outputDir),
             1000, new Random(0)));
   }
 
