@@ -92,6 +92,7 @@ public final class CorpusScorer {
       score(queries, queryAssessments, systemOutputStore,
           QueryResponseFromERE.queryExecutorFromParamsFor2016(params),
           params.getOptionalBoolean("com.bbn.tac.eal.allowUnassessed").or(false),
+          params.getOptionalBoolean("com.bbn.tac.eal.ignoreJustifications").or(false),
           new File(outputDir, systemOutputStore.systemID().asString()));
       systemOutputStore.close();
     }
@@ -102,6 +103,7 @@ public final class CorpusScorer {
       final SystemOutputStore2016 systemOutputStore,
       final CorpusQueryExecutor2016 queryExecutor,
       boolean allowUnassessed,
+      boolean ignoreJustifications,
       final File outputDir) throws IOException {
     final TypeToken<Set<QueryDocMatch>> setOfQueryMatches = new TypeToken<Set<QueryDocMatch>>() {
     };
@@ -112,7 +114,11 @@ public final class CorpusScorer {
     final CorrectMatchesFromAssessmentsExtractor matchesFromAssessmentsExtractor =
         new CorrectMatchesFromAssessmentsExtractor();
     final QueryResponsesFromSystemOutputExtractor matchesFromSystemOutputExtractor =
-        QueryResponsesFromSystemOutputExtractor.of(queryAssessments, queryExecutor);
+        QueryResponsesFromSystemOutputExtractor.builder()
+          .corpusQueryAssessments(queryAssessments)
+          .queryExecutor(queryExecutor)
+          .ignoreJustifications(ignoreJustifications)
+          .build();
 
     for (final CorpusQuery2016 query : queries) {
       final Set<QueryDocMatch> correctMatches = matchesFromAssessmentsExtractor
@@ -247,11 +253,24 @@ abstract class _QueryResponsesFromSystemOutputExtractor {
   @Value.Parameter
   public abstract CorpusQueryExecutor2016 queryExecutor();
 
+  @Value.Default
+  public boolean ignoreJustifications() {
+    return false;
+  }
+
   public final SystemOutputMatches extractMatches(final CorpusQuery2016 query,
       final SystemOutputStore2016 input) {
     checkNotNull(input);
     final ImmutableSet.Builder<QueryDocMatch> assessedMatches = ImmutableSet.builder();
     final ImmutableSet.Builder<UnassessedMatch> unassessedMatches = ImmutableSet.builder();
+
+    // if we have been requested to ignore justifications, do so for the key
+    final CorpusQueryAssessments assessmentsToUse;
+    if (ignoreJustifications()) {
+      assessmentsToUse = corpusQueryAssessments().withNeutralizedJustifications();
+    } else {
+      assessmentsToUse = corpusQueryAssessments();
+    }
 
     try {
       for (final DocEventFrameReference match : queryExecutor().queryEventFrames(input, query)) {
@@ -261,8 +280,19 @@ abstract class _QueryResponsesFromSystemOutputExtractor {
               QueryResponse2016.of(query.id(), match.docID(),
                   mergePJs(linkingForMatchedDocument.responseSetIds().get()
                       .get(match.eventFrameID())));
+
+          // if we have been requested to ignore justifications, strip the justification from
+          // our query response
+          final QueryResponse2016 queryResponseToScore;
+          if (ignoreJustifications()) {
+            queryResponseToScore = queryResponse.withNeutralizedJustification();
+          } else {
+            queryResponseToScore = queryResponse;
+          }
+
           final QueryAssessment2016 assessment =
-              corpusQueryAssessments().assessments().get(queryResponse);
+              assessmentsToUse.assessments().get(queryResponseToScore);
+
           if (assessment != null) {
             final QueryDocMatch docMatch = QueryDocMatch.of(query.id(), match.docID(), assessment);
             assessedMatches.add(docMatch);

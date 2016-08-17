@@ -1,21 +1,32 @@
 package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.TextGroupPublicImmutable;
+import com.bbn.bue.common.annotations.MoveToBUECommon;
 import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.base.CharMatcher;
+import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Ordering;
 
 import org.immutables.func.Functional;
 import org.immutables.value.Value;
 
+import java.util.Map;
+
+import static com.bbn.bue.common.OrderingUtils.maxFunction;
 import static com.bbn.bue.common.StringUtils.anyCharMatches;
 import static com.bbn.bue.common.StringUtils.isEmpty;
+import static com.bbn.bue.common.collections.MultimapUtils.reduceToMap;
 import static com.bbn.bue.common.symbols.SymbolUtils.desymbolizeFunction;
+import static com.bbn.kbp.events2014._QueryResponse2016.neutralizeRealisFunction;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.Iterables.all;
 import static com.google.common.collect.Iterables.transform;
@@ -38,7 +49,7 @@ public abstract class _CorpusQueryAssessments {
    * ID.
    */
   @Value.Parameter
-  public abstract ImmutableMultimap<QueryResponse2016, Symbol> queryResponsesToSystemIDs();
+  public abstract ImmutableSetMultimap<QueryResponse2016, Symbol> queryResponsesToSystemIDs();
 
   /**
    * A map of {@link QueryResponse2016}s to their {@link QueryAssessment2016} assessments. Any
@@ -96,4 +107,55 @@ public abstract class _CorpusQueryAssessments {
     checkArgument(all(systemIDStrings, not(anyCharMatches(CharMatcher.WHITESPACE))),
         "System IDs may not contain whitespace");
   }
+
+  public final CorpusQueryAssessments withNeutralizedJustifications() {
+    return CorpusQueryAssessments.builder()
+        .queryReponses(Iterables.transform(queryReponses(), neutralizeRealisFunction()))
+        .queryResponsesToSystemIDs(
+            copyWithTransformedKeys(queryResponsesToSystemIDs(), neutralizeRealisFunction()))
+        .assessments(
+            reduceToMap(
+                transformKeys(assessments(), neutralizeRealisFunction()),
+                // if multiple assessments on the same doc are collapsed together,
+                // the ones higher in rank "trump" others
+                maxFunction(Ordering.<QueryAssessment2016>natural())))
+        // we arbitrarily take the first metadata, which is a bit of a hack
+        .metadata(reduceToMap(transformKeys(metadata(), neutralizeRealisFunction()),
+            _CorpusQueryAssessments.<String>getFirstFunction()))
+        .build();
+  }
+
+  @MoveToBUECommon
+  private static <K1, K2, V> ImmutableSetMultimap<K2, V> copyWithTransformedKeys(
+      final Multimap<K1,V> setMultimap,
+      final Function<? super K1, ? extends K2> injection) {
+    final ImmutableSetMultimap.Builder<K2,V> ret = ImmutableSetMultimap.builder();
+    for (final Map.Entry<K1, V> entry : setMultimap.entries()) {
+      ret.put(checkNotNull(injection.apply(entry.getKey())), entry.getValue());
+    }
+    return ret.build();
+  }
+
+  @MoveToBUECommon
+  private static <K1, K2, V> ImmutableSetMultimap<K2, V> transformKeys(Map<K1, V> input,
+      Function<? super K1, ? extends K2> function) {
+    final ImmutableSetMultimap.Builder<K2, V> ret = ImmutableSetMultimap.builder();
+
+    for (final Map.Entry<K1, V> entry : input.entrySet()) {
+      ret.put(checkNotNull(function.apply(entry.getKey())), entry.getValue());
+    }
+
+    return ret.build();
+  }
+
+  @MoveToBUECommon
+  private static <V> Function<Iterable<? extends V>, V> getFirstFunction() {
+    return new Function<Iterable<? extends V>, V>() {
+      @Override
+      public V apply(final Iterable<? extends V> input) {
+        return checkNotNull(Iterables.getFirst(input, null));
+      }
+    };
+  }
 }
+
