@@ -435,7 +435,8 @@ final class LinearScoringInspector implements
     Inspector<ProvenancedAlignment<QueryDocMatch, QueryDocMatch, QueryDocMatch, QueryDocMatch>> {
   private static final Logger log = LoggerFactory.getLogger(LinearScoringInspector.class);
 
-  // gamma as defined by the task guidelines.
+  // gamma as defined by the 2016 task guidelines.
+  // http://www.nist.gov/tac/2016/KBP/Event/Argument/guidelines/TAC_2016.v24.pdf
   private static final double gamma = 0.25;
   private final File outputDir;
 
