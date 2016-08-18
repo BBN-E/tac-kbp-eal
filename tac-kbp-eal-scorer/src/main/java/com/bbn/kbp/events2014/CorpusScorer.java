@@ -5,14 +5,21 @@ import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.TextGroupPackageImmutable;
 import com.bbn.bue.common.TextGroupPublicImmutable;
 import com.bbn.bue.common.evaluation.AggregateBinaryFScoresInspector;
+import com.bbn.bue.common.evaluation.Alignment;
 import com.bbn.bue.common.evaluation.BinaryFScoreBootstrapStrategy;
 import com.bbn.bue.common.evaluation.BootstrapInspector;
+import com.bbn.bue.common.evaluation.BootstrapWriter;
+import com.bbn.bue.common.evaluation.BrokenDownPRFAggregator;
 import com.bbn.bue.common.evaluation.EquivalenceBasedProvenancedAligner;
 import com.bbn.bue.common.evaluation.EvalPair;
+import com.bbn.bue.common.evaluation.EvaluationConstants;
 import com.bbn.bue.common.evaluation.InspectionNode;
 import com.bbn.bue.common.evaluation.InspectorTreeDSL;
 import com.bbn.bue.common.evaluation.InspectorTreeNode;
 import com.bbn.bue.common.evaluation.ProvenancedAlignment;
+import com.bbn.bue.common.evaluation.SummaryConfusionMatrices;
+import com.bbn.bue.common.evaluation.SummaryConfusionMatrix;
+import com.bbn.bue.common.math.PercentileComputer;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.strings.offsets.CharOffset;
 import com.bbn.bue.common.symbols.Symbol;
@@ -24,14 +31,19 @@ import com.bbn.kbp.events2014.io.SystemOutputStore2016;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
+import com.google.common.math.DoubleMath;
 import com.google.common.reflect.TypeToken;
 
 import org.immutables.func.Functional;
@@ -41,6 +53,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -53,6 +68,8 @@ import static com.google.common.base.Functions.compose;
 import static com.google.common.base.Functions.toStringFunction;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.Iterables.concat;
+import static com.google.common.collect.Iterables.getFirst;
 
 public final class CorpusScorer {
 
@@ -178,6 +195,18 @@ public final class CorpusScorer {
             BinaryFScoreBootstrapStrategy.createBrokenDownBy("ByQuery",
                 compose(toStringFunction(), queryID()), outputDir),
             1000, new Random(0)));
+
+    // linear score (non-bootstrapped)
+    final File linearScoreDir = new File(outputDir, "linearScore");
+    inspect(alignment)
+        .with(LinearScoringInspector.createOutputtingTo(linearScoreDir));
+
+    // officials core (bootstrapped linear score)
+    inspect(alignment)
+        .with(BootstrapInspector.forStrategy(
+            LinearScoreBootstrapStrategy.create("OfficialScore", outputDir),
+            1000, new Random(0)));
+
   }
 
   private static final String MULTIPLE_SYSTEMS_PARAM = "com.bbn.tac.eal.systemOutputsDir";
@@ -399,3 +428,171 @@ final class LogUnassessed implements Inspector<EvalPair<Set<QueryDocMatch>, Syst
     output.write(StringUtils.unixNewlineJoiner().join(unassessed.build()));
   }
 }
+
+
+// This and the very similar ArgumentScoringInspector should get refactored together someday
+final class LinearScoringInspector implements
+    Inspector<ProvenancedAlignment<QueryDocMatch, QueryDocMatch, QueryDocMatch, QueryDocMatch>> {
+  private static final Logger log = LoggerFactory.getLogger(LinearScoringInspector.class);
+
+  // gamma as defined by the 2016 task guidelines.
+  // http://www.nist.gov/tac/2016/KBP/Event/Argument/guidelines/TAC_2016.v24.pdf
+  private static final double gamma = 0.25;
+  private final File outputDir;
+
+  final ImmutableMap.Builder<Symbol, Integer> truePositives = ImmutableMap.builder();
+  final ImmutableMap.Builder<Symbol, Integer> falsePositives = ImmutableMap.builder();
+  final ImmutableMap.Builder<Symbol, Integer> falseNegatives = ImmutableMap.builder();
+  final ImmutableMap.Builder<Symbol, Double> scores = ImmutableMap.builder();
+
+  private LinearScoringInspector(final File outputDir) {
+    this.outputDir = outputDir;
+  }
+
+  public static LinearScoringInspector createOutputtingTo(final File outputDir) {
+    return new LinearScoringInspector(outputDir);
+  }
+
+  @Override
+  public void inspect(
+      final ProvenancedAlignment<QueryDocMatch, QueryDocMatch, QueryDocMatch, QueryDocMatch> evalPair) {
+    // left is ERE, right is system output.
+    final Iterable<QueryDocMatch> args =
+        concat(evalPair.allLeftItems(), evalPair.allRightItems());
+    if (Iterables.isEmpty(args)) {
+      log.warn("Got a query with no matches in key");
+    }
+
+    final ImmutableSet<Symbol> queryIds = FluentIterable.from(args).transform(queryID()).toSet();
+    if (queryIds.size() > 1) {
+      throw new TACKBPEALException("All query matches being compared must be from the same query "
+          + "but got " + queryID());
+    }
+
+    int queryTPs = evalPair.leftAligned().size();
+    int queryFPs = evalPair.rightUnaligned().size();
+    int queryFNs = evalPair.leftUnaligned().size();
+
+    final Symbol queryID = checkNotNull(getFirst(args, null)).queryID();
+    log.info("Gathering scores for {}", queryID);
+    checkArgument(evalPair.leftAligned().equals(evalPair.rightAligned()));
+    double score = computeLinearScore(queryTPs, queryFPs, queryFNs);
+    truePositives.put(queryID, queryTPs);
+    falsePositives.put(queryID, queryFPs);
+    falseNegatives.put(queryID, queryFNs);
+    scores.put(queryID, score);
+  }
+
+  static double computeLinearScore(final double queryTPs, final double queryFPs, final double queryFNs) {
+    double scoreDenom = Math.max(queryTPs + queryFNs, 1);
+    // scores are clipped at 0.
+    return Math.max((queryTPs - gamma * queryFPs)/scoreDenom, 0);
+  }
+
+  private static final String SCORE_PATTERN = "TP: %d, FP: %d, FN: %d, Score: %f\n";
+  @Override
+  public void finish() throws IOException {
+    final ImmutableMap<Symbol, Double> scores = this.scores.build();
+    final ImmutableMap<Symbol, Integer> falsePositives = this.falsePositives.build();
+    final ImmutableMap<Symbol, Integer> truePositives = this.truePositives.build();
+    final ImmutableMap<Symbol, Integer> falseNegatives = this.falseNegatives.build();
+
+    // see guidelines section 7.3.1.1.3 for aggregating rules:
+    outputDir.mkdirs();
+    final double meanScore = scores.isEmpty()?Double.NaN:DoubleMath.mean(scores.values());
+    Files.asCharSink(new File(outputDir, "linearScore.txt"), Charsets.UTF_8)
+        .write(Double.toString(meanScore));
+
+    for (final Symbol queryId : scores.keySet()) {
+      final File queryDir = new File(outputDir, queryId.asString());
+      queryDir.mkdirs();
+      final File queryScoreFile = new File(queryDir, "score.txt");
+      // avoid dividing by zero
+      final double normalizer = Math.max(truePositives.get(queryId) + falseNegatives.get(queryId), 1);
+      // see guidelines referenced above
+      // pretends that the corpus is a single document
+      Files.asCharSink(queryScoreFile, Charsets.UTF_8).write(String
+          .format(SCORE_PATTERN, truePositives.get(queryId), falsePositives.get(queryId),
+              falseNegatives.get(queryId), 100 * scores.get(queryId) / normalizer));
+    }
+  }
+}
+
+final class LinearScoreBootstrapStrategy<T> implements
+    BootstrapInspector.BootstrapStrategy<Alignment<? extends T, ? extends T>, SummaryConfusionMatrix> {
+  private final File outputDir;
+  private final String name;
+
+  private LinearScoreBootstrapStrategy(String name, File outputDir) {
+    this.name = (String) Preconditions.checkNotNull(name);
+    this.outputDir = (File)Preconditions.checkNotNull(outputDir);
+  }
+
+  public static <T> LinearScoreBootstrapStrategy<T> create(String name, File outputDir) {
+    return new LinearScoreBootstrapStrategy<>(name, outputDir);
+  }
+
+  public BootstrapInspector.ObservationSummarizer<Alignment<? extends T, ? extends T>, SummaryConfusionMatrix> createObservationSummarizer() {
+    return new BootstrapInspector.ObservationSummarizer<Alignment<? extends T, ? extends T>, SummaryConfusionMatrix>() {
+      public SummaryConfusionMatrix summarizeObservation(Alignment<? extends T, ? extends T> alignment) {
+        return LinearScoreBootstrapStrategy.this.confusionMatrixForAlignment(alignment);
+      }
+    };
+  }
+
+  private SummaryConfusionMatrix confusionMatrixForAlignment(Alignment<? extends T, ? extends T> alignment) {
+    com.bbn.bue.common.evaluation.SummaryConfusionMatrices.Builder summaryConfusionMatrixB = SummaryConfusionMatrices
+        .builder();
+    summaryConfusionMatrixB.accumulatePredictedGold(EvaluationConstants.PRESENT, EvaluationConstants.PRESENT, (double)alignment.rightAligned().size());
+    summaryConfusionMatrixB.accumulatePredictedGold(EvaluationConstants.ABSENT, EvaluationConstants.PRESENT, (double)alignment.leftUnaligned().size());
+    summaryConfusionMatrixB.accumulatePredictedGold(EvaluationConstants.PRESENT, EvaluationConstants.ABSENT, (double)alignment.rightUnaligned().size());
+    return summaryConfusionMatrixB.build();
+  }
+
+  public Collection<BootstrapInspector.SummaryAggregator<SummaryConfusionMatrix>> createSummaryAggregators() {
+    return ImmutableList.<BootstrapInspector.SummaryAggregator<SummaryConfusionMatrix>>of(new Aggregator());
+  }
+
+  public BootstrapInspector.SummaryAggregator<Map<String, SummaryConfusionMatrix>> prfAggregator() {
+    return BrokenDownPRFAggregator.create(this.name, this.outputDir);
+  }
+
+  private final class Aggregator implements BootstrapInspector.SummaryAggregator<SummaryConfusionMatrix> {
+    private final ImmutableList.Builder<Double> linearScores = ImmutableList.builder();
+
+    private static final String AGGREGATE = "Aggregate";
+    private static final String OFFICIAL_SCORE = "OfficialScore";
+    private final BootstrapWriter writer = BootstrapWriter.builder()
+        .measures(ImmutableList.of(OFFICIAL_SCORE))
+        .percentilesToPrint(ImmutableList.of(0.025, 0.05, 0.25, 0.5, 0.75, 0.95, 0.975))
+        .percentileComputer(PercentileComputer.nistPercentileComputer())
+        .build();
+
+    @Override
+    public void observeSample(final Collection<SummaryConfusionMatrix> collection) {
+      final List<Double> perQueryScores = new ArrayList<>();
+
+      for (final SummaryConfusionMatrix summaryConfusionMatrix : collection) {
+        final double queryTPs = summaryConfusionMatrix.cell(EvaluationConstants.PRESENT, EvaluationConstants.PRESENT);
+        final double queryFPs = summaryConfusionMatrix.cell(EvaluationConstants.PRESENT, EvaluationConstants.ABSENT);
+        final double queryFNs = summaryConfusionMatrix.cell(EvaluationConstants.ABSENT, EvaluationConstants.PRESENT);
+
+        perQueryScores.add(LinearScoringInspector.computeLinearScore(queryTPs, queryFPs, queryFNs));
+      }
+
+      linearScores.add(perQueryScores.isEmpty()?0.0:DoubleMath.mean(perQueryScores));
+    }
+
+    @Override
+    public void finish() throws IOException {
+      final ImmutableListMultimap<String, Double> data =
+          ImmutableListMultimap.<String, Double>builder()
+              .putAll(AGGREGATE, linearScores.build()).build();
+
+      writer.writeBootstrapData(name,
+          ImmutableMap.of(OFFICIAL_SCORE, data),
+          outputDir);
+    }
+  }
+}
+
