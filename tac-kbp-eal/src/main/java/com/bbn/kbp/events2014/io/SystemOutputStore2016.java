@@ -74,7 +74,8 @@ public class SystemOutputStore2016 implements SystemOutputStore {
     if (argStore.docIDs().equals(linkingStore.docIDs())) {
       return new SystemOutputStore2016(systemID, argStore, linkingStore, corpusLinkingFile);
     } else {
-      throw new RuntimeException("Argument and linking store docIDs do not match");
+      throw new RuntimeException("Argument and linking store docIDs do not match, missing " + Sets
+          .symmetricDifference(argStore.docIDs(), linkingStore.docIDs()));
     }
   }
 
