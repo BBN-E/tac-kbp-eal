@@ -209,7 +209,9 @@ public final class ScoreKBPAgainstERE {
     // we want globally unique IDs here
     final ERELoader loader = ERELoader.builder().prefixDocIDToAllIDs(true).build();
 
-    for (final Symbol docID : docIDsToScore) {
+    for (Symbol docID : docIDsToScore) {
+      // EvalHack - 2016 dry run contains some files for which Serif spuriously adds this document ID
+      docID = Symbol.from(docID.asString().replace("-kbp", ""));
       final File ereFileName = goldDocIDToFileMap.get(docID);
       if (ereFileName == null) {
         throw new RuntimeException("Missing key file for " + docID);
