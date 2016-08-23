@@ -123,3 +123,19 @@ Here are the steps that `bin/evaluate2016.sh` performs:
     com.bbn.tac.eal.maxResponsesPerQueryPerSystem: 200
     ```
 
+7. These will be sent to the LDC for evaluation. When repsonses are received, the corpus-level scorer will be run as follows:
+
+    ```
+    CorpusScorer
+    
+    com.bbn.tac.eal.outputDir: directory to output scoring information to
+    com.bbn.tac.eal.queryFile: file describing queries to execute
+    com.bbn.tac.eal.queryAssessmentsFile: file containing LDC assessments of query matches
+    com.bbn.tac.eal.systemOutputDir: system output to score
+    com.bbn.tac.eal.eremap: ere docid to filepath map.
+    com.bbn.tac.eal.queryFile: input queries
+    com.bbn.tac.eal.slack: 300
+    com.bbn.tac.eal.matchBestCASTypesOnly: false
+    com.bbn.tac.eal.minNominalCASOverlap: 0.3
+    com.bbn.tac.eal.maxResponsesPerQueryPerSystem: 200
+    ```
