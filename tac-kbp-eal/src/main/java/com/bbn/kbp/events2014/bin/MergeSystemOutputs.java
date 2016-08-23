@@ -107,7 +107,9 @@ public final class MergeSystemOutputs {
             while (allIds.contains(Integer.toHexString(newId))) {
               newId++;
             }
-            ret.addCorpusEventFrames(cef.withId(Integer.toHexString(newId)));
+            final String id = Integer.toHexString(newId);
+            ret.addCorpusEventFrames(cef.withId(id));
+            log.info("Frame id {} remapped to {}", cef.id(), id);
           } else {
             ret.addCorpusEventFrames(cef);
           }
