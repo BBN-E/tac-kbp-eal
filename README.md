@@ -159,7 +159,18 @@ This program takes the following parameters:
 * `docIDMap`: (required if `dump` is `true`) a list of tab-separated pairs of doc ID and path to the
 them to standard output.
 
-### `ScoreAgainstERE`
+### `NISTValidator2016`
+
+This program performs the same operations as `validateSystemOutput2016` but with the frontend used by NIST in their evaluation website.
+
+Its usage is `NISTValidator2016 rolesFile linkableTypesFile docIdToOriginalTextMap [VERBOSE|COMPACT] submissionFile` where:
+* `roleFiles` is `data/2016.types.txt`
+* `linkableTypesFile` is `data/2016.linkable.txt`
+* `docIdToOriginalTextMap` is a file, one entry per line, with `docid tab /path/to/raw/ldc/file`
+* `[VERBOSE|COMPACT]` the level of detail in error messages
+* `submissionFile` is the file you provide to NIST
+
+### `ScoreAgainstERE` 
 Scores system output against an annotation store.
 
 ### `CorpusScorer`
