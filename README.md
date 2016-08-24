@@ -154,6 +154,7 @@ so that you can check for mistakes.
 This program takes the following parameters:
 * `systemOutputStore`: the path of the system output store to be validated
 * `validRoles`: is `data/2016.types.txt` (for KBP 2016)
+* `linkableTypes` : is `data/2016.linkable.txt` (for KBP 2016) - for each event argument type, valid argument types for it to be linked to.
 * `dump`: whether to dump response to `stdout` in a human readable format.
 * `docIDMap`: (required if `dump` is `true`) a list of tab-separated pairs of doc ID and path to the
 them to standard output.
