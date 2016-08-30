@@ -15,4 +15,4 @@ Personnel.End-Position	Personnel.End-Position
 Personnel.Start-Position	Personnel.Start-Position
 Transaction.Transaction	Transaction.Transaction	Transaction.Transfer-Money	Transaction.Transfer-Ownership
 Transaction.Transfer-Money	Transaction.Transfer-Money	Transaction.Transaction
-Transaction.Transfer-Ownership	Transaction.Transfer-Ownership	Transaction.Transfer-Ownership
+Transaction.Transfer-Ownership	Transaction.Transfer-Ownership	Transaction.Transaction
