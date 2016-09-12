@@ -57,7 +57,9 @@ public abstract class AbstractLinkingStrategy implements LinkingStrategy {
       @Override
       public Optional<ResponseLinking> readTransformingIDs(final Symbol docID,
           final Set<Response> responses,
-          final Optional<ImmutableMap<String, String>> foreignIDToLocal) throws IOException {
+          final Optional<ImmutableMap<String, String>> foreignResponseIDToLocal,
+          final Optional<ImmutableMap.Builder<String, String>> foreignLinkingIDToLocal)
+          throws IOException {
         throw new UnsupportedOperationException();
       }
     };

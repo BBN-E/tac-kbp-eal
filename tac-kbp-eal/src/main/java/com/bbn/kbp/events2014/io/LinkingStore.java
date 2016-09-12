@@ -27,6 +27,7 @@ public interface LinkingStore {
 
   Optional<ResponseLinking> readTransformingIDs(
       Symbol docID, Set<Response> responses,
-      Optional<ImmutableMap<String, String>> foreignIDToLocal)
+      Optional<ImmutableMap<String, String>> foreignResponseIDToLocal,
+      Optional<ImmutableMap.Builder<String, String>> foreignLinkingIDToLocal)
       throws IOException;
 }

@@ -1,6 +1,8 @@
 package com.bbn.kbp.events2014.io;
 
 import com.bbn.bue.common.StringUtils;
+import com.bbn.bue.common.collections.LaxImmutableMapBuilder;
+import com.bbn.bue.common.collections.MapUtils;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
@@ -17,6 +19,7 @@ import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -33,6 +36,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,10 +46,13 @@ import javax.annotation.Nonnull;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.Iterables.getFirst;
 import static com.google.common.collect.Iterables.skip;
 import static com.google.common.collect.Iterables.transform;
+import static com.google.common.collect.Ordering.usingToString;
 
 public final class LinkingStoreSource {
+
   private final LinkingFileLoader linkingFileLoader;
   private final LinkingFileWriter linkingFileWriter;
 
@@ -77,8 +84,11 @@ public final class LinkingStoreSource {
 }
 
 interface LinkingFileLoader {
+
   ResponseLinking read(Symbol docID, CharSource linkingFile, Set<Response> responses,
-      Optional<ImmutableMap<String, String>> foreignIDToLocal) throws IOException;
+      Optional<ImmutableMap<String, String>> foreignResponseIDToLocal,
+      final Optional<ImmutableMap.Builder<String, String>> foreignLinkingIdToLocal)
+      throws IOException;
 }
 
 @Value.Immutable
@@ -92,8 +102,11 @@ abstract class AbstractLinkingLine {
 }
 
 abstract class AbstractKBPSpecLinkingLoader implements LinkingFileLoader {
+
   public ResponseLinking read(Symbol docID, CharSource source, Set<Response> responses,
-      Optional<ImmutableMap<String, String>> foreignIDToLocal) throws IOException {
+      Optional<ImmutableMap<String, String>> foreignResponseIDToLocal,
+      final Optional<ImmutableMap.Builder<String, String>> foreignLinkingIdToLocal)
+      throws IOException {
     final Map<String, Response> responsesByUID = Maps.uniqueIndex(responses,
         ResponseFunctions.uniqueIdentifier());
 
@@ -114,13 +127,13 @@ abstract class AbstractKBPSpecLinkingLoader implements LinkingFileLoader {
         if (line.startsWith("INCOMPLETE")) {
           if (!incompleteResponses.isPresent()) {
             incompleteResponses = Optional.of(parseResponses(skip(parts, 1),
-                foreignIDToLocal, responsesByUID));
+                foreignResponseIDToLocal, responsesByUID));
           } else {
             throw new IOException("Cannot have two INCOMPLETE lines");
           }
         } else {
           final ImmutableLinkingLine linkingLine = parseResponseSetLine(parts,
-              foreignIDToLocal, responsesByUID);
+              foreignResponseIDToLocal, responsesByUID);
           responseSetsB.add(linkingLine.responses());
           if (linkingLine.id().isPresent()) {
             responseSetIds.put(linkingLine.id().get(), linkingLine.responses());
@@ -135,13 +148,16 @@ abstract class AbstractKBPSpecLinkingLoader implements LinkingFileLoader {
     final ResponseLinking.Builder responseLinking =
         ResponseLinking.builder().docID(docID).responseSets(responseSets)
             .incompleteResponses(incompleteResponses.or(ImmutableSet.<Response>of()));
-    handleResponseSetIDs(responseLinking, responseSets, responseSetIds.build());
+    handleResponseSetIDs(responseLinking, responseSets, responseSetIds.build(),
+        foreignLinkingIdToLocal);
     return responseLinking.build();
   }
 
   protected abstract void handleResponseSetIDs(final ResponseLinking.Builder responseLinking,
       final ImmutableSet<ResponseSet> responseSets,
-      final ImmutableMap<String, ResponseSet> responseIDs) throws IOException;
+      final ImmutableMap<String, ResponseSet> responseIDs,
+      final Optional<ImmutableMap.Builder<String, String>> foreignLinkingIdToLocal)
+      throws IOException;
 
   protected abstract ImmutableLinkingLine parseResponseSetLine(List<String> parts,
       Optional<ImmutableMap<String, String>> foreignIDToLocal, Map<String, Response> responsesByUID)
@@ -153,7 +169,7 @@ abstract class AbstractKBPSpecLinkingLoader implements LinkingFileLoader {
       final Map<String, Response> responsesByUID) throws IOException {
     final ImmutableSet.Builder<Response> responseSetB = ImmutableSet.builder();
     for (String idString : parts) {
-        responseSetB.add(responseForID(idString, foreignIDToLocal, responsesByUID));
+      responseSetB.add(responseForID(idString, foreignIDToLocal, responsesByUID));
     }
     return responseSetB.build();
   }
@@ -190,7 +206,9 @@ class KBPSpec2015LinkingLoader extends AbstractKBPSpecLinkingLoader {
   @Override
   protected void handleResponseSetIDs(final ResponseLinking.Builder responseLinking,
       final ImmutableSet<ResponseSet> responseSets,
-      final ImmutableMap<String, ResponseSet> responseIDs) throws IOException {
+      final ImmutableMap<String, ResponseSet> responseIDs,
+      final Optional<ImmutableMap.Builder<String, String>> foreignLinkingIdToLocal)
+      throws IOException {
     if (!responseIDs.isEmpty()) {
       throw new IOException("IDs not allowed in 2014 linking format");
     }
@@ -214,12 +232,36 @@ class KBPSpec2016LinkingLoader extends AbstractKBPSpecLinkingLoader {
   @Override
   protected void handleResponseSetIDs(final ResponseLinking.Builder responseLinking,
       final ImmutableSet<ResponseSet> responseSets,
-      final ImmutableMap<String, ResponseSet> responseIDs) throws IOException {
+      final ImmutableMap<String, ResponseSet> responseIDs,
+      final Optional<ImmutableMap.Builder<String, String>> foreignLinkingIdToLocal)
+      throws IOException {
     if (responseSets.size() == responseIDs.size()) {
       responseLinking.responseSetIds(ImmutableBiMap.copyOf(responseIDs));
-    } else {
+      responseLinking.build();
+    } else if (responseSets.size() > responseIDs.size() || !foreignLinkingIdToLocal.isPresent()) {
       throw new IOException("Read " + responseSets.size() + " response sets but "
           + responseIDs.size() + " ID assignments");
+    } else {
+      log.warn(
+          "Warning - converting ResponseSet IDs and saving them, this is almost definitely an error!");
+      final ImmutableMultimap<ResponseSet, String> responseSetToIds =
+          responseIDs.asMultimap().inverse();
+      final LaxImmutableMapBuilder<String, ResponseSet> idsMapB =
+          MapUtils.immutableMapBuilderAllowingSameEntryTwice();
+
+      for (final Map.Entry<ResponseSet, Collection<String>> setAndIds : responseSetToIds.asMap()
+          .entrySet()) {
+
+        final Collection<String> ids = setAndIds.getValue();
+        final String selectedID =
+            checkNotNull(getFirst(usingToString().immutableSortedCopy(ids), null));
+        for (final String oldId : ids) {
+          log.debug("Selecting id {} for cluster {}", selectedID, oldId);
+          foreignLinkingIdToLocal.get().put(oldId, selectedID);
+          idsMapB.put(selectedID, responseIDs.get(oldId));
+        }
+      }
+      responseLinking.responseSetIds(ImmutableBiMap.copyOf(idsMapB.build()));
     }
   }
 
@@ -355,13 +397,15 @@ final class DirectoryLinkingStore implements LinkingStore {
 
   public Optional<ResponseLinking> read(Symbol docID, Set<Response> responses)
       throws IOException {
-    return read(docID, responses, Optional.<ImmutableMap<String, String>>absent());
+    return read(docID, responses, Optional.<ImmutableMap<String, String>>absent(),
+        Optional.<ImmutableMap.Builder<String, String>>absent());
   }
 
   private static final ImmutableSet<String> ACCEPTABLE_SUFFIXES = ImmutableSet.of("linking");
 
   private Optional<ResponseLinking> read(Symbol docID, Set<Response> responses,
-      Optional<ImmutableMap<String, String>> foreignIDToLocal)
+      Optional<ImmutableMap<String, String>> foreignResponseIDToLocal,
+      Optional<ImmutableMap.Builder<String, String>> foreignLinkingIdToLocal)
       throws IOException {
     checkNotClosed();
 
@@ -374,14 +418,15 @@ final class DirectoryLinkingStore implements LinkingStore {
     }
 
     return Optional.of(linkingLoader.read(docID, Files.asCharSource(f, UTF_8), responses,
-        foreignIDToLocal));
+        foreignResponseIDToLocal, foreignLinkingIdToLocal));
   }
 
   @Override
   public Optional<ResponseLinking> readTransformingIDs(Symbol docID, Set<Response> responses,
-      Optional<ImmutableMap<String, String>> foreignIDToLocal)
+      Optional<ImmutableMap<String, String>> foreignResponseIDToLocal,
+      Optional<ImmutableMap.Builder<String, String>> foreignLinkingIDToLocal)
       throws IOException {
-    return read(docID, responses, foreignIDToLocal);
+    return read(docID, responses, foreignResponseIDToLocal, foreignLinkingIDToLocal);
   }
 
   @Override
