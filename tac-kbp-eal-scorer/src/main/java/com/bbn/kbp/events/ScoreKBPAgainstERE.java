@@ -4,7 +4,6 @@ import com.bbn.bue.common.Finishable;
 import com.bbn.bue.common.HasDocID;
 import com.bbn.bue.common.Inspector;
 import com.bbn.bue.common.IntIDSequence;
-import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.TextGroupPackageImmutable;
 import com.bbn.bue.common.evaluation.AggregateBinaryFScoresInspector;
 import com.bbn.bue.common.evaluation.BinaryErrorLogger;
@@ -19,6 +18,7 @@ import com.bbn.bue.common.evaluation.ProvenancedAlignment;
 import com.bbn.bue.common.evaluation.ScoringEventObserver;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
+import com.bbn.bue.common.serialization.jackson.JacksonSerializer;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events.ontology.EREToKBPEventOntologyMapper;
@@ -65,7 +65,7 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
-import com.google.common.io.CharSink;
+import com.google.common.io.ByteSink;
 import com.google.common.io.Files;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.AbstractModule;
@@ -197,7 +197,7 @@ public final class ScoreKBPAgainstERE {
     final ResponsesAndLinkingFromKBPExtractor responsesAndLinkingFromKBPExtractor =
         new ResponsesAndLinkingFromKBPExtractor(coreNLPProcessedRawDocs,
             coreNLPXMLLoader, relaxUsingCORENLP, ontologyMapper,
-            Files.asCharSink(new File(outputDir, "alignmentFailures.txt"), Charsets.UTF_8));
+            Files.asByteSink(new File(outputDir, "alignmentFailures.txt")));
     final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor =
         new ResponsesAndLinkingFromEREExtractor(EREToKBPEventOntologyMapper.create2016Mapping(),
             quoteFilter);
@@ -331,11 +331,16 @@ public final class ScoreKBPAgainstERE {
     final ArgumentScoringInspector argScorer =
         ArgumentScoringInspector.createOutputtingTo(outputDir);
     inspect(alignmentNode).with(argScorer);
+
+    // bootstrapped arg scores
+
+
     // log errors
     final BinaryErrorLogger<HasDocID, HasDocID> logWrongAnswers = BinaryErrorLogger
         .forStringifierAndOutputDir(Functions.<HasDocID>toStringFunction(), outputDir);
     inspect(alignmentNode).with(logWrongAnswers);
 
+    // bootstrapped per-event F-scores
     final BinaryFScoreBootstrapStrategy perEventBootstrapStrategy =
         BinaryFScoreBootstrapStrategy.createBrokenDownBy("EventType",
             HasEventType.ExtractFunction.INSTANCE, outputDir);
@@ -876,12 +881,12 @@ public final class ScoreKBPAgainstERE {
     private final CoreNLPXMLLoader coreNLPXMLLoader;
     private final boolean relaxUsingCORENLP;
     private final EREToKBPEventOntologyMapper ontologyMapper;
-    private final CharSink alignmentFailuresSink;
+    private final ByteSink alignmentFailuresSink;
 
     public ResponsesAndLinkingFromKBPExtractor(final Map<Symbol, File> ereMapping,
         final CoreNLPXMLLoader coreNLPXMLLoader, final boolean relaxUsingCORENLP,
         final EREToKBPEventOntologyMapper ontologyMapper,
-        final CharSink alignmentFailuresSink) {
+        final ByteSink alignmentFailuresSink) {
       this.ereMapping = ImmutableMap.copyOf(ereMapping);
       this.coreNLPXMLLoader = coreNLPXMLLoader;
       this.relaxUsingCORENLP = relaxUsingCORENLP;
@@ -988,17 +993,8 @@ public final class ScoreKBPAgainstERE {
           "Of {} system responses, got {} mention alignment failures",
           numResponses.size(), mentionAlignmentFailures.size());
 
-      final StringBuilder msg = new StringBuilder();
-      for (final String errKey : numResponses.elementSet()) {
-        final ImmutableSet<String> failuresForKey = mentionAlignmentFailures.get(errKey);
-        if (failuresForKey != null) {
-          msg.append("Of ").append(numResponses.count(errKey)).append(errKey)
-              .append(" responses, ").append(failuresForKey.size())
-              .append(" mention alignment failures:\n")
-              .append(StringUtils.unixNewlineJoiner().join(failuresForKey)).append("\n");
-        }
-      }
-      alignmentFailuresSink.write(msg.toString());
+      JacksonSerializer.builder().forJson().prettyOutput().build()
+          .serializeTo(mentionAlignmentFailures, alignmentFailuresSink);
     }
   }
 
