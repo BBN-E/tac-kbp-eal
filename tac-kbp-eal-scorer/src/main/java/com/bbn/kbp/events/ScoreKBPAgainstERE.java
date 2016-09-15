@@ -617,9 +617,14 @@ public final class ScoreKBPAgainstERE {
         final double normalizer = Math.max(truePositives.get(docid) + falseNegatives.get(docid), 1);
         // see guidelines referenced above
         // pretends that the corpus is a single document
+        final double normalizedAndScaledArgScore = 100 * scores.get(docid) / normalizer;
         Files.asCharSink(docScore, Charsets.UTF_8).write(String
             .format(scorePattern, truePositives.get(docid), falsePositives.get(docid),
-                falseNegatives.get(docid), 100 * scores.get(docid) / normalizer));
+                falseNegatives.get(docid), normalizedAndScaledArgScore));
+
+        final File jsonArgScores = new File(docDir, "argScores.json");
+        JacksonSerializer.builder().forJson().prettyOutput().build()
+            .serializeTo(normalizedAndScaledArgScore, Files.asByteSink(jsonArgScores));
       }
     }
   }
