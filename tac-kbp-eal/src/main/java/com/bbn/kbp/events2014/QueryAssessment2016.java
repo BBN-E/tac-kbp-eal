@@ -6,7 +6,7 @@ package com.bbn.kbp.events2014;
  * when merging query responses by ignoring realis.
  */
 public enum QueryAssessment2016 {
-  UNASSASSED,
+  UNASSESSED,
   ET_MATCH,
   WRONG,
   CORRECT

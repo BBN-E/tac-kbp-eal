@@ -86,7 +86,7 @@ public final class SingleFileQueryAssessmentsLoader {
                 .addAllPredicateJustifications(spans).build();
         queries.add(query);
         responsesToSystems.put(query, systemID);
-        if (!assessment.equals(QueryAssessment2016.UNASSASSED)) {
+        if (!assessment.equals(QueryAssessment2016.UNASSESSED)) {
           assessments.put(query, assessment);
         }
         if (lastMetadata.isPresent()) {
