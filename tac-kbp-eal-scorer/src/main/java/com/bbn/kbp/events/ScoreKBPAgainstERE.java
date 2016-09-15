@@ -6,9 +6,11 @@ import com.bbn.bue.common.Inspector;
 import com.bbn.bue.common.IntIDSequence;
 import com.bbn.bue.common.TextGroupPackageImmutable;
 import com.bbn.bue.common.evaluation.AggregateBinaryFScoresInspector;
+import com.bbn.bue.common.evaluation.BinaryConfusionMatrixBootstrapStrategy;
 import com.bbn.bue.common.evaluation.BinaryErrorLogger;
-import com.bbn.bue.common.evaluation.BinaryFScoreBootstrapStrategy;
 import com.bbn.bue.common.evaluation.BootstrapInspector;
+import com.bbn.bue.common.evaluation.BrokenDownFMeasureAggregator;
+import com.bbn.bue.common.evaluation.BrokenDownLinearScoreAggregator;
 import com.bbn.bue.common.evaluation.EquivalenceBasedProvenancedAligner;
 import com.bbn.bue.common.evaluation.EvalPair;
 import com.bbn.bue.common.evaluation.InspectionNode;
@@ -326,26 +328,37 @@ public final class ScoreKBPAgainstERE {
             scoringEventObservers);
     inspect(alignmentNode).with(scoreAndWriteOverallFScore);
 
+    // bootstrapped per-event F-scores
+    final BinaryConfusionMatrixBootstrapStrategy<HasEventType> perEventBootstrapStrategy =
+        BinaryConfusionMatrixBootstrapStrategy.create(HasEventType.ExtractFunction.INSTANCE,
+            ImmutableSet.of(BrokenDownFMeasureAggregator.create("EventType", outputDir)));
+    final BootstrapInspector breakdownScoresByEventTypeWithBootstrapping =
+        BootstrapInspector.forStrategy(perEventBootstrapStrategy, 1000, new Random(0));
+    inspect(alignmentNode).with(breakdownScoresByEventTypeWithBootstrapping);
+
     // "arg" score with weighted TP/FP
     final ArgumentScoringInspector argScorer =
         ArgumentScoringInspector.createOutputtingTo(outputDir);
     inspect(alignmentNode).with(argScorer);
 
     // bootstrapped arg scores
-
+    final BinaryConfusionMatrixBootstrapStrategy<HasEventType> argScoreBootstrapStrategy =
+        BinaryConfusionMatrixBootstrapStrategy.create(
+            Functions.constant("Aggregate"),
+            ImmutableSet.of(new BrokenDownLinearScoreAggregator.Builder().name("ArgScore")
+                .outputDir(outputDir).alpha(0.25).build()));
+    final BootstrapInspector argScoreWithBootstrapping =
+        BootstrapInspector.forStrategy(argScoreBootstrapStrategy, 1000, new Random(0));
+    inspect(alignmentNode).with(argScoreWithBootstrapping);
 
     // log errors
     final BinaryErrorLogger<HasDocID, HasDocID> logWrongAnswers = BinaryErrorLogger
         .forStringifierAndOutputDir(Functions.<HasDocID>toStringFunction(), outputDir);
     inspect(alignmentNode).with(logWrongAnswers);
 
-    // bootstrapped per-event F-scores
-    final BinaryFScoreBootstrapStrategy perEventBootstrapStrategy =
-        BinaryFScoreBootstrapStrategy.createBrokenDownBy("EventType",
-            HasEventType.ExtractFunction.INSTANCE, outputDir);
-    final BootstrapInspector breakdownScoresByEventTypeWithBootstrapping =
-        BootstrapInspector.forStrategy(perEventBootstrapStrategy, 1000, new Random(0));
-    inspect(alignmentNode).with(breakdownScoresByEventTypeWithBootstrapping);
+
+
+
   }
 
   private static void linkingScoringSetup(
