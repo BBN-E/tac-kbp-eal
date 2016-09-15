@@ -46,7 +46,7 @@ public final class SingleFileQueryStoreWriter {
         out.write("#" + metadata.get() + "\n");
       }
       final QueryAssessment2016 assessment =
-          Optional.fromNullable(store.assessments().get(q)).or(QueryAssessment2016.UNASSASSED);
+          Optional.fromNullable(store.assessments().get(q)).or(QueryAssessment2016.UNASSESSED);
 
       final ImmutableList.Builder<String> pjStrings = ImmutableList.builder();
       for (final CharOffsetSpan pj : Ordering.natural()

@@ -139,7 +139,7 @@ public final class QueryResponseFromERE {
             .assessments(Maps.asMap(
                 queryResponseToFindingSystem.keySet(),
                 // all responses start unassessed
-                Functions.constant(QueryAssessment2016.UNASSASSED))).build();
+                Functions.constant(QueryAssessment2016.UNASSESSED))).build();
 
     log.info("Writing {} query matches to {}", corpusQueryAssessments.queryReponses().size(),
         outputFile);
