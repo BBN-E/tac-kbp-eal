@@ -263,6 +263,10 @@
                             <mainClass>com.bbn.kbp.events2014.bin.MergeSystemOutputs</mainClass>
                             <id>mergeSystemOutputs</id>
                         </program>
+                        <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.QueryResponseMerger</mainClass>
+                            <id>mergeQueryResponses</id>
+                        </program>
                     </programs>
                 </configuration>
             </plugin>
