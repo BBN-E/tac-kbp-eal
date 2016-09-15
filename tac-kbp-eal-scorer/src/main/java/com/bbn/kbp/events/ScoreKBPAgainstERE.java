@@ -65,7 +65,6 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
-import com.google.common.io.ByteSink;
 import com.google.common.io.Files;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.AbstractModule;
@@ -197,7 +196,7 @@ public final class ScoreKBPAgainstERE {
     final ResponsesAndLinkingFromKBPExtractor responsesAndLinkingFromKBPExtractor =
         new ResponsesAndLinkingFromKBPExtractor(coreNLPProcessedRawDocs,
             coreNLPXMLLoader, relaxUsingCORENLP, ontologyMapper,
-            Files.asByteSink(new File(outputDir, "alignmentFailures.txt")));
+            new File(outputDir, "alignmentFailures"));
     final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor =
         new ResponsesAndLinkingFromEREExtractor(EREToKBPEventOntologyMapper.create2016Mapping(),
             quoteFilter);
@@ -594,6 +593,9 @@ public final class ScoreKBPAgainstERE {
       scores.put(docid, score);
     }
 
+    private static final JacksonSerializer serializer =
+        JacksonSerializer.builder().forJson().prettyOutput().build();
+
     @Override
     public void finish() throws IOException {
       final String scorePattern = "TP: %d, FP: %d, FN: %d, Score: %f\n";
@@ -605,6 +607,9 @@ public final class ScoreKBPAgainstERE {
       final String scoreString =
           String.format(scorePattern, aggregateTPs, aggregateFPs, aggregateFNs, overAllArgScore);
       Files.asCharSink(new File(outputDir, "argScores.txt"), Charsets.UTF_8).write(scoreString);
+      final File jsonArgScores = new File(outputDir, "argScore.json");
+      serializer.serializeTo(overAllArgScore, Files.asByteSink(jsonArgScores));
+
       final ImmutableMap<Symbol, Double> scores = this.scores.build();
       final ImmutableMap<Symbol, Integer> falsePositives = this.falsePositives.build();
       final ImmutableMap<Symbol, Integer> truePositives = this.truePositives.build();
@@ -622,9 +627,8 @@ public final class ScoreKBPAgainstERE {
             .format(scorePattern, truePositives.get(docid), falsePositives.get(docid),
                 falseNegatives.get(docid), normalizedAndScaledArgScore));
 
-        final File jsonArgScores = new File(docDir, "argScores.json");
-        JacksonSerializer.builder().forJson().prettyOutput().build()
-            .serializeTo(normalizedAndScaledArgScore, Files.asByteSink(jsonArgScores));
+        final File docJsonArgScores = new File(docDir, "argScores.json");
+        serializer.serializeTo(normalizedAndScaledArgScore, Files.asByteSink(docJsonArgScores));
       }
     }
   }
@@ -703,10 +707,14 @@ public final class ScoreKBPAgainstERE {
           (linkNormalizerSum > 0.0) ? recall / linkNormalizerSum : 0.0;
 
       final ExplicitFMeasureInfo aggregate =
-          new ExplicitFMeasureInfo(aggregateLinkPrecision, aggregateLinkRecall, aggregateLinkScore);
+          ExplicitFMeasureInfo.of(aggregateLinkPrecision, aggregateLinkRecall, aggregateLinkScore);
       final PrintWriter outputWriter = new PrintWriter(new File(outputDir, "linkingF.txt"));
       outputWriter.println(aggregate);
       outputWriter.close();
+
+      final File jsonScores = new File(outputDir, "linkingF.json");
+      JacksonSerializer.builder().forJson().prettyOutput().build()
+          .serializeTo(aggregate, Files.asByteSink(jsonScores));
     }
   }
 
@@ -886,17 +894,17 @@ public final class ScoreKBPAgainstERE {
     private final CoreNLPXMLLoader coreNLPXMLLoader;
     private final boolean relaxUsingCORENLP;
     private final EREToKBPEventOntologyMapper ontologyMapper;
-    private final ByteSink alignmentFailuresSink;
+    private final File outputDir;
 
     public ResponsesAndLinkingFromKBPExtractor(final Map<Symbol, File> ereMapping,
         final CoreNLPXMLLoader coreNLPXMLLoader, final boolean relaxUsingCORENLP,
         final EREToKBPEventOntologyMapper ontologyMapper,
-        final ByteSink alignmentFailuresSink) {
+        File outputDir) {
       this.ereMapping = ImmutableMap.copyOf(ereMapping);
       this.coreNLPXMLLoader = coreNLPXMLLoader;
       this.relaxUsingCORENLP = relaxUsingCORENLP;
       this.ontologyMapper = checkNotNull(ontologyMapper);
-      this.alignmentFailuresSink = checkNotNull(alignmentFailuresSink);
+      this.outputDir = checkNotNull(outputDir);
     }
 
     public ResponsesAndLinking apply(final EREDocAndResponses input) {
@@ -992,14 +1000,19 @@ public final class ScoreKBPAgainstERE {
     }
 
     public void finish() throws IOException {
+      outputDir.mkdirs();
+
       final ImmutableSetMultimap<String, String> mentionAlignmentFailures =
           mentionAlignmentFailuresB.build();
-      log.info(
-          "Of {} system responses, got {} mention alignment failures",
+      log.info("Of {} system responses, got {} mention alignment failures",
           numResponses.size(), mentionAlignmentFailures.size());
 
-      JacksonSerializer.builder().forJson().prettyOutput().build()
-          .serializeTo(mentionAlignmentFailures, alignmentFailuresSink);
+      final File serializedFailuresFile = new File(outputDir, "alignmentFailures.json");
+      final JacksonSerializer serializer = JacksonSerializer.builder().forJson().prettyOutput().build();
+      serializer.serializeTo(mentionAlignmentFailures, Files.asByteSink(serializedFailuresFile));
+
+      final File failuresCount = new File(outputDir, "alignmentFailures.count.txt");
+      serializer.serializeTo(mentionAlignmentFailures.size(), Files.asByteSink(failuresCount));
     }
   }
 

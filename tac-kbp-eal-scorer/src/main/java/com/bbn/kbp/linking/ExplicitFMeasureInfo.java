@@ -1,41 +1,38 @@
 package com.bbn.kbp.linking;
 
-import com.bbn.bue.common.annotations.MoveToBUECommon;
-
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.annotations.Beta;
+
+import org.immutables.value.Value;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-@MoveToBUECommon
+@Value.Immutable
+@JsonSerialize(as=ImmutableExplicitFMeasureInfo.class)
+@JsonDeserialize(as=ImmutableExplicitFMeasureInfo.class)
 @Beta
-public final class ExplicitFMeasureInfo  {
-  private final double precision;
-  private final double recall;
-  private final double F1;
+public abstract class ExplicitFMeasureInfo  {
+  public abstract double precision();
+  public abstract double recall();
+  public abstract double f1();
 
-  public ExplicitFMeasureInfo(final double precision, final double recall, final double F1) {
-    this.F1 = F1;
-    checkArgument(F1 >= 0.0);
-    this.precision = precision;
-    checkArgument(precision >= 0.0);
-    this.recall = recall;
-    checkArgument(recall >= 0.0);
+  public static ExplicitFMeasureInfo of(double precision, double recall, double f1) {
+    return new ExplicitFMeasureInfo.Builder().precision(precision)
+        .recall(recall).f1(f1).build();
   }
 
-  public double f1() {
-    return F1;
-  }
-
-  public double precision() {
-    return precision;
-  }
-
-  public double recall() {
-    return recall;
+  @Value.Check
+  protected void check() {
+    checkArgument(f1() >= 0.0);
+    checkArgument(precision ()>= 0.0);
+    checkArgument(recall() >= 0.0);
   }
 
   @Override
   public String toString() {
     return String.format("P/R/F %.2f/%.2f/%.2f", precision(), recall(), f1());
   }
+
+  public static class Builder extends ImmutableExplicitFMeasureInfo.Builder {}
 }
