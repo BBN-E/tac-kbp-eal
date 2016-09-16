@@ -51,14 +51,14 @@ public class LinkF1 {
     if (keyItems.isEmpty()) {
       if (predictedItemToGroup.isEmpty()) {
         log.info("Key and predicted are empty; returning score of 1");
-        return new ExplicitFMeasureInfo(1.0, 1.0, 1.0);
+        return ExplicitFMeasureInfo.of(1.0, 1.0, 1.0);
       } else {
         log.info("Key is empty but predicted is not; returning score of 0");
-        return new ExplicitFMeasureInfo(0.0, 0.0, 0.0);
+        return ExplicitFMeasureInfo.of(0.0, 0.0, 0.0);
       }
     } else if (predictedItems.isEmpty()) {
       log.info("Predicted is empty but key is not; returning score of 0");
-      return new ExplicitFMeasureInfo(0.0, 0.0, 0.0);
+      return ExplicitFMeasureInfo.of(0.0, 0.0, 0.0);
     }
 
     for (final T keyItem : keyItems) {
@@ -116,7 +116,7 @@ public class LinkF1 {
     // but the others by the number of gold items. This is because missing items
     // hurt recall but not precision
     final ExplicitFMeasureInfo explicitFMeasureInfo =
-        new ExplicitFMeasureInfo(linkPrecisionSum / predictedItems.size(),
+        ExplicitFMeasureInfo.of(linkPrecisionSum / predictedItems.size(),
             linkRecallSum / keyItems.size(), linkF1Sum / keyItems.size());
     log.info("Final document linking score: {}", explicitFMeasureInfo);
     return explicitFMeasureInfo;

@@ -4,12 +4,13 @@ import com.bbn.bue.common.Finishable;
 import com.bbn.bue.common.HasDocID;
 import com.bbn.bue.common.Inspector;
 import com.bbn.bue.common.IntIDSequence;
-import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.TextGroupPackageImmutable;
 import com.bbn.bue.common.evaluation.AggregateBinaryFScoresInspector;
+import com.bbn.bue.common.evaluation.BinaryConfusionMatrixBootstrapStrategy;
 import com.bbn.bue.common.evaluation.BinaryErrorLogger;
-import com.bbn.bue.common.evaluation.BinaryFScoreBootstrapStrategy;
 import com.bbn.bue.common.evaluation.BootstrapInspector;
+import com.bbn.bue.common.evaluation.BrokenDownFMeasureAggregator;
+import com.bbn.bue.common.evaluation.BrokenDownLinearScoreAggregator;
 import com.bbn.bue.common.evaluation.EquivalenceBasedProvenancedAligner;
 import com.bbn.bue.common.evaluation.EvalPair;
 import com.bbn.bue.common.evaluation.InspectionNode;
@@ -19,6 +20,7 @@ import com.bbn.bue.common.evaluation.ProvenancedAlignment;
 import com.bbn.bue.common.evaluation.ScoringEventObserver;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
+import com.bbn.bue.common.serialization.jackson.JacksonSerializer;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events.ontology.EREToKBPEventOntologyMapper;
@@ -65,7 +67,6 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
-import com.google.common.io.CharSink;
 import com.google.common.io.Files;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.AbstractModule;
@@ -197,7 +198,7 @@ public final class ScoreKBPAgainstERE {
     final ResponsesAndLinkingFromKBPExtractor responsesAndLinkingFromKBPExtractor =
         new ResponsesAndLinkingFromKBPExtractor(coreNLPProcessedRawDocs,
             coreNLPXMLLoader, relaxUsingCORENLP, ontologyMapper,
-            Files.asCharSink(new File(outputDir, "alignmentFailures.txt"), Charsets.UTF_8));
+            new File(outputDir, "alignmentFailures"));
     final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor =
         new ResponsesAndLinkingFromEREExtractor(EREToKBPEventOntologyMapper.create2016Mapping(),
             quoteFilter);
@@ -327,21 +328,37 @@ public final class ScoreKBPAgainstERE {
             scoringEventObservers);
     inspect(alignmentNode).with(scoreAndWriteOverallFScore);
 
+    // bootstrapped per-event F-scores
+    final BinaryConfusionMatrixBootstrapStrategy<HasEventType> perEventBootstrapStrategy =
+        BinaryConfusionMatrixBootstrapStrategy.create(HasEventType.ExtractFunction.INSTANCE,
+            ImmutableSet.of(BrokenDownFMeasureAggregator.create("EventType", new File(outputDir, "fScores"))));
+    final BootstrapInspector breakdownScoresByEventTypeWithBootstrapping =
+        BootstrapInspector.forStrategy(perEventBootstrapStrategy, 1000, new Random(0));
+    inspect(alignmentNode).with(breakdownScoresByEventTypeWithBootstrapping);
+
     // "arg" score with weighted TP/FP
     final ArgumentScoringInspector argScorer =
         ArgumentScoringInspector.createOutputtingTo(outputDir);
     inspect(alignmentNode).with(argScorer);
+
+    // bootstrapped arg scores
+    final BinaryConfusionMatrixBootstrapStrategy<HasEventType> argScoreBootstrapStrategy =
+        BinaryConfusionMatrixBootstrapStrategy.create(
+            Functions.constant("Aggregate"),
+            ImmutableSet.of(new BrokenDownLinearScoreAggregator.Builder().name("ArgScore")
+                .outputDir(new File(outputDir, "argScores")).alpha(0.25).build()));
+    final BootstrapInspector argScoreWithBootstrapping =
+        BootstrapInspector.forStrategy(argScoreBootstrapStrategy, 1000, new Random(0));
+    inspect(alignmentNode).with(argScoreWithBootstrapping);
+
     // log errors
     final BinaryErrorLogger<HasDocID, HasDocID> logWrongAnswers = BinaryErrorLogger
         .forStringifierAndOutputDir(Functions.<HasDocID>toStringFunction(), outputDir);
     inspect(alignmentNode).with(logWrongAnswers);
 
-    final BinaryFScoreBootstrapStrategy perEventBootstrapStrategy =
-        BinaryFScoreBootstrapStrategy.createBrokenDownBy("EventType",
-            HasEventType.ExtractFunction.INSTANCE, outputDir);
-    final BootstrapInspector breakdownScoresByEventTypeWithBootstrapping =
-        BootstrapInspector.forStrategy(perEventBootstrapStrategy, 1000, new Random(0));
-    inspect(alignmentNode).with(breakdownScoresByEventTypeWithBootstrapping);
+
+
+
   }
 
   private static void linkingScoringSetup(
@@ -589,6 +606,9 @@ public final class ScoreKBPAgainstERE {
       scores.put(docid, score);
     }
 
+    private static final JacksonSerializer serializer =
+        JacksonSerializer.builder().forJson().prettyOutput().build();
+
     @Override
     public void finish() throws IOException {
       final String scorePattern = "TP: %d, FP: %d, FN: %d, Score: %f\n";
@@ -600,6 +620,9 @@ public final class ScoreKBPAgainstERE {
       final String scoreString =
           String.format(scorePattern, aggregateTPs, aggregateFPs, aggregateFNs, overAllArgScore);
       Files.asCharSink(new File(outputDir, "argScores.txt"), Charsets.UTF_8).write(scoreString);
+      final File jsonArgScores = new File(outputDir, "argScore.json");
+      serializer.serializeTo(overAllArgScore, Files.asByteSink(jsonArgScores));
+
       final ImmutableMap<Symbol, Double> scores = this.scores.build();
       final ImmutableMap<Symbol, Integer> falsePositives = this.falsePositives.build();
       final ImmutableMap<Symbol, Integer> truePositives = this.truePositives.build();
@@ -612,9 +635,13 @@ public final class ScoreKBPAgainstERE {
         final double normalizer = Math.max(truePositives.get(docid) + falseNegatives.get(docid), 1);
         // see guidelines referenced above
         // pretends that the corpus is a single document
+        final double normalizedAndScaledArgScore = 100 * scores.get(docid) / normalizer;
         Files.asCharSink(docScore, Charsets.UTF_8).write(String
             .format(scorePattern, truePositives.get(docid), falsePositives.get(docid),
-                falseNegatives.get(docid), 100 * scores.get(docid) / normalizer));
+                falseNegatives.get(docid), normalizedAndScaledArgScore));
+
+        final File docJsonArgScores = new File(docDir, "argScores.json");
+        serializer.serializeTo(normalizedAndScaledArgScore, Files.asByteSink(docJsonArgScores));
       }
     }
   }
@@ -693,10 +720,14 @@ public final class ScoreKBPAgainstERE {
           (linkNormalizerSum > 0.0) ? recall / linkNormalizerSum : 0.0;
 
       final ExplicitFMeasureInfo aggregate =
-          new ExplicitFMeasureInfo(aggregateLinkPrecision, aggregateLinkRecall, aggregateLinkScore);
+          ExplicitFMeasureInfo.of(aggregateLinkPrecision, aggregateLinkRecall, aggregateLinkScore);
       final PrintWriter outputWriter = new PrintWriter(new File(outputDir, "linkingF.txt"));
       outputWriter.println(aggregate);
       outputWriter.close();
+
+      final File jsonScores = new File(outputDir, "linkingF.json");
+      JacksonSerializer.builder().forJson().prettyOutput().build()
+          .serializeTo(aggregate, Files.asByteSink(jsonScores));
     }
   }
 
@@ -876,17 +907,17 @@ public final class ScoreKBPAgainstERE {
     private final CoreNLPXMLLoader coreNLPXMLLoader;
     private final boolean relaxUsingCORENLP;
     private final EREToKBPEventOntologyMapper ontologyMapper;
-    private final CharSink alignmentFailuresSink;
+    private final File outputDir;
 
     public ResponsesAndLinkingFromKBPExtractor(final Map<Symbol, File> ereMapping,
         final CoreNLPXMLLoader coreNLPXMLLoader, final boolean relaxUsingCORENLP,
         final EREToKBPEventOntologyMapper ontologyMapper,
-        final CharSink alignmentFailuresSink) {
+        File outputDir) {
       this.ereMapping = ImmutableMap.copyOf(ereMapping);
       this.coreNLPXMLLoader = coreNLPXMLLoader;
       this.relaxUsingCORENLP = relaxUsingCORENLP;
       this.ontologyMapper = checkNotNull(ontologyMapper);
-      this.alignmentFailuresSink = checkNotNull(alignmentFailuresSink);
+      this.outputDir = checkNotNull(outputDir);
     }
 
     public ResponsesAndLinking apply(final EREDocAndResponses input) {
@@ -982,23 +1013,19 @@ public final class ScoreKBPAgainstERE {
     }
 
     public void finish() throws IOException {
+      outputDir.mkdirs();
+
       final ImmutableSetMultimap<String, String> mentionAlignmentFailures =
           mentionAlignmentFailuresB.build();
-      log.info(
-          "Of {} system responses, got {} mention alignment failures",
+      log.info("Of {} system responses, got {} mention alignment failures",
           numResponses.size(), mentionAlignmentFailures.size());
 
-      final StringBuilder msg = new StringBuilder();
-      for (final String errKey : numResponses.elementSet()) {
-        final ImmutableSet<String> failuresForKey = mentionAlignmentFailures.get(errKey);
-        if (failuresForKey != null) {
-          msg.append("Of ").append(numResponses.count(errKey)).append(errKey)
-              .append(" responses, ").append(failuresForKey.size())
-              .append(" mention alignment failures:\n")
-              .append(StringUtils.unixNewlineJoiner().join(failuresForKey)).append("\n");
-        }
-      }
-      alignmentFailuresSink.write(msg.toString());
+      final File serializedFailuresFile = new File(outputDir, "alignmentFailures.json");
+      final JacksonSerializer serializer = JacksonSerializer.builder().forJson().prettyOutput().build();
+      serializer.serializeTo(mentionAlignmentFailures, Files.asByteSink(serializedFailuresFile));
+
+      final File failuresCount = new File(outputDir, "alignmentFailures.count.txt");
+      serializer.serializeTo(mentionAlignmentFailures.size(), Files.asByteSink(failuresCount));
     }
   }
 
