@@ -331,7 +331,7 @@ public final class ScoreKBPAgainstERE {
     // bootstrapped per-event F-scores
     final BinaryConfusionMatrixBootstrapStrategy<HasEventType> perEventBootstrapStrategy =
         BinaryConfusionMatrixBootstrapStrategy.create(HasEventType.ExtractFunction.INSTANCE,
-            ImmutableSet.of(BrokenDownFMeasureAggregator.create("EventType", outputDir)));
+            ImmutableSet.of(BrokenDownFMeasureAggregator.create("EventType", new File(outputDir, "fScores"))));
     final BootstrapInspector breakdownScoresByEventTypeWithBootstrapping =
         BootstrapInspector.forStrategy(perEventBootstrapStrategy, 1000, new Random(0));
     inspect(alignmentNode).with(breakdownScoresByEventTypeWithBootstrapping);
@@ -346,7 +346,7 @@ public final class ScoreKBPAgainstERE {
         BinaryConfusionMatrixBootstrapStrategy.create(
             Functions.constant("Aggregate"),
             ImmutableSet.of(new BrokenDownLinearScoreAggregator.Builder().name("ArgScore")
-                .outputDir(outputDir).alpha(0.25).build()));
+                .outputDir(new File(outputDir, "argScores")).alpha(0.25).build()));
     final BootstrapInspector argScoreWithBootstrapping =
         BootstrapInspector.forStrategy(argScoreBootstrapStrategy, 1000, new Random(0));
     inspect(alignmentNode).with(argScoreWithBootstrapping);
