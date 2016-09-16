@@ -31,7 +31,7 @@
         <skipITs>true</skipITs>
 
         <junit.version>4.11</junit.version>
-        <bueopen.version>5.0.1-SNAPSHOT</bueopen.version>
+        <bueopen.version>5.0.1</bueopen.version>
         <jackson.version>2.7.5</jackson.version>
 
         <!-- Sonar server properties. These only work BBN-internally -->
