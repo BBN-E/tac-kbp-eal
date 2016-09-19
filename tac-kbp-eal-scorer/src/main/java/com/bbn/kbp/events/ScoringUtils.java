@@ -20,7 +20,8 @@ final class ScoringUtils {
       final Optional<EREEntity> entityContainingMention = ereDoc.getEntityContaining(
           ((EREEntityArgument) ea).entityMention());
       if (entityContainingMention.isPresent()) {
-        return ScoringCorefID.of(ScoringEntityType.Entity, entityContainingMention.get().getID());
+        return new ScoringCorefID.Builder().scoringEntityType(ScoringEntityType.Entity)
+          .withinTypeID(entityContainingMention.get().getID()).build();
       } else {
         throw new TACKBPEALException("ERE mention not in any entity");
       }
@@ -31,12 +32,14 @@ final class ScoringUtils {
         final Optional<String> normalizedTime =
             ((EREFillerArgument) ea).filler().getNormalizedTime();
         if (normalizedTime.isPresent()) {
-          return ScoringCorefID.of(ScoringEntityType.Time, normalizedTime.get());
+          return new ScoringCorefID.Builder().scoringEntityType(ScoringEntityType.Time)
+            .withinTypeID(normalizedTime.get()).build();
         } else {
           throw new TACKBPEALException("Time argument has non-temporal filler");
         }
       } else {
-        return ScoringCorefID.of(ScoringEntityType.Filler, ea.getID());
+        return new ScoringCorefID.Builder().scoringEntityType(ScoringEntityType.Filler)
+          .withinTypeID(ea.getID()).build();
       }
     } else {
       throw new TACKBPEALException("Unknown ERE argument type " + ea.getClass());

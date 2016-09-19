@@ -90,8 +90,8 @@ public final class EREAligner {
   public Optional<ScoringCorefID> argumentForResponse(final Response response) {
     if (response.role().equalTo(TIME)) {
       // time is a special case; its CAS is always its TIMEX form
-      return Optional.of(ScoringCorefID.of(ScoringEntityType.Time,
-          response.canonicalArgument().string()));
+      return Optional.of(new ScoringCorefID.Builder().scoringEntityType(ScoringEntityType.Time)
+          .withinTypeID(response.canonicalArgument().string()).build());
     }
 
     final MappedEventTypeRole systemTypeRole = typeRoleForResponse(response);
@@ -227,7 +227,8 @@ public final class EREAligner {
                                                     : ScoringEntityType.InsufficientEntityLevel;
 
         final CandidateAlignmentTarget.Builder builder = CandidateAlignmentTarget.builder()
-            .id(ScoringCorefID.of(scoringEntityType, entity.getID()))
+            .id(new ScoringCorefID.Builder().scoringEntityType(scoringEntityType)
+                .withinTypeID(entity.getID()).build())
             .typeRolesSeen(rolesPlayed)
             .offsets(extentForERE(ereEntityMention.getExtent()));
         if (ereEntityMention.getHead().isPresent()) {
@@ -243,7 +244,8 @@ public final class EREAligner {
       final Collection<MappedEventTypeRole> rolesPlayed = fillersToRolesPlayed.get(filler);
 
       ret.add(CandidateAlignmentTarget.builder()
-          .id(ScoringCorefID.of(ScoringEntityType.Filler, filler.getID()))
+          .id(new ScoringCorefID.Builder().scoringEntityType(ScoringEntityType.Filler)
+              .withinTypeID(filler.getID()).build())
           .typeRolesSeen(rolesPlayed)
           .offsets(extentForERE(filler.getExtent()))
           .build());

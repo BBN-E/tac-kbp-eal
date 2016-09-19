@@ -896,8 +896,9 @@ public final class ScoreKBPAgainstERE {
           // in case of alignment failure, we make a pseudo-entity from the CAS offsets
           // it will always be wrong, but will be consistent for the same extent appearing in
           // different event roles
-          ScoringCorefID.of(ScoringEntityType.AlignmentFailure,
-              response.canonicalArgument().charOffsetSpan().asCharOffsetRange().toString()));
+          new ScoringCorefID.Builder().scoringEntityType(ScoringEntityType.AlignmentFailure)
+          .withinTypeID(response.canonicalArgument().charOffsetSpan().asCharOffsetRange().toString())
+          .build());
 
       return DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
           .eventType(response.type()).eventArgumentType(response.role())
