@@ -39,7 +39,7 @@ final class ScoringUtils {
         }
       } else {
         return new ScoringCorefID.Builder().scoringEntityType(ScoringEntityType.Filler)
-          .withinTypeID(ea.getID()).build();
+          .withinTypeID(((EREFillerArgument) ea).filler().getID()).build();
       }
     } else {
       throw new TACKBPEALException("Unknown ERE argument type " + ea.getClass());
