@@ -49,6 +49,7 @@ import com.bbn.nlp.corpora.ere.ERELoader;
 import com.bbn.nlp.corpora.ere.ERESpan;
 import com.bbn.nlp.corpora.ere.LinkRealis;
 import com.bbn.nlp.events.HasEventType;
+import com.bbn.nlp.parsing.HeadFinder;
 import com.bbn.nlp.parsing.HeadFinders;
 
 import com.google.common.base.Charsets;
@@ -139,13 +140,16 @@ public final class ScoreKBPAgainstERE {
       scoringEventObservers;
   // we exclude text in quoted regions froms scoring
   private final QuoteFilter quoteFilter;
+  private final HeadFinder<CoreNLPParseNode> headFinder;
 
   @Inject
   ScoreKBPAgainstERE(
       final Parameters params,
       final Map<String, ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>> scoringEventObservers,
       final EREToKBPEventOntologyMapper ontologyMapper,
-      final QuoteFilter quoteFilter) {
+      final QuoteFilter quoteFilter,
+      final HeadFinder<CoreNLPParseNode> headFinder) {
+    this.headFinder = headFinder;
     this.params = checkNotNull(params);
     // we use a sorted map because the binding of plugins may be non-deterministic
     this.scoringEventObservers = ImmutableSortedMap.copyOf(scoringEventObservers);
@@ -165,8 +169,7 @@ public final class ScoreKBPAgainstERE {
     final SystemOutputStore outputStore =
         outputLayout.open(params.getExistingDirectory("systemOutput"));
 
-    final CoreNLPXMLLoader coreNLPXMLLoader =
-        CoreNLPXMLLoader.builder(HeadFinders.<CoreNLPParseNode>getEnglishPTBHeadFinder()).build();
+    final CoreNLPXMLLoader coreNLPXMLLoader = CoreNLPXMLLoader.builder(headFinder).build();
     final boolean relaxUsingCORENLP = params.getBoolean("relaxUsingCoreNLP");
     final ImmutableMap<Symbol, File> coreNLPProcessedRawDocs;
     if (relaxUsingCORENLP) {
@@ -283,7 +286,8 @@ public final class ScoreKBPAgainstERE {
 
     // any timex resolution less specific than the most specific correct resolution for a given
     // argument slot is delete. See 2016 task description Section 5, "temporal arguments" bullet #3
-    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredForTemporal =
+    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
+        filteredForTemporal =
         transformed(filteredForLifeDie, TemporalSpecificityFilter.INSTANCE);
 
     // set up for event argument scoring in 2015 style
@@ -355,8 +359,6 @@ public final class ScoreKBPAgainstERE {
     final BinaryErrorLogger<HasDocID, HasDocID> logWrongAnswers = BinaryErrorLogger
         .forStringifierAndOutputDir(Functions.<HasDocID>toStringFunction(), outputDir);
     inspect(alignmentNode).with(logWrongAnswers);
-
-
 
 
   }
@@ -503,7 +505,7 @@ public final class ScoreKBPAgainstERE {
     }
   }
 
-    private static Function<? super ResponsesAndLinking, ResponsesAndLinking> transformArgs(
+  private static Function<? super ResponsesAndLinking, ResponsesAndLinking> transformArgs(
       final Function<? super DocLevelEventArg, DocLevelEventArg> transformer) {
     return new Function<ResponsesAndLinking, ResponsesAndLinking>() {
       @Override
@@ -1021,7 +1023,8 @@ public final class ScoreKBPAgainstERE {
           numResponses.size(), mentionAlignmentFailures.size());
 
       final File serializedFailuresFile = new File(outputDir, "alignmentFailures.json");
-      final JacksonSerializer serializer = JacksonSerializer.builder().forJson().prettyOutput().build();
+      final JacksonSerializer serializer =
+          JacksonSerializer.builder().forJson().prettyOutput().build();
       serializer.serializeTo(mentionAlignmentFailures, Files.asByteSink(serializedFailuresFile));
 
       final File failuresCount = new File(outputDir, "alignmentFailures.count.txt");
@@ -1076,6 +1079,20 @@ public final class ScoreKBPAgainstERE {
     @Provides
     QuoteFilter getQuoteFiler(Parameters params) throws IOException {
       return QuoteFilter.loadFrom(Files.asByteSource(params.getExistingFile("quoteFilter")));
+    }
+
+    @Provides
+    HeadFinder<CoreNLPParseNode> getHeadFinder() throws IOException {
+      switch (params.getString("language")) {
+        case "eng":
+          return HeadFinders.getEnglishPTBHeadFinder();
+        case "spa":
+          return HeadFinders.getSpanishAncoraHeadFinder();
+        case "cmn":
+          return HeadFinders.getChinesePTBHeadFinder();
+        default:
+          throw new TACKBPEALException("Could not find head finder definition in params!");
+      }
     }
   }
 }
