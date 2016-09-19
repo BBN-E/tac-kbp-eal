@@ -55,7 +55,7 @@ import static com.google.common.base.Predicates.compose;
  * (if any)</li>. See {@link #createResponseMatchingStrategy(Optional)} for a full
  * description of the match criteria</ul>
  */
-final class EREAligner {
+public final class EREAligner {
 
   private static final Logger log = LoggerFactory.getLogger(EREAligner.class);
 
@@ -71,7 +71,7 @@ final class EREAligner {
     this.responseMatchingStrategy = responseMatchingStrategy;
   }
 
-  static EREAligner create(final EREDocument ereDoc,
+  public static EREAligner create(final EREDocument ereDoc,
       final Optional<CoreNLPDocument> coreNLPDocument,
       final EREToKBPEventOntologyMapper mapping) {
     return new EREAligner(

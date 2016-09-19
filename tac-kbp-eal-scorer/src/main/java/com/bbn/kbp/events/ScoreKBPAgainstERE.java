@@ -221,7 +221,7 @@ public final class ScoreKBPAgainstERE {
         log.warn("Fetched document ID {} does not equal stored {}", ereDoc.getDocId(), docID);
       }
       final Iterable<Response>
-          responses = filter(outputStore.read(docID).arguments().responses(), bannedRolesFilter);
+          responses = filter(outputStore.read(docID).arguments().responses(), BANNED_ROLES_FILTER);
       final ResponseLinking linking =
           ((DocumentSystemOutput2015) outputStore.read(docID)).linking();
       linking.copyWithFilteredResponses(in(ImmutableSet.copyOf(responses)));
@@ -247,7 +247,8 @@ public final class ScoreKBPAgainstERE {
       Sets.difference(ROLES_2016, BANNED_ROLES).immutableCopy();
   private static final ImmutableSet<Symbol> linkableRealis = SymbolUtils.setFrom("Other", "Actual");
 
-  private static final Predicate<Response> bannedRolesFilter = new Predicate<Response>() {
+  // evaluation hack to make this usable by DerivedQuerySelector2016
+  public static final Predicate<Response> BANNED_ROLES_FILTER = new Predicate<Response>() {
     @Override
     public boolean apply(@Nullable final Response response) {
       return ALLOWED_ROLES_2016.contains(response.role());

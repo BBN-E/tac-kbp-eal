@@ -1,5 +1,5 @@
 package com.bbn.kbp.events;
 
-enum ScoringEntityType {
+public enum ScoringEntityType {
   Entity, Filler, InsufficientEntityLevel, AlignmentFailure, Time;
 }
