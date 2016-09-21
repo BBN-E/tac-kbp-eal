@@ -36,8 +36,6 @@ import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.TACKBPEALException;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
 import com.bbn.kbp.events2014.transformers.QuoteFilter;
-import com.bbn.kbp.linking.ExplicitFMeasureInfo;
-import com.bbn.kbp.linking.LinkF1;
 import com.bbn.nlp.corenlp.CoreNLPDocument;
 import com.bbn.nlp.corenlp.CoreNLPParseNode;
 import com.bbn.nlp.corenlp.CoreNLPXMLLoader;
@@ -84,7 +82,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
@@ -335,7 +332,7 @@ public final class ScoreKBPAgainstERE {
     // bootstrapped per-event F-scores
     final BinaryConfusionMatrixBootstrapStrategy<HasEventType> perEventBootstrapStrategy =
         BinaryConfusionMatrixBootstrapStrategy.create(HasEventType.ExtractFunction.INSTANCE,
-            ImmutableSet.of(BrokenDownFMeasureAggregator.create("EventType", outputDir)));
+            ImmutableSet.of(BrokenDownFMeasureAggregator.create("EventType", new File(outputDir, "fScores"))));
     final BootstrapInspector breakdownScoresByEventTypeWithBootstrapping =
         BootstrapInspector.forStrategy(perEventBootstrapStrategy, 1000, new Random(0));
     inspect(alignmentNode).with(breakdownScoresByEventTypeWithBootstrapping);
@@ -350,7 +347,7 @@ public final class ScoreKBPAgainstERE {
         BinaryConfusionMatrixBootstrapStrategy.create(
             Functions.constant("Aggregate"),
             ImmutableSet.of(new BrokenDownLinearScoreAggregator.Builder().name("ArgScore")
-                .outputDir(outputDir).alpha(0.25).build()));
+                .outputDir(new File(outputDir, "argScores")).alpha(0.25).build()));
     final BootstrapInspector argScoreWithBootstrapping =
         BootstrapInspector.forStrategy(argScoreBootstrapStrategy, 1000, new Random(0));
     inspect(alignmentNode).with(argScoreWithBootstrapping);
@@ -377,9 +374,11 @@ public final class ScoreKBPAgainstERE {
       // we throw out any system responses not found in the key before scoring linking
       final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
           filteredNode = transformed(linkingNode, RestrictToLinking.INSTANCE);
-      final LinkingInspector linkingInspector =
-          LinkingInspector.createOutputtingTo(new File(outputDir, "withRealis"));
-      inspect(filteredNode).with(linkingInspector);
+      final BootstrapInspector<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, LinkingInspector.LinkingScoreDocRecord>
+          linkScoreWithBootstrapping =
+          BootstrapInspector.forStrategy(LinkingInspector.createOutputtingTo(new File(outputDir, "withRealis")),
+              1000, new Random(0));
+      inspect(filteredNode).with(linkScoreWithBootstrapping);
     }
     // without realis
     {
@@ -391,9 +390,11 @@ public final class ScoreKBPAgainstERE {
       // we throw out any system responses not found in the key before scoring linking, after neutralizing realis
       final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
           filteredNode = transformed(linkingNode, RestrictToLinking.INSTANCE);
-      final LinkingInspector linkingInspector =
-          LinkingInspector.createOutputtingTo(new File(outputDir, "noRealis"));
-      inspect(filteredNode).with(linkingInspector);
+      final BootstrapInspector<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, LinkingInspector.LinkingScoreDocRecord>
+          linkScoreWithBootstrapping =
+          BootstrapInspector.forStrategy(LinkingInspector.createOutputtingTo(new File(outputDir, "noRealis")),
+              1000, new Random(0));
+      inspect(filteredNode).with(linkScoreWithBootstrapping);
     }
   }
 
@@ -645,91 +646,6 @@ public final class ScoreKBPAgainstERE {
         final File docJsonArgScores = new File(docDir, "argScores.json");
         serializer.serializeTo(normalizedAndScaledArgScore, Files.asByteSink(docJsonArgScores));
       }
-    }
-  }
-
-  private static final class LinkingInspector implements
-      Inspector<EvalPair<DocLevelArgLinking, DocLevelArgLinking>> {
-
-    private final File outputDir;
-    private final ImmutableMap.Builder<Symbol, ExplicitFMeasureInfo> countsB =
-        ImmutableMap.builder();
-    private final ImmutableMap.Builder<Symbol, Integer> predictedCountsB = ImmutableMap.builder();
-    private final ImmutableMap.Builder<Symbol, Integer> actualCountsB = ImmutableMap.builder();
-    private final ImmutableMap.Builder<Symbol, Integer> linkingArgsCountB = ImmutableMap.builder();
-
-
-    private LinkingInspector(final File outputDir) {
-      this.outputDir = outputDir;
-    }
-
-    public static LinkingInspector createOutputtingTo(final File outputFile) {
-      return new LinkingInspector(outputFile);
-    }
-
-    @Override
-    public void inspect(
-        final EvalPair<DocLevelArgLinking, DocLevelArgLinking> item) {
-      checkArgument(ImmutableSet.copyOf(concat(item.key())).containsAll(
-          ImmutableSet.copyOf(concat(item.test()))), "Must contain only answers in test set!");
-      if (!item.key().docID().equalTo(item.test().docID())) {
-        log.warn("DocIDs do not match: {} vs {}", item.key().docID(), item.test().docID());
-      }
-
-      final ExplicitFMeasureInfo counts = LinkF1.create().score(item.test(), item.key());
-      final ImmutableSet<DocLevelEventArg> args = ImmutableSet.copyOf(concat(
-          transform(concat(item.test().eventFrames(), item.key().eventFrames()),
-              ScoringEventFrameFunctions.arguments())));
-      final Symbol docid = item.key().docID();
-      predictedCountsB.put(docid, ImmutableSet.copyOf(concat(item.test().eventFrames())).size());
-      actualCountsB.put(docid, ImmutableSet.copyOf(concat(item.key().eventFrames())).size());
-      countsB.put(docid, counts);
-      linkingArgsCountB.put(docid, args.size());
-    }
-
-    @Override
-    public void finish() throws IOException {
-      // copies logic from com.bbn.kbp.events2014.scorer.bin.AggregateResultWriter.computeLinkScores()
-      final ImmutableMap<Symbol, ExplicitFMeasureInfo> counts = countsB.build();
-      final ImmutableMap<Symbol, Integer> predictedCounts = predictedCountsB.build();
-      final ImmutableMap<Symbol, Integer> actualCounts = actualCountsB.build();
-      final ImmutableMap<Symbol, Integer> linkingArgsCounts = linkingArgsCountB.build();
-
-      double precision = 0;
-      double recall = 0;
-      double f1 = 0;
-      double linkNormalizerSum = 0;
-      checkNotNull(counts, "Inspect must be called before Finish!");
-      for (final Symbol docid : counts.keySet()) {
-        final File docOutput = new File(outputDir, docid.asString());
-        docOutput.mkdirs();
-        final PrintWriter outputWriter = new PrintWriter(new File(docOutput, "linkingF.txt"));
-        outputWriter.println(counts.get(docid).toString());
-        outputWriter.close();
-
-        precision += counts.get(docid).precision() * predictedCounts.get(docid);
-        recall += counts.get(docid).recall() * actualCounts.get(docid);
-        f1 += counts.get(docid).f1() * actualCounts.get(docid);
-        linkNormalizerSum += linkingArgsCounts.get(docid);
-      }
-
-      // the normalizer sum can't actually be negative here, but this minimizes divergence with the source logic.
-      double aggregateLinkScore =
-          (linkNormalizerSum > 0.0) ? f1 / linkNormalizerSum : 0.0;
-      double aggregateLinkPrecision =
-          (linkNormalizerSum > 0.0) ? precision / linkNormalizerSum : 0.0;
-      double aggregateLinkRecall =
-          (linkNormalizerSum > 0.0) ? recall / linkNormalizerSum : 0.0;
-
-      final ExplicitFMeasureInfo aggregate =
-          ExplicitFMeasureInfo.of(aggregateLinkPrecision, aggregateLinkRecall, aggregateLinkScore);
-      final PrintWriter outputWriter = new PrintWriter(new File(outputDir, "linkingF.txt"));
-      outputWriter.println(aggregate);
-      outputWriter.close();
-
-      final File jsonScores = new File(outputDir, "linkingF.json");
-      JacksonSerializer.builder().forJson().prettyOutput().build()
-          .serializeTo(aggregate, Files.asByteSink(jsonScores));
     }
   }
 
@@ -1161,3 +1077,4 @@ final class EREDocAndResponses {
     return linking;
   }
 }
+

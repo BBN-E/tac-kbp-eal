@@ -78,8 +78,8 @@ public final class QueryResponseFromERE {
     params.assertExactlyOneDefined(SINGLE_STORE_PARAM, MULTIPLE_STORES_PARAM);
     final ImmutableMap<String, SystemOutputStore2016> outputStores;
     if (params.isPresent(SINGLE_STORE_PARAM)) {
-      outputStores = loadSingleStore(params.getExistingDirectory(SINGLE_STORE_PARAM),
-          params.getString("com.bbn.tac.eal.systemName"));
+      outputStores = loadSingleStore(params.getExistingDirectory("com.bbn.tac.eal.storeDir"),
+          params.getString(SINGLE_STORE_PARAM));
     } else {
       outputStores = loadStores(params.getExistingDirectory("com.bbn.tac.eal.storeDir"),
           params.getStringList(MULTIPLE_STORES_PARAM));
@@ -139,7 +139,7 @@ public final class QueryResponseFromERE {
             .assessments(Maps.asMap(
                 queryResponseToFindingSystem.keySet(),
                 // all responses start unassessed
-                Functions.constant(QueryAssessment2016.UNASSASSED))).build();
+                Functions.constant(QueryAssessment2016.UNASSESSED))).build();
 
     log.info("Writing {} query matches to {}", corpusQueryAssessments.queryReponses().size(),
         outputFile);

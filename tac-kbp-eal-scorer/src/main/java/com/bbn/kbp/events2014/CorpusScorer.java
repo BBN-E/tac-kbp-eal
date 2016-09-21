@@ -273,7 +273,7 @@ final class CorrectMatchesFromAssessmentsExtractor {
       final QueryAssessment2016 assessment = e.getValue();
 
       if (query.id().equalTo(queryResponse.queryID())) {
-        checkArgument(!assessment.equals(QueryAssessment2016.UNASSASSED),
+        checkArgument(!assessment.equals(QueryAssessment2016.UNASSESSED),
             "Response %s for query ID {} is not assessed", queryResponse,
             queryResponse.queryID());
         if (assessment.equals(QueryAssessment2016.CORRECT)) {

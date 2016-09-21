@@ -59,9 +59,9 @@ public final class KeepOnlyBestResponses {
 
       outputStore.write(filtered);
     }
-    if (outputStore instanceof SystemOutputStore2016) {
+    if (inputStore instanceof SystemOutputStore2016) {
       ((SystemOutputStore2016) outputStore)
-          .writeCorpusEventFrames(((SystemOutputStore2016) outputStore).readCorpusEventFrames());
+          .writeCorpusEventFrames(((SystemOutputStore2016) inputStore).readCorpusEventFrames());
     }
 
     inputStore.close();
