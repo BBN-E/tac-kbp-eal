@@ -304,8 +304,8 @@ final class EREAligner {
         final Optional<CoreNLPParseNode> node = sent.get().nodeForOffsets(off);
         if (node.isPresent()) {
           final Optional<CoreNLPParseNode> terminalHead = node.get().terminalHead();
-          if (terminalHead.isPresent()) {
-            return terminalHead.get().span();
+          if (terminalHead.isPresent() && terminalHead.get().span().isPresent()) {
+            return terminalHead.get().span().get();
           }
         }
       }

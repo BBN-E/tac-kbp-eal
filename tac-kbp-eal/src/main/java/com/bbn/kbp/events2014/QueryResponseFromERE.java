@@ -79,10 +79,10 @@ public final class QueryResponseFromERE {
     final ImmutableMap<String, SystemOutputStore2016> outputStores;
     if (params.isPresent(SINGLE_STORE_PARAM)) {
       outputStores = loadSingleStore(params.getExistingDirectory("com.bbn.tac.eal.storeDir"),
-          params.getString("com.bbn.tac.eal.systemName"));
+          params.getString(SINGLE_STORE_PARAM));
     } else {
       outputStores = loadStores(params.getExistingDirectory("com.bbn.tac.eal.storeDir"),
-          params.getStringList("com.bbn.tac.eal.storesToProcess"));
+          params.getStringList(MULTIPLE_STORES_PARAM));
     }
     final File outputFile = params.getCreatableFile("com.bbn.tac.eal.outputFile");
 
