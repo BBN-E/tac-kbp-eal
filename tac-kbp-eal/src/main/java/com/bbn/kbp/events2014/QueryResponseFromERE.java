@@ -81,8 +81,8 @@ public final class QueryResponseFromERE {
       outputStores = loadSingleStore(params.getExistingDirectory(SINGLE_STORE_PARAM),
           params.getString("com.bbn.tac.eal.systemName"));
     } else {
-      outputStores = loadStores(params.getExistingDirectory(MULTIPLE_STORES_PARAM),
-          params.getStringList("com.bbn.tac.eal.storesToProcess"));
+      outputStores = loadStores(params.getExistingDirectory("com.bbn.tac.eal.storeDir"),
+          params.getStringList(MULTIPLE_STORES_PARAM));
     }
     final File outputFile = params.getCreatableFile("com.bbn.tac.eal.outputFile");
 
