@@ -69,7 +69,7 @@ public final class DefaultCorpusQueryLoader implements CorpusQueryLoader {
     final ImmutableSet.Builder<CorpusQuery2016> ret = ImmutableSet.builder();
     for (final Map.Entry<Symbol, Collection<CorpusQueryEntryPoint>> e
         : queriesToEntryPoints.build().asMap().entrySet()) {
-      ret.add(CorpusQuery2016.of(e.getKey(), e.getValue()));
+      ret.add(new CorpusQuery2016.Builder().id(e.getKey()).addAllEntryPoints(e.getValue()).build());
     }
 
     final CorpusQuerySet2016 corpusQuerySet = CorpusQuerySet2016.of(ret.build());

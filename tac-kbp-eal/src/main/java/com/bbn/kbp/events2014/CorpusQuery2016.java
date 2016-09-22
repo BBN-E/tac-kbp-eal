@@ -1,6 +1,6 @@
 package com.bbn.kbp.events2014;
 
-import com.bbn.bue.common.TextGroupPublicImmutable;
+import com.bbn.bue.common.TextGroupImmutable;
 import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.collect.ImmutableSet;
@@ -12,8 +12,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 @Value.Immutable
 @Functional
-@TextGroupPublicImmutable
-abstract class  _CorpusQuery2016 {
+@TextGroupImmutable
+public abstract class  CorpusQuery2016 {
 
   @Value.Parameter
   public abstract Symbol id();
@@ -27,4 +27,6 @@ abstract class  _CorpusQuery2016 {
     checkArgument(!id().asString().contains("\t"), "Query ID may not contain a tab");
     checkArgument(!entryPoints().isEmpty(), "Query may not lack entry points");
   }
+
+  public static class Builder extends ImmutableCorpusQuery2016.Builder {}
 }

@@ -55,7 +55,7 @@ import static com.google.common.base.Predicates.compose;
  * (if any)</li>. See {@link #createResponseMatchingStrategy(Optional)} for a full
  * description of the match criteria</ul>
  */
-final class EREAligner {
+public final class EREAligner {
 
   private static final Logger log = LoggerFactory.getLogger(EREAligner.class);
 
@@ -71,7 +71,7 @@ final class EREAligner {
     this.responseMatchingStrategy = responseMatchingStrategy;
   }
 
-  static EREAligner create(final EREDocument ereDoc,
+  public static EREAligner create(final EREDocument ereDoc,
       final Optional<CoreNLPDocument> coreNLPDocument,
       final EREToKBPEventOntologyMapper mapping) {
     return new EREAligner(
@@ -90,8 +90,8 @@ final class EREAligner {
   public Optional<ScoringCorefID> argumentForResponse(final Response response) {
     if (response.role().equalTo(TIME)) {
       // time is a special case; its CAS is always its TIMEX form
-      return Optional.of(ScoringCorefID.of(ScoringEntityType.Time,
-          response.canonicalArgument().string()));
+      return Optional.of(new ScoringCorefID.Builder().scoringEntityType(ScoringEntityType.Time)
+          .withinTypeID(response.canonicalArgument().string()).build());
     }
 
     final MappedEventTypeRole systemTypeRole = typeRoleForResponse(response);
@@ -168,11 +168,10 @@ final class EREAligner {
 
     for (final EREEvent ereEvent : ereDoc.getEvents()) {
       for (final EREEventMention ereEventMention : ereEvent.getEventMentions()) {
-        final Optional<Symbol> mappedEventType = ontologyMapper.eventType(
-            Symbol.from(ereEventMention.getType()));
-        final Optional<Symbol> mappedEventSubType = ontologyMapper.eventSubtype(
-            Symbol.from(ereEventMention.getSubtype()));
-        if (!mappedEventType.isPresent() || !mappedEventSubType.isPresent()) {
+        final Optional<Symbol> mappedFullEventType = ScoringUtils.mapERETypesToDotSeparated(
+            ontologyMapper, ereEventMention);
+
+        if (!mappedFullEventType.isPresent()) {
           continue;
         }
 
@@ -186,9 +185,7 @@ final class EREAligner {
 
           // there may be roles outside our ontology. This is also okay.
           final MappedEventTypeRole mappedTypeRole = MappedEventTypeRole.of(
-              Symbol.from(mappedEventType.get().asString()
-                  + "." + mappedEventSubType.get().asString()),
-              mappedRole.get());
+              mappedFullEventType.get(), mappedRole.get());
           if (ereArgument instanceof EREEntityArgument) {
             final Optional<EREEntity> containingEntity =
                 ereDoc.getEntityContaining(((EREEntityArgument) ereArgument).entityMention());
@@ -227,7 +224,8 @@ final class EREAligner {
                                                     : ScoringEntityType.InsufficientEntityLevel;
 
         final CandidateAlignmentTarget.Builder builder = CandidateAlignmentTarget.builder()
-            .id(ScoringCorefID.of(scoringEntityType, entity.getID()))
+            .id(new ScoringCorefID.Builder().scoringEntityType(scoringEntityType)
+                .withinTypeID(entity.getID()).build())
             .typeRolesSeen(rolesPlayed)
             .offsets(extentForERE(ereEntityMention.getExtent()));
         if (ereEntityMention.getHead().isPresent()) {
@@ -243,7 +241,8 @@ final class EREAligner {
       final Collection<MappedEventTypeRole> rolesPlayed = fillersToRolesPlayed.get(filler);
 
       ret.add(CandidateAlignmentTarget.builder()
-          .id(ScoringCorefID.of(ScoringEntityType.Filler, filler.getID()))
+          .id(new ScoringCorefID.Builder().scoringEntityType(ScoringEntityType.Filler)
+              .withinTypeID(filler.getID()).build())
           .typeRolesSeen(rolesPlayed)
           .offsets(extentForERE(filler.getExtent()))
           .build());

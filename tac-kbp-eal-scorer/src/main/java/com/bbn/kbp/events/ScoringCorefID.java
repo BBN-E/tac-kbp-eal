@@ -1,6 +1,6 @@
 package com.bbn.kbp.events;
 
-import com.bbn.bue.common.TextGroupPackageImmutable;
+import com.bbn.bue.common.TextGroupImmutable;
 
 import org.immutables.value.Value;
 
@@ -12,9 +12,9 @@ import static com.google.common.base.Preconditions.checkArgument;
  * anything in the ERE.  We form global identifiers over all these types by concatenating the
  * scoring entity type with its within-type ID.
  */
-@TextGroupPackageImmutable
+@TextGroupImmutable
 @Value.Immutable
-abstract class _ScoringCorefID {
+public abstract class ScoringCorefID {
 
   @Value.Parameter
   public abstract ScoringEntityType scoringEntityType();
@@ -36,4 +36,6 @@ abstract class _ScoringCorefID {
   public String toString() {
     return globalID();
   }
+
+  public static class Builder extends ImmutableScoringCorefID.Builder {}
 }

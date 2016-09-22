@@ -156,15 +156,32 @@ public final class ScoreKBPAgainstERE {
 
   public void go() throws IOException {
     log.info(params.dump());
+
+    final File outputDir = params.getCreatableDirectory("ereScoringOutput");
+    final SystemOutputLayout outputLayout = SystemOutputLayout.ParamParser.fromParamVal(
+        params.getString("outputLayout"));
+
+    if (params.isPresent("systemOutputBase")) {
+      for (final File dir : params.getExistingDirectory("systemOutputBase").listFiles()) {
+        if (dir.isDirectory()) {
+          processSystem(outputLayout.open(dir), new File(outputDir, dir.getName()));
+        }
+      }
+    } else {
+      processSystem(outputLayout.open(params.getExistingDirectory("systemOutput")),
+          outputDir);
+    }
+  }
+
+  void processSystem(SystemOutputStore outputStore, File outputDir) throws IOException {
+    outputDir.mkdirs();
+
     final ImmutableSet<Symbol> docIDsToScore = ImmutableSet.copyOf(
         FileUtils.loadSymbolList(params.getExistingFile("docIDsToScore")));
     final ImmutableMap<Symbol, File> goldDocIDToFileMap = FileUtils.loadSymbolToFileMap(
         Files.asCharSource(params.getExistingFile("goldDocIDToFileMap"), Charsets.UTF_8));
-    final File outputDir = params.getCreatableDirectory("ereScoringOutput");
-    final SystemOutputLayout outputLayout = SystemOutputLayout.ParamParser.fromParamVal(
-        params.getString("outputLayout"));
-    final SystemOutputStore outputStore =
-        outputLayout.open(params.getExistingDirectory("systemOutput"));
+
+
 
     final CoreNLPXMLLoader coreNLPXMLLoader = CoreNLPXMLLoader.builder(headFinder).build();
     final boolean relaxUsingCORENLP = params.getBoolean("relaxUsingCoreNLP");
@@ -224,7 +241,7 @@ public final class ScoreKBPAgainstERE {
         log.warn("Fetched document ID {} does not equal stored {}", ereDoc.getDocId(), docID);
       }
       final Iterable<Response>
-          responses = filter(outputStore.read(docID).arguments().responses(), bannedRolesFilter);
+          responses = filter(outputStore.read(docID).arguments().responses(), BANNED_ROLES_FILTER);
       final ResponseLinking linking =
           ((DocumentSystemOutput2015) outputStore.read(docID)).linking();
       linking.copyWithFilteredResponses(in(ImmutableSet.copyOf(responses)));
@@ -250,7 +267,8 @@ public final class ScoreKBPAgainstERE {
       Sets.difference(ROLES_2016, BANNED_ROLES).immutableCopy();
   private static final ImmutableSet<Symbol> linkableRealis = SymbolUtils.setFrom("Other", "Actual");
 
-  private static final Predicate<Response> bannedRolesFilter = new Predicate<Response>() {
+  // evaluation hack to make this usable by DerivedQuerySelector2016
+  public static final Predicate<Response> BANNED_ROLES_FILTER = new Predicate<Response>() {
     @Override
     public boolean apply(@Nullable final Response response) {
       return ALLOWED_ROLES_2016.contains(response.role());
@@ -351,6 +369,17 @@ public final class ScoreKBPAgainstERE {
     final BootstrapInspector argScoreWithBootstrapping =
         BootstrapInspector.forStrategy(argScoreBootstrapStrategy, 1000, new Random(0));
     inspect(alignmentNode).with(argScoreWithBootstrapping);
+
+    // see By2016TypeGroup's Javadoc for an explanation of this
+    final BinaryConfusionMatrixBootstrapStrategy<HasEventType> argScoreByTypeGroupBootstrapStrategy =
+        BinaryConfusionMatrixBootstrapStrategy.create(
+            By2016TypeGroup.INSTANCE,
+            ImmutableSet.of(new BrokenDownLinearScoreAggregator.Builder().name("ArgScore")
+                .outputDir(new File(outputDir, "argScoresGrouped")).alpha(0.25).build()));
+    final BootstrapInspector argScoreByTypeWithBootstrapping =
+        BootstrapInspector.forStrategy(argScoreByTypeGroupBootstrapStrategy, 1000, new Random(0));
+    inspect(alignmentNode).with(argScoreByTypeWithBootstrapping);
+
 
     // log errors
     final BinaryErrorLogger<HasDocID, HasDocID> logWrongAnswers = BinaryErrorLogger
@@ -897,8 +926,9 @@ public final class ScoreKBPAgainstERE {
           // in case of alignment failure, we make a pseudo-entity from the CAS offsets
           // it will always be wrong, but will be consistent for the same extent appearing in
           // different event roles
-          ScoringCorefID.of(ScoringEntityType.AlignmentFailure,
-              response.canonicalArgument().charOffsetSpan().asCharOffsetRange().toString()));
+          new ScoringCorefID.Builder().scoringEntityType(ScoringEntityType.AlignmentFailure)
+          .withinTypeID(response.canonicalArgument().charOffsetSpan().asCharOffsetRange().toString())
+          .build());
 
       return DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
           .eventType(response.type()).eventArgumentType(response.role())
@@ -1078,3 +1108,30 @@ final class EREDocAndResponses {
   }
 }
 
+/**
+ * For 2016, there are two groups of events - the Contact.* cluster and the Transaction.*
+ * cluster which have the odd property that there is a catch-all category (Contact.Contact,
+ * Transaction.Transaction) to cover events that cannot be assigned more specific sub-type.  This
+ * transformation will let us separate out the scores for those events from all other events.
+ */
+enum By2016TypeGroup implements Function<HasEventType, String> {
+  INSTANCE;
+
+  private static final ImmutableSet<Symbol> TRANSACTION_SUBTYPES = SymbolUtils.setFrom(
+      "Transaction.Transaction", "Transaction.Transfer-Money",
+      "Transaction.Transfer-Ownership");
+
+  private static final ImmutableSet<Symbol> CONTACT_SUBTYPES = SymbolUtils.setFrom(
+      "Contact.Contact", "Contact.Broadcast", "Contact.Meet", "Contact.Correspondance");
+
+  @Override
+  public String apply(final HasEventType x) {
+    if (TRANSACTION_SUBTYPES.contains(x.eventType())) {
+      return "Transaction";
+    } else if (CONTACT_SUBTYPES.contains(x.eventType())) {
+      return "Contact";
+    } else {
+      return "Other";
+    }
+  }
+}

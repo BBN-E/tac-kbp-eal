@@ -1,15 +1,18 @@
 package com.bbn.kbp.events;
 
+import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events.ontology.EREToKBPEventOntologyMapper;
 import com.bbn.kbp.events2014.TACKBPEALException;
 import com.bbn.nlp.corpora.ere.EREArgument;
 import com.bbn.nlp.corpora.ere.EREDocument;
 import com.bbn.nlp.corpora.ere.EREEntity;
 import com.bbn.nlp.corpora.ere.EREEntityArgument;
+import com.bbn.nlp.corpora.ere.EREEventMention;
 import com.bbn.nlp.corpora.ere.EREFillerArgument;
 
 import com.google.common.base.Optional;
 
-final class ScoringUtils {
+public final class ScoringUtils {
 
   private ScoringUtils() {
     throw new UnsupportedOperationException();
@@ -20,7 +23,8 @@ final class ScoringUtils {
       final Optional<EREEntity> entityContainingMention = ereDoc.getEntityContaining(
           ((EREEntityArgument) ea).entityMention());
       if (entityContainingMention.isPresent()) {
-        return ScoringCorefID.of(ScoringEntityType.Entity, entityContainingMention.get().getID());
+        return new ScoringCorefID.Builder().scoringEntityType(ScoringEntityType.Entity)
+          .withinTypeID(entityContainingMention.get().getID()).build();
       } else {
         throw new TACKBPEALException("ERE mention not in any entity");
       }
@@ -31,15 +35,31 @@ final class ScoringUtils {
         final Optional<String> normalizedTime =
             ((EREFillerArgument) ea).filler().getNormalizedTime();
         if (normalizedTime.isPresent()) {
-          return ScoringCorefID.of(ScoringEntityType.Time, normalizedTime.get());
+          return new ScoringCorefID.Builder().scoringEntityType(ScoringEntityType.Time)
+            .withinTypeID(normalizedTime.get()).build();
         } else {
           throw new TACKBPEALException("Time argument has non-temporal filler");
         }
       } else {
-        return ScoringCorefID.of(ScoringEntityType.Filler, ea.getID());
+        return new ScoringCorefID.Builder().scoringEntityType(ScoringEntityType.Filler)
+          .withinTypeID(((EREFillerArgument) ea).filler().getID()).build();
       }
     } else {
       throw new TACKBPEALException("Unknown ERE argument type " + ea.getClass());
+    }
+  }
+
+  public static Optional<Symbol> mapERETypesToDotSeparated(
+      EREToKBPEventOntologyMapper ontologyMapper, EREEventMention em) {
+    final Optional<Symbol> mappedEventType = ontologyMapper.eventType(Symbol.from(em.getType()));
+    final Optional<Symbol> mappedEventSubType = ontologyMapper.eventSubtype(
+        Symbol.from(em.getSubtype()));
+
+    if (mappedEventType.isPresent() || !mappedEventSubType.isPresent()) {
+      return Optional.of(Symbol.from(mappedEventType.get().asString()
+          + "." + mappedEventSubType.get().asString()));
+    } else {
+      return Optional.absent();
     }
   }
 }
