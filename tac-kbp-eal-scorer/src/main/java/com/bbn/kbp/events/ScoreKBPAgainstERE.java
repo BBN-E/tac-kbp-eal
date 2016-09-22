@@ -4,6 +4,7 @@ import com.bbn.bue.common.Finishable;
 import com.bbn.bue.common.HasDocID;
 import com.bbn.bue.common.Inspector;
 import com.bbn.bue.common.IntIDSequence;
+import com.bbn.bue.common.TextGroupImmutable;
 import com.bbn.bue.common.TextGroupPackageImmutable;
 import com.bbn.bue.common.evaluation.AggregateBinaryFScoresInspector;
 import com.bbn.bue.common.evaluation.BinaryConfusionMatrixBootstrapStrategy;
@@ -13,6 +14,7 @@ import com.bbn.bue.common.evaluation.BrokenDownFMeasureAggregator;
 import com.bbn.bue.common.evaluation.BrokenDownLinearScoreAggregator;
 import com.bbn.bue.common.evaluation.EquivalenceBasedProvenancedAligner;
 import com.bbn.bue.common.evaluation.EvalPair;
+import com.bbn.bue.common.evaluation.FMeasureCounts;
 import com.bbn.bue.common.evaluation.InspectionNode;
 import com.bbn.bue.common.evaluation.InspectorTreeDSL;
 import com.bbn.bue.common.evaluation.InspectorTreeNode;
@@ -653,7 +655,9 @@ public final class ScoreKBPAgainstERE {
           String.format(scorePattern, aggregateTPs, aggregateFPs, aggregateFNs, overAllArgScore);
       Files.asCharSink(new File(outputDir, "argScores.txt"), Charsets.UTF_8).write(scoreString);
       final File jsonArgScores = new File(outputDir, "argScore.json");
-      serializer.serializeTo(overAllArgScore, Files.asByteSink(jsonArgScores));
+      serializer.serializeTo(ArgScoreSummary.of(overAllArgScore,
+          FMeasureCounts.fromTPFPFN(aggregateTPs, aggregateFPs, aggregateFNs)),
+          Files.asByteSink(jsonArgScores));
 
       final ImmutableMap<Symbol, Double> scores = this.scores.build();
       final ImmutableMap<Symbol, Integer> falsePositives = this.falsePositives.build();
@@ -1135,3 +1139,4 @@ enum By2016TypeGroup implements Function<HasEventType, String> {
     }
   }
 }
+
