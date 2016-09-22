@@ -238,6 +238,11 @@
                 <version>${bueopen.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>com.bbn.bue</groupId>
+                <artifactId>common-core-guice</artifactId>
+                <version>${bueopen.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>junit</groupId>

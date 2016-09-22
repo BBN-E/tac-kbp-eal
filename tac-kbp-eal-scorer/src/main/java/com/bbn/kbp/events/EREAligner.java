@@ -168,11 +168,10 @@ public final class EREAligner {
 
     for (final EREEvent ereEvent : ereDoc.getEvents()) {
       for (final EREEventMention ereEventMention : ereEvent.getEventMentions()) {
-        final Optional<Symbol> mappedEventType = ontologyMapper.eventType(
-            Symbol.from(ereEventMention.getType()));
-        final Optional<Symbol> mappedEventSubType = ontologyMapper.eventSubtype(
-            Symbol.from(ereEventMention.getSubtype()));
-        if (!mappedEventType.isPresent() || !mappedEventSubType.isPresent()) {
+        final Optional<Symbol> mappedFullEventType = ScoringUtils.mapERETypesToDotSeparated(
+            ontologyMapper, ereEventMention);
+
+        if (!mappedFullEventType.isPresent()) {
           continue;
         }
 
@@ -186,9 +185,7 @@ public final class EREAligner {
 
           // there may be roles outside our ontology. This is also okay.
           final MappedEventTypeRole mappedTypeRole = MappedEventTypeRole.of(
-              Symbol.from(mappedEventType.get().asString()
-                  + "." + mappedEventSubType.get().asString()),
-              mappedRole.get());
+              mappedFullEventType.get(), mappedRole.get());
           if (ereArgument instanceof EREEntityArgument) {
             final Optional<EREEntity> containingEntity =
                 ereDoc.getEntityContaining(((EREEntityArgument) ereArgument).entityMention());
