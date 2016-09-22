@@ -135,10 +135,6 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.bbn.bue</groupId>
-            <artifactId>common-core-guice</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
             <version>4.0</version>
