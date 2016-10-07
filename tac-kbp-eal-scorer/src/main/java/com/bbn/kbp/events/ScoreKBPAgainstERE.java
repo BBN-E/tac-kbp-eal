@@ -74,6 +74,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.assistedinject.Assisted;
+import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.multibindings.MapBinder;
 
 import org.immutables.func.Functional;
@@ -853,6 +854,7 @@ public final class ScoreKBPAgainstERE {
       public void configure() {
       }
 
+      @Provides
       SimpleEventOntologyMapper getOntologyMapper(Parameters params) throws IOException {
         return EREToKBPEventOntologyMapper.create2016Mapping();
       }
@@ -873,7 +875,7 @@ public final class ScoreKBPAgainstERE {
 
     @javax.inject.Inject
     public ResponsesAndLinkingFromKBPExtractor(
-        final Optional<ImmutableMap<Symbol, File>> coreNLPDocs,
+        @CoreNLPProcessedRawDocsP final Optional<ImmutableMap<Symbol, File>> coreNLPDocs,
         final CoreNLPXMLLoader coreNLPXMLLoader, final EREToKBPEventOntologyMapper ontologyMapper,
         @Assisted File outputDir) {
       this.coreNLPDocs = coreNLPDocs;
@@ -1040,6 +1042,8 @@ public final class ScoreKBPAgainstERE {
         throw new TACKBPEALException(ioe);
       }
       install(new ResponsesAndLinkingFromEREExtractor.Module());
+      install(new FactoryModuleBuilder()
+          .build(ResponsesAndLinkingFromKBPExtractorFactory.class));
     }
 
     @Provides

@@ -39,7 +39,7 @@ public abstract class DocLevelEventArg implements HasDocID, HasEventType, HasEve
 
     @Override
     public String apply(final DocLevelEventArg input) {
-      return input.eventArgumentType().asString() + "/" + input.eventArgumentType().asString();
+      return input.eventType().asString() + "-" + input.eventArgumentType().asString();
     }
   }
 
