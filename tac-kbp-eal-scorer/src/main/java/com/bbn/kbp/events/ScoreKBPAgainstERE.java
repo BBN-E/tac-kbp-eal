@@ -3,7 +3,6 @@ package com.bbn.kbp.events;
 import com.bbn.bue.common.Finishable;
 import com.bbn.bue.common.HasDocID;
 import com.bbn.bue.common.Inspector;
-import com.bbn.bue.common.IntIDSequence;
 import com.bbn.bue.common.TextGroupImmutable;
 import com.bbn.bue.common.evaluation.AggregateBinaryFScoresInspector;
 import com.bbn.bue.common.evaluation.BinaryConfusionMatrixBootstrapStrategy;
@@ -74,6 +73,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
+import com.google.inject.assistedinject.Assisted;
 import com.google.inject.multibindings.MapBinder;
 
 import org.immutables.func.Functional;
@@ -83,6 +83,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
@@ -91,6 +95,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
+import javax.inject.Qualifier;
 
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.inspect;
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformBoth;
@@ -101,7 +106,6 @@ import static com.bbn.kbp.events.DocLevelEventArgFunctions.eventArgumentType;
 import static com.bbn.kbp.events.DocLevelEventArgFunctions.eventType;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Predicates.compose;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.in;
@@ -127,10 +131,8 @@ public final class ScoreKBPAgainstERE {
   private static final Logger log = LoggerFactory.getLogger(ScoreKBPAgainstERE.class);
 
   private final EREToKBPEventOntologyMapper ontologyMapper;
-
-  private ScoreKBPAgainstERE() {
-    throw new UnsupportedOperationException();
-  }
+  private final ImmutableSet<Symbol> docIDsToScore;
+  private final ImmutableMap<Symbol, File> goldDocIDToFileMap;
 
   // left over from pre-Guice version
   private final Parameters params;
@@ -138,21 +140,35 @@ public final class ScoreKBPAgainstERE {
       scoringEventObservers;
   // we exclude text in quoted regions froms scoring
   private final QuoteFilter quoteFilter;
-  private final HeadFinder<CoreNLPParseNode> headFinder;
+  private final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor;
+  private final CoreNLPXMLLoader coreNLPXMLLoader;
+  private final Optional<ImmutableMap<Symbol, File>> coreNLPProcessedRawDocs;
+  private final ResponsesAndLinkingFromKBPExtractorFactory
+      responesAndLinkingFromKBPExtractorFactory;
 
   @Inject
   ScoreKBPAgainstERE(
       final Parameters params,
       final Map<String, ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>> scoringEventObservers,
       final EREToKBPEventOntologyMapper ontologyMapper,
+      final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor,
       final QuoteFilter quoteFilter,
-      final HeadFinder<CoreNLPParseNode> headFinder) {
-    this.headFinder = headFinder;
+      CoreNLPXMLLoader coreNLPXMLLoader,
+      @CoreNLPProcessedRawDocsP Optional<ImmutableMap<Symbol, File>> coreNLPProcessedRawDocs,
+      ResponsesAndLinkingFromKBPExtractorFactory responesAndLinkingFromKBPExtractorFactory,
+      @DocIDsToScoreP Set<Symbol> docIdsToScore,
+      @KeyFileMapP Map<Symbol, File> keyFilesMap) {
     this.params = checkNotNull(params);
     // we use a sorted map because the binding of plugins may be non-deterministic
     this.scoringEventObservers = ImmutableSortedMap.copyOf(scoringEventObservers);
     this.ontologyMapper = checkNotNull(ontologyMapper);
     this.quoteFilter = checkNotNull(quoteFilter);
+    this.responsesAndLinkingFromEREExtractor = checkNotNull(responsesAndLinkingFromEREExtractor);
+    this.coreNLPXMLLoader = coreNLPXMLLoader;
+    this.coreNLPProcessedRawDocs = coreNLPProcessedRawDocs;
+    this.responesAndLinkingFromKBPExtractorFactory = responesAndLinkingFromKBPExtractorFactory;
+    this.docIDsToScore = ImmutableSet.copyOf(docIdsToScore);
+    this.goldDocIDToFileMap = ImmutableMap.copyOf(keyFilesMap);
   }
 
   public void go() throws IOException {
@@ -174,26 +190,31 @@ public final class ScoreKBPAgainstERE {
     }
   }
 
+  @Qualifier
+  @Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD})
+  @Retention(RetentionPolicy.RUNTIME)
+  @interface CoreNLPProcessedRawDocsP {
+
+  }
+
+  @Qualifier
+  @Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD})
+  @Retention(RetentionPolicy.RUNTIME)
+  @interface DocIDsToScoreP {
+
+  }
+
+  @Qualifier
+  @Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD})
+  @Retention(RetentionPolicy.RUNTIME)
+  @interface KeyFileMapP {
+
+  }
+
+
   void processSystem(SystemOutputStore outputStore, File outputDir) throws IOException {
     outputDir.mkdirs();
 
-    final ImmutableSet<Symbol> docIDsToScore = ImmutableSet.copyOf(
-        FileUtils.loadSymbolList(params.getExistingFile("docIDsToScore")));
-    final ImmutableMap<Symbol, File> goldDocIDToFileMap = FileUtils.loadSymbolToFileMap(
-        Files.asCharSource(params.getExistingFile("goldDocIDToFileMap"), Charsets.UTF_8));
-
-
-
-    final CoreNLPXMLLoader coreNLPXMLLoader = CoreNLPXMLLoader.builder(headFinder).build();
-    final boolean relaxUsingCORENLP = params.getBoolean("relaxUsingCoreNLP");
-    final ImmutableMap<Symbol, File> coreNLPProcessedRawDocs;
-    if (relaxUsingCORENLP) {
-      log.info("Relaxing scoring using CoreNLP");
-      coreNLPProcessedRawDocs = FileUtils.loadSymbolToFileMap(
-          Files.asCharSource(params.getExistingFile("coreNLPDocIDMap"), Charsets.UTF_8));
-    } else {
-      coreNLPProcessedRawDocs = ImmutableMap.of();
-    }
 
     log.info("Scoring over {} documents", docIDsToScore.size());
 
@@ -214,12 +235,7 @@ public final class ScoreKBPAgainstERE {
     // at the end to record some statistics about alignment failures,
     // so we need to keep references to them
     final ResponsesAndLinkingFromKBPExtractor responsesAndLinkingFromKBPExtractor =
-        new ResponsesAndLinkingFromKBPExtractor(coreNLPProcessedRawDocs,
-            coreNLPXMLLoader, relaxUsingCORENLP, ontologyMapper,
-            new File(outputDir, "alignmentFailures"));
-    final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor =
-        new ResponsesAndLinkingFromEREExtractor(EREToKBPEventOntologyMapper.create2016Mapping(),
-            quoteFilter);
+        responesAndLinkingFromKBPExtractorFactory.create(new File(outputDir, "alignmentFailures"));
 
     // this sets it up so that everything fed to input will be scored in various ways
     setupScoring(input, responsesAndLinkingFromKBPExtractor, responsesAndLinkingFromEREExtractor,
@@ -428,9 +444,9 @@ public final class ScoreKBPAgainstERE {
     }
   }
 
-  private static final Predicate<_DocLevelEventArg> ARG_TYPE_IS_ALLOWED_FOR_2016 =
+  private static final Predicate<DocLevelEventArg> ARG_TYPE_IS_ALLOWED_FOR_2016 =
       compose(in(ALLOWED_ROLES_2016), eventArgumentType());
-  private static final Predicate<_DocLevelEventArg> REALIS_ALLOWED_FOR_LINKING =
+  private static final Predicate<DocLevelEventArg> REALIS_ALLOWED_FOR_LINKING =
       compose(in(linkableRealis), DocLevelEventArgFunctions.realis());
 
 
@@ -693,6 +709,9 @@ public final class ScoreKBPAgainstERE {
     Other
   }
 
+  /**
+   * Turns an ERE document into argumetn assertions and linking in a common format for scoring.
+   */
   private static final class ResponsesAndLinkingFromEREExtractor
       implements Function<EREDocument, ResponsesAndLinking>, Finishable {
 
@@ -706,7 +725,8 @@ public final class ScoreKBPAgainstERE {
     private final SimpleEventOntologyMapper mapper;
     private final QuoteFilter quoteFilter;
 
-    private ResponsesAndLinkingFromEREExtractor(final SimpleEventOntologyMapper mapper,
+    @Inject
+    ResponsesAndLinkingFromEREExtractor(final SimpleEventOntologyMapper mapper,
         final QuoteFilter quoteFilter) {
       this.mapper = checkNotNull(mapper);
       this.quoteFilter = checkNotNull(quoteFilter);
@@ -763,7 +783,7 @@ public final class ScoreKBPAgainstERE {
                 allGoldArgs.add(typeRoleKey);
 
                 final DocLevelEventArg arg =
-                    DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
+                    new DocLevelEventArg.Builder().docID(Symbol.from(doc.getDocId()))
                         .eventType(Symbol.from(mapper.eventType(ereEventMentionType).get() + "." +
                             mapper.eventSubtype(ereEventMentionSubtype).get()))
                         .eventArgumentType(mapper.eventRole(ereArgumentRole).get())
@@ -841,33 +861,40 @@ public final class ScoreKBPAgainstERE {
             SymbolUtils.byStringOrdering().immutableSortedCopy(unknownRoles));
       }
     }
+
+    public static class Module extends AbstractModule {
+
+      @Override
+      public void configure() {
+      }
+
+      SimpleEventOntologyMapper getOntologyMapper(Parameters params) throws IOException {
+        return EREToKBPEventOntologyMapper.create2016Mapping();
+      }
+    }
   }
 
   private static final class ResponsesAndLinkingFromKBPExtractor
       implements Function<EREDocAndResponses, ResponsesAndLinking>,
       Finishable {
 
-    // each system item which fails to align to any reference item gets put in its own
-    // coreference class, numbered using this sequence
-    private IntIDSequence alignmentFailureIDs = IntIDSequence.startingFrom(0);
     private ImmutableSetMultimap.Builder<String, String> mentionAlignmentFailuresB =
         ImmutableSetMultimap.builder();
     private Multiset<String> numResponses = HashMultiset.create();
-    private final ImmutableMap<Symbol, File> ereMapping;
+    private final Optional<ImmutableMap<Symbol, File>> coreNLPDocs;
     private final CoreNLPXMLLoader coreNLPXMLLoader;
-    private final boolean relaxUsingCORENLP;
     private final EREToKBPEventOntologyMapper ontologyMapper;
     private final File outputDir;
 
-    public ResponsesAndLinkingFromKBPExtractor(final Map<Symbol, File> ereMapping,
-        final CoreNLPXMLLoader coreNLPXMLLoader, final boolean relaxUsingCORENLP,
-        final EREToKBPEventOntologyMapper ontologyMapper,
-        File outputDir) {
-      this.ereMapping = ImmutableMap.copyOf(ereMapping);
+    @javax.inject.Inject
+    public ResponsesAndLinkingFromKBPExtractor(
+        final Optional<ImmutableMap<Symbol, File>> coreNLPDocs,
+        final CoreNLPXMLLoader coreNLPXMLLoader, final EREToKBPEventOntologyMapper ontologyMapper,
+        @Assisted File outputDir) {
+      this.coreNLPDocs = coreNLPDocs;
       this.coreNLPXMLLoader = coreNLPXMLLoader;
-      this.relaxUsingCORENLP = relaxUsingCORENLP;
-      this.ontologyMapper = checkNotNull(ontologyMapper);
-      this.outputDir = checkNotNull(outputDir);
+      this.ontologyMapper = ontologyMapper;
+      this.outputDir = outputDir;
     }
 
     public ResponsesAndLinking apply(final EREDocAndResponses input) {
@@ -881,11 +908,11 @@ public final class ScoreKBPAgainstERE {
       final EREAligner ereAligner;
 
       try {
-        coreNLPDoc = Optional.fromNullable(ereMapping.get(ereID)).isPresent() ? Optional
-            .of(coreNLPXMLLoader.loadFrom(ereMapping.get(ereID)))
-                                                                              : Optional.<CoreNLPDocument>absent();
-        checkState(coreNLPDoc.isPresent() || !relaxUsingCORENLP, "Must have CoreNLP document "
-            + "if using Core NLP relaxation");
+        if (coreNLPDocs.isPresent()) {
+          coreNLPDoc = Optional.of(coreNLPXMLLoader.loadFrom(coreNLPDocs.get().get(ereID)));
+        } else {
+          coreNLPDoc = Optional.absent();
+        }
         ereAligner = EREAligner.create(doc, coreNLPDoc, ontologyMapper);
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -933,7 +960,7 @@ public final class ScoreKBPAgainstERE {
           .withinTypeID(response.canonicalArgument().charOffsetSpan().asCharOffsetRange().toString())
           .build());
 
-      return DocLevelEventArg.builder().docID(Symbol.from(doc.getDocId()))
+      return new DocLevelEventArg.Builder().docID(Symbol.from(doc.getDocId()))
           .eventType(response.type()).eventArgumentType(response.role())
           .corefID(alignedCorefID.globalID()).realis(realis).build();
     }
@@ -981,6 +1008,11 @@ public final class ScoreKBPAgainstERE {
     }
   }
 
+  interface ResponsesAndLinkingFromKBPExtractorFactory {
+
+    ResponsesAndLinkingFromKBPExtractor create(File alignmentFailuresOutputDir);
+  }
+
   // code for running as a standalone executable
   public static void main(String[] argv) {
     // we wrap the main method in this way to
@@ -1000,7 +1032,6 @@ public final class ScoreKBPAgainstERE {
   }
 
 
-  // sets up a plugin architecture for additional scoring observers
   public static final class GuiceModule extends AbstractModule {
 
     private final Parameters params;
@@ -1023,25 +1054,59 @@ public final class ScoreKBPAgainstERE {
       } catch (IOException ioe) {
         throw new TACKBPEALException(ioe);
       }
+      install(new ResponsesAndLinkingFromEREExtractor.Module());
     }
 
     @Provides
-    QuoteFilter getQuoteFiler(Parameters params) throws IOException {
+    QuoteFilter getQuoteFilter(Parameters params) throws IOException {
       return QuoteFilter.loadFrom(Files.asByteSource(params.getExistingFile("quoteFilter")));
     }
 
     @Provides
-    HeadFinder<CoreNLPParseNode> getHeadFinder() throws IOException {
+    CoreNLPXMLLoader getCoreNLPLoader(Parameters params) throws IOException {
+      final HeadFinder<CoreNLPParseNode> headFinder;
       switch (params.getString("language")) {
         case "eng":
-          return HeadFinders.getEnglishPTBHeadFinder();
+          headFinder = HeadFinders.getEnglishPTBHeadFinder();
+          break;
         case "spa":
-          return HeadFinders.getSpanishAncoraHeadFinder();
+          headFinder = HeadFinders.getSpanishAncoraHeadFinder();
+          break;
         case "cmn":
-          return HeadFinders.getChinesePTBHeadFinder();
+          headFinder = HeadFinders.getChinesePTBHeadFinder();
+          break;
         default:
           throw new TACKBPEALException("Could not find head finder definition in params!");
       }
+      return CoreNLPXMLLoader.builder(headFinder).build();
+    }
+
+    @Provides
+    @CoreNLPProcessedRawDocsP
+    Optional<ImmutableMap<Symbol, File>> getCoreNLPProcessedKey(Parameters params,
+        CoreNLPXMLLoader loader)
+        throws IOException {
+      if (params.getBoolean("relaxUsingCoreNLP")) {
+        log.info("Relaxing scoring using CoreNLP");
+        return Optional.of(FileUtils.loadSymbolToFileMap(
+            Files.asCharSource(params.getExistingFile("coreNLPDocIDMap"), Charsets.UTF_8)));
+      } else {
+        return Optional.absent();
+      }
+    }
+
+    @Provides
+    @DocIDsToScoreP
+    Set<Symbol> docIDsToScore(Parameters params) throws IOException {
+      return FileUtils.loadSymbolSet(Files.asCharSource(
+          params.getExistingFile("docIDsToScore"), Charsets.UTF_8));
+    }
+
+    @Provides
+    @KeyFileMapP
+    Map<Symbol, File> getKeyFileMap(Parameters params) throws IOException {
+      return FileUtils.loadSymbolToFileMap(
+          Files.asCharSource(params.getExistingFile("goldDocIDToFileMap"), Charsets.UTF_8));
     }
   }
 }
