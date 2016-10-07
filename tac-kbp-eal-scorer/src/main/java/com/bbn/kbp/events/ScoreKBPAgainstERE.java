@@ -106,6 +106,7 @@ import static com.bbn.kbp.events.DocLevelEventArgFunctions.eventArgumentType;
 import static com.bbn.kbp.events.DocLevelEventArgFunctions.eventType;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Predicates.and;
 import static com.google.common.base.Predicates.compose;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.in;
@@ -125,12 +126,13 @@ import static com.google.common.collect.Iterables.transform;
  * filler exactly either by itself or by its nominal head (given in ERE).  In the future we may
  * implement more lenient alignment strategies.</i> <li> Currently system responses which fail to
  * align to any entity at all are discarded rather than penalized.</li> </ul>
+ *
+ * See {@link Module} for parameters.
  */
 public final class ScoreKBPAgainstERE {
 
   private static final Logger log = LoggerFactory.getLogger(ScoreKBPAgainstERE.class);
 
-  private final EREToKBPEventOntologyMapper ontologyMapper;
   private final ImmutableSet<Symbol> docIDsToScore;
   private final ImmutableMap<Symbol, File> goldDocIDToFileMap;
 
@@ -139,36 +141,28 @@ public final class ScoreKBPAgainstERE {
   private final ImmutableMap<String, ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>
       scoringEventObservers;
   // we exclude text in quoted regions froms scoring
-  private final QuoteFilter quoteFilter;
   private final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor;
-  private final CoreNLPXMLLoader coreNLPXMLLoader;
-  private final Optional<ImmutableMap<Symbol, File>> coreNLPProcessedRawDocs;
   private final ResponsesAndLinkingFromKBPExtractorFactory
-      responesAndLinkingFromKBPExtractorFactory;
+      responsesAndLinkingFromKBPExtractorFactory;
+  private final Predicate<DocLevelEventArg> inScopePredicate;
 
   @Inject
   ScoreKBPAgainstERE(
       final Parameters params,
       final Map<String, ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>> scoringEventObservers,
-      final EREToKBPEventOntologyMapper ontologyMapper,
       final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor,
-      final QuoteFilter quoteFilter,
-      CoreNLPXMLLoader coreNLPXMLLoader,
-      @CoreNLPProcessedRawDocsP Optional<ImmutableMap<Symbol, File>> coreNLPProcessedRawDocs,
-      ResponsesAndLinkingFromKBPExtractorFactory responesAndLinkingFromKBPExtractorFactory,
+      ResponsesAndLinkingFromKBPExtractorFactory responsesAndLinkingFromKBPExtractorFactory,
       @DocIDsToScoreP Set<Symbol> docIdsToScore,
-      @KeyFileMapP Map<Symbol, File> keyFilesMap) {
+      @KeyFileMapP Map<Symbol, File> keyFilesMap,
+      Predicate<DocLevelEventArg> inScopePredicate) {
     this.params = checkNotNull(params);
     // we use a sorted map because the binding of plugins may be non-deterministic
     this.scoringEventObservers = ImmutableSortedMap.copyOf(scoringEventObservers);
-    this.ontologyMapper = checkNotNull(ontologyMapper);
-    this.quoteFilter = checkNotNull(quoteFilter);
     this.responsesAndLinkingFromEREExtractor = checkNotNull(responsesAndLinkingFromEREExtractor);
-    this.coreNLPXMLLoader = coreNLPXMLLoader;
-    this.coreNLPProcessedRawDocs = coreNLPProcessedRawDocs;
-    this.responesAndLinkingFromKBPExtractorFactory = responesAndLinkingFromKBPExtractorFactory;
+    this.responsesAndLinkingFromKBPExtractorFactory = responsesAndLinkingFromKBPExtractorFactory;
     this.docIDsToScore = ImmutableSet.copyOf(docIdsToScore);
     this.goldDocIDToFileMap = ImmutableMap.copyOf(keyFilesMap);
+    this.inScopePredicate = inScopePredicate;
   }
 
   public void go() throws IOException {
@@ -235,7 +229,7 @@ public final class ScoreKBPAgainstERE {
     // at the end to record some statistics about alignment failures,
     // so we need to keep references to them
     final ResponsesAndLinkingFromKBPExtractor responsesAndLinkingFromKBPExtractor =
-        responesAndLinkingFromKBPExtractorFactory.create(new File(outputDir, "alignmentFailures"));
+        responsesAndLinkingFromKBPExtractorFactory.create(new File(outputDir, "alignmentFailures"));
 
     // this sets it up so that everything fed to input will be scored in various ways
     setupScoring(input, responsesAndLinkingFromKBPExtractor, responsesAndLinkingFromEREExtractor,
@@ -257,8 +251,7 @@ public final class ScoreKBPAgainstERE {
       if (!ereDoc.getDocId().replace("-kbp", "").equals(docID.asString().replace(".kbp", ""))) {
         log.warn("Fetched document ID {} does not equal stored {}", ereDoc.getDocId(), docID);
       }
-      final Iterable<Response>
-          responses = filter(outputStore.read(docID).arguments().responses(), BANNED_ROLES_FILTER);
+      final Iterable<Response> responses = outputStore.read(docID).arguments().responses();
       final ResponseLinking linking =
           ((DocumentSystemOutput2015) outputStore.read(docID)).linking();
       linking.copyWithFilteredResponses(in(ImmutableSet.copyOf(responses)));
@@ -274,23 +267,8 @@ public final class ScoreKBPAgainstERE {
     responsesAndLinkingFromEREExtractor.finish();
   }
 
-  private static final ImmutableSet<Symbol> BANNED_ROLES =
-      SymbolUtils.setFrom("Position", "Fine", "Sentence");
-  private static final ImmutableSet<Symbol> ROLES_2016 = SymbolUtils
-      .setFrom("Agent", "Artifact", "Attacker", "Audience", "Beneficiary", "Crime", "Destination",
-          "Entity", "Giver", "Instrument", "Money", "Origin", "Person", "Place", "Position",
-          "Recipient", "Target", "Thing", "Time", "Victim");
-  private static final ImmutableSet<Symbol> ALLOWED_ROLES_2016 =
-      Sets.difference(ROLES_2016, BANNED_ROLES).immutableCopy();
-  private static final ImmutableSet<Symbol> linkableRealis = SymbolUtils.setFrom("Other", "Actual");
 
-  // evaluation hack to make this usable by DerivedQuerySelector2016
-  public static final Predicate<Response> BANNED_ROLES_FILTER = new Predicate<Response>() {
-    @Override
-    public boolean apply(@Nullable final Response response) {
-      return ALLOWED_ROLES_2016.contains(response.role());
-    }
-  };
+  private static final ImmutableSet<Symbol> linkableRealis = SymbolUtils.setFrom("Other", "Actual");
 
   private static Function<EvalPair<? extends Iterable<? extends DocLevelEventArg>, ? extends Iterable<? extends DocLevelEventArg>>, ProvenancedAlignment<DocLevelEventArg, DocLevelEventArg, DocLevelEventArg, DocLevelEventArg>>
       EXACT_MATCH_ALIGNER = EquivalenceBasedProvenancedAligner
@@ -298,7 +276,7 @@ public final class ScoreKBPAgainstERE {
       .asFunction();
 
   // this sets up a scoring network which is executed on every input
-  private static void setupScoring(
+  private void setupScoring(
       final InspectionNode<EvalPair<EREDocument, EREDocAndResponses>> input,
       final ResponsesAndLinkingFromKBPExtractor responsesAndLinkingFromKBPExtractor,
       final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor,
@@ -308,13 +286,12 @@ public final class ScoreKBPAgainstERE {
         inputAsResponsesAndLinking =
         transformRight(transformLeft(input, responsesAndLinkingFromEREExtractor),
             responsesAndLinkingFromKBPExtractor);
-    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredFor2016 =
+    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filtered =
         InspectorTreeDSL.transformBoth(
-            inputAsResponsesAndLinking,
-            ResponsesAndLinking.filterFunction(ARG_TYPE_IS_ALLOWED_FOR_2016));
+            inputAsResponsesAndLinking, ResponsesAndLinking.filterFunction(inScopePredicate));
 
     final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredForLifeDie =
-        transformed(filteredFor2016, RestrictLifeInjureToLifeDieEvents.INSTANCE);
+        transformed(filtered, RestrictLifeInjureToLifeDieEvents.INSTANCE);
 
     // any timex resolution less specific than the most specific correct resolution for a given
     // argument slot is delete. See 2016 task description Section 5, "temporal arguments" bullet #3
@@ -444,8 +421,6 @@ public final class ScoreKBPAgainstERE {
     }
   }
 
-  private static final Predicate<DocLevelEventArg> ARG_TYPE_IS_ALLOWED_FOR_2016 =
-      compose(in(ALLOWED_ROLES_2016), eventArgumentType());
   private static final Predicate<DocLevelEventArg> REALIS_ALLOWED_FOR_LINKING =
       compose(in(linkableRealis), DocLevelEventArgFunctions.realis());
 
@@ -1027,16 +1002,16 @@ public final class ScoreKBPAgainstERE {
 
   public static void trueMain(String[] argv) throws IOException {
     final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
-    Guice.createInjector(new ScoreKBPAgainstERE.GuiceModule(params))
+    Guice.createInjector(new Module(params))
         .getInstance(ScoreKBPAgainstERE.class).go();
   }
 
 
-  public static final class GuiceModule extends AbstractModule {
+  public static final class Module extends AbstractModule {
 
     private final Parameters params;
 
-    GuiceModule(final Parameters params) {
+    Module(final Parameters params) {
       this.params = checkNotNull(params);
     }
 
@@ -1107,6 +1082,18 @@ public final class ScoreKBPAgainstERE {
     Map<Symbol, File> getKeyFileMap(Parameters params) throws IOException {
       return FileUtils.loadSymbolToFileMap(
           Files.asCharSource(params.getExistingFile("goldDocIDToFileMap"), Charsets.UTF_8));
+    }
+
+    @Provides
+    Predicate<DocLevelEventArg> getInScopePredicate(Parameters params) throws IOException {
+      final Set<Symbol> bannedRoles = params.getSymbolSet("bannedRoles");
+      // provide files under data/2016.types.txt
+      final Set<Symbol> inScopeEventTypes = FileUtils.loadSymbolMultimap(
+          Files.asCharSource(params.getExistingFile("eventTypesToScore"), Charsets.UTF_8)).keySet();
+
+      return and(
+          compose(in(inScopeEventTypes), eventType()),
+          compose(not(in(bannedRoles)), eventArgumentType()));
     }
   }
 }
