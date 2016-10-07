@@ -5,7 +5,6 @@ import com.bbn.bue.common.HasDocID;
 import com.bbn.bue.common.Inspector;
 import com.bbn.bue.common.IntIDSequence;
 import com.bbn.bue.common.TextGroupImmutable;
-import com.bbn.bue.common.TextGroupPackageImmutable;
 import com.bbn.bue.common.evaluation.AggregateBinaryFScoresInspector;
 import com.bbn.bue.common.evaluation.BinaryConfusionMatrixBootstrapStrategy;
 import com.bbn.bue.common.evaluation.BinaryErrorLogger;
@@ -1049,14 +1048,19 @@ public final class ScoreKBPAgainstERE {
 
 @Value.Immutable
 @Functional
-@TextGroupPackageImmutable
-abstract class _ResponsesAndLinking {
+@TextGroupImmutable
+abstract class ResponsesAndLinking {
 
   @Value.Parameter
   public abstract ImmutableSet<DocLevelEventArg> args();
 
   @Value.Parameter
   public abstract DocLevelArgLinking linking();
+
+  public static ResponsesAndLinking of(Iterable<? extends DocLevelEventArg> args,
+      DocLevelArgLinking linking) {
+    return new Builder().args(args).linking(linking).build();
+  }
 
   @Value.Check
   protected void check() {
@@ -1075,7 +1079,7 @@ abstract class _ResponsesAndLinking {
         .of(Iterables.transform(args(), transformer), linking().transformArguments(transformer));
   }
 
-  static final Function<ResponsesAndLinking, ResponsesAndLinking> filterFunction(
+  static Function<ResponsesAndLinking, ResponsesAndLinking> filterFunction(
       final Predicate<? super DocLevelEventArg> predicate) {
     return new Function<ResponsesAndLinking, ResponsesAndLinking>() {
       @Override
@@ -1083,6 +1087,10 @@ abstract class _ResponsesAndLinking {
         return input.filter(predicate);
       }
     };
+  }
+
+  public static class Builder extends ImmutableResponsesAndLinking.Builder {
+
   }
 }
 
