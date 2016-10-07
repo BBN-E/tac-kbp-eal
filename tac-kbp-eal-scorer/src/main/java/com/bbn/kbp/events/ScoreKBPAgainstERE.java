@@ -344,10 +344,20 @@ public final class ScoreKBPAgainstERE {
     // bootstrapped per-event F-scores
     final BinaryConfusionMatrixBootstrapStrategy<HasEventType> perEventBootstrapStrategy =
         BinaryConfusionMatrixBootstrapStrategy.create(HasEventType.ExtractFunction.INSTANCE,
-            ImmutableSet.of(BrokenDownFMeasureAggregator.create("EventType", new File(outputDir, "fScores"))));
+            ImmutableSet.of(BrokenDownFMeasureAggregator
+                .create("EventType", new File(outputDir, "typeF"))));
     final BootstrapInspector breakdownScoresByEventTypeWithBootstrapping =
         BootstrapInspector.forStrategy(perEventBootstrapStrategy, 1000, new Random(0));
     inspect(alignmentNode).with(breakdownScoresByEventTypeWithBootstrapping);
+
+    // bootstrapped, broken down by event type and argument role (F-scores)
+    final BinaryConfusionMatrixBootstrapStrategy<DocLevelEventArg> typeRoleBootstrapStrategy =
+        BinaryConfusionMatrixBootstrapStrategy.create(DocLevelEventArg.TypeRoleFunction.INSTANCE,
+            ImmutableSet.of(BrokenDownFMeasureAggregator
+                .create("EventTypeRole", new File(outputDir, "typeRoleF"))));
+    final BootstrapInspector breakdownScoresByEventTypeRoleWithBootstrapping =
+        BootstrapInspector.forStrategy(typeRoleBootstrapStrategy, 1000, new Random(0));
+    inspect(alignmentNode).with(breakdownScoresByEventTypeRoleWithBootstrapping);
 
     // "arg" score with weighted TP/FP
     final ArgumentScoringInspector argScorer =

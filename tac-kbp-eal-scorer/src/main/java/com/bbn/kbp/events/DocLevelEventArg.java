@@ -6,6 +6,8 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.nlp.events.HasEventArgType;
 import com.bbn.nlp.events.HasEventType;
 
+import com.google.common.base.Function;
+
 import org.immutables.func.Functional;
 import org.immutables.value.Value;
 
@@ -30,6 +32,15 @@ public abstract class DocLevelEventArg implements HasDocID, HasEventType, HasEve
     return docID().asString() + "/" + eventType().asString()
         + "-" + eventArgumentType().asString() + "/" + realis().asString()
         + "/" + corefID();
+  }
+
+  public enum TypeRoleFunction implements Function<DocLevelEventArg, String> {
+    INSTANCE;
+
+    @Override
+    public String apply(final DocLevelEventArg input) {
+      return input.eventArgumentType().asString() + "/" + input.eventArgumentType().asString();
+    }
   }
 
   public static class Builder extends ImmutableDocLevelEventArg.Builder {
