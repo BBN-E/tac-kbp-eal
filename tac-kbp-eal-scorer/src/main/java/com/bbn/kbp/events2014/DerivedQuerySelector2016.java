@@ -10,7 +10,6 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events.EREAligner;
-import com.bbn.kbp.events.ScoreKBPAgainstERE;
 import com.bbn.kbp.events.ScoringCorefID;
 import com.bbn.kbp.events.ScoringEntityType;
 import com.bbn.kbp.events.ScoringUtils;
@@ -31,6 +30,7 @@ import com.bbn.nlp.parsing.HeadFinders;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableListMultimap;
@@ -89,6 +89,24 @@ public final class DerivedQuerySelector2016 {
 
   private static final ImmutableSet<Symbol> BANNED_EVENTS = SymbolUtils.setFrom(
       "Transaction.Transaction", "Contact.Contact", "Contact.Broadcast");
+
+  private static final ImmutableSet<Symbol> BANNED_ROLES =
+      SymbolUtils.setFrom("Position", "Fine", "Sentence");
+  private static final ImmutableSet<Symbol> ROLES_2016 = SymbolUtils
+      .setFrom("Agent", "Artifact", "Attacker", "Audience", "Beneficiary", "Crime", "Destination",
+          "Entity", "Giver", "Instrument", "Money", "Origin", "Person", "Place", "Position",
+          "Recipient", "Target", "Thing", "Time", "Victim");
+  private static final ImmutableSet<Symbol> ALLOWED_ROLES_2016 =
+      Sets.difference(ROLES_2016, BANNED_ROLES).immutableCopy();
+
+  private static final Predicate<Response> BANNED_ROLES_FILTER = new Predicate<Response>() {
+    @Override
+    public boolean apply(final Response response) {
+      return ALLOWED_ROLES_2016.contains(response.role());
+    }
+  };
+
+
 
   @Inject
   DerivedQuerySelector2016(
@@ -245,7 +263,7 @@ public final class DerivedQuerySelector2016 {
           // be aligned to ERE
           final Iterable<Response> responses = FluentIterable
               .from(systemOutput.read(docID).arguments().responses())
-              .filter(ScoreKBPAgainstERE.BANNED_ROLES_FILTER)
+              .filter(BANNED_ROLES_FILTER)
               .filter(Predicates.compose(not(in(BANNED_EVENTS)), type()));
 
           for (final Response response : responses) {
