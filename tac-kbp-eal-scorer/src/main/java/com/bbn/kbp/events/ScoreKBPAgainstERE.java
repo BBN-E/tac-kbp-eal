@@ -696,7 +696,7 @@ public final class ScoreKBPAgainstERE {
   }
 
   /**
-   * Turns an ERE document into argumetn assertions and linking in a common format for scoring.
+   * Turns an ERE document into argument assertions and linking in a common format for scoring.
    */
   private static final class ResponsesAndLinkingFromEREExtractor
       implements Function<EREDocument, ResponsesAndLinking>, Finishable {
