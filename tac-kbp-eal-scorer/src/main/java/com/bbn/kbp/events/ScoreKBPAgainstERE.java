@@ -70,7 +70,6 @@ import com.google.common.io.Files;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
-import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.assistedinject.Assisted;
@@ -96,6 +95,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
+import javax.inject.Inject;
 import javax.inject.Qualifier;
 
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.inspect;
