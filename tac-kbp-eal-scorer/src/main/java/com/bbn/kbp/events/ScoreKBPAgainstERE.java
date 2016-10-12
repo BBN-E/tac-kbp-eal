@@ -360,6 +360,15 @@ public final class ScoreKBPAgainstERE {
         BootstrapInspector.forStrategy(typeRoleBootstrapStrategy, 1000, new Random(0));
     inspect(alignmentNode).with(breakdownScoresByEventTypeRoleWithBootstrapping);
 
+    // bootstrapped, broken down by name, nominal, pronoun, filler
+    final BinaryConfusionMatrixBootstrapStrategy<DocLevelEventArg> mentionTypeBootstrapStrategy =
+        BinaryConfusionMatrixBootstrapStrategy.create(ExtractMentionType.INSTANCE,
+            ImmutableSet.of(BrokenDownFMeasureAggregator
+                .create("MentionType", new File(outputDir, "mentionTypeF"))));
+    final BootstrapInspector breakdownScoresByMentionTypeWithBootstrapping =
+        BootstrapInspector.forStrategy(mentionTypeBootstrapStrategy, 1000, new Random(0));
+    inspect(alignmentNode).with(breakdownScoresByMentionTypeWithBootstrapping);
+
     // "arg" score with weighted TP/FP
     final ArgumentScoringInspector argScorer =
         ArgumentScoringInspector.createOutputtingTo(outputDir);
@@ -1211,3 +1220,23 @@ enum By2016TypeGroup implements Function<HasEventType, String> {
   }
 }
 
+enum ExtractMentionType implements Function<DocLevelEventArg, String> {
+  INSTANCE;
+
+  @Override
+  public String apply(final DocLevelEventArg input) {
+    if (input.corefID().contains("Name")) {
+      return "Name";
+    } else if (input.corefID().contains("Nominal")) {
+      return "Nominal";
+    } else if (input.corefID().contains("Pronoun")) {
+      return "Pronoun";
+    } else if (input.corefID().contains("Filler")) {
+      return "Filler";
+    } else if (input.corefID().contains("Time")) {
+      return "Time";
+    } else {
+      return "Other";
+    }
+  }
+}
