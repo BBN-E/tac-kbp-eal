@@ -1,5 +1,6 @@
 package com.bbn.kbp.events;
 
+import com.bbn.bue.common.TextGroupImmutable;
 import com.bbn.bue.common.TextGroupPackageImmutable;
 import com.bbn.bue.common.annotations.MoveToBUECommon;
 import com.bbn.bue.common.strings.offsets.CharOffset;
@@ -219,12 +220,9 @@ public final class EREAligner {
         final CASType casType = CASType.parseFromERE(ereEntityMention.getType());
         // if this is e.g. a nominal when a name is available as an entity, we use
         // a special entity type to ensure this is always counted wrong.
-        final ScoringEntityType scoringEntityType = (casType.equals(bestCASType))
-                                                    ? ScoringEntityType.Entity
-                                                    : ScoringEntityType.InsufficientEntityLevel;
-
-        final CandidateAlignmentTarget.Builder builder = CandidateAlignmentTarget.builder()
-            .id(new ScoringCorefID.Builder().scoringEntityType(scoringEntityType)
+        final CandidateAlignmentTarget.Builder builder = new CandidateAlignmentTarget.Builder()
+            .id(new ScoringCorefID.Builder()
+                .scoringEntityType(ScoringEntityType.fromCASType(casType))
                 .withinTypeID(entity.getID()).build())
             .typeRolesSeen(rolesPlayed)
             .offsets(extentForERE(ereEntityMention.getExtent()));
@@ -240,7 +238,7 @@ public final class EREAligner {
     for (final EREFiller filler : ereDoc.getFillers()) {
       final Collection<MappedEventTypeRole> rolesPlayed = fillersToRolesPlayed.get(filler);
 
-      ret.add(CandidateAlignmentTarget.builder()
+      ret.add(new CandidateAlignmentTarget.Builder()
           .id(new ScoringCorefID.Builder().scoringEntityType(ScoringEntityType.Filler)
               .withinTypeID(filler.getID()).build())
           .typeRolesSeen(rolesPlayed)
@@ -396,14 +394,18 @@ public final class EREAligner {
 }
 
 @Value.Immutable
-@TextGroupPackageImmutable
-abstract class _MappedEventTypeRole {
+@TextGroupImmutable
+abstract class MappedEventTypeRole {
 
   @Value.Parameter
   abstract Symbol type();
 
   @Value.Parameter
   abstract Symbol role();
+
+  public static MappedEventTypeRole of(Symbol type, Symbol role) {
+    return ImmutableMappedEventTypeRole.of(type, role);
+  }
 
   @Value.Check
   protected void check() {
@@ -418,12 +420,15 @@ abstract class _MappedEventTypeRole {
 }
 
 @Value.Immutable
-@TextGroupPackageImmutable
+@TextGroupImmutable
 @Functional
-abstract class _CandidateAlignmentTarget {
-
+abstract class CandidateAlignmentTarget {
   abstract ImmutableSet<MappedEventTypeRole> typeRolesSeen();
   abstract ScoringCorefID id();
   abstract OffsetRange<CharOffset> offsets();
   abstract Optional<OffsetRange<CharOffset>> headOffsets();
+
+  public static class Builder extends ImmutableCandidateAlignmentTarget.Builder {
+
+  }
 }

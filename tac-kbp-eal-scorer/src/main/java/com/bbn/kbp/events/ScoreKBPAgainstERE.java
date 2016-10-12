@@ -932,9 +932,6 @@ public final class ScoreKBPAgainstERE {
       if (!alignedCorefIDOpt.isPresent()) {
         log.info("Alignment failed for {}", response);
         mentionAlignmentFailuresB.put(errKey(response), response.toString());
-      } else if (alignedCorefIDOpt.get().scoringEntityType()
-          .equals(ScoringEntityType.InsufficientEntityLevel)) {
-        log.info("Insufficient entity level for {}", response);
       }
 
       // this increments the alignment failure ID regardless of success or failure, but

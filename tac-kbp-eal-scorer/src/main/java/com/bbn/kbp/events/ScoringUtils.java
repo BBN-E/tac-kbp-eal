@@ -23,7 +23,9 @@ public final class ScoringUtils {
       final Optional<EREEntity> entityContainingMention = ereDoc.getEntityContaining(
           ((EREEntityArgument) ea).entityMention());
       if (entityContainingMention.isPresent()) {
-        return new ScoringCorefID.Builder().scoringEntityType(ScoringEntityType.Entity)
+        return new ScoringCorefID.Builder()
+            .scoringEntityType(ScoringEntityType.fromCASType(
+                EREAligner.getBestCASType(entityContainingMention.get())))
           .withinTypeID(entityContainingMention.get().getID()).build();
       } else {
         throw new TACKBPEALException("ERE mention not in any entity");
@@ -55,7 +57,7 @@ public final class ScoringUtils {
     final Optional<Symbol> mappedEventSubType = ontologyMapper.eventSubtype(
         Symbol.from(em.getSubtype()));
 
-    if (mappedEventType.isPresent() || !mappedEventSubType.isPresent()) {
+    if (mappedEventType.isPresent() && mappedEventSubType.isPresent()) {
       return Optional.of(Symbol.from(mappedEventType.get().asString()
           + "." + mappedEventSubType.get().asString()));
     } else {

@@ -11,7 +11,6 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events.EREAligner;
 import com.bbn.kbp.events.ScoringCorefID;
-import com.bbn.kbp.events.ScoringEntityType;
 import com.bbn.kbp.events.ScoringUtils;
 import com.bbn.kbp.events.ontology.EREToKBPEventOntologyMapper;
 import com.bbn.kbp.events2014.io.DefaultCorpusQueryWriter;
@@ -270,7 +269,7 @@ public final class DerivedQuerySelector2016 {
             final Optional<ScoringCorefID> argID =
                 ereAligner.argumentForResponse(response);
             // query entry points can only be entities, not value fillers
-            if (argID.isPresent() && ScoringEntityType.Entity.equals(argID.get().scoringEntityType())) {
+            if (argID.isPresent() && argID.get().scoringEntityType().isEntityType()) {
               alignedEREArgs.add(RoleAndID.of(response.type().asString(), response.role().asString(),
                   argID.get().withinTypeID()));
             }
