@@ -397,9 +397,9 @@ final class ErrorOnUnassessed implements Inspector<EvalPair<Set<QueryDocMatch>, 
   @Override
   public void inspect(
       final EvalPair<Set<QueryDocMatch>, SystemOutputMatches> input) {
-    if (!input.test().assessedMatches().isEmpty()) {
+    if (!input.test().unassessedMatches().isEmpty()) {
       throw new TACKBPEALException("The following document matches are unassessed: "
-        + input.test().assessedMatches());
+        + input.test().unassessedMatches());
     }
   }
 
