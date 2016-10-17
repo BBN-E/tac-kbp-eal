@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 
@@ -108,20 +109,10 @@ public final class QueryResponseFromERE {
         final Iterable<Map.Entry<Symbol, Collection<DocEventFrameReference>>> matchesByDocument =
             limit(ShufflingIterable.from(matchesByDocID.asMap().entrySet(), rng),
                 maxResponsesPerQueryPerSystem);
-
-        for (final Map.Entry<Symbol, Collection<DocEventFrameReference>> matchEntry : matchesByDocument) {
-          final Symbol docID = matchEntry.getKey();
-          final Collection<DocEventFrameReference> eventFramesMatchedInDoc =
-              matchEntry.getValue();
-          final DocumentSystemOutput2015 docSystemOutput = store.read(docID);
-          final ImmutableSet<CharOffsetSpan> matchJustifications =
-              matchJustificationsForDoc(eventFramesMatchedInDoc, docSystemOutput);
-
-          final QueryResponse2016 queryResponse2016 =
-              QueryResponse2016.builder().docID(docID).queryID(query.id())
-                  .addAllPredicateJustifications(matchJustifications).build();
-
-          queryResponseToFindingSystemB.put(queryResponse2016, systemName);
+        final ImmutableMultimap<Symbol, QueryResponse2016> queryResponsesByDoc =
+            response2016CollapsedJustifications(matchesByDocument, store, query);
+        for (final QueryResponse2016 response : ImmutableSet.copyOf(queryResponsesByDoc.values())) {
+          queryResponseToFindingSystemB.put(response, systemName);
         }
       }
     }
@@ -158,6 +149,31 @@ public final class QueryResponseFromERE {
         params.getPositiveDouble("com.bbn.tac.eal.minNominalCASOverlap"),
         // can we match an entry point against a nominal if a name is available?
         params.getBoolean("com.bbn.tac.eal.matchBestCASTypesOnly"));
+  }
+
+  /**
+   * Collapses DocEventFrameReferences into their PJs for the particular document at hand.
+   */
+  private static ImmutableSetMultimap<Symbol, QueryResponse2016> response2016CollapsedJustifications(
+      final Iterable<Map.Entry<Symbol, Collection<DocEventFrameReference>>> matchesByDocument,
+      final SystemOutputStore2016 store, final CorpusQuery2016 query)
+      throws IOException {
+    final ImmutableSetMultimap.Builder<Symbol, QueryResponse2016> retB =
+        ImmutableSetMultimap.builder();
+    for (final Map.Entry<Symbol, Collection<DocEventFrameReference>> matchEntry : matchesByDocument) {
+      final Symbol docID = matchEntry.getKey();
+      final Collection<DocEventFrameReference> eventFramesMatchedInDoc =
+          matchEntry.getValue();
+      final DocumentSystemOutput2015 docSystemOutput = store.read(docID);
+      final ImmutableSet<CharOffsetSpan> matchJustifications =
+          matchJustificationsForDoc(eventFramesMatchedInDoc, docSystemOutput);
+
+      final QueryResponse2016 queryResponse2016 =
+          QueryResponse2016.builder().docID(docID).queryID(query.id())
+              .addAllPredicateJustifications(matchJustifications).build();
+      retB.put(docID, queryResponse2016);
+    }
+    return retB.build();
   }
 
   private static ImmutableSet<CharOffsetSpan> matchJustificationsForDoc(
