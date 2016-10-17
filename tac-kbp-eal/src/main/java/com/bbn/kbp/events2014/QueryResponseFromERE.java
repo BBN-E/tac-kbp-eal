@@ -154,7 +154,7 @@ public final class QueryResponseFromERE {
   /**
    * Collapses DocEventFrameReferences into their PJs for the particular document at hand.
    */
-  private static ImmutableSetMultimap<Symbol, QueryResponse2016> response2016CollapsedJustifications(
+  public static ImmutableSetMultimap<Symbol, QueryResponse2016> response2016CollapsedJustifications(
       final Iterable<Map.Entry<Symbol, Collection<DocEventFrameReference>>> matchesByDocument,
       final SystemOutputStore2016 store, final CorpusQuery2016 query)
       throws IOException {
