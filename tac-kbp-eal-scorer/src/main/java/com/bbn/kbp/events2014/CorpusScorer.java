@@ -458,6 +458,7 @@ final class LinearScoringInspector implements
         concat(evalPair.allLeftItems(), evalPair.allRightItems());
     if (Iterables.isEmpty(args)) {
       log.warn("Got a query with no matches in key");
+      return;
     }
 
     final ImmutableSet<Symbol> queryIds = FluentIterable.from(args).transform(queryID()).toSet();
