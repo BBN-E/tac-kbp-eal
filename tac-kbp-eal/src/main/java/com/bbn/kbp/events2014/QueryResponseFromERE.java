@@ -59,8 +59,8 @@ public final class QueryResponseFromERE {
     }
   }
 
-  private static final String MULTIPLE_STORES_PARAM =  "com.bbn.tac.eal.storesToProcess";
-  private static final String SINGLE_STORE_PARAM =  "com.bbn.tac.eal.storeToProcess";
+  private static final String MULTIPLE_STORES_PARAM = "com.bbn.tac.eal.storesToProcess";
+  private static final String SINGLE_STORE_PARAM = "com.bbn.tac.eal.storeToProcess";
 
   private static void trueMain(String[] argv) throws IOException {
     final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
