@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Iterables.limit;
 
@@ -186,8 +187,9 @@ public final class QueryResponseFromERE {
     final ImmutableSet.Builder<CharOffsetSpan> offsetsB = ImmutableSet.builder();
 
     for (final DocEventFrameReference docEventFrameReference : eventFramesMatchedInDoc) {
-      final ImmutableSet<Response> responses =
-          responseSetMap.get().get(docEventFrameReference.eventFrameID()).asSet();
+      final ResponseSet rs =
+          checkNotNull(responseSetMap.get().get(docEventFrameReference.eventFrameID()));
+      final ImmutableSet<Response> responses = rs.asSet();
       final ImmutableSet<CharOffsetSpan> spans = FluentIterable.from(responses)
           .transformAndConcat(ResponseFunctions.predicateJustifications()).toSet();
       offsetsB.addAll(spans);
