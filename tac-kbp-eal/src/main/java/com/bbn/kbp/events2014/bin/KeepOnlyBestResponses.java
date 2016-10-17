@@ -2,6 +2,7 @@ package com.bbn.kbp.events2014.bin;
 
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
+import com.bbn.kbp.events2014.CorpusEventLinking;
 import com.bbn.kbp.events2014.DocumentSystemOutput;
 import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
@@ -60,8 +61,10 @@ public final class KeepOnlyBestResponses {
       outputStore.write(filtered);
     }
     if (inputStore instanceof SystemOutputStore2016) {
-      ((SystemOutputStore2016) outputStore)
-          .writeCorpusEventFrames(((SystemOutputStore2016) inputStore).readCorpusEventFrames());
+      final CorpusEventLinking filteredLinking =
+          ResponseMapping.apply(((SystemOutputStore2016) inputStore).readCorpusEventFrames(),
+              (SystemOutputStore2016) outputStore);
+      ((SystemOutputStore2016) outputStore).writeCorpusEventFrames(filteredLinking);
     }
 
     inputStore.close();

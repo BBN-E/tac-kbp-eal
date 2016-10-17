@@ -1,11 +1,16 @@
 package com.bbn.kbp.events2014.transformers;
 
 import com.bbn.bue.common.collections.MapUtils;
+import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.AnswerKey;
 import com.bbn.kbp.events2014.ArgumentOutput;
+import com.bbn.kbp.events2014.CorpusEventFrame;
+import com.bbn.kbp.events2014.CorpusEventLinking;
+import com.bbn.kbp.events2014.DocEventFrameReference;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
+import com.bbn.kbp.events2014.io.SystemOutputStore2016;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
@@ -24,6 +29,7 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Random;
 
@@ -161,6 +167,33 @@ public final class ResponseMapping {
     return ResponseLinking.builder().docID(responseLinking.docID())
         .responseSets(newResponseSets).incompleteResponses(newIncompletes)
         .responseSetIds(newResponseSetIDMap).build();
+  }
+
+  public static CorpusEventLinking apply(CorpusEventLinking corpusEventLinking,
+      final SystemOutputStore2016 transformedStore) throws IOException {
+    final ImmutableSet.Builder<DocEventFrameReference> retainedHoppersB = ImmutableSet.builder();
+    for (final Symbol docid : transformedStore.docIDs()) {
+      for (final String hopperID : transformedStore.read(docid).linking().responseSetIds().get()
+          .keySet()) {
+        retainedHoppersB.add(DocEventFrameReference.of(docid, hopperID));
+      }
+    }
+    final ImmutableSet<DocEventFrameReference> retainedHoppers = retainedHoppersB.build();
+    final CorpusEventLinking.Builder ret = CorpusEventLinking.builder();
+    for (final CorpusEventFrame ref : corpusEventLinking.corpusEventFrames()) {
+      final ImmutableSet<DocEventFrameReference> retainedComponents =
+          Sets.intersection(ref.docEventFrames(), retainedHoppers).immutableCopy();
+      if (retainedComponents.size() > 0) {
+        ret.addCorpusEventFrames(CorpusEventFrame.of(ref.id(), retainedComponents));
+        if(retainedComponents.size() != ref.docEventFrames().size()) {
+          log.debug("Deleting from {} doc event frame refs", ref.id(),
+              Sets.difference(ref.docEventFrames(), retainedHoppers));
+        }
+      } else {
+        log.info("Deleting corpus event frame {}", ref.id());
+      }
+    }
+    return ret.build();
   }
 
   public String summaryString() {
