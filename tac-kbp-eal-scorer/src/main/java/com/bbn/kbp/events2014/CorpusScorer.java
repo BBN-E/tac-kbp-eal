@@ -6,13 +6,16 @@ import com.bbn.bue.common.TextGroupPackageImmutable;
 import com.bbn.bue.common.TextGroupPublicImmutable;
 import com.bbn.bue.common.evaluation.AggregateBinaryFScoresInspector;
 import com.bbn.bue.common.evaluation.Alignment;
+import com.bbn.bue.common.evaluation.BinaryConfusionMatrixBootstrapStrategy;
 import com.bbn.bue.common.evaluation.BinaryFScoreBootstrapStrategy;
 import com.bbn.bue.common.evaluation.BootstrapInspector;
 import com.bbn.bue.common.evaluation.BootstrapWriter;
+import com.bbn.bue.common.evaluation.BrokenDownLinearScoreAggregator;
 import com.bbn.bue.common.evaluation.BrokenDownPRFAggregator;
 import com.bbn.bue.common.evaluation.EquivalenceBasedProvenancedAligner;
 import com.bbn.bue.common.evaluation.EvalPair;
 import com.bbn.bue.common.evaluation.EvaluationConstants;
+import com.bbn.bue.common.evaluation.FMeasureCounts;
 import com.bbn.bue.common.evaluation.InspectionNode;
 import com.bbn.bue.common.evaluation.InspectorTreeDSL;
 import com.bbn.bue.common.evaluation.InspectorTreeNode;
@@ -207,6 +210,16 @@ public final class CorpusScorer {
             LinearScoreBootstrapStrategy.create("OfficialScore", outputDir),
             1000, new Random(0)));
 
+    // bootstrapped corpus scores
+    final BinaryConfusionMatrixBootstrapStrategy<QueryDocMatch> corpusScoreBootstrapStrategy =
+        BinaryConfusionMatrixBootstrapStrategy.create(
+            compose(toStringFunction(), queryID()),
+            ImmutableSet.of(new BrokenDownLinearScoreAggregator.Builder().name("corpusScore")
+                .outputDir(new File(outputDir, "corpusScore")).alpha(0.25).build()));
+    final BootstrapInspector<Alignment<? extends QueryDocMatch, ? extends QueryDocMatch>, Map<String, FMeasureCounts>>
+        argScoreWithBootstrapping =
+        BootstrapInspector.forStrategy(corpusScoreBootstrapStrategy, 1000, new Random(0));
+    inspect(alignment).with(argScoreWithBootstrapping);
   }
 
   private static final String MULTIPLE_SYSTEMS_PARAM = "com.bbn.tac.eal.systemOutputsDir";
