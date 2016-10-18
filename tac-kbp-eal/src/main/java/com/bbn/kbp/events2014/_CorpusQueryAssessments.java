@@ -11,13 +11,18 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 
 import org.immutables.func.Functional;
 import org.immutables.value.Value;
 
 import java.util.Map;
+
+import javax.annotation.Nullable;
+import javax.management.Query;
 
 import static com.bbn.bue.common.OrderingUtils.maxFunction;
 import static com.bbn.bue.common.StringUtils.anyCharMatches;
@@ -27,8 +32,12 @@ import static com.bbn.bue.common.symbols.SymbolUtils.desymbolizeFunction;
 import static com.bbn.kbp.events2014._QueryResponse2016.neutralizeRealisFunction;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Predicates.compose;
+import static com.google.common.base.Predicates.equalTo;
+import static com.google.common.base.Predicates.in;
 import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.Iterables.all;
+import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterables.transform;
 
 /**
@@ -106,6 +115,40 @@ public abstract class _CorpusQueryAssessments {
     checkArgument(all(systemIDStrings, not(isEmpty())), "System IDs may not be empty");
     checkArgument(all(systemIDStrings, not(anyCharMatches(CharMatcher.WHITESPACE))),
         "System IDs may not contain whitespace");
+  }
+
+  public final CorpusQueryAssessments filterForSystem(final Symbol system) {
+    final ImmutableSet<QueryResponse2016> responsesForSystem =
+        queryResponsesToSystemIDs().inverse().get(system);
+    final CorpusQueryAssessments.Builder ret = CorpusQueryAssessments.builder();
+    ret.queryReponses(responsesForSystem);
+    ret.putAllQueryResponsesToSystemIDs(
+        ImmutableSetMultimap.<Symbol, QueryResponse2016>builder().putAll(system, responsesForSystem)
+            .build().inverse());
+    ret.putAllMetadata(Maps.filterKeys(metadata(), in(responsesForSystem)));
+    ret.putAllAssessments(Maps.filterKeys(assessments(), in(responsesForSystem)));
+    return ret.build();
+  }
+
+  public static Function<CorpusQueryAssessments, CorpusQueryAssessments> filterForSystemFunction(
+      final Symbol system) {
+    return new Function<CorpusQueryAssessments, CorpusQueryAssessments>() {
+      @Override
+      public CorpusQueryAssessments apply(final CorpusQueryAssessments input) {
+        return input.filterForSystem(system);
+      }
+    };
+  }
+
+  public final CorpusQueryAssessments filterForQuery(final Symbol queryId) {
+    final ImmutableSet<QueryResponse2016> responsesToKeep = ImmutableSet.copyOf(
+        filter(queryReponses(), compose(equalTo(queryId), QueryResponse2016Functions.queryID())));
+    final CorpusQueryAssessments.Builder ret = CorpusQueryAssessments.builder();
+    ret.queryReponses(responsesToKeep);
+    ret.putAllQueryResponsesToSystemIDs(Multimaps.filterKeys(queryResponsesToSystemIDs(), in(responsesToKeep)));
+    ret.putAllMetadata(Maps.filterKeys(metadata(), in(responsesToKeep)));
+    ret.putAllAssessments(Maps.filterKeys(assessments(), in(responsesToKeep)));
+    return ret.build();
   }
 
   public final CorpusQueryAssessments withNeutralizedJustifications() {
