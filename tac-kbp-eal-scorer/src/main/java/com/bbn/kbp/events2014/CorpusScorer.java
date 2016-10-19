@@ -198,9 +198,9 @@ public final class CorpusScorer {
             ImmutableSet.of(new BrokenDownLinearScoreAggregator.Builder().name("corpusScore")
                 .outputDir(new File(outputDir, "corpusScore")).alpha(0.25).build()));
     final BootstrapInspector<Alignment<? extends QueryDocMatch, ? extends QueryDocMatch>, Map<String, FMeasureCounts>>
-        argScoreWithBootstrapping =
+        corpusScoreWithBootstrapping =
         BootstrapInspector.forStrategy(corpusScoreBootstrapStrategy, 1000, new Random(0));
-    inspect(alignment).with(argScoreWithBootstrapping);
+    inspect(alignment).with(corpusScoreWithBootstrapping);
   }
 }
 
