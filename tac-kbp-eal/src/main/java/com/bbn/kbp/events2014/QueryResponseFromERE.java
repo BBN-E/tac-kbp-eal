@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Iterables.limit;
 
@@ -58,8 +60,8 @@ public final class QueryResponseFromERE {
     }
   }
 
-  private static final String MULTIPLE_STORES_PARAM =  "com.bbn.tac.eal.storesToProcess";
-  private static final String SINGLE_STORE_PARAM =  "com.bbn.tac.eal.storeToProcess";
+  private static final String MULTIPLE_STORES_PARAM = "com.bbn.tac.eal.storesToProcess";
+  private static final String SINGLE_STORE_PARAM = "com.bbn.tac.eal.storeToProcess";
 
   private static void trueMain(String[] argv) throws IOException {
     final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
@@ -108,20 +110,10 @@ public final class QueryResponseFromERE {
         final Iterable<Map.Entry<Symbol, Collection<DocEventFrameReference>>> matchesByDocument =
             limit(ShufflingIterable.from(matchesByDocID.asMap().entrySet(), rng),
                 maxResponsesPerQueryPerSystem);
-
-        for (final Map.Entry<Symbol, Collection<DocEventFrameReference>> matchEntry : matchesByDocument) {
-          final Symbol docID = matchEntry.getKey();
-          final Collection<DocEventFrameReference> eventFramesMatchedInDoc =
-              matchEntry.getValue();
-          final DocumentSystemOutput2015 docSystemOutput = store.read(docID);
-          final ImmutableSet<CharOffsetSpan> matchJustifications =
-              matchJustificationsForDoc(eventFramesMatchedInDoc, docSystemOutput);
-
-          final QueryResponse2016 queryResponse2016 =
-              QueryResponse2016.builder().docID(docID).queryID(query.id())
-                  .addAllPredicateJustifications(matchJustifications).build();
-
-          queryResponseToFindingSystemB.put(queryResponse2016, systemName);
+        final ImmutableMultimap<Symbol, QueryResponse2016> queryResponsesByDoc =
+            response2016CollapsedJustifications(matchesByDocument, store, query);
+        for (final QueryResponse2016 response : ImmutableSet.copyOf(queryResponsesByDoc.values())) {
+          queryResponseToFindingSystemB.put(response, systemName);
         }
       }
     }
@@ -160,6 +152,31 @@ public final class QueryResponseFromERE {
         params.getBoolean("com.bbn.tac.eal.matchBestCASTypesOnly"));
   }
 
+  /**
+   * Collapses DocEventFrameReferences into their PJs for the particular document at hand.
+   */
+  public static ImmutableSetMultimap<Symbol, QueryResponse2016> response2016CollapsedJustifications(
+      final Iterable<Map.Entry<Symbol, Collection<DocEventFrameReference>>> matchesByDocument,
+      final SystemOutputStore2016 store, final CorpusQuery2016 query)
+      throws IOException {
+    final ImmutableSetMultimap.Builder<Symbol, QueryResponse2016> retB =
+        ImmutableSetMultimap.builder();
+    for (final Map.Entry<Symbol, Collection<DocEventFrameReference>> matchEntry : matchesByDocument) {
+      final Symbol docID = matchEntry.getKey();
+      final Collection<DocEventFrameReference> eventFramesMatchedInDoc =
+          matchEntry.getValue();
+      final DocumentSystemOutput2015 docSystemOutput = store.read(docID);
+      final ImmutableSet<CharOffsetSpan> matchJustifications =
+          matchJustificationsForDoc(eventFramesMatchedInDoc, docSystemOutput);
+
+      final QueryResponse2016 queryResponse2016 =
+          QueryResponse2016.builder().docID(docID).queryID(query.id())
+              .addAllPredicateJustifications(matchJustifications).build();
+      retB.put(docID, queryResponse2016);
+    }
+    return retB.build();
+  }
+
   private static ImmutableSet<CharOffsetSpan> matchJustificationsForDoc(
       final Iterable<DocEventFrameReference> eventFramesMatchedInDoc,
       final DocumentSystemOutput2015 docSystemOutput) {
@@ -170,8 +187,9 @@ public final class QueryResponseFromERE {
     final ImmutableSet.Builder<CharOffsetSpan> offsetsB = ImmutableSet.builder();
 
     for (final DocEventFrameReference docEventFrameReference : eventFramesMatchedInDoc) {
-      final ImmutableSet<Response> responses =
-          responseSetMap.get().get(docEventFrameReference.eventFrameID()).asSet();
+      final ResponseSet rs =
+          checkNotNull(responseSetMap.get().get(docEventFrameReference.eventFrameID()));
+      final ImmutableSet<Response> responses = rs.asSet();
       final ImmutableSet<CharOffsetSpan> spans = FluentIterable.from(responses)
           .transformAndConcat(ResponseFunctions.predicateJustifications()).toSet();
       offsetsB.addAll(spans);

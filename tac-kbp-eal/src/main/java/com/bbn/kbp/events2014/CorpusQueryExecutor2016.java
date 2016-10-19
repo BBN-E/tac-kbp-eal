@@ -286,10 +286,14 @@ class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
     checkState(!eventPJs.isEmpty());
 
     msg.append("Query valid CASes are ").append(validCASOffsets).append("\n");
+    // apply a series of more aggressive alignment rules until we find something that matches
     for (AlignmentConfiguration alignConfig : alignmentConfigurations) {
       if (matchingResponses.isEmpty()) {
         addMatchingResponses(validCASOffsets, eventPJs, matchingResponses, alignConfig,
             argumentsMatchingInTypeAndEventType, msg);
+        if(!matchingResponses.isEmpty()) {
+          break;
+        }
       }
     }
   }

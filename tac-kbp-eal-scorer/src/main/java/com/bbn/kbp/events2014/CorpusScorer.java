@@ -23,7 +23,6 @@ import com.bbn.bue.common.math.PercentileComputer;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.strings.offsets.CharOffset;
 import com.bbn.bue.common.symbols.Symbol;
-import com.bbn.kbp.TACException;
 import com.bbn.kbp.events2014.io.DefaultCorpusQueryLoader;
 import com.bbn.kbp.events2014.io.SingleFileQueryAssessmentsLoader;
 import com.bbn.kbp.events2014.io.SystemOutputStore2016;
@@ -37,6 +36,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
@@ -315,34 +315,31 @@ abstract class _QueryResponsesFromSystemOutputExtractor {
     }
 
     try {
-      for (final DocEventFrameReference match : queryExecutor().queryEventFrames(input, query)) {
-        final ResponseLinking linkingForMatchedDocument = input.read(match.docID()).linking();
-        if (linkingForMatchedDocument.responseSetIds().isPresent()) {
-          final QueryResponse2016 queryResponse =
-              QueryResponse2016.of(query.id(), match.docID(),
-                  mergePJs(linkingForMatchedDocument.responseSetIds().get()
-                      .get(match.eventFrameID())));
-
-          // if we have been requested to ignore justifications, strip the justification from
-          // our query response
-          final QueryResponse2016 queryResponseToScore;
-          if (ignoreJustifications()) {
-            queryResponseToScore = queryResponse.withNeutralizedJustification();
-          } else {
-            queryResponseToScore = queryResponse;
-          }
-
-          final QueryAssessment2016 assessment =
-              assessmentsToUse.assessments().get(queryResponseToScore);
-
-          if (assessment != null) {
-            final QueryDocMatch docMatch = QueryDocMatch.of(query.id(), match.docID(), assessment);
-            assessedMatches.add(docMatch);
-          } else {
-            unassessedMatches.add(UnassessedMatch.of(query.id(), match.docID()));
-          }
+      final Iterable<DocEventFrameReference> matches = queryExecutor().queryEventFrames(input, query);
+      final Iterable<Map.Entry<Symbol, Collection<DocEventFrameReference>>> framesByDocId =
+          FluentIterable.from(matches).index(DocEventFrameReferenceFunctions.docID()).asMap()
+              .entrySet();
+      final ImmutableSetMultimap<Symbol, QueryResponse2016> responsesByDocId =
+          QueryResponseFromERE.response2016CollapsedJustifications(framesByDocId, input, query);
+      for(final Map.Entry<Symbol, QueryResponse2016> e : responsesByDocId.entries()) {
+        final Symbol docid = e.getKey();
+        final QueryResponse2016 queryResponse = e.getValue();
+        // if we have been requested to ignore justifications, strip the justification from
+        // our query response
+        final QueryResponse2016 queryResponseToScore;
+        if (ignoreJustifications()) {
+          queryResponseToScore = queryResponse.withNeutralizedJustification();
         } else {
-          throw new TACException("Linking for document " + match.docID() + " lacks IDs");
+          queryResponseToScore = queryResponse;
+        }
+        final QueryAssessment2016 assessment =
+            assessmentsToUse.assessments().get(queryResponseToScore);
+
+        if (assessment != null) {
+          final QueryDocMatch docMatch = QueryDocMatch.of(query.id(), docid, assessment);
+          assessedMatches.add(docMatch);
+        } else {
+          unassessedMatches.add(UnassessedMatch.of(query.id(), docid));
         }
       }
     } catch (IOException e) {
@@ -397,9 +394,9 @@ final class ErrorOnUnassessed implements Inspector<EvalPair<Set<QueryDocMatch>, 
   @Override
   public void inspect(
       final EvalPair<Set<QueryDocMatch>, SystemOutputMatches> input) {
-    if (!input.test().assessedMatches().isEmpty()) {
+    if (!input.test().unassessedMatches().isEmpty()) {
       throw new TACKBPEALException("The following document matches are unassessed: "
-        + input.test().assessedMatches());
+        + input.test().unassessedMatches());
     }
   }
 
@@ -461,6 +458,7 @@ final class LinearScoringInspector implements
         concat(evalPair.allLeftItems(), evalPair.allRightItems());
     if (Iterables.isEmpty(args)) {
       log.warn("Got a query with no matches in key");
+      return;
     }
 
     final ImmutableSet<Symbol> queryIds = FluentIterable.from(args).transform(queryID()).toSet();
