@@ -21,9 +21,6 @@ import org.immutables.value.Value;
 
 import java.util.Map;
 
-import javax.annotation.Nullable;
-import javax.management.Query;
-
 import static com.bbn.bue.common.OrderingUtils.maxFunction;
 import static com.bbn.bue.common.StringUtils.anyCharMatches;
 import static com.bbn.bue.common.StringUtils.isEmpty;
@@ -127,6 +124,23 @@ public abstract class _CorpusQueryAssessments {
             .build().inverse());
     ret.putAllMetadata(Maps.filterKeys(metadata(), in(responsesForSystem)));
     ret.putAllAssessments(Maps.filterKeys(assessments(), in(responsesForSystem)));
+    return ret.build();
+  }
+
+  public final CorpusQueryAssessments filterForAssessment(final QueryAssessment2016 assessment2016) {
+    final ImmutableSet.Builder<QueryResponse2016> matchingQueriesB = ImmutableSet.builder();
+    for (final QueryResponse2016 queryResponse2016 : assessments().keySet()) {
+      if (assessment2016.equals(assessments().get(queryResponse2016))) {
+        matchingQueriesB.add(queryResponse2016);
+      }
+    }
+    final ImmutableSet<QueryResponse2016> matchingQueries = matchingQueriesB.build();
+    final CorpusQueryAssessments.Builder ret = CorpusQueryAssessments.builder();
+    ret.queryReponses(matchingQueries);
+    ret.putAllQueryResponsesToSystemIDs(
+        Multimaps.filterKeys(queryResponsesToSystemIDs(), in(matchingQueries)));
+    ret.putAllMetadata(Maps.filterKeys(metadata(), in(matchingQueries)));
+    ret.putAllAssessments(Maps.filterKeys(assessments(), in(matchingQueries)));
     return ret.build();
   }
 
