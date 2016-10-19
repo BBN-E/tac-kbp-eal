@@ -96,14 +96,21 @@ public final class CorpusScorer {
             Files.asCharSource(queryResponseAssessmentsFile, Charsets.UTF_8));
     final CorpusQuerySet2016 queries = DefaultCorpusQueryLoader.create().loadQueries(
         Files.asCharSource(queryFile, Charsets.UTF_8));
+    final boolean ignoreJustifications = params.getBoolean("com.bbn.tac.eal.ignoreJustifications");
+    final CorpusQueryAssessments justifiedForScoring;
+    if (ignoreJustifications) {
+      justifiedForScoring = queryAssessments.withNeutralizedJustifications();
+    } else {
+      justifiedForScoring = queryAssessments;
+    }
     log.info("Scoring output will be written to {}", outputDir);
 
     final ImmutableSet<Symbol> systemsToScore =
         ImmutableSet.copyOf(params.getSymbolSet("com.bbn.tac.eal.systemsToScore"));
-    log.info("loaded {} assessed queries", queryAssessments.assessments().size());
-    for(final Symbol system: systemsToScore) {
+    log.info("loaded {} assessed queries", justifiedForScoring.assessments().size());
+    for (final Symbol system : systemsToScore) {
       log.info("Processing {}", system);
-      scoreJustAssessments(queries, queryAssessments, system,
+      scoreJustAssessments(queries, justifiedForScoring, system,
           new File(new File(outputDir, "justResponses"), system.asString()));
     }
   }
