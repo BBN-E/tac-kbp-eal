@@ -68,6 +68,7 @@ import javax.annotation.Nullable;
 
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.inspect;
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformBoth;
+import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformLeft;
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformRight;
 import static com.bbn.kbp.events2014.QueryDocMatchFunctions.queryID;
 import static com.bbn.kbp.events2014.ResponseFunctions.predicateJustifications;
@@ -75,6 +76,7 @@ import static com.google.common.base.Functions.compose;
 import static com.google.common.base.Functions.toStringFunction;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.Iterables.concat;
@@ -142,26 +144,29 @@ public final class CorpusScorer {
     final InspectionNode<EvalPair<CorpusQueryAssessments, CorpusQueryAssessments>>
         inputAssessments = InspectorTreeDSL.pairedInput(new TypeToken<CorpusQueryAssessments>() {
     });
-    final InspectorTreeNode<EvalPair<CorpusQueryAssessments, CorpusQueryAssessments>>
-        filteredForSystemAssessments =
-        transformRight(inputAssessments,
-            CorpusQueryAssessments.filterForSystemFunction(systemToScore));
+//    final InspectorTreeNode<EvalPair<CorpusQueryAssessments, CorpusQueryAssessments>>
+//        filteredForSystemAssessments =
+//        transformRight(inputAssessments,
+//            CorpusQueryAssessments.filterForSystemFunction(systemToScore));
 
     final InspectorTreeNode<EvalPair<Set<QueryDocMatch>, Set<QueryDocMatch>>> inputSets =
-        transformBoth(filteredForSystemAssessments, QueryDocMatchFromAssessments.INSTANCE);
+        transformBoth(inputAssessments, QueryDocMatchFromAssessments.INSTANCE);
 
     final Inspector<EvalPair<Set<QueryDocMatch>, Set<QueryDocMatch>>> unassessedInspector =
         ErrorIfUnassessed.INSTANCE;
     inspect(inputSets).with(unassessedInspector);
 
     final InspectorTreeNode<EvalPair<Set<QueryDocMatch>, Set<QueryDocMatch>>> input =
-        transformRight(inputSets, RemoveIncorrectResponses.INSTANCE);
+        transformLeft(inputSets, RemoveIncorrectResponses.INSTANCE);
     setUpAssessedScoring(outputDir, input);
 
 
     for(final CorpusQuery2016 query: queries) {
       final CorpusQueryAssessments filteredForID = queryAssessments.filterForQuery(query.id());
-      inputAssessments.inspect(EvalPair.of(filteredForID, filteredForID));
+      final CorpusQueryAssessments systemResults = filteredForID.filterForSystem(systemToScore);
+      log.info("Answer key for {} has {} answers, \"{}\" has {}", query.id(), filteredForID.assessments().size(), systemToScore, systemResults.assessments().size());
+      checkState(systemResults.systemIDs().size() <= 1, "Expected zero or one systems but got " + systemResults.systemIDs());
+      inputAssessments.inspect(EvalPair.of(filteredForID, systemResults));
     }
 
     inputAssessments.finish();
