@@ -78,14 +78,16 @@ public final class SingleFileQueryAssessmentsLoader {
         checkArgument(parts.length == 5, "expected five columns, but got " + parts.length);
         final Symbol queryID = Symbol.from(parts[0]);
         final Symbol docID = Symbol.from(parts[1]);
-        final Symbol systemID = Symbol.from(parts[2]);
+        final String[] systemIDs = parts[2].split(",");
         final ImmutableSortedSet<CharOffsetSpan> spans = extractPJSpans(parts[3]);
         final QueryAssessment2016 assessment = QueryAssessment2016.valueOf(parts[4]);
         final QueryResponse2016 query =
             QueryResponse2016.builder().queryID(queryID).docID(docID)
                 .addAllPredicateJustifications(spans).build();
         queries.add(query);
-        responsesToSystems.put(query, systemID);
+        for(final String systemID: systemIDs) {
+          responsesToSystems.put(query, Symbol.from(systemID));
+        }
         if (!assessment.equals(QueryAssessment2016.UNASSESSED)) {
           assessments.put(query, assessment);
         }
