@@ -156,17 +156,18 @@ public final class CorpusScorer {
         ErrorIfUnassessed.INSTANCE;
     inspect(inputSets).with(unassessedInspector);
 
-    final InspectorTreeNode<EvalPair<Set<QueryDocMatch>, Set<QueryDocMatch>>> input =
-        transformLeft(inputSets, RemoveIncorrectResponses.INSTANCE);
-    setUpAssessedScoring(outputDir, input);
+//    final InspectorTreeNode<EvalPair<Set<QueryDocMatch>, Set<QueryDocMatch>>> input =
+//        transformLeft(inputSets, RemoveIncorrectResponses.INSTANCE);
+    setUpAssessedScoring(outputDir, inputSets);
 
 
     for(final CorpusQuery2016 query: queries) {
       final CorpusQueryAssessments filteredForID = queryAssessments.filterForQuery(query.id());
+      final CorpusQueryAssessments correctTestQueries = filteredForID.filterForAssessment(QueryAssessment2016.CORRECT);
       final CorpusQueryAssessments systemResults = filteredForID.filterForSystem(systemToScore);
-      log.info("Answer key for {} has {} answers, \"{}\" has {}", query.id(), filteredForID.assessments().size(), systemToScore, systemResults.assessments().size());
+      log.info("Answer key for {} has {} correct answers, \"{}\" has {}", query.id(), correctTestQueries.assessments().size(), systemToScore, systemResults.assessments().size());
       checkState(systemResults.systemIDs().size() <= 1, "Expected zero or one systems but got " + systemResults.systemIDs());
-      inputAssessments.inspect(EvalPair.of(filteredForID, systemResults));
+      inputAssessments.inspect(EvalPair.of(correctTestQueries, systemResults));
     }
 
     inputAssessments.finish();
