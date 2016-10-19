@@ -20,6 +20,7 @@ import org.immutables.func.Functional;
 import org.immutables.value.Value;
 
 import java.util.Map;
+import java.util.Set;
 
 import static com.bbn.bue.common.OrderingUtils.maxFunction;
 import static com.bbn.bue.common.StringUtils.anyCharMatches;
@@ -127,10 +128,10 @@ public abstract class _CorpusQueryAssessments {
     return ret.build();
   }
 
-  public final CorpusQueryAssessments filterForAssessment(final QueryAssessment2016 assessment2016) {
+  public final CorpusQueryAssessments filterForAssessment(final Set<QueryAssessment2016> assessment2016) {
     final ImmutableSet.Builder<QueryResponse2016> matchingQueriesB = ImmutableSet.builder();
     for (final QueryResponse2016 queryResponse2016 : assessments().keySet()) {
-      if (assessment2016.equals(assessments().get(queryResponse2016))) {
+      if (assessment2016.contains(assessments().get(queryResponse2016))) {
         matchingQueriesB.add(queryResponse2016);
       }
     }

@@ -97,11 +97,18 @@ public final class CorpusScorer {
     final CorpusQuerySet2016 queries = DefaultCorpusQueryLoader.create().loadQueries(
         Files.asCharSource(queryFile, Charsets.UTF_8));
     final boolean ignoreJustifications = params.getBoolean("com.bbn.tac.eal.ignoreJustifications");
+    final boolean allowUnassessed = params.getBoolean("com.bbn.tac.eal.allowUnassessed");
     final CorpusQueryAssessments justifiedForScoring;
     if (ignoreJustifications) {
       justifiedForScoring = queryAssessments.withNeutralizedJustifications();
     } else {
       justifiedForScoring = queryAssessments;
+    }
+    final CorpusQueryAssessments assessedForScoring;
+    if(allowUnassessed) {
+      assessedForScoring = justifiedForScoring.filterForAssessment(ImmutableSet.copyOf(QueryAssessment2016.values()));
+    } else {
+      assessedForScoring = justifiedForScoring;
     }
     log.info("Scoring output will be written to {}", outputDir);
 
@@ -110,7 +117,7 @@ public final class CorpusScorer {
     log.info("loaded {} assessed queries", justifiedForScoring.assessments().size());
     for (final Symbol system : systemsToScore) {
       log.info("Processing {}", system);
-      scoreJustAssessments(queries, justifiedForScoring, system,
+      scoreJustAssessments(queries, assessedForScoring, system,
           new File(outputDir, system.asString()));
     }
   }
@@ -134,7 +141,7 @@ public final class CorpusScorer {
     for (final CorpusQuery2016 query : queries) {
       final CorpusQueryAssessments filteredForID = queryAssessments.filterForQuery(query.id());
       final CorpusQueryAssessments correctTestQueries =
-          filteredForID.filterForAssessment(QueryAssessment2016.CORRECT);
+          filteredForID.filterForAssessment(ImmutableSet.of(QueryAssessment2016.CORRECT));
       final CorpusQueryAssessments systemResults = filteredForID.filterForSystem(systemToScore);
       log.info("Answer key for {} has {} correct answers, \"{}\" has {}", query.id(),
           correctTestQueries.assessments().size(), systemToScore,
