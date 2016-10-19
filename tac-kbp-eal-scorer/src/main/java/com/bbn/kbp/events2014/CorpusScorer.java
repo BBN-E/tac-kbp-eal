@@ -114,19 +114,21 @@ public final class CorpusScorer {
     final CorpusQuerySet2016 queries = DefaultCorpusQueryLoader.create().loadQueries(
         Files.asCharSource(queryFile, Charsets.UTF_8));
 
-//    final ImmutableMap<String, SystemOutputStore2016> systemOutputsByName =
-//        loadSystemOutputs(params);
+    final ImmutableMap<String, SystemOutputStore2016> systemOutputsByName =
+        loadSystemOutputs(params);
 
     log.info("Scoring output will be written to {}", outputDir);
 
-//    for (final SystemOutputStore2016 systemOutputStore : systemOutputsByName.values()) {
-//      score(queries, queryAssessments, systemOutputStore,
-//          QueryResponseFromERE.queryExecutorFromParamsFor2016(params),
-//          params.getOptionalBoolean("com.bbn.tac.eal.allowUnassessed").or(false),
-//          params.getOptionalBoolean("com.bbn.tac.eal.ignoreJustifications").or(false),
-//          new File(outputDir, systemOutputStore.systemID().asString()));
-//      systemOutputStore.close();
-//    }
+    for(final Map.Entry<String, SystemOutputStore2016> e: systemOutputsByName.entrySet()) {
+      final SystemOutputStore2016 systemOutputStore = e.getValue();
+      log.info("Scoring {}", e.getKey());
+      score(queries, queryAssessments, systemOutputStore,
+          QueryResponseFromERE.queryExecutorFromParamsFor2016(params),
+          params.getOptionalBoolean("com.bbn.tac.eal.allowUnassessed").or(false),
+          params.getOptionalBoolean("com.bbn.tac.eal.ignoreJustifications").or(false),
+          new File(outputDir, systemOutputStore.systemID().asString()));
+      systemOutputStore.close();
+    }
     final ImmutableSet<Symbol> systemsToScore =
         ImmutableSet.copyOf(params.getSymbolSet("com.bbn.tac.eal.systemsToScore"));
     log.info("loaded {} assessed queries", queryAssessments.assessments().size());
