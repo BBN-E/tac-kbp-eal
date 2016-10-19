@@ -111,7 +111,7 @@ public final class CorpusScorer {
     for (final Symbol system : systemsToScore) {
       log.info("Processing {}", system);
       scoreJustAssessments(queries, justifiedForScoring, system,
-          new File(new File(outputDir, "justResponses"), system.asString()));
+          new File(outputDir, system.asString()));
     }
   }
 
