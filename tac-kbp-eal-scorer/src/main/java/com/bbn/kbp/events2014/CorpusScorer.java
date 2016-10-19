@@ -166,35 +166,34 @@ public final class CorpusScorer {
         alignment = InspectorTreeDSL.transformed(input, EXACT_MATCH_ALIGNER);
 
     inspect(alignment)
-        .with(AggregateBinaryFScoresInspector.createOutputtingTo("aggregate", outputDir));
-
+        .with(AggregateBinaryFScoresInspector.createOutputtingTo("Aggregate", new File(outputDir, "fScores")));
     inspect(alignment)
         .with(BootstrapInspector.forStrategy(
-            BinaryFScoreBootstrapStrategy.create("Aggregate", outputDir),
+            BinaryFScoreBootstrapStrategy.create("Aggregate", new File(outputDir, "fScores")),
             1000, new Random(0)));
 
     // bootstrapped scores per-query
     inspect(alignment)
         .with(BootstrapInspector.forStrategy(
-            BinaryFScoreBootstrapStrategy.createBrokenDownBy("ByQuery",
-                compose(toStringFunction(), queryID()), outputDir),
+            BinaryFScoreBootstrapStrategy.createBrokenDownBy("byQuery",
+                compose(toStringFunction(), queryID()), new File(outputDir, "byQuery")),
             1000, new Random(0)));
 
     // linear score (non-bootstrapped)
     final File linearScoreDir = new File(outputDir, "linearScore");
     inspect(alignment)
         .with(LinearScoringInspector.createOutputtingTo(linearScoreDir));
-
-    // officials core (bootstrapped linear score)
+    // TODO what is this one for?
+    // official score (bootstrapped linear score)
     inspect(alignment)
         .with(BootstrapInspector.forStrategy(
-            LinearScoreBootstrapStrategy.create("OfficialScore", outputDir),
+            LinearScoreBootstrapStrategy.create("linearBootstrapScore", new File(outputDir, "linearBootstrapScore")),
             1000, new Random(0)));
 
     // bootstrapped corpus scores
     final BinaryConfusionMatrixBootstrapStrategy<QueryDocMatch> corpusScoreBootstrapStrategy =
         BinaryConfusionMatrixBootstrapStrategy.create(
-            compose(toStringFunction(), queryID()),
+            Functions.constant("Aggregate"),
             ImmutableSet.of(new BrokenDownLinearScoreAggregator.Builder().name("corpusScore")
                 .outputDir(new File(outputDir, "corpusScore")).alpha(0.25).build()));
     final BootstrapInspector<Alignment<? extends QueryDocMatch, ? extends QueryDocMatch>, Map<String, FMeasureCounts>>
