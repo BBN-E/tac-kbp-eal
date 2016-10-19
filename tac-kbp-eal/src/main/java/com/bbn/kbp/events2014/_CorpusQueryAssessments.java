@@ -144,16 +144,6 @@ public abstract class _CorpusQueryAssessments {
     return ret.build();
   }
 
-  public static Function<CorpusQueryAssessments, CorpusQueryAssessments> filterForSystemFunction(
-      final Symbol system) {
-    return new Function<CorpusQueryAssessments, CorpusQueryAssessments>() {
-      @Override
-      public CorpusQueryAssessments apply(final CorpusQueryAssessments input) {
-        return input.filterForSystem(system);
-      }
-    };
-  }
-
   public final CorpusQueryAssessments filterForQuery(final Symbol queryId) {
     final ImmutableSet<QueryResponse2016> responsesToKeep = ImmutableSet.copyOf(
         filter(queryReponses(), compose(equalTo(queryId), QueryResponse2016Functions.queryID())));
