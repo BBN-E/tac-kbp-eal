@@ -1,8 +1,6 @@
 package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.Inspector;
-import com.bbn.bue.common.StringUtils;
-import com.bbn.bue.common.TextGroupPackageImmutable;
 import com.bbn.bue.common.TextGroupPublicImmutable;
 import com.bbn.bue.common.evaluation.AggregateBinaryFScoresInspector;
 import com.bbn.bue.common.evaluation.Alignment;
@@ -24,28 +22,20 @@ import com.bbn.bue.common.evaluation.SummaryConfusionMatrices;
 import com.bbn.bue.common.evaluation.SummaryConfusionMatrix;
 import com.bbn.bue.common.math.PercentileComputer;
 import com.bbn.bue.common.parameters.Parameters;
-import com.bbn.bue.common.strings.offsets.CharOffset;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.io.DefaultCorpusQueryLoader;
 import com.bbn.kbp.events2014.io.SingleFileQueryAssessmentsLoader;
-import com.bbn.kbp.events2014.io.SystemOutputStore2016;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicates;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeSet;
-import com.google.common.collect.TreeRangeSet;
-import com.google.common.io.CharSink;
 import com.google.common.io.Files;
 import com.google.common.math.DoubleMath;
 import com.google.common.reflect.TypeToken;
@@ -64,21 +54,14 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import javax.annotation.Nullable;
-
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.inspect;
 import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformBoth;
-import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformLeft;
-import static com.bbn.bue.common.evaluation.InspectorTreeDSL.transformRight;
 import static com.bbn.kbp.events2014.QueryDocMatchFunctions.queryID;
-import static com.bbn.kbp.events2014.ResponseFunctions.predicateJustifications;
 import static com.google.common.base.Functions.compose;
 import static com.google.common.base.Functions.toStringFunction;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.base.Predicates.equalTo;
-import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Iterables.getFirst;
 
@@ -113,22 +96,8 @@ public final class CorpusScorer {
             Files.asCharSource(queryResponseAssessmentsFile, Charsets.UTF_8));
     final CorpusQuerySet2016 queries = DefaultCorpusQueryLoader.create().loadQueries(
         Files.asCharSource(queryFile, Charsets.UTF_8));
-
-    final ImmutableMap<String, SystemOutputStore2016> systemOutputsByName =
-        loadSystemOutputs(params);
-
     log.info("Scoring output will be written to {}", outputDir);
 
-    for(final Map.Entry<String, SystemOutputStore2016> e: systemOutputsByName.entrySet()) {
-      final SystemOutputStore2016 systemOutputStore = e.getValue();
-      log.info("Scoring {}", e.getKey());
-      score(queries, queryAssessments, systemOutputStore,
-          QueryResponseFromERE.queryExecutorFromParamsFor2016(params),
-          params.getOptionalBoolean("com.bbn.tac.eal.allowUnassessed").or(false),
-          params.getOptionalBoolean("com.bbn.tac.eal.ignoreJustifications").or(false),
-          new File(outputDir, systemOutputStore.systemID().asString()));
-      systemOutputStore.close();
-    }
     final ImmutableSet<Symbol> systemsToScore =
         ImmutableSet.copyOf(params.getSymbolSet("com.bbn.tac.eal.systemsToScore"));
     log.info("loaded {} assessed queries", queryAssessments.assessments().size());
@@ -137,7 +106,6 @@ public final class CorpusScorer {
       scoreJustAssessments(queries, queryAssessments, system,
           new File(new File(outputDir, "justResponses"), system.asString()));
     }
-
   }
 
   private static void scoreJustAssessments(final CorpusQuerySet2016 queries,
@@ -146,10 +114,6 @@ public final class CorpusScorer {
     final InspectionNode<EvalPair<CorpusQueryAssessments, CorpusQueryAssessments>>
         inputAssessments = InspectorTreeDSL.pairedInput(new TypeToken<CorpusQueryAssessments>() {
     });
-//    final InspectorTreeNode<EvalPair<CorpusQueryAssessments, CorpusQueryAssessments>>
-//        filteredForSystemAssessments =
-//        transformRight(inputAssessments,
-//            CorpusQueryAssessments.filterForSystemFunction(systemToScore));
 
     final InspectorTreeNode<EvalPair<Set<QueryDocMatch>, Set<QueryDocMatch>>> inputSets =
         transformBoth(inputAssessments, QueryDocMatchFromAssessments.INSTANCE);
@@ -158,92 +122,35 @@ public final class CorpusScorer {
         ErrorIfUnassessed.INSTANCE;
     inspect(inputSets).with(unassessedInspector);
 
-//    final InspectorTreeNode<EvalPair<Set<QueryDocMatch>, Set<QueryDocMatch>>> input =
-//        transformLeft(inputSets, RemoveIncorrectResponses.INSTANCE);
     setUpAssessedScoring(outputDir, inputSets);
 
-
-    for(final CorpusQuery2016 query: queries) {
+    for (final CorpusQuery2016 query : queries) {
       final CorpusQueryAssessments filteredForID = queryAssessments.filterForQuery(query.id());
-      final CorpusQueryAssessments correctTestQueries = filteredForID.filterForAssessment(QueryAssessment2016.CORRECT);
+      final CorpusQueryAssessments correctTestQueries =
+          filteredForID.filterForAssessment(QueryAssessment2016.CORRECT);
       final CorpusQueryAssessments systemResults = filteredForID.filterForSystem(systemToScore);
-      log.info("Answer key for {} has {} correct answers, \"{}\" has {}", query.id(), correctTestQueries.assessments().size(), systemToScore, systemResults.assessments().size());
-      checkState(systemResults.systemIDs().size() <= 1, "Expected zero or one systems but got " + systemResults.systemIDs());
+      log.info("Answer key for {} has {} correct answers, \"{}\" has {}", query.id(),
+          correctTestQueries.assessments().size(), systemToScore,
+          systemResults.assessments().size());
+      checkState(systemResults.systemIDs().size() <= 1,
+          "Expected zero or one systems but got " + systemResults.systemIDs());
       inputAssessments.inspect(EvalPair.of(correctTestQueries, systemResults));
     }
 
     inputAssessments.finish();
   }
 
-  private static void score(final CorpusQuerySet2016 queries,
-      final CorpusQueryAssessments queryAssessments,
-      final SystemOutputStore2016 systemOutputStore,
-      final CorpusQueryExecutor2016 queryExecutor,
-      boolean allowUnassessed,
-      boolean ignoreJustifications,
-      final File outputDir) throws IOException {
-    final TypeToken<Set<QueryDocMatch>> setOfQueryMatches = new TypeToken<Set<QueryDocMatch>>() {
-    };
-    final InspectionNode<EvalPair<Set<QueryDocMatch>, SystemOutputMatches>> input =
-        InspectorTreeDSL.pairedInput(setOfQueryMatches, new TypeToken<SystemOutputMatches>() { });
-    setUpScoring(input, allowUnassessed, outputDir);
-
-    final CorrectMatchesFromAssessmentsExtractor matchesFromAssessmentsExtractor =
-        new CorrectMatchesFromAssessmentsExtractor();
-    final QueryResponsesFromSystemOutputExtractor matchesFromSystemOutputExtractor =
-        QueryResponsesFromSystemOutputExtractor.builder()
-          .corpusQueryAssessments(queryAssessments)
-          .queryExecutor(queryExecutor)
-          .ignoreJustifications(ignoreJustifications)
-          .build();
-
-    for (final CorpusQuery2016 query : queries) {
-      final Set<QueryDocMatch> correctMatches = matchesFromAssessmentsExtractor
-          .extractCorrectMatches(query, queryAssessments);
-      final SystemOutputMatches systemMatches =
-          matchesFromSystemOutputExtractor.extractMatches(query, systemOutputStore);
-      log.info("For query {}, {} key matches, {} assessed and {} unassessed system matches", query.id(),
-          correctMatches.size(), systemMatches.assessedMatches().size(),
-          systemMatches.unassessedMatches().size());
-      input.inspect(EvalPair.of(correctMatches, systemMatches));
-    }
-
-    // trigger scoring network to do final aggregated output
-    input.finish();
-  }
 
   private static Function<EvalPair<? extends Iterable<? extends QueryDocMatch>, ? extends Iterable<? extends QueryDocMatch>>, ProvenancedAlignment<QueryDocMatch, QueryDocMatch, QueryDocMatch, QueryDocMatch>>
       EXACT_MATCH_ALIGNER = EquivalenceBasedProvenancedAligner
       .forEquivalenceFunction(Functions.<QueryDocMatch>identity())
       .asFunction();
 
-  private static void setUpScoring(
-      final InspectionNode<EvalPair<Set<QueryDocMatch>, SystemOutputMatches>> rawInput,
-      boolean allowUnassessed,
-      final File outputDir) {
-
-    // pull out unassessed matches for special handling
-    final Inspector<EvalPair<Set<QueryDocMatch>, SystemOutputMatches>> unassessedInspector;
-    if (allowUnassessed) {
-      unassessedInspector = new LogUnassessed(Files.asCharSink(new File(outputDir, "unassessed.txt"),
-          Charsets.UTF_8));
-    } else {
-      unassessedInspector = new ErrorOnUnassessed();
-    }
-    inspect(rawInput).with(unassessedInspector);
-
-    // strip off unassessed matches for other scoring
-    final InspectorTreeNode<EvalPair<Set<QueryDocMatch>, Set<QueryDocMatch>>>
-        input = transformRight(rawInput, AssessedFunction.INSTANCE);
-    setUpAssessedScoring(outputDir, input);
-  }
-
   private static void setUpAssessedScoring(final File outputDir,
       final InspectorTreeNode<EvalPair<Set<QueryDocMatch>, Set<QueryDocMatch>>> input) {
     final InspectorTreeNode<ProvenancedAlignment<QueryDocMatch, QueryDocMatch, QueryDocMatch, QueryDocMatch>>
         alignment = InspectorTreeDSL.transformed(input, EXACT_MATCH_ALIGNER);
 
-    inspect(input).with(LogTotalQueries.INSTANCE);
     inspect(alignment)
         .with(AggregateBinaryFScoresInspector.createOutputtingTo("aggregate", outputDir));
 
@@ -281,34 +188,6 @@ public final class CorpusScorer {
         BootstrapInspector.forStrategy(corpusScoreBootstrapStrategy, 1000, new Random(0));
     inspect(alignment).with(argScoreWithBootstrapping);
   }
-
-  private static final String MULTIPLE_SYSTEMS_PARAM = "com.bbn.tac.eal.systemOutputsDir";
-  private static final String SINGLE_SYSTEMS_PARAM = "com.bbn.tac.eal.systemOutputDir";
-
-  /**
-   * We can score one or many systems at a time, depending on the parameters
-   */
-  private static ImmutableMap<String, SystemOutputStore2016> loadSystemOutputs(
-      final Parameters params) throws IOException {
-    params.assertExactlyOneDefined(SINGLE_SYSTEMS_PARAM, MULTIPLE_SYSTEMS_PARAM);
-    final ImmutableMap.Builder<String, SystemOutputStore2016> ret = ImmutableMap.builder();
-    if (params.isPresent(MULTIPLE_SYSTEMS_PARAM)) {
-      final File systemOutputsDir = params.getExistingDirectory(MULTIPLE_SYSTEMS_PARAM);
-      for (final File f : systemOutputsDir.listFiles()) {
-        if (f.isDirectory()) {
-          ret.put(f.getName(), KBPEA2016OutputLayout.get().open(f));
-        }
-      }
-    } else if (params.isPresent(SINGLE_SYSTEMS_PARAM)) {
-      final File singleSystemOutputDir = params.getExistingDirectory(SINGLE_SYSTEMS_PARAM);
-      ret.put(singleSystemOutputDir.getName(),
-          KBPEA2016OutputLayout.get().open(singleSystemOutputDir));
-    } else {
-      throw new RuntimeException("Can't happen");
-    }
-    return ret.build();
-  }
-
 }
 
 enum ErrorIfUnassessed
@@ -329,15 +208,6 @@ enum ErrorIfUnassessed
 
   }
 }
-
-enum AssessedFunction implements Function<SystemOutputMatches, Set<QueryDocMatch>> {
-  INSTANCE;
-  @Override
-  public Set<QueryDocMatch> apply(final SystemOutputMatches input) {
-    return input.assessedMatches();
-  }
-}
-
 
 /**
  * The match of a query against a document.
@@ -369,225 +239,6 @@ enum QueryDocMatchFromAssessments implements Function<CorpusQueryAssessments, Se
     return ret.build();
   }
 }
-
-/**
- * Gets all matches of queries against documents by any system where some system's match was
- * assessed as correct.
- */
-final class CorrectMatchesFromAssessmentsExtractor {
-
-  public final Set<QueryDocMatch> extractCorrectMatches(final CorpusQuery2016 query,
-      final CorpusQueryAssessments input) {
-    checkNotNull(input);
-    final ImmutableSet.Builder<QueryDocMatch> ret = ImmutableSet.builder();
-    for (final Map.Entry<QueryResponse2016, QueryAssessment2016> e
-        : input.assessments().entrySet()) {
-      final QueryResponse2016 queryResponse = e.getKey();
-      final QueryAssessment2016 assessment = e.getValue();
-
-      if (query.id().equalTo(queryResponse.queryID())) {
-        checkArgument(!assessment.equals(QueryAssessment2016.UNASSESSED),
-            "Response %s for query ID {} is not assessed", queryResponse,
-            queryResponse.queryID());
-        if (assessment.equals(QueryAssessment2016.CORRECT)) {
-          ret.add(QueryDocMatch.of(queryResponse.queryID(), queryResponse.docID(), assessment));
-        }
-      }
-    }
-    return ret.build();
-  }
-}
-
-@TextGroupPublicImmutable
-@Value.Immutable
-abstract class _QueryResponsesFromSystemOutputExtractor {
-
-  @Value.Parameter
-  public abstract CorpusQueryAssessments corpusQueryAssessments();
-
-  @Value.Parameter
-  public abstract CorpusQueryExecutor2016 queryExecutor();
-
-  @Value.Default
-  public boolean ignoreJustifications() {
-    return false;
-  }
-
-  public final SystemOutputMatches extractMatches(final CorpusQuery2016 query,
-      final SystemOutputStore2016 input) {
-    checkNotNull(input);
-    final ImmutableSet.Builder<QueryDocMatch> assessedMatches = ImmutableSet.builder();
-    final ImmutableSet.Builder<UnassessedMatch> unassessedMatches = ImmutableSet.builder();
-
-    // if we have been requested to ignore justifications, do so for the key
-    final CorpusQueryAssessments assessmentsToUse;
-    if (ignoreJustifications()) {
-      assessmentsToUse = corpusQueryAssessments().withNeutralizedJustifications();
-    } else {
-      assessmentsToUse = corpusQueryAssessments();
-    }
-
-    try {
-      final Iterable<DocEventFrameReference> matches = queryExecutor().queryEventFrames(input, query);
-      final Iterable<Map.Entry<Symbol, Collection<DocEventFrameReference>>> framesByDocId =
-          FluentIterable.from(matches).index(DocEventFrameReferenceFunctions.docID()).asMap()
-              .entrySet();
-      final ImmutableSetMultimap<Symbol, QueryResponse2016> responsesByDocId =
-          QueryResponseFromERE.response2016CollapsedJustifications(framesByDocId, input, query);
-      for(final Map.Entry<Symbol, QueryResponse2016> e : responsesByDocId.entries()) {
-        final Symbol docid = e.getKey();
-        final QueryResponse2016 queryResponse = e.getValue();
-        // if we have been requested to ignore justifications, strip the justification from
-        // our query response
-        final QueryResponse2016 queryResponseToScore;
-        if (ignoreJustifications()) {
-          queryResponseToScore = queryResponse.withNeutralizedJustification();
-        } else {
-          queryResponseToScore = queryResponse;
-        }
-        final QueryAssessment2016 assessment =
-            assessmentsToUse.assessments().get(queryResponseToScore);
-
-        if (assessment != null) {
-          final QueryDocMatch docMatch = QueryDocMatch.of(query.id(), docid, assessment);
-          assessedMatches.add(docMatch);
-        } else {
-          unassessedMatches.add(UnassessedMatch.of(query.id(), docid));
-        }
-      }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    return SystemOutputMatches.of(assessedMatches.build(), unassessedMatches.build());
-  }
-
-  /**
-   * Coalesce the predicate justifications of all responses, combining overlapping spans.
-   */
-  private Set<CharOffsetSpan> mergePJs(final ResponseSet responses) {
-    final RangeSet<CharOffset> pjRanges = TreeRangeSet.create();
-
-    final FluentIterable<CharOffsetSpan> pjsOfAnyLinkedResponses = FluentIterable.from(responses)
-        .transformAndConcat(predicateJustifications());
-
-    for (final CharOffsetSpan pjSpan : pjsOfAnyLinkedResponses) {
-      pjRanges.add(pjSpan.asCharOffsetRange().asRange());
-    }
-
-    final ImmutableSet.Builder<CharOffsetSpan> ret = ImmutableSet.builder();
-    for (final Range<CharOffset> mergedPJ : pjRanges.asRanges()) {
-      ret.add(CharOffsetSpan.fromOffsetsOnly(mergedPJ.lowerEndpoint().asInt(),
-          mergedPJ.upperEndpoint().asInt()));
-    }
-    return ret.build();
-  }
-}
-
-@TextGroupPackageImmutable
-@Value.Immutable
-@Functional
-abstract class _SystemOutputMatches {
-  @Value.Parameter
-  public abstract ImmutableSet<QueryDocMatch> assessedMatches();
-  @Value.Parameter
-  public abstract ImmutableSet<UnassessedMatch> unassessedMatches();
-}
-
-@TextGroupPackageImmutable
-@Value.Immutable
-@Functional
-abstract class _UnassessedMatch {
-  @Value.Parameter
-  public abstract Symbol queryID();
-  @Value.Parameter
-  public abstract Symbol docID();
-}
-
-final class ErrorOnUnassessed implements Inspector<EvalPair<Set<QueryDocMatch>, SystemOutputMatches>> {
-  @Override
-  public void inspect(
-      final EvalPair<Set<QueryDocMatch>, SystemOutputMatches> input) {
-    if (!input.test().unassessedMatches().isEmpty()) {
-      throw new TACKBPEALException("The following document matches are unassessed: "
-        + input.test().unassessedMatches());
-    }
-  }
-
-  @Override
-  public void finish() throws IOException {
-
-  }
-}
-
-enum RemoveIncorrectResponses implements Function<Set<QueryDocMatch>, Set<QueryDocMatch>> {
-  INSTANCE;
-
-  @Override
-  public Set<QueryDocMatch> apply(final Set<QueryDocMatch> input) {
-    return ImmutableSet.copyOf(
-        Iterables.filter(input, not(Predicates.compose(equalTo(QueryAssessment2016.CORRECT),
-            QueryDocMatchFunctions.assessment()))));
-  }
-}
-
-enum AllowETMatch implements Function<Set<QueryDocMatch>, Set<QueryDocMatch>> {
-  INSTANCE;
-
-  @Nullable
-  @Override
-  public Set<QueryDocMatch> apply(@Nullable final Set<QueryDocMatch> input) {
-    return ImmutableSet.copyOf(
-        Iterables.filter(input, not(Predicates.compose(not(equalTo(QueryAssessment2016.ET_MATCH)),
-            QueryDocMatchFunctions.assessment()))));
-  }
-}
-enum LogTotalQueries implements Inspector<EvalPair<Set<QueryDocMatch>, Set<QueryDocMatch>>> {
-  INSTANCE;
-
-  private static final Logger log = LoggerFactory.getLogger(LogTotalQueries.class);
-
-  @Override
-  public void inspect(final EvalPair<Set<QueryDocMatch>, Set<QueryDocMatch>> inspectionPair) {
-    final ImmutableSet<Symbol> queryIDs = ImmutableSet.copyOf(Iterables
-        .transform(concat(inspectionPair.key(), inspectionPair.test()),
-            QueryDocMatchFunctions.queryID()));
-    if(queryIDs.isEmpty()) {
-      log.warn("No matches found??");
-      return;
-    }
-    final Symbol queryId = Iterables.getOnlyElement(queryIDs);
-    int test = inspectionPair.test().size();
-    int key = inspectionPair.key().size();
-    log.info("For query {}, found {} test and {} key items", queryId, test, key);
-  }
-
-  @Override
-  public void finish() throws IOException {
-
-  }
-}
-
-
-final class LogUnassessed implements Inspector<EvalPair<Set<QueryDocMatch>, SystemOutputMatches>> {
-  private final CharSink output;
-  private ImmutableSet.Builder<UnassessedMatch> unassessed = ImmutableSet.builder();
-
-  public LogUnassessed(CharSink output) {
-    this.output = checkNotNull(output);
-  }
-
-  @Override
-  public void inspect(
-      final EvalPair<Set<QueryDocMatch>, SystemOutputMatches> input) {
-    unassessed.addAll(input.test().unassessedMatches());
-  }
-
-  @Override
-  public void finish() throws IOException {
-    output.write(StringUtils.unixNewlineJoiner().join(unassessed.build()));
-  }
-}
-
 
 // This and the very similar ArgumentScoringInspector should get refactored together someday
 final class LinearScoringInspector implements
@@ -634,7 +285,6 @@ final class LinearScoringInspector implements
     int queryFNs = evalPair.leftUnaligned().size();
 
     final Symbol queryID = checkNotNull(getFirst(args, null)).queryID();
-//    log.info("Gathering scores for {}", queryID);
     checkArgument(evalPair.leftAligned().equals(evalPair.rightAligned()));
     double score = computeLinearScore(queryTPs, queryFPs, queryFNs);
     truePositives.put(queryID, queryTPs);
