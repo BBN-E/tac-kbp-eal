@@ -114,12 +114,12 @@ public final class CorpusScorer {
     log.info("loaded {} assessed queries", justifiedForScoring.assessments().size());
     for (final Symbol system : systemsToScore) {
       log.info("Processing {}", system);
-      scoreJustAssessments(queries, assessedForScoring, system,
+      score(queries, assessedForScoring, system,
           new File(outputDir, system.asString()));
     }
   }
 
-  private static void scoreJustAssessments(final CorpusQuerySet2016 queries,
+  private static void score(final CorpusQuerySet2016 queries,
       final CorpusQueryAssessments queryAssessments, final Symbol systemToScore,
       final File outputDir) throws IOException {
     final InspectionNode<EvalPair<CorpusQueryAssessments, CorpusQueryAssessments>>
@@ -137,15 +137,15 @@ public final class CorpusScorer {
 
     for (final CorpusQuery2016 query : queries) {
       final CorpusQueryAssessments filteredForID = queryAssessments.filterForQuery(query.id());
-      final CorpusQueryAssessments correctTestQueries =
+      final CorpusQueryAssessments correctReferenceQueries =
           filteredForID.filterForAssessment(ImmutableSet.of(QueryAssessment2016.CORRECT));
       final CorpusQueryAssessments systemResults = filteredForID.filterForSystem(systemToScore);
       log.info("Answer key for {} has {} correct answers, \"{}\" has {}", query.id(),
-          correctTestQueries.assessments().size(), systemToScore,
+          correctReferenceQueries.assessments().size(), systemToScore,
           systemResults.assessments().size());
       checkState(systemResults.systemIDs().size() <= 1,
           "Expected zero or one systems but got " + systemResults.systemIDs());
-      inputAssessments.inspect(EvalPair.of(correctTestQueries, systemResults));
+      inputAssessments.inspect(EvalPair.of(correctReferenceQueries, systemResults));
     }
 
     inputAssessments.finish();
