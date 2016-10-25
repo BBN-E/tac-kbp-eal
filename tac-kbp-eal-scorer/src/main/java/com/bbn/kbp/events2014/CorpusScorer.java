@@ -95,6 +95,7 @@ public final class CorpusScorer {
         Files.asCharSource(queryFile, Charsets.UTF_8));
     final boolean ignoreJustifications = params.getBoolean("com.bbn.tac.eal.ignoreJustifications");
     final boolean allowUnassessed = params.getBoolean("com.bbn.tac.eal.allowUnassessed");
+    final boolean skipQueriesWithNoCorrectAnswers = params.getBoolean("com.bbn.tac.eal.skipQueriesWithNoCorrectAnswers");
     final CorpusQueryAssessments justifiedForScoring;
     if (ignoreJustifications) {
       justifiedForScoring = queryAssessments.withNeutralizedJustifications();
@@ -114,14 +115,14 @@ public final class CorpusScorer {
     log.info("loaded {} assessed queries", justifiedForScoring.assessments().size());
     for (final Symbol system : systemsToScore) {
       log.info("Processing {}", system);
-      score(queries, assessedForScoring, system,
+      score(queries, assessedForScoring, system, skipQueriesWithNoCorrectAnswers,
           new File(outputDir, system.asString()));
     }
   }
 
   private static void score(final CorpusQuerySet2016 queries,
       final CorpusQueryAssessments queryAssessments, final Symbol systemToScore,
-      final File outputDir) throws IOException {
+      final boolean skipQueriesWithNoCorrectAnswers, final File outputDir) throws IOException {
     final InspectionNode<EvalPair<CorpusQueryAssessments, CorpusQueryAssessments>>
         inputAssessments = InspectorTreeDSL.pairedInput(new TypeToken<CorpusQueryAssessments>() {
     });
@@ -145,6 +146,13 @@ public final class CorpusScorer {
           systemResults.assessments().size());
       checkState(systemResults.systemIDs().size() <= 1,
           "Expected zero or one systems but got " + systemResults.systemIDs());
+      if(correctReferenceQueries.assessments().isEmpty()) {
+        log.warn("No results found for query {}", query.id());
+        if(skipQueriesWithNoCorrectAnswers) {
+          log.info("Skipping query {}", query.id());
+          continue;
+        }
+      }
       inputAssessments.inspect(EvalPair.of(correctReferenceQueries, systemResults));
     }
 
@@ -270,6 +278,9 @@ final class LinearScoringInspector implements
     if (Iterables.isEmpty(args)) {
       log.warn("Got a query with no matches in key");
       return;
+    }
+    if(evalPair.allLeftItems().isEmpty()) {
+      log.warn("Got a query with no correct answers!");
     }
 
     final ImmutableSet<Symbol> queryIds = FluentIterable.from(args).transform(queryID()).toSet();
