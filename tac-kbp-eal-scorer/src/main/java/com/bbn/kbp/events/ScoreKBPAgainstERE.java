@@ -53,6 +53,7 @@ import com.bbn.nlp.parsing.HeadFinders;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
@@ -65,6 +66,7 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
+import com.google.common.collect.Multisets;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.google.common.reflect.TypeToken;
@@ -300,6 +302,8 @@ public final class ScoreKBPAgainstERE {
         filteredForTemporal =
         transformed(filteredForLifeDie, TemporalSpecificityFilter.INSTANCE);
 
+
+
     // set up for event argument scoring in 2015 style
     eventArgumentScoringSetup(filteredForTemporal, scoringEventObservers, outputDir);
 
@@ -318,6 +322,11 @@ public final class ScoreKBPAgainstERE {
     final InspectorTreeNode<EvalPair<ImmutableSet<DocLevelEventArg>, ImmutableSet<DocLevelEventArg>>>
         inputAsSetsOfRealisNeutralizedTuples =
         transformBoth(inputAsResponsesAndLinking, NeutralizeRealis.INSTANCE);
+
+
+    inspect(inputAsSetsOfScoringTuples)
+        .with(new CountEventTypes.Builder()
+            .outputFile(new File(outputDir, "eventTypeCounts.txt")).build());
 
     argScoringSetup(inputAsSetsOfScoringTuples,
         ImmutableList.<ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>of(),
@@ -1239,4 +1248,29 @@ enum ExtractMentionType implements Function<DocLevelEventArg, String> {
       return "Other";
     }
   }
+}
+
+@TextGroupImmutable
+@Value.Immutable
+abstract class CountEventTypes implements Inspector<EvalPair<ImmutableSet<DocLevelEventArg>, ImmutableSet<DocLevelEventArg>>> {
+  private final Multiset<String> eventTypeCounts = HashMultiset.create();
+
+  public abstract File outputFile();
+
+
+  @Override
+  public void inspect(
+      final EvalPair<ImmutableSet<DocLevelEventArg>, ImmutableSet<DocLevelEventArg>> x) {
+    for (final DocLevelEventArg keyArg : x.key()) {
+      eventTypeCounts.add(keyArg.eventType().asString());
+    }
+  }
+
+  @Override
+  public void finish() throws IOException {
+    Files.asCharSink(outputFile(), Charsets.UTF_8).write(
+        Joiner.on("\n").join(Multisets.copyHighestCountFirst(eventTypeCounts).entrySet()));
+  }
+
+  public static class Builder extends ImmutableCountEventTypes.Builder {}
 }
