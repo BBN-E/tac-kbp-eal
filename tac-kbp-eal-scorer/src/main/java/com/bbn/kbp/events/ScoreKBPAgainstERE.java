@@ -316,6 +316,9 @@ public final class ScoreKBPAgainstERE {
           inputAsResponsesAndLinking,
       Iterable<? extends ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>> scoringEventObservers,
       final File outputDir) {
+    inspect(inputAsResponsesAndLinking).with(new CountEventTypesByHopper.Builder()
+      .outputFile(new File(outputDir, "eventTypeCountsByHopper.txt")).build());
+
     final InspectorTreeNode<EvalPair<ImmutableSet<DocLevelEventArg>, ImmutableSet<DocLevelEventArg>>>
         inputAsSetsOfScoringTuples =
         transformBoth(inputAsResponsesAndLinking, ResponsesAndLinkingFunctions.args());
@@ -325,8 +328,8 @@ public final class ScoreKBPAgainstERE {
 
 
     inspect(inputAsSetsOfScoringTuples)
-        .with(new CountEventTypes.Builder()
-            .outputFile(new File(outputDir, "eventTypeCounts.txt")).build());
+        .with(new CountEventTypesByArg.Builder()
+            .outputFile(new File(outputDir, "eventTypeCountsByArg.txt")).build());
 
     argScoringSetup(inputAsSetsOfScoringTuples,
         ImmutableList.<ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>of(),
@@ -1252,7 +1255,7 @@ enum ExtractMentionType implements Function<DocLevelEventArg, String> {
 
 @TextGroupImmutable
 @Value.Immutable
-abstract class CountEventTypes implements Inspector<EvalPair<ImmutableSet<DocLevelEventArg>, ImmutableSet<DocLevelEventArg>>> {
+abstract class CountEventTypesByArg implements Inspector<EvalPair<ImmutableSet<DocLevelEventArg>, ImmutableSet<DocLevelEventArg>>> {
   private final Multiset<String> eventTypeCounts = HashMultiset.create();
 
   public abstract File outputFile();
@@ -1272,5 +1275,32 @@ abstract class CountEventTypes implements Inspector<EvalPair<ImmutableSet<DocLev
         Joiner.on("\n").join(Multisets.copyHighestCountFirst(eventTypeCounts).entrySet()));
   }
 
-  public static class Builder extends ImmutableCountEventTypes.Builder {}
+  public static class Builder extends ImmutableCountEventTypesByArg.Builder {}
+}
+
+// EvalPair<ResponsesAndLinking, ResponsesAndLinking>
+@TextGroupImmutable
+@Value.Immutable
+abstract class CountEventTypesByHopper implements Inspector<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> {
+  private final Multiset<String> eventTypeCounts = HashMultiset.create();
+
+  public abstract File outputFile();
+
+
+  @Override
+  public void inspect(
+      final EvalPair<ResponsesAndLinking, ResponsesAndLinking> x) {
+    for (final ScoringEventFrame keyEventFrame : x.key().linking().eventFrames()) {
+      // note scoring event frames will never be empty
+      eventTypeCounts.add(keyEventFrame.eventType().asString());
+    }
+  }
+
+  @Override
+  public void finish() throws IOException {
+    Files.asCharSink(outputFile(), Charsets.UTF_8).write(
+        Joiner.on("\n").join(Multisets.copyHighestCountFirst(eventTypeCounts).entrySet()));
+  }
+
+  public static class Builder extends ImmutableCountEventTypesByHopper.Builder {}
 }
