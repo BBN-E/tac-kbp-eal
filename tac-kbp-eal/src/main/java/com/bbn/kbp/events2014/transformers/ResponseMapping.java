@@ -7,10 +7,11 @@ import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.CorpusEventFrame;
 import com.bbn.kbp.events2014.CorpusEventLinking;
 import com.bbn.kbp.events2014.DocEventFrameReference;
+import com.bbn.kbp.events2014.DocumentSystemOutput2015;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
-import com.bbn.kbp.events2014.io.SystemOutputStore2016;
+import com.bbn.kbp.events2014.io.CrossDocSystemOutputStore;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
@@ -169,11 +170,13 @@ public final class ResponseMapping {
         .responseSetIds(newResponseSetIDMap).build();
   }
 
-  public static CorpusEventLinking apply(CorpusEventLinking corpusEventLinking,
-      final SystemOutputStore2016 transformedStore) throws IOException {
+  public static CorpusEventLinking apply(
+      final CorpusEventLinking corpusEventLinking,
+      final CrossDocSystemOutputStore transformedStore) throws IOException {
     final ImmutableSet.Builder<DocEventFrameReference> retainedHoppersB = ImmutableSet.builder();
     for (final Symbol docid : transformedStore.docIDs()) {
-      for (final String hopperID : transformedStore.read(docid).linking().responseSetIds().get()
+      for (final String hopperID : ((DocumentSystemOutput2015) transformedStore.read(docid))
+          .linking().responseSetIds().get()
           .keySet()) {
         retainedHoppersB.add(DocEventFrameReference.of(docid, hopperID));
       }

@@ -22,7 +22,10 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
-public class SystemOutputStore2016 implements SystemOutputStore, CrossDocSystemOutputStore {
+
+public final class SystemOutputStore2017 implements SystemOutputStore, CrossDocSystemOutputStore {
+
+  // TODO this is basically copied from SystemOutputStore2016. This might not be a feature.
 
   private final Symbol systemID;
   private final ArgumentStore argumentStore;
@@ -32,21 +35,16 @@ public class SystemOutputStore2016 implements SystemOutputStore, CrossDocSystemO
   private final CorpusEventFrameWriter eventFrameWriter = CorpusEventFrameIO.writerFor2016();
   private final CorpusEventFrameLoader eventFrameReader = CorpusEventFrameIO.loaderFor2016();
 
-  private SystemOutputStore2016(final Symbol systemID,
-      final ArgumentStore argStore, final LinkingStore linkingStore,
-      File corpusLinkingFile) {
+  private SystemOutputStore2017(final Symbol systemID, final ArgumentStore argumentStore,
+      final LinkingStore linkingStore, final File corpusLinkingFile) {
     this.systemID = checkNotNull(systemID);
-    this.argumentStore = checkNotNull(argStore);
+    this.argumentStore = checkNotNull(argumentStore);
     this.linkingStore = checkNotNull(linkingStore);
     this.corpusLinkingFile = checkNotNull(corpusLinkingFile);
   }
 
-  public static SystemOutputStore2016 open(File dir) throws IOException {
-    return open(dir, AssessmentSpecFormats.Format.KBP2015);
-  }
 
-  static SystemOutputStore2016 open(File dir, final AssessmentSpecFormats.Format format)
-      throws IOException {
+  public static SystemOutputStore2017 open(File dir) throws IOException {
     final Symbol systemID = Symbol.from(dir.getName());
     final File argumentsDir = new File(dir, "arguments");
     final File linkingDir = new File(dir, "linking");
@@ -54,22 +52,22 @@ public class SystemOutputStore2016 implements SystemOutputStore, CrossDocSystemO
     corpusLinkingFile.getParentFile().mkdirs();
 
     final ArgumentStore argStore = AssessmentSpecFormats.openSystemOutputStore(argumentsDir,
-        format);
+        AssessmentSpecFormats.Format.KBP2017);
     final LinkingStore linkingStore =
         LinkingStoreSource.createFor2016().openLinkingStore(linkingDir);
     if (argStore.docIDs().equals(linkingStore.docIDs())) {
-      return new SystemOutputStore2016(systemID, argStore, linkingStore, corpusLinkingFile);
+      return new SystemOutputStore2017(systemID, argStore, linkingStore, corpusLinkingFile);
     } else {
       throw new RuntimeException("Argument and linking store docIDs do not match, missing " + Sets
           .symmetricDifference(argStore.docIDs(), linkingStore.docIDs()));
     }
   }
 
-  public static SystemOutputStore2016 openOrCreate(final File dir) throws IOException {
-    return openOrCreate(dir, AssessmentSpecFormats.Format.KBP2015);
+  public static SystemOutputStore2017 openOrCreate(final File dir) throws IOException {
+    return openOrCreate(dir, AssessmentSpecFormats.Format.KBP2017);
   }
 
-  static SystemOutputStore2016 openOrCreate(File dir,
+  static SystemOutputStore2017 openOrCreate(File dir,
       final AssessmentSpecFormats.Format format) throws IOException {
     final Symbol systemID = Symbol.from(dir.getName());
     final File argumentsDir = new File(dir, "arguments");
@@ -82,7 +80,7 @@ public class SystemOutputStore2016 implements SystemOutputStore, CrossDocSystemO
     final LinkingStore linkingStore =
         LinkingStoreSource.createFor2016().openOrCreateLinkingStore(linkingDir);
     if (argStore.docIDs().equals(linkingStore.docIDs())) {
-      return new SystemOutputStore2016(systemID, argStore, linkingStore, corpusLinkingFile);
+      return new SystemOutputStore2017(systemID, argStore, linkingStore, corpusLinkingFile);
     } else {
       throw new RuntimeException("Argument and linking store docIDs do not match, missing " + Sets
           .symmetricDifference(argStore.docIDs(), linkingStore.docIDs()));
@@ -134,5 +132,4 @@ public class SystemOutputStore2016 implements SystemOutputStore, CrossDocSystemO
     argumentStore.close();
     linkingStore.close();
   }
-
 }

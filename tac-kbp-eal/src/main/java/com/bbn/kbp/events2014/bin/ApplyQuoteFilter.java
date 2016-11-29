@@ -4,8 +4,8 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.DocumentSystemOutput;
 import com.bbn.kbp.events2014.SystemOutputLayout;
+import com.bbn.kbp.events2014.io.CrossDocSystemOutputStore;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
-import com.bbn.kbp.events2014.io.SystemOutputStore2016;
 import com.bbn.kbp.events2014.transformers.QuoteFilter;
 
 import com.google.common.collect.ImmutableMap;
@@ -77,8 +77,8 @@ public final class ApplyQuoteFilter {
     }
 
     // pass along unmodified ay corpus event frames.
-    if(dest instanceof SystemOutputStore2016 && source instanceof SystemOutputStore2016) {
-      ((SystemOutputStore2016) dest).writeCorpusEventFrames(((SystemOutputStore2016) source).readCorpusEventFrames());
+    if(dest instanceof CrossDocSystemOutputStore && source instanceof CrossDocSystemOutputStore) {
+      ((CrossDocSystemOutputStore) dest).writeCorpusEventFrames(((CrossDocSystemOutputStore) source).readCorpusEventFrames());
     }
 
     source.close();

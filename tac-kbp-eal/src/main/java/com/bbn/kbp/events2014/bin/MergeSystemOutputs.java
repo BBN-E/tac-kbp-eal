@@ -5,8 +5,11 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.CorpusEventFrame;
 import com.bbn.kbp.events2014.CorpusEventFrameFunctions;
 import com.bbn.kbp.events2014.CorpusEventLinking;
+import com.bbn.kbp.events2014.KBPEA2016OutputLayout;
+import com.bbn.kbp.events2014.KBPEA2017OutputLayout;
+import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.TACKBPEALException;
-import com.bbn.kbp.events2014.io.SystemOutputStore2016;
+import com.bbn.kbp.events2014.io.CrossDocSystemOutputStore;
 
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
@@ -21,6 +24,7 @@ import java.io.IOException;
 import java.util.Set;
 
 import static com.bbn.kbp.events2014.CorpusEventFrameFunctions.id;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.Iterables.concat;
 
 /**
@@ -51,10 +55,16 @@ public final class MergeSystemOutputs {
     final File inputStore2 = params.getExistingDirectory("input2");
     final File outputStore = params.getCreatableDirectory("outputStore");
     final boolean changeDuplicatedIDs = params.getOptionalBoolean("changeDuplicatedIDs").or(false);
+    final SystemOutputLayout layout = SystemOutputLayout.ParamParser.fromParamVal(
+        params.getString("outputLayout"));
+    checkArgument(
+        (layout instanceof KBPEA2017OutputLayout) || (layout instanceof KBPEA2016OutputLayout),
+        "Not a compatible output layout: expected KBP_EAL_2017 or KBP_EAL_2016");
 
-    final SystemOutputStore2016 input1 = SystemOutputStore2016.open(inputStore);
-    final SystemOutputStore2016 input2 = SystemOutputStore2016.open(inputStore2);
-    final SystemOutputStore2016 output = SystemOutputStore2016.openOrCreate(outputStore);
+    final CrossDocSystemOutputStore input1 = (CrossDocSystemOutputStore) layout.open(inputStore);
+    final CrossDocSystemOutputStore input2 = (CrossDocSystemOutputStore) layout.open(inputStore2);
+    final CrossDocSystemOutputStore output =
+        (CrossDocSystemOutputStore) layout.openOrCreate(outputStore);
 
     final Set<Symbol> commonDocIDs = Sets.intersection(input1.docIDs(), input2.docIDs());
     if (!commonDocIDs.isEmpty()) {
@@ -68,7 +78,7 @@ public final class MergeSystemOutputs {
     }
 
     // merge document-level output
-    for (final SystemOutputStore2016 input : ImmutableList.of(input1, input2)) {
+    for (final CrossDocSystemOutputStore input : ImmutableList.of(input1, input2)) {
       for (final Symbol docID : input.docIDs()) {
         output.write(input.read(docID));
       }

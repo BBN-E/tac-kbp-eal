@@ -21,7 +21,9 @@ public interface SystemOutputLayout {
   final class ParamParser {
 
     public static SystemOutputLayout fromParamVal(String s) {
-      if (s.equals("KBP_EAL_2016")) {
+      if(s.equals("KBP_EAL_2017")) {
+        return KBPEA2017OutputLayout.get();
+      } if (s.equals("KBP_EAL_2016")) {
         return KBPEA2016OutputLayout.get();
       } else if (s.equals("KBP_EAL_2015") || s.equals("KBP_EA_2015")) {
         return KBPEA2015OutputLayout.get();
