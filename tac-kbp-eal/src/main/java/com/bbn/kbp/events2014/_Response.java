@@ -6,6 +6,7 @@ import com.bbn.bue.common.symbols.SymbolUtils;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Objects;
+import com.google.common.base.Optional;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
@@ -83,6 +84,12 @@ abstract class _Response {
   public abstract KBPRealis realis();
 
   /**
+   * The xdoc entity id
+   */
+  @Value.Parameter
+  public abstract Optional<Symbol> xdocEntity();
+
+  /**
    * Returns a 'unique-ish' ID for this response used for the 2014 evaluation. In the Java
    * implementation, the response's {@code hashCode} is always returned.  Note that if you read
    * input files from another source into {@code Response} objects, the original IDs will be lost.
@@ -92,6 +99,18 @@ abstract class _Response {
     return hashCode();
   }
 
+  /**
+   * Returns a unique ID for this response used for the 2015 and 2016 evaluations.
+   */
+  @Value.Derived
+  public String uniqueIdentifier2015() {
+    return hasher2016().hash().toString();
+  }
+
+  /**
+   * Returns a unique ID for this response used for the 2017 evaluation. Contains all new
+   * information added to the {@link Response} format, e.g. {@link Response#xdocEntity()}
+   */
   @Value.Derived
   public String uniqueIdentifier() {
     return computeSHA1Hash().toString();
@@ -104,9 +123,14 @@ abstract class _Response {
     checkArgument(!role().asString().isEmpty(), "Argument role may not be empty for a response");
     checkPredicateJustificationsContainsBaseFiller();
     checkArgument(!predicateJustifications().isEmpty(), "Predicate justifications may not be empty");
+    if (xdocEntity().isPresent()) {
+      checkArgument(!xdocEntity().get().asString().toUpperCase().equals(NIL.asString()),
+          "NIL is not a valid xdoc id; use Optional.<Symbol>absent() to represent no cluster!");
+    }
   }
 
   private static final ImmutableSet<Symbol> temporalRoles = SymbolUtils.setFrom("TIME", "Time");
+  public static final Symbol NIL = Symbol.from("NIL");
 
   /**
    * Is the role {@code Time} or {@code TIME}?
@@ -122,6 +146,17 @@ abstract class _Response {
   private static final HashFunction SHA1_HASHER = Hashing.sha1();
 
   private HashCode computeSHA1Hash() {
+    final String entityID;
+    if(xdocEntity().isPresent()) {
+      entityID = xdocEntity().get().asString();
+    } else {
+      entityID = "NIL";
+    }
+    final Hasher hasher = hasher2016().putString(entityID, Charsets.UTF_8);
+    return hasher.hash();
+  }
+
+  private Hasher hasher2016() {
     final Hasher hasher = SHA1_HASHER.newHasher()
         .putString(docID().toString(), Charsets.UTF_8)
         .putString(type().toString(), Charsets.UTF_8)
@@ -148,7 +183,7 @@ abstract class _Response {
 
     hasher.putInt(realis().ordinal());
 
-    return hasher.hash();
+    return hasher;
   }
 
   @Override
@@ -177,7 +212,8 @@ abstract class _Response {
         && Objects.equal(baseFiller(), other.baseFiller())
         && Objects.equal(realis(), other.realis())
         && Objects.equal(additionalArgumentJustifications(), other.additionalArgumentJustifications())
-        && Objects.equal(predicateJustifications(), other.predicateJustifications());
+        && Objects.equal(predicateJustifications(), other.predicateJustifications())
+        && Objects.equal(xdocEntity(), other.xdocEntity());
   }
 
   @Override
@@ -244,6 +280,10 @@ abstract class _Response {
   @Deprecated
   public static final Ordering<Response> ByOld2014Id =
       Ordering.natural().onResultOf(ResponseFunctions.old2014ResponseID());
+
+  public static Ordering<Response> byUniqueIdOrdering2015() {
+    return Ordering.natural().onResultOf(ResponseFunctions.uniqueIdentifier2015());
+  }
 
   public static final Ordering<Response> byUniqueIdOrdering() {
     return Ordering.natural().onResultOf(ResponseFunctions.uniqueIdentifier());

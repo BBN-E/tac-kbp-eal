@@ -78,7 +78,7 @@ public final class ChangeDocIDToMatchFile {
       @Override
       public Response apply(final Response input) {
         return Response.of(docID, input.type(), input.role(), input.canonicalArgument(), input.baseFiller(), input.additionalArgumentJustifications(),
-            input.predicateJustifications(), input.realis());
+            input.predicateJustifications(), input.realis(), input.xdocEntity());
       }
     };
   }

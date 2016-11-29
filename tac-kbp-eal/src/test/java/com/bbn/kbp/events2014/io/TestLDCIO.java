@@ -48,7 +48,8 @@ public class TestLDCIO extends TestCase {
         cas.charOffsetSpan(),
         ImmutableSet.of(CharOffsetSpan.fromOffsetsOnly(327, 397)),
         ImmutableSet.of(CharOffsetSpan.fromOffsetsOnly(373, 383)),
-        KBPRealis.Actual), 0.5465980768203735);
+        KBPRealis.Actual,
+        Optional.<Symbol>absent()), 0.5465980768203735);
     ann = ResponseAssessment
         .of(Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.CORRECT),
             Optional.of(FieldAssessment.CORRECT),
@@ -67,6 +68,11 @@ public class TestLDCIO extends TestCase {
   @Test
   public void testArgumentRoundtrip2015() throws IOException {
     testArgumentRoundtrip(AssessmentSpecFormats.Format.KBP2015);
+  }
+
+  @Test
+  public void testArgumentRoundtrip2017() throws IOException {
+    testArgumentRoundtrip(AssessmentSpecFormats.Format.KBP2017);
   }
 
   @Test

@@ -89,9 +89,29 @@ public final class AssessmentSpecFormats {
       protected Ordering<Response> responseOrdering() {
         return Response.ByOld2014Id;
       }
+
+      @Override
+      protected ColumnSpec columnSpec() {
+        return ColumnSpec.KBP2014;
+      }
     }, KBP2015 {
       @Override
       public String identifierField(Response response) {
+        return response.uniqueIdentifier2015();
+      }
+
+      @Override
+      protected Ordering<Response> responseOrdering() {
+        return Response.byUniqueIdOrdering2015();
+      }
+
+      @Override
+      protected ColumnSpec columnSpec() {
+        return ColumnSpec.KBP2014;
+      }
+    }, KBP2017 {
+      @Override
+      protected String identifierField(final Response response) {
         return response.uniqueIdentifier();
       }
 
@@ -99,11 +119,157 @@ public final class AssessmentSpecFormats {
       protected Ordering<Response> responseOrdering() {
         return Response.byUniqueIdOrdering();
       }
+
+      @Override
+      protected ColumnSpec columnSpec() {
+        return ColumnSpec.KBP2017;
+      }
     };
 
     protected abstract String identifierField(Response response);
 
     protected abstract Ordering<Response> responseOrdering();
+
+    protected abstract ColumnSpec columnSpec();
+  }
+
+  public enum ColumnSpec {
+    KBP2014 {
+      @Override
+      protected int responseID() {
+        return 0;
+      }
+
+      @Override
+      protected int docID() {
+        return 1;
+      }
+
+      @Override
+      protected int eventType() {
+        return 2;
+      }
+
+      @Override
+      protected int role() {
+        return 3;
+      }
+
+      @Override
+      protected int CAS() {
+        return 4;
+      }
+
+      @Override
+      protected int casOffsets() {
+        return 5;
+      }
+
+      @Override
+      protected int predicateJustifications() {
+        return 6;
+      }
+
+      @Override
+      protected int baseFiller() {
+        return 7;
+      }
+
+      @Override
+      protected int additionalArgumentJustifications() {
+        return 8;
+      }
+
+      @Override
+      protected int realis() {
+        return 9;
+      }
+
+      @Override
+      protected int confidence() {
+        return 10;
+      }
+
+      @Override
+      protected Optional<Integer> xdocEntityID() {
+        return Optional.absent();
+      }
+    }, KBP2017 {
+      @Override
+      protected int responseID() {
+        return 0;
+      }
+
+      @Override
+      protected int docID() {
+        return 1;
+      }
+
+      @Override
+      protected int eventType() {
+        return 2;
+      }
+
+      @Override
+      protected int role() {
+        return 3;
+      }
+
+      @Override
+      protected int CAS() {
+        return 4;
+      }
+
+
+      @Override
+      protected Optional<Integer> xdocEntityID() {
+        return Optional.of(5);
+      }
+
+      @Override
+      protected int casOffsets() {
+        return 6;
+      }
+
+      @Override
+      protected int predicateJustifications() {
+        return 7;
+      }
+
+      @Override
+      protected int baseFiller() {
+        return 8;
+      }
+
+      @Override
+      protected int additionalArgumentJustifications() {
+        return 9;
+      }
+
+      @Override
+      protected int realis() {
+        return 10;
+      }
+
+      @Override
+      protected int confidence() {
+        return 11;
+      }
+
+    };
+
+    protected abstract int responseID();
+    protected abstract int docID();
+    protected abstract int eventType();
+    protected abstract int role();
+    protected abstract int CAS();
+    protected abstract int casOffsets();
+    protected abstract int predicateJustifications();
+    protected abstract int baseFiller();
+    protected abstract int additionalArgumentJustifications();
+    protected abstract int realis();
+    protected abstract int confidence();
+    protected abstract Optional<Integer> xdocEntityID();
   }
 
   /**
@@ -239,10 +405,10 @@ public final class AssessmentSpecFormats {
         }
         final List<String> parts = ImmutableList.copyOf(OnTabs.split(line));
         try {
-          // we ignore the first field because input system IDs are currently not preserved
+          // input system IDs are currently not preserved
           try {
-            final double confidence = Double.parseDouble(parts.get(10));
-            final Response response = parseArgumentFields(parts.subList(1, parts.size()));
+            final double confidence = Double.parseDouble(parts.get(format.columnSpec().confidence()));
+            final Response response = parseArgumentFields(format, parts);
             // do not require a # to be put in the metadata beforehand
             if (lastLine.length() > 0 && lastLine.charAt(0) == METADATA_MARKER
                 && lastLine.length() > 1) {
@@ -252,7 +418,7 @@ public final class AssessmentSpecFormats {
               responseToMetadata.put(response, ArgumentOutput.DEFAULT_METADATA);
             }
 
-            idMap.put(parts.get(0), response.uniqueIdentifier());
+            idMap.put(parts.get(format.columnSpec().responseID()), response.uniqueIdentifier());
             ret.add(Scored.from(response, confidence));
             lastLine = line;
           } catch (IndexOutOfBoundsException iobe) {
@@ -307,7 +473,7 @@ public final class AssessmentSpecFormats {
 
     private String argToString(final Response arg, final double confidence) {
       final List<String> parts = Lists.newArrayList();
-      addArgumentParts(arg, parts, confidence);
+      addArgumentParts(format, arg, parts, confidence);
       return Joiner.on('\t').join(parts);
     }
 
@@ -327,12 +493,17 @@ public final class AssessmentSpecFormats {
     }
   }
 
-  private static void addArgumentParts(final Response arg, final List<String> parts,
+  private static void addArgumentParts(final Format format,
+      final Response arg, final List<String> parts,
       final double confidence) {
+    // TODO generalize this for the {@link ColumnSpec}
     parts.add(arg.docID().toString());
     parts.add(arg.type().toString());
     parts.add(arg.role().toString());
     parts.add(cleanString(arg.canonicalArgument().string()));
+    if(format.columnSpec().xdocEntityID().isPresent()) {
+      parts.add(arg.xdocEntity().or(Response.NIL).asString());
+    }
     parts.add(offsetString(arg.canonicalArgument().charOffsetSpan()));
     parts.add(offsetString(arg.predicateJustifications()));
     parts.add(offsetString(arg.baseFiller()));
@@ -439,7 +610,7 @@ public final class AssessmentSpecFormats {
             .sortedCopy(answerKey.annotatedResponses())) {
           final List<String> parts = Lists.newArrayList();
           parts.add(format.identifierField(arg.response()));
-          addArgumentParts(arg.response(), parts, 1.0);
+          addArgumentParts(format, arg.response(), parts, 1.0);
           addAnnotationParts(arg, answerKey.corefAnnotation(), parts);
           out.print(Joiner.on("\t").join(parts) + "\n");
         }
@@ -448,7 +619,7 @@ public final class AssessmentSpecFormats {
             .sortedCopy(answerKey.unannotatedResponses())) {
           final List<String> parts = Lists.newArrayList();
           parts.add(format.identifierField(unannotated));
-          addArgumentParts(unannotated, parts, 1.0);
+          addArgumentParts(format, unannotated, parts, 1.0);
           addUnannotatedAnnotationParts(unannotated, answerKey.corefAnnotation(), parts);
           out.print(Joiner.on("\t").join(parts) + "\n");
         }
@@ -487,7 +658,6 @@ public final class AssessmentSpecFormats {
             continue;
           }
           final String[] parts = line.split("\t");
-          final List<String> argumentParts = Arrays.asList(parts).subList(1, 11);
           final List<String> annotationParts = Arrays.asList(parts).subList(11, parts.length);
 
           if (annotationParts.isEmpty()) {
@@ -496,7 +666,7 @@ public final class AssessmentSpecFormats {
                     "output file with no assessment columns.", docid));
           }
 
-          final Response response = parseArgumentFields(argumentParts);
+          final Response response = parseArgumentFields(format, ImmutableList.copyOf(parts));
           final AssessmentCreator.AssessmentParseResult annotation =
               parseAnnotation(annotationParts);
 
@@ -618,14 +788,43 @@ public final class AssessmentSpecFormats {
         .replace('\n', ' ');
   }
 
+  public static Response parseArgumentFields(final Format format, final List<String> parts) {
+    final ColumnSpec columnSpec = format.columnSpec();
+    // NIL is not a valid identifier in the code, only on disk.
+    final Optional<Symbol> readXdocEntityID = columnSpec.xdocEntityID().isPresent() ? Optional
+        .of(Symbol.from(parts.get(columnSpec.xdocEntityID().get()))) : Optional.<Symbol>absent();
+    final Optional<Symbol> xdocEntity;
+    if(readXdocEntityID.isPresent() && readXdocEntityID.get().equalTo(Response.NIL)) {
+      xdocEntity = Optional.absent();
+    } else {
+      xdocEntity = readXdocEntityID;
+    }
+    return Response.of(Symbol.from(parts.get(columnSpec.docID())),
+        Symbol.from(parts.get(columnSpec.eventType())),
+        Symbol.from(parts.get(columnSpec.role())),
+        KBPString.from(parts.get(columnSpec.CAS()),
+            TACKBPEALIOUtils.parseCharOffsetSpan(parts.get(columnSpec.casOffsets()))),
+        TACKBPEALIOUtils.parseCharOffsetSpan(parts.get(columnSpec.baseFiller())),
+        parseCharOffsetSpans(parts.get(columnSpec.additionalArgumentJustifications())),
+        parseCharOffsetSpans(parts.get(columnSpec.predicateJustifications())),
+        KBPRealis.parse(parts.get(columnSpec.realis())),
+        xdocEntity);
+  }
+
+  /**
+   * Parses Responses from the 2014, 2015, and 2016 evaluations. Prefer {@link
+   * AssessmentSpecFormats#parseArgumentFields(Format, List<String>)}
+   */
+  @Deprecated
   public static Response parseArgumentFields(final List<String> parts) {
+    final Optional<Symbol> xdocEntity = Optional.absent();
     return Response.of(Symbol.from(parts.get(0)),
         Symbol.from(parts.get(1)), Symbol.from(parts.get(2)),
         KBPString.from(parts.get(3), TACKBPEALIOUtils.parseCharOffsetSpan(parts.get(4))),
         TACKBPEALIOUtils.parseCharOffsetSpan(parts.get(6)),
         parseCharOffsetSpans(parts.get(7)),
         parseCharOffsetSpans(parts.get(5)),
-        KBPRealis.parse(parts.get(8)));
+        KBPRealis.parse(parts.get(8)), xdocEntity);
   }
 
 
