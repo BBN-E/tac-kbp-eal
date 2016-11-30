@@ -123,14 +123,11 @@ abstract class _Response {
     checkArgument(!role().asString().isEmpty(), "Argument role may not be empty for a response");
     checkPredicateJustificationsContainsBaseFiller();
     checkArgument(!predicateJustifications().isEmpty(), "Predicate justifications may not be empty");
-    if (xdocEntity().isPresent()) {
-      checkArgument(!xdocEntity().get().asString().toUpperCase().equals(NIL.asString()),
-          "NIL is not a valid xdoc id; use Optional.<Symbol>absent() to represent no cluster!");
-    }
+    checkArgument(!xdocEntity().isPresent() || !xdocEntity().get().asString().isEmpty(),
+        "xdoc entity ID may not be an empty string!");
   }
 
   private static final ImmutableSet<Symbol> temporalRoles = SymbolUtils.setFrom("TIME", "Time");
-  public static final Symbol NIL = Symbol.from("NIL");
 
   /**
    * Is the role {@code Time} or {@code TIME}?
@@ -241,7 +238,8 @@ abstract class _Response {
           .compare(left.canonicalArgument().charOffsetSpan(),
               right.canonicalArgument().charOffsetSpan())
           .compare(left.realis(), right.realis())
-          .compare(left.xdocEntity().or(NIL).asString(), right.xdocEntity().or(NIL).asString())
+          .compare(left.xdocEntity().or(Symbol.from("")).asString(),
+              right.xdocEntity().or(Symbol.from("")).asString())
           .result();
     }
   };

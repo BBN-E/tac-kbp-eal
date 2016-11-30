@@ -502,7 +502,11 @@ public final class AssessmentSpecFormats {
     parts.add(arg.role().toString());
     parts.add(cleanString(arg.canonicalArgument().string()));
     if(format.columnSpec().xdocEntityID().isPresent()) {
-      parts.add(arg.xdocEntity().or(Response.NIL).asString());
+      if(arg.xdocEntity().isPresent()) {
+        parts.add(arg.xdocEntity().get().asString());
+      } else {
+        parts.add("");
+      }
     }
     parts.add(offsetString(arg.canonicalArgument().charOffsetSpan()));
     parts.add(offsetString(arg.predicateJustifications()));
@@ -790,11 +794,11 @@ public final class AssessmentSpecFormats {
 
   public static Response parseArgumentFields(final Format format, final List<String> parts) {
     final ColumnSpec columnSpec = format.columnSpec();
-    // NIL is not a valid identifier in the code, only on disk.
+    // We represent no xdoc id as Optional.absent() and blank on disk
     final Optional<Symbol> readXdocEntityID = columnSpec.xdocEntityID().isPresent() ? Optional
         .of(Symbol.from(parts.get(columnSpec.xdocEntityID().get()))) : Optional.<Symbol>absent();
     final Optional<Symbol> xdocEntity;
-    if(readXdocEntityID.isPresent() && readXdocEntityID.get().equalTo(Response.NIL)) {
+    if(readXdocEntityID.isPresent() && readXdocEntityID.get().asString().isEmpty()) {
       xdocEntity = Optional.absent();
     } else {
       xdocEntity = readXdocEntityID;
