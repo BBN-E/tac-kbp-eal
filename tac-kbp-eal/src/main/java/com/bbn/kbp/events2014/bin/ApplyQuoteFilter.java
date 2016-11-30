@@ -33,7 +33,8 @@ public final class ApplyQuoteFilter {
         "\tinputStore: input system output store\n" +
         "\toutputStore: location to write filtered output store. Must be non-existent or an empty directory.\n"
         +
-        "\tquoteFilter: file storing serialized quote filter");
+        "\tquoteFilter: file storing serialized quote filter\n"
+        +"\toutputLayout: input and output layout\n");
     System.exit(1);
   }
 
