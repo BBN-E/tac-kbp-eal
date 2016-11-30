@@ -241,6 +241,7 @@ abstract class _Response {
           .compare(left.canonicalArgument().charOffsetSpan(),
               right.canonicalArgument().charOffsetSpan())
           .compare(left.realis(), right.realis())
+          .compare(left.xdocEntity().or(NIL).asString(), right.xdocEntity().or(NIL).asString())
           .result();
     }
   };
