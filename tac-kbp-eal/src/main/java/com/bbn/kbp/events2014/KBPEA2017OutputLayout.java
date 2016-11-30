@@ -12,7 +12,7 @@ import java.io.IOException;
  */
 public final class KBPEA2017OutputLayout implements SystemOutputLayout {
 
-  private final KBPEA2015OutputLayout layout2015 = KBPEA2015OutputLayout.get();
+  private final KBPEA2016OutputLayout layout2016 = KBPEA2016OutputLayout.get();
   private static final KBPEA2017OutputLayout INSTANCE = new KBPEA2017OutputLayout();
 
 
@@ -25,7 +25,7 @@ public final class KBPEA2017OutputLayout implements SystemOutputLayout {
 
   @Override
   public DocumentSystemOutput emptyOutput(final Symbol docID) {
-    return layout2015.emptyOutput(docID);
+    return layout2016.emptyOutput(docID);
   }
 
   @Override
