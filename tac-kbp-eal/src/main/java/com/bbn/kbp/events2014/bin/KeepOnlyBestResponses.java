@@ -5,8 +5,8 @@ import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.CorpusEventLinking;
 import com.bbn.kbp.events2014.DocumentSystemOutput;
 import com.bbn.kbp.events2014.SystemOutputLayout;
+import com.bbn.kbp.events2014.io.CrossDocSystemOutputStore;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
-import com.bbn.kbp.events2014.io.SystemOutputStore2016;
 import com.bbn.kbp.events2014.transformers.KeepBestJustificationOnly;
 import com.bbn.kbp.events2014.transformers.ResponseMapping;
 
@@ -60,11 +60,11 @@ public final class KeepOnlyBestResponses {
 
       outputStore.write(filtered);
     }
-    if (inputStore instanceof SystemOutputStore2016) {
+    if (inputStore instanceof CrossDocSystemOutputStore) {
       final CorpusEventLinking filteredLinking =
-          ResponseMapping.apply(((SystemOutputStore2016) inputStore).readCorpusEventFrames(),
-              (SystemOutputStore2016) outputStore);
-      ((SystemOutputStore2016) outputStore).writeCorpusEventFrames(filteredLinking);
+          ResponseMapping.apply(((CrossDocSystemOutputStore) inputStore).readCorpusEventFrames(),
+              (CrossDocSystemOutputStore) outputStore);
+      ((CrossDocSystemOutputStore) outputStore).writeCorpusEventFrames(filteredLinking);
     }
 
     inputStore.close();

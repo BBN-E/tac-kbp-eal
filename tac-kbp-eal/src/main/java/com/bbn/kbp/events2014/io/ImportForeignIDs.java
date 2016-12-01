@@ -60,7 +60,8 @@ public final class ImportForeignIDs {
       final SystemOutputLayout outputLayout =
           SystemOutputLayout.ParamParser.fromParamVal(params.getString("outputLayout"));
       final LinkingStoreSource linkingStoreSource;
-      if (params.getString("outputLayout").contains("2016")) {
+      if (params.getString("outputLayout").contains("2016") || params.getString("outputLayout")
+          .contains("2017")) {
         linkingStoreSource = LinkingStoreSource.createFor2016();
       } else {
         linkingStoreSource = LinkingStoreSource.createFor2015();
@@ -159,7 +160,7 @@ public final class ImportForeignIDs {
         cefb.addAllDocEventFrames(newDocEventFrameReferences.build());
         nuLinking.addCorpusEventFrames(cefb.build());
       }
-      ((SystemOutputStore2016) newOutput).writeCorpusEventFrames(nuLinking.build());
+      ((CrossDocSystemOutputStore) newOutput).writeCorpusEventFrames(nuLinking.build());
     }
 
     originalArgumentStore.close();

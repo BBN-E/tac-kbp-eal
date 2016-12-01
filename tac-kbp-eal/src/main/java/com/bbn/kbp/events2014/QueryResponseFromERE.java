@@ -6,9 +6,9 @@ import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events.ontology.EREToKBPEventOntologyMapper;
+import com.bbn.kbp.events2014.io.CrossDocSystemOutputStore;
 import com.bbn.kbp.events2014.io.DefaultCorpusQueryLoader;
 import com.bbn.kbp.events2014.io.SingleFileQueryStoreWriter;
-import com.bbn.kbp.events2014.io.SystemOutputStore2016;
 import com.bbn.nlp.corpora.ere.ERELoader;
 
 import com.google.common.base.Charsets;
@@ -76,15 +76,17 @@ public final class QueryResponseFromERE {
         "com.bbn.tac.eal.maxResponsesPerQueryPerSystem").or(Integer.MAX_VALUE);
     final Random rng = new Random(params.getOptionalPositiveInteger(
         "com.bbn.tac.eal.randSeed").or(0));
+    final SystemOutputLayout outputLayout = SystemOutputLayout.ParamParser
+        .fromParamVal(params.getString("com.bbn.tac.eal.outputLayout"));
 
     params.assertExactlyOneDefined(SINGLE_STORE_PARAM, MULTIPLE_STORES_PARAM);
-    final ImmutableMap<String, SystemOutputStore2016> outputStores;
+    final ImmutableMap<String, CrossDocSystemOutputStore> outputStores;
     if (params.isPresent(SINGLE_STORE_PARAM)) {
       outputStores = loadSingleStore(params.getExistingDirectory("com.bbn.tac.eal.storeDir"),
-          params.getString(SINGLE_STORE_PARAM));
+          params.getString(SINGLE_STORE_PARAM), outputLayout);
     } else {
       outputStores = loadStores(params.getExistingDirectory("com.bbn.tac.eal.storeDir"),
-          params.getStringList(MULTIPLE_STORES_PARAM));
+          params.getStringList(MULTIPLE_STORES_PARAM), outputLayout);
     }
     final File outputFile = params.getCreatableFile("com.bbn.tac.eal.outputFile");
 
@@ -93,9 +95,9 @@ public final class QueryResponseFromERE {
     final ImmutableMultimap.Builder<QueryResponse2016, Symbol> queryResponseToFindingSystemB =
         ImmutableMultimap.builder();
 
-    for (final Map.Entry<String, SystemOutputStore2016> storeEntry : outputStores.entrySet()) {
+    for (final Map.Entry<String, CrossDocSystemOutputStore> storeEntry : outputStores.entrySet()) {
       final Symbol systemName = Symbol.from(storeEntry.getKey());
-      final SystemOutputStore2016 store = storeEntry.getValue();
+      final CrossDocSystemOutputStore store = storeEntry.getValue();
 
       for (final CorpusQuery2016 query : queries.queries()) {
         final ImmutableSet<DocEventFrameReference> systemMatchesForQuery =
@@ -157,7 +159,7 @@ public final class QueryResponseFromERE {
    */
   public static ImmutableSetMultimap<Symbol, QueryResponse2016> response2016CollapsedJustifications(
       final Iterable<Map.Entry<Symbol, Collection<DocEventFrameReference>>> matchesByDocument,
-      final SystemOutputStore2016 store, final CorpusQuery2016 query)
+      final CrossDocSystemOutputStore store, final CorpusQuery2016 query)
       throws IOException {
     final ImmutableSetMultimap.Builder<Symbol, QueryResponse2016> retB =
         ImmutableSetMultimap.builder();
@@ -197,18 +199,22 @@ public final class QueryResponseFromERE {
     return offsetsB.build();
   }
 
-  private static ImmutableMap<String, SystemOutputStore2016> loadStores(
-      final File storeDir, final List<String> storeList) throws IOException {
-    final ImmutableMap.Builder<String, SystemOutputStore2016> ret = ImmutableMap.builder();
+  private static ImmutableMap<String, CrossDocSystemOutputStore> loadStores(
+      final File storeDir, final List<String> storeList, final SystemOutputLayout outputLayout)
+      throws IOException {
+    final ImmutableMap.Builder<String, CrossDocSystemOutputStore> ret = ImmutableMap.builder();
     for (final String storeName : storeList) {
-      ret.put(storeName, SystemOutputStore2016.open(new File(storeDir, storeName)));
+      ret.put(storeName,
+          (CrossDocSystemOutputStore) outputLayout.open(new File(storeDir, storeName)));
     }
     return ret.build();
   }
 
-  private static ImmutableMap<String, SystemOutputStore2016> loadSingleStore(
-      final File outputStoreDir, final String systemName) throws IOException {
-    return ImmutableMap.of(systemName, SystemOutputStore2016.open(outputStoreDir));
+  private static ImmutableMap<String, CrossDocSystemOutputStore> loadSingleStore(
+      final File outputStoreDir, final String systemName, final SystemOutputLayout outputLayout)
+      throws IOException {
+    return ImmutableMap
+        .of(systemName, (CrossDocSystemOutputStore) outputLayout.open(outputStoreDir));
   }
 
 }

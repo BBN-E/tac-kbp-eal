@@ -103,7 +103,7 @@ public final class KBPEATestUtils {
       return Response.of(trfr.docID(), trfr.type(),
           trfr.role(), trfr.argumentCanonicalString(), charOffsetSpan(nextIdx++),
           ImmutableSet.<CharOffsetSpan>of(), ImmutableSet.of(charOffsetSpan(nextIdx++)),
-          KBPRealis.Actual);
+          KBPRealis.Actual, Optional.<Symbol>absent());
     }
 
     private CharOffsetSpan charOffsetSpan(int idx) {

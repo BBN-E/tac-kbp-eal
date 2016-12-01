@@ -7,11 +7,14 @@ import com.bbn.kbp.events2014.CorpusEventFrame;
 import com.bbn.kbp.events2014.CorpusEventLinking;
 import com.bbn.kbp.events2014.DocEventFrameReference;
 import com.bbn.kbp.events2014.DocumentSystemOutput2015;
+import com.bbn.kbp.events2014.KBPEA2016OutputLayout;
+import com.bbn.kbp.events2014.KBPEA2017OutputLayout;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseFunctions;
 import com.bbn.kbp.events2014.ResponseLinking;
-import com.bbn.kbp.events2014.io.SystemOutputStore2016;
+import com.bbn.kbp.events2014.SystemOutputLayout;
+import com.bbn.kbp.events2014.io.CrossDocSystemOutputStore;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.FluentIterable;
@@ -21,6 +24,7 @@ import com.google.common.collect.ImmutableSet;
 import java.io.File;
 import java.io.IOException;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Predicates.compose;
 import static com.google.common.base.Predicates.in;
 
@@ -45,9 +49,16 @@ public final class FilterLinkingStore {
     final Parameters params = Parameters.loadSerifStyle(new File(argv[0]));
     final File inputStore = params.getExistingDirectory("inputStore");
     final File outputStore = params.getCreatableDirectory("outputStore");
+    final SystemOutputLayout layout = SystemOutputLayout.ParamParser.fromParamVal(
+        params.getString("outputLayout"));
 
-    final SystemOutputStore2016 input = SystemOutputStore2016.open(inputStore);
-    final SystemOutputStore2016 output = SystemOutputStore2016.openOrCreate(outputStore);
+    checkArgument(
+        (layout instanceof KBPEA2017OutputLayout) || (layout instanceof KBPEA2016OutputLayout),
+        "Not a compatible output layout: expected KBP_EAL_2017 or KBP_EAL_2016");
+
+    final CrossDocSystemOutputStore input = (CrossDocSystemOutputStore) layout.open(inputStore);
+    final CrossDocSystemOutputStore output =
+        (CrossDocSystemOutputStore) layout.openOrCreate(outputStore);
     final ImmutableSet<KBPRealis> linkableRealises =
         ImmutableSet.of(KBPRealis.Actual, KBPRealis.Other);
 

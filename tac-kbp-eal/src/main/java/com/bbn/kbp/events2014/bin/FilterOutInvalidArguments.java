@@ -4,8 +4,8 @@ import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.DocumentSystemOutput;
 import com.bbn.kbp.events2014.SystemOutputLayout;
+import com.bbn.kbp.events2014.io.CrossDocSystemOutputStore;
 import com.bbn.kbp.events2014.io.SystemOutputStore;
-import com.bbn.kbp.events2014.io.SystemOutputStore2016;
 import com.bbn.kbp.events2014.validation.TypeAndRoleValidator;
 
 import org.slf4j.Logger;
@@ -53,9 +53,9 @@ public final class FilterOutInvalidArguments {
           docID, original.arguments().size() - filtered.arguments().size());
       output.write(filtered);
     }
-    if (output instanceof SystemOutputStore2016) {
-      ((SystemOutputStore2016) output)
-          .writeCorpusEventFrames(((SystemOutputStore2016) input).readCorpusEventFrames());
+    if (output instanceof CrossDocSystemOutputStore) {
+      ((CrossDocSystemOutputStore) output)
+          .writeCorpusEventFrames(((CrossDocSystemOutputStore) input).readCorpusEventFrames());
     }
     input.close();
     output.close();
