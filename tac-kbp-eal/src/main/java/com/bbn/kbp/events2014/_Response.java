@@ -147,7 +147,7 @@ abstract class _Response {
     if(xdocEntity().isPresent()) {
       entityID = xdocEntity().get().asString();
     } else {
-      entityID = "NIL";
+      entityID = "";
     }
     final Hasher hasher = hasher2016().putString(entityID, Charsets.UTF_8);
     return hasher.hash();
