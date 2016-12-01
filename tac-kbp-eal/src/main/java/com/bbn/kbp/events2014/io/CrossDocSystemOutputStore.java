@@ -12,7 +12,6 @@ public interface CrossDocSystemOutputStore extends SystemOutputStore {
 
   void writeCorpusEventFrames(CorpusEventLinking corpusEventFrames) throws IOException;
 
-  // TODO is this a thing we really want?
   @Override
   DocumentSystemOutput2015 read(Symbol docID) throws IOException;
 }

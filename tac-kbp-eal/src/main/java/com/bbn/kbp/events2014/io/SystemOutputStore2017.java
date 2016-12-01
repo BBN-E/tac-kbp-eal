@@ -25,8 +25,6 @@ import static com.google.common.base.Preconditions.checkState;
 
 public final class SystemOutputStore2017 implements SystemOutputStore, CrossDocSystemOutputStore {
 
-  // TODO this is basically copied from SystemOutputStore2016. This might not be a feature.
-
   private final Symbol systemID;
   private final ArgumentStore argumentStore;
   private final LinkingStore linkingStore;
