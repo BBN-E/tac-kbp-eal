@@ -6,7 +6,7 @@ import com.bbn.bue.common.strings.offsets.CharOffset;
 import com.bbn.bue.common.strings.offsets.OffsetRange;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events.ontology.EREToKBPEventOntologyMapper;
-import com.bbn.kbp.events2014.io.SystemOutputStore2016;
+import com.bbn.kbp.events2014.io.CrossDocSystemOutputStore;
 import com.bbn.nlp.corpora.ere.EREDocument;
 import com.bbn.nlp.corpora.ere.EREEntity;
 import com.bbn.nlp.corpora.ere.EREEntityMention;
@@ -56,7 +56,7 @@ import static com.google.common.collect.Iterables.filter;
  */
 public interface CorpusQueryExecutor2016 {
 
-  ImmutableSet<DocEventFrameReference> queryEventFrames(SystemOutputStore2016 systemOutput2016,
+  ImmutableSet<DocEventFrameReference> queryEventFrames(CrossDocSystemOutputStore systemOutput2016,
       CorpusQuery2016 query) throws IOException;
 }
 
@@ -176,7 +176,8 @@ class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
   }
 
   @Override
-  public ImmutableSet<DocEventFrameReference> queryEventFrames(SystemOutputStore2016 systemOutput,
+  public ImmutableSet<DocEventFrameReference> queryEventFrames(
+      CrossDocSystemOutputStore systemOutput,
       final CorpusQuery2016 query) throws IOException {
     final StringBuilder msg = new StringBuilder();
     final CorpusEventLinking corpusEventLinking = systemOutput.readCorpusEventFrames();
@@ -219,7 +220,7 @@ class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
   }
 
   private ImmutableSet<DocEventFrameReference> documentEventsMatchingAnyQueryEntryPoint(
-      final CorpusQuery2016 query, final SystemOutputStore2016 systemOutput,
+      final CorpusQuery2016 query, final CrossDocSystemOutputStore systemOutput,
       final StringBuilder msg) throws IOException {
     final List<Response> matchingResponses = new ArrayList<>();
 
