@@ -21,6 +21,7 @@ import com.bbn.bue.common.evaluation.ScoringEventObserver;
 import com.bbn.bue.common.files.FileUtils;
 import com.bbn.bue.common.parameters.Parameters;
 import com.bbn.bue.common.serialization.jackson.JacksonSerializer;
+import com.bbn.bue.common.serialization.jackson.MultimapEntries;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 import com.bbn.kbp.events.ontology.EREToKBPEventOntologyMapper;
@@ -50,6 +51,8 @@ import com.bbn.nlp.events.HasEventType;
 import com.bbn.nlp.parsing.HeadFinder;
 import com.bbn.nlp.parsing.HeadFinders;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
@@ -61,6 +64,7 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.ImmutableSortedMap;
@@ -1004,12 +1008,30 @@ public final class ScoreKBPAgainstERE {
           numResponses.size(), mentionAlignmentFailures.size());
 
       final File serializedFailuresFile = new File(outputDir, "alignmentFailures.json");
+      final AlignmentFailureCounts holder = new AlignmentFailureCounts.Builder()
+          .putAllMentionAlignmentFailures(mentionAlignmentFailures).build();
       final JacksonSerializer serializer =
           JacksonSerializer.builder().forJson().prettyOutput().build();
-      serializer.serializeTo(mentionAlignmentFailures, Files.asByteSink(serializedFailuresFile));
+      serializer.serializeTo(holder, Files.asByteSink(serializedFailuresFile));
 
       final File failuresCount = new File(outputDir, "alignmentFailures.count.txt");
       serializer.serializeTo(mentionAlignmentFailures.size(), Files.asByteSink(failuresCount));
+    }
+  }
+
+  // this is just a holder to enable Jackson serialization
+  @TextGroupImmutable
+  @Value.Immutable
+  @JsonSerialize(as = ImmutableAlignmentFailureCounts.class)
+  @JsonDeserialize(as = ImmutableAlignmentFailureCounts.class)
+  public static abstract class AlignmentFailureCounts {
+
+    @JsonSerialize(converter = MultimapEntries.FromMultimap.class)
+    @JsonDeserialize(converter = MultimapEntries.ToImmutableSetMultimap.class)
+    public abstract ImmutableMultimap<String, String> mentionAlignmentFailures();
+
+    public final static class Builder extends ImmutableAlignmentFailureCounts.Builder {
+
     }
   }
 
