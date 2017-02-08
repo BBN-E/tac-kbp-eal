@@ -76,15 +76,9 @@
             <artifactId>scoring-open</artifactId>
         </dependency>
 
-
         <dependency>
             <groupId>com.bbn.nlp</groupId>
             <artifactId>nlp-core-open</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.bbn.bue</groupId>
-            <artifactId>common-core-jackson-serialization-open</artifactId>
         </dependency>
 
         <dependency>
@@ -148,6 +142,10 @@
             <groupId>com.google.inject.extensions</groupId>
             <artifactId>guice-multibindings</artifactId>
             <version>4.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
         </dependency>
     </dependencies>
 

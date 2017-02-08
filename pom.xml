@@ -31,7 +31,7 @@
         <skipITs>true</skipITs>
 
         <junit.version>4.11</junit.version>
-        <bueopen.version>5.1.0</bueopen.version>
+        <bueopen.version>6.3.0</bueopen.version>
         <jackson.version>2.7.5</jackson.version>
 
         <!-- Sonar server properties. These only work BBN-internally -->
@@ -231,16 +231,9 @@
                 <version>${bueopen.version}</version>
             </dependency>
 
-
             <dependency>
                 <groupId>com.bbn.nlp</groupId>
                 <artifactId>nlp-core-open</artifactId>
-                <version>${bueopen.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.bbn.bue</groupId>
-                <artifactId>common-core-guice</artifactId>
                 <version>${bueopen.version}</version>
             </dependency>
 
@@ -261,11 +254,6 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>1.7.5</version>
-            </dependency>
-            <dependency>
-                <groupId>com.bbn.bue</groupId>
-                <artifactId>common-core-jackson-serialization-open</artifactId>
-                <version>${bueopen.version}</version>
             </dependency>
 
             <dependency>
@@ -291,6 +279,12 @@
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
         </dependency>
+
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
 
         </dependencies>
     </dependencyManagement>
