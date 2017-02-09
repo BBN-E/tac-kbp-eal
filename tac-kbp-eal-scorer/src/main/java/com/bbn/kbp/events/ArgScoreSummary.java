@@ -15,8 +15,8 @@ import org.immutables.value.Value;
 @JsonSerialize
 @JsonDeserialize
 public abstract class ArgScoreSummary {
-  abstract FMeasureCounts fMeasureCounts();
-  abstract double argScore();
+  public abstract FMeasureCounts fMeasureCounts();
+  public abstract double argScore();
 
   public static ArgScoreSummary of(double argScore, FMeasureCounts fMeasureCounts) {
     return new Builder().argScore(argScore)

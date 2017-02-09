@@ -17,7 +17,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.plugin.version>3.5.1</maven.compiler.plugin.version>
-        <maven.javadoc.plugin.version>2.9.1</maven.javadoc.plugin.version>
+        <maven.javadoc.plugin.version>2.10.3</maven.javadoc.plugin.version>
         <maven.site.plugin.version>3.1</maven.site.plugin.version>
         <maven.project.info.reports.plugin.version>2.4</maven.project.info.reports.plugin.version>
         <maven.dependency.plugin.version>2.4</maven.dependency.plugin.version>
@@ -27,11 +27,12 @@
         <maven.surefire.plugin.version>2.12.2</maven.surefire.plugin.version>
         <maven.surefire.report.plugin.version>2.12.2</maven.surefire.report.plugin.version>
         <maven.failsafe.plugin.version>2.12.2</maven.failsafe.plugin.version>
+        <maven.enforcer.plugin.version>1.4.1</maven.enforcer.plugin.version>
         <guava.version>19.0</guava.version>
         <skipITs>true</skipITs>
 
         <junit.version>4.11</junit.version>
-        <bueopen.version>5.1.0</bueopen.version>
+        <bueopen.version>6.3.0</bueopen.version>
         <jackson.version>2.7.5</jackson.version>
 
         <!-- Sonar server properties. These only work BBN-internally -->
@@ -124,6 +125,28 @@
             </plugins>
         </pluginManagement>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>${maven.enforcer.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>enforce</id>
+                        <configuration>
+                            <rules>
+                                <dependencyConvergence/>
+                                <reactorModuleConvergence/>
+                                <requireReleaseDeps>
+                                    <onlyWhenRelease>true</onlyWhenRelease>
+                                </requireReleaseDeps>
+                            </rules>
+                        </configuration>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -231,16 +254,9 @@
                 <version>${bueopen.version}</version>
             </dependency>
 
-
             <dependency>
                 <groupId>com.bbn.nlp</groupId>
                 <artifactId>nlp-core-open</artifactId>
-                <version>${bueopen.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.bbn.bue</groupId>
-                <artifactId>common-core-guice</artifactId>
                 <version>${bueopen.version}</version>
             </dependency>
 
@@ -261,11 +277,6 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>1.7.5</version>
-            </dependency>
-            <dependency>
-                <groupId>com.bbn.bue</groupId>
-                <artifactId>common-core-jackson-serialization-open</artifactId>
-                <version>${bueopen.version}</version>
             </dependency>
 
             <dependency>
@@ -292,6 +303,31 @@
             <version>${jackson.version}</version>
         </dependency>
 
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-smile</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+
+            <!-- For a single executable in tac-kbp-eal, NISTValidator, and dependency convergence -->
+            <dependency>
+                <groupId>org.codehaus.plexus</groupId>
+                <artifactId>plexus-archiver</artifactId>
+                <version>2.4.4</version>
+            </dependency>
+
+            <!-- For a single executable in tac-kbp-eal, NISTValidator, and dependency convergence -->
+            <dependency>
+                <groupId>org.codehaus.plexus</groupId>
+                <artifactId>plexus-utils</artifactId>
+                <version>3.0.24</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
