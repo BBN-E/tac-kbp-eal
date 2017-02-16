@@ -74,11 +74,19 @@ final class LinkingInspector implements
             transform(concat(item.test().eventFrames(), item.key().eventFrames()),
                 ScoringEventFrameFunctions.arguments())));
 
+        // creating mapping of f-scores per event-type
+        for (ScoringEventFrame eventFrame : item.key().eventFrames()) {
+          Symbol eventType = eventFrame.eventType();
+          // TODO: map eventType:scores here
+          // how to use LinkF1.create().score(item.test(), item.key()) per eventType?
+        }
+
         return new LinkingScoreDocRecord.Builder()
             .fMeasureInfo(counts)
             .predictedCounts(ImmutableSet.copyOf(concat(item.test().eventFrames())).size())
             .actualCounts(ImmutableSet.copyOf(concat(item.key().eventFrames())).size())
             .linkingArgCounts(args.size())
+//            .fMeasuresPerEvent(<immutable_map_here>)
             .build();
       }
     };
@@ -156,6 +164,8 @@ final class LinkingInspector implements
     abstract int actualCounts();
 
     abstract int linkingArgCounts();
+
+    abstract ImmutableMap<Symbol, ExplicitFMeasureInfo> fMeasuresPerEvent();
 
     public static class Builder extends ImmutableLinkingScoreDocRecord.Builder {
 
