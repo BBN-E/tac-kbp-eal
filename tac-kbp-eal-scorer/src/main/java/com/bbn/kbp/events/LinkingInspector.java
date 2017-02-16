@@ -89,11 +89,11 @@ final class LinkingInspector implements
         for (final Symbol eventType : eventTypes) {
           final Predicate<DocLevelEventArg> argPred = Predicates
               .compose(Predicates.equalTo(eventType), DocLevelEventArgFunctions.eventType());
-          mapBuilder.put(eventType, LinkF1.create().score(item.test().filterArguments(argPred),
-              item.key().filterArguments(argPred)));
+          final ExplicitFMeasureInfo countsForEvent = LinkF1.create()
+              .score(item.test().filterArguments(argPred), item.key().filterArguments(argPred));
+          mapBuilder.put(eventType, countsForEvent);
         }
         ImmutableMap<Symbol, ExplicitFMeasureInfo> eventTypeFMeasureMap = mapBuilder.build();
-
 
         return new LinkingScoreDocRecord.Builder()
             .fMeasureInfo(counts)
