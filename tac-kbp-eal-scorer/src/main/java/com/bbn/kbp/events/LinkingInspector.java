@@ -85,29 +85,26 @@ final class LinkingInspector implements
             .toSet();
 
         // create mapping of f-scores and counts per event-type
-        ImmutableMap.Builder<Symbol, ExplicitFMeasureInfo> fMeasureInfoPerEventB = ImmutableMap.builder();
-        ImmutableMap.Builder<Symbol, Integer> predictedCountsPerEventTypeB = ImmutableMap.builder();
-        ImmutableMap.Builder<Symbol, Integer> actualCountsPerEventTypeB = ImmutableMap.builder();
-        ImmutableMap.Builder<Symbol, Integer> linkingArgCountsPerEventTypeB = ImmutableMap.builder();
+        ImmutableMap.Builder<Symbol, PerEventLinkingScoreDocRecord> recordsPerEventB = ImmutableMap.builder();
         for (final Symbol eventType : eventTypes) {
+
           final Predicate<DocLevelEventArg> argPred = Predicates
               .compose(Predicates.equalTo(eventType), DocLevelEventArgFunctions.eventType());
           DocLevelArgLinking filteredKey = item.key().filterArguments(argPred);
           DocLevelArgLinking filteredTest = item.test().filterArguments(argPred);
 
-          final ExplicitFMeasureInfo fMeasureForEvent = LinkF1.create().score(filteredTest, filteredKey);
-          fMeasureInfoPerEventB.put(eventType, fMeasureForEvent);
-
-          final int predictedCountForEvent = filteredTest.eventFrames().size();
-          predictedCountsPerEventTypeB.put(eventType, predictedCountForEvent);
-
-          final int actualCountForEvent = filteredKey.eventFrames().size();
-          actualCountsPerEventTypeB.put(eventType, actualCountForEvent);
-
+          final ExplicitFMeasureInfo countsForEvent = LinkF1.create().score(filteredTest, filteredKey);
           final ImmutableSet<DocLevelEventArg> argsForEvent = ImmutableSet.copyOf(concat(
               transform(concat(filteredTest.eventFrames(), filteredKey.eventFrames()),
                   ScoringEventFrameFunctions.arguments())));
-          linkingArgCountsPerEventTypeB.put(eventType, argsForEvent.size());
+          PerEventLinkingScoreDocRecord recordForEvent = new PerEventLinkingScoreDocRecord.Builder()
+              .fMeasureInfo(countsForEvent)
+              .predictedCounts(ImmutableSet.copyOf(concat(filteredTest.eventFrames())).size())
+              .actualCounts(ImmutableSet.copyOf(concat(filteredKey.eventFrames())).size())
+              .linkingArgCounts(argsForEvent.size())
+              .build();
+
+          recordsPerEventB.put(eventType, recordForEvent);
         }
 
         return new LinkingScoreDocRecord.Builder()
@@ -115,10 +112,7 @@ final class LinkingInspector implements
             .predictedCounts(ImmutableSet.copyOf(concat(item.test().eventFrames())).size())
             .actualCounts(ImmutableSet.copyOf(concat(item.key().eventFrames())).size())
             .linkingArgCounts(args.size())
-            .fMeasureInfoPerEvent(fMeasureInfoPerEventB.build())
-            .predictedCountsPerEvent(predictedCountsPerEventTypeB.build())
-            .actualCountsPerEvent(actualCountsPerEventTypeB.build())
-            .linkingArgCountsPerEvent(linkingArgCountsPerEventTypeB.build())
+            .recordsPerEvent(recordsPerEventB.build())
             .build();
       }
     };
@@ -180,7 +174,7 @@ final class LinkingInspector implements
             // get all event-types that occurred in all docs (i.e. an aggregate event-type set)
             ImmutableSet.Builder<Symbol> eventTypesB = ImmutableSet.builder();
             for (final LinkingScoreDocRecord docRecord : collection) {
-              eventTypesB.addAll(docRecord.fMeasureInfoPerEvent().keySet());
+              eventTypesB.addAll(docRecord.recordsPerEvent().keySet());
             }
             ImmutableSet<Symbol> eventTypes = eventTypesB.build();
 
@@ -191,15 +185,11 @@ final class LinkingInspector implements
               f1 = 0;
               linkNormalizerSum = 0;
               for (final LinkingScoreDocRecord docRecord : collection) {
-                ExplicitFMeasureInfo info = docRecord.fMeasureInfoPerEvent().get(eventType);
-                int predictedCounts = docRecord.predictedCountsPerEvent().get(eventType);
-                int actualCounts = docRecord.actualCountsPerEvent().get(eventType);
-                int linkingArgCounts = docRecord.linkingArgCountsPerEvent().get(eventType);
-
-                precision += info.precision() * predictedCounts;
-                recall += info.recall() * actualCounts;
-                f1 += info.f1() * actualCounts;
-                linkNormalizerSum += linkingArgCounts;
+                PerEventLinkingScoreDocRecord record = docRecord.recordsPerEvent().get(eventType);
+                precision += record.fMeasureInfo().precision() * record.predictedCounts();
+                recall += record.fMeasureInfo().recall() * record.actualCounts();
+                f1 += record.fMeasureInfo().f1() * record.linkingArgCounts();
+                linkNormalizerSum += record.linkingArgCounts();
               }
               // TODO: put into f1sPerEventTypeB, precisionsPerEventTypeB, recallsPerEventTypeB here
             }
@@ -224,17 +214,35 @@ final class LinkingInspector implements
   abstract static class LinkingScoreDocRecord {
 
     abstract ExplicitFMeasureInfo fMeasureInfo();
+
     abstract int predictedCounts();
+
     abstract int actualCounts();
+
     abstract int linkingArgCounts();
 
-    abstract ImmutableMap<Symbol, ExplicitFMeasureInfo> fMeasureInfoPerEvent();
-    abstract ImmutableMap<Symbol, Integer> predictedCountsPerEvent();
-    abstract ImmutableMap<Symbol, Integer> actualCountsPerEvent();
-    abstract ImmutableMap<Symbol, Integer> linkingArgCountsPerEvent();
+    abstract ImmutableMap<Symbol, PerEventLinkingScoreDocRecord> recordsPerEvent();
 
     public static class Builder extends ImmutableLinkingScoreDocRecord.Builder {
 
     }
   }
+
+  @TextGroupImmutable
+  @Value.Immutable
+  abstract static class PerEventLinkingScoreDocRecord {
+
+    abstract ExplicitFMeasureInfo fMeasureInfo();
+
+    abstract int predictedCounts();
+
+    abstract int actualCounts();
+
+    abstract int linkingArgCounts();
+
+    public static class Builder extends ImmutablePerEventLinkingScoreDocRecord.Builder {
+
+    }
+  }
+
 }
