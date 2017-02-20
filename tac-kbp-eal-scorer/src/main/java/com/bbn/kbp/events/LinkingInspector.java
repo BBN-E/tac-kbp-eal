@@ -185,11 +185,13 @@ final class LinkingInspector implements
               f1 = 0;
               linkNormalizerSum = 0;
               for (final LinkingScoreDocRecord docRecord : collection) {
-                PerEventLinkingScoreDocRecord record = docRecord.recordsPerEvent().get(eventType);
-                precision += record.fMeasureInfo().precision() * record.predictedCounts();
-                recall += record.fMeasureInfo().recall() * record.actualCounts();
-                f1 += record.fMeasureInfo().f1() * record.linkingArgCounts();
-                linkNormalizerSum += record.linkingArgCounts();
+                if (docRecord.recordsPerEvent().containsKey(eventType)) {
+                  final PerEventLinkingScoreDocRecord record = docRecord.recordsPerEvent().get(eventType);
+                  precision += record.fMeasureInfo().precision() * record.predictedCounts();
+                  recall += record.fMeasureInfo().recall() * record.actualCounts();
+                  f1 += record.fMeasureInfo().f1() * record.linkingArgCounts();
+                  linkNormalizerSum += record.linkingArgCounts();
+                }
               }
               // TODO: put into f1sPerEventTypeB, precisionsPerEventTypeB, recallsPerEventTypeB here
             }
