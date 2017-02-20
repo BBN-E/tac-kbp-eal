@@ -84,7 +84,7 @@ final class LinkingInspector implements
             .transform(ScoringEventFrameFunctions.eventType())
             .toSet();
 
-        // creating mapping of f-scores per event-type
+        // create mapping of f-scores per event-type
         ImmutableMap.Builder<Symbol, ExplicitFMeasureInfo> mapBuilder = new ImmutableMap.Builder<>();
         for (final Symbol eventType : eventTypes) {
           final Predicate<DocLevelEventArg> argPred = Predicates
