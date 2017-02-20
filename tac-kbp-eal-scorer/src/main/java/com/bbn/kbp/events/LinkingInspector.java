@@ -148,10 +148,8 @@ final class LinkingInspector implements
 
             // the normalizer sum can't actually be negative here, but this minimizes divergence with the source logic.
             f1sB.put("Aggregate", (linkNormalizerSum > 0.0) ? f1 / linkNormalizerSum : 0.0);
-            precisionsB.put("Aggregate",
-                (linkNormalizerSum > 0.0) ? precision / linkNormalizerSum : 0.0);
-            recallsB
-                .put("Aggregate", (linkNormalizerSum > 0.0) ? recall / linkNormalizerSum : 0.0);
+            precisionsB.put("Aggregate", (linkNormalizerSum > 0.0) ? precision / linkNormalizerSum : 0.0);
+            recallsB.put("Aggregate", (linkNormalizerSum > 0.0) ? recall / linkNormalizerSum : 0.0);
           }
 
           //@Override
