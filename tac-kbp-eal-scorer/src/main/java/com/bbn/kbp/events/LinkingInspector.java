@@ -52,69 +52,77 @@ final class LinkingInspector implements
       @Override
       public DocLevelLinkingScoring summarizeObservation(
           final EvalPair<DocLevelArgLinking, DocLevelArgLinking> item) {
+
+        final Symbol keyDocId = item.key().docID();
+        final Symbol testDocId = item.test().docID();
+
         checkArgument(ImmutableSet.copyOf(concat(item.key())).containsAll(
             ImmutableSet.copyOf(concat(item.test()))), "Must contain only answers in test set!");
-        if (!item.key().docID().equalTo(item.test().docID())) {
-          log.warn("DocIDs do not match: {} vs {}", item.key().docID(), item.test().docID());
+        if (!keyDocId.equalTo(testDocId)) {
+          log.warn("DocIDs do not match: {} vs {}", keyDocId, testDocId);
         }
 
-        final ExplicitFMeasureInfo counts = LinkF1.create().score(item.test(), item.key());
+        final LinkingScoreDocRecord.Builder linkingScoreDocRecordB =
+            new LinkingScoreDocRecord.Builder();
+        final ImmutableMap.Builder<Symbol, LinkingScoreDocRecord> recordsPerEventB =
+            ImmutableMap.builder();
 
-        final Symbol docid = item.key().docID();
+        // for all events
+        {
+          final ExplicitFMeasureInfo counts = LinkF1.create().score(item.test(), item.key());
 
-        final File docOutput = new File(outputDir, docid.asString());
-        docOutput.mkdirs();
-        final PrintWriter outputWriter;
-        try {
-          outputWriter = new PrintWriter(new File(docOutput, "linkingF.txt"));
-          outputWriter.println(counts.toString());
-          outputWriter.close();
-        } catch (FileNotFoundException e) {
-          throw new TACKBPEALException(e);
-        }
+          final File docOutput = new File(outputDir, keyDocId.asString());
+          docOutput.mkdirs();
+          final PrintWriter outputWriter;
+          try {
+            outputWriter = new PrintWriter(new File(docOutput, "linkingF.txt"));
+            outputWriter.println(counts.toString());
+            outputWriter.close();
+          } catch (FileNotFoundException e) {
+            throw new TACKBPEALException(e);
+          }
 
-        final ImmutableSet<DocLevelEventArg> args = ImmutableSet.copyOf(concat(
-            transform(concat(item.test().eventFrames(), item.key().eventFrames()),
-                ScoringEventFrameFunctions.arguments())));
-
-        LinkingScoreDocRecord.Builder linkingScoreDocRecordB = new LinkingScoreDocRecord.Builder()
-            .fMeasureInfo(counts)
-            .predictedCounts(ImmutableSet.copyOf(concat(item.test().eventFrames())).size())
-            .actualCounts(ImmutableSet.copyOf(concat(item.key().eventFrames())).size())
-            .linkingArgCounts(args.size());
-
-        /*======================================= PER EVENT ======================================*/
-
-        // set of all event-types found in the doc
-        final ImmutableSet<Symbol> eventTypes =  FluentIterable
-            .from(item.test().eventFrames())
-            .append(item.key().eventFrames())
-            .transform(ScoringEventFrameFunctions.eventType())
-            .toSet();
-
-        // create mapping of f-scores and counts per event-type
-        ImmutableMap.Builder<Symbol, LinkingScoreDocRecord> recordsPerEventB = ImmutableMap.builder();
-        for (final Symbol eventType : eventTypes) {
-
-          final Predicate<DocLevelEventArg> argPred = Predicates
-              .compose(Predicates.equalTo(eventType), DocLevelEventArgFunctions.eventType());
-          DocLevelArgLinking filteredKey = item.key().filterArguments(argPred);
-          DocLevelArgLinking filteredTest = item.test().filterArguments(argPred);
-
-          final ExplicitFMeasureInfo countsForEvent = LinkF1.create().score(filteredTest, filteredKey);
-          final ImmutableSet<DocLevelEventArg> argsForEvent = ImmutableSet.copyOf(concat(
-              transform(concat(filteredTest.eventFrames(), filteredKey.eventFrames()),
+          final ImmutableSet<DocLevelEventArg> args = ImmutableSet.copyOf(concat(
+              transform(concat(item.test().eventFrames(), item.key().eventFrames()),
                   ScoringEventFrameFunctions.arguments())));
-          LinkingScoreDocRecord recordForEvent = new LinkingScoreDocRecord.Builder()
-              .fMeasureInfo(countsForEvent)
-              .predictedCounts(ImmutableSet.copyOf(concat(filteredTest.eventFrames())).size())
-              .actualCounts(ImmutableSet.copyOf(concat(filteredKey.eventFrames())).size())
-              .linkingArgCounts(argsForEvent.size())
-              .build();
 
-          recordsPerEventB.put(eventType, recordForEvent);
+          linkingScoreDocRecordB.fMeasureInfo(counts)
+              .predictedCounts(ImmutableSet.copyOf(concat(item.test().eventFrames())).size())
+              .actualCounts(ImmutableSet.copyOf(concat(item.key().eventFrames())).size())
+              .linkingArgCounts(args.size());
         }
+        // per event
+        {
+          // set of all event-types found in the doc
+          final ImmutableSet<Symbol> eventTypes = FluentIterable
+              .from(item.test().eventFrames())
+              .append(item.key().eventFrames())
+              .transform(ScoringEventFrameFunctions.eventType())
+              .toSet();
 
+          // create mapping of f-scores and counts per event-type
+          for (final Symbol eventType : eventTypes) {
+
+            final Predicate<DocLevelEventArg> argPred = Predicates
+                .compose(Predicates.equalTo(eventType), DocLevelEventArgFunctions.eventType());
+            DocLevelArgLinking filteredKey = item.key().filterArguments(argPred);
+            DocLevelArgLinking filteredTest = item.test().filterArguments(argPred);
+
+            final ExplicitFMeasureInfo countsForEventType =
+                LinkF1.create().score(filteredTest, filteredKey);
+            final ImmutableSet<DocLevelEventArg> argsForEventType = ImmutableSet.copyOf(concat(
+                transform(concat(filteredTest.eventFrames(), filteredKey.eventFrames()),
+                    ScoringEventFrameFunctions.arguments())));
+            final LinkingScoreDocRecord recordForEventType = new LinkingScoreDocRecord.Builder()
+                .fMeasureInfo(countsForEventType)
+                .predictedCounts(ImmutableSet.copyOf(concat(filteredTest.eventFrames())).size())
+                .actualCounts(ImmutableSet.copyOf(concat(filteredKey.eventFrames())).size())
+                .linkingArgCounts(argsForEventType.size())
+                .build();
+
+            recordsPerEventB.put(eventType, recordForEventType);
+          }
+        }
         return new DocLevelLinkingScoring.Builder()
             .linkingScoreDocRecord(linkingScoreDocRecordB.build())
             .docRecordsPerEventType(recordsPerEventB.build())
@@ -128,18 +136,10 @@ final class LinkingInspector implements
     return ImmutableList.<BootstrapInspector.SummaryAggregator<DocLevelLinkingScoring>>of(
         new BootstrapInspector.SummaryAggregator<DocLevelLinkingScoring>() {
 
-          private final ImmutableListMultimap.Builder<String, Double> f1sB =
-              ImmutableListMultimap.builder();
-          private final ImmutableListMultimap.Builder<String, Double> precisionsB =
-              ImmutableListMultimap.builder();
-          private final ImmutableListMultimap.Builder<String, Double> recallsB =
-              ImmutableListMultimap.builder();
-          private final ImmutableListMultimap.Builder<Symbol, ImmutableListMultimap<String, Double>>
-              f1sPerEventTypeB = ImmutableListMultimap.builder();
-          private final ImmutableListMultimap.Builder<Symbol, ImmutableListMultimap<String, Double>>
-              precisionsPerEventTypeB = ImmutableListMultimap.builder();
-          private final ImmutableListMultimap.Builder<Symbol, ImmutableListMultimap<String, Double>>
-              recallsPerEventTypeB = ImmutableListMultimap.builder();
+          private final AggregateLinkingScoreRecord.Builder aggregateRecordB =
+              new AggregateLinkingScoreRecord.Builder();
+          private final ImmutableListMultimap.Builder<Symbol, AggregateLinkingScoreRecord>
+              aggregateRecordsPerEventB = ImmutableListMultimap.builder();
 
           private static final String F1 = "F1";
           private static final String PRECISION = "Precision";
@@ -157,62 +157,98 @@ final class LinkingInspector implements
               final Collection<DocLevelLinkingScoring> collection) {
             // copies logic from com.bbn.kbp.events2014.scorer.bin.AggregateResultWriter.computeLinkScores()
 
-            double precision = 0;
-            double recall = 0;
-            double f1 = 0;
-            double linkNormalizerSum = 0;
+            // for all event types
+            {
+              double precision = 0.0;
+              double recall = 0.0;
+              double f1 = 0.0;
+              double linkNormalizerSum = 0.0;
 
-            for (final DocLevelLinkingScoring linkingScoring : collection) {
-              LinkingScoreDocRecord docRecord = linkingScoring.linkingScoreDocRecord();
-              precision += docRecord.fMeasureInfo().precision() * docRecord.predictedCounts();
-              recall += docRecord.fMeasureInfo().recall() * docRecord.actualCounts();
-              f1 += docRecord.fMeasureInfo().f1() * docRecord.actualCounts();
-              linkNormalizerSum += docRecord.linkingArgCounts();
-            }
+              final ImmutableListMultimap.Builder<String, Double> f1sB =
+                  ImmutableListMultimap.builder();
+              final ImmutableListMultimap.Builder<String, Double> precisionsB =
+                  ImmutableListMultimap.builder();
+              final ImmutableListMultimap.Builder<String, Double> recallsB =
+                  ImmutableListMultimap.builder();
 
-            // the normalizer sum can't actually be negative here, but this minimizes divergence with the source logic.
-            f1sB.put("Aggregate", (linkNormalizerSum > 0.0) ? f1 / linkNormalizerSum : 0.0);
-            precisionsB.put("Aggregate", (linkNormalizerSum > 0.0) ? precision / linkNormalizerSum : 0.0);
-            recallsB.put("Aggregate", (linkNormalizerSum > 0.0) ? recall / linkNormalizerSum : 0.0);
-
-            /*===================================== PER EVENT ====================================*/
-
-            // get all event-types that occurred in all docs (i.e. an aggregate event-type set)
-            ImmutableSet.Builder<Symbol> eventTypesB = ImmutableSet.builder();
-            for (final DocLevelLinkingScoring linkingScoring : collection) {
-              eventTypesB.addAll(linkingScoring.docRecordsPerEventType().keySet());
-            }
-            ImmutableSet<Symbol> eventTypes = eventTypesB.build();
-
-            // get aggregate f-measure info for each event-type
-            for (Symbol eventType : eventTypes) {
-              precision = 0;
-              recall = 0;
-              f1 = 0;
-              linkNormalizerSum = 0;
               for (final DocLevelLinkingScoring linkingScoring : collection) {
-                if (linkingScoring.docRecordsPerEventType().containsKey(eventType)) {
-                  final LinkingScoreDocRecord record =
-                      linkingScoring.docRecordsPerEventType().get(eventType);
-                  precision += record.fMeasureInfo().precision() * record.predictedCounts();
-                  recall += record.fMeasureInfo().recall() * record.actualCounts();
-                  f1 += record.fMeasureInfo().f1() * record.linkingArgCounts();
-                  linkNormalizerSum += record.linkingArgCounts();
-                }
+                LinkingScoreDocRecord docRecord = linkingScoring.linkingScoreDocRecord();
+                precision += docRecord.fMeasureInfo().precision() * docRecord.predictedCounts();
+                recall += docRecord.fMeasureInfo().recall() * docRecord.actualCounts();
+                f1 += docRecord.fMeasureInfo().f1() * docRecord.actualCounts();
+                linkNormalizerSum += docRecord.linkingArgCounts();
               }
-              // TODO: put into f1sPerEventTypeB, precisionsPerEventTypeB, recallsPerEventTypeB here
+
+              // the normalizer sum can't actually be negative here, but this minimizes divergence with the source logic.
+              f1sB.put("Aggregate", (linkNormalizerSum > 0.0) ? f1 / linkNormalizerSum : 0.0);
+              precisionsB.put("Aggregate", (linkNormalizerSum > 0.0) ? precision / linkNormalizerSum : 0.0);
+              recallsB.put("Aggregate", (linkNormalizerSum > 0.0) ? recall / linkNormalizerSum : 0.0);
+
+              aggregateRecordB.f1s(f1sB.build()).precisions(precisionsB.build())
+                  .recalls(recallsB.build());
+            }
+            // per event type
+            {
+              // get all event-types that occurred in all docs (i.e. an aggregate event-type set)
+              final ImmutableSet.Builder<Symbol> eventTypesB = ImmutableSet.builder();
+              for (final DocLevelLinkingScoring linkingScoring : collection) {
+                eventTypesB.addAll(linkingScoring.docRecordsPerEventType().keySet());
+              }
+              final ImmutableSet<Symbol> eventTypes = eventTypesB.build();
+
+              // get aggregate f-measure info for each event-type
+              for (final Symbol eventType : eventTypes) {
+
+                double precision = 0.0;
+                double recall = 0.0;
+                double f1 = 0.0;
+                double linkNormalizerSum = 0.0;
+
+                final ImmutableListMultimap.Builder<String, Double> f1sB =
+                    ImmutableListMultimap.builder();
+                final ImmutableListMultimap.Builder<String, Double> precisionsB =
+                    ImmutableListMultimap.builder();
+                final ImmutableListMultimap.Builder<String, Double> recallsB =
+                    ImmutableListMultimap.builder();
+
+                for (final DocLevelLinkingScoring linkingScoring : collection) {
+                  if (linkingScoring.docRecordsPerEventType().containsKey(eventType)) {
+                    final LinkingScoreDocRecord record =
+                        linkingScoring.docRecordsPerEventType().get(eventType);
+                    precision += record.fMeasureInfo().precision() * record.predictedCounts();
+                    recall += record.fMeasureInfo().recall() * record.actualCounts();
+                    f1 += record.fMeasureInfo().f1() * record.linkingArgCounts();
+                    linkNormalizerSum += record.linkingArgCounts();
+                  }
+                }
+
+                f1sB.put("Aggregate", (linkNormalizerSum > 0.0) ? f1 / linkNormalizerSum : 0.0);
+                precisionsB.put("Aggregate", (linkNormalizerSum > 0.0) ? precision / linkNormalizerSum : 0.0);
+                recallsB.put("Aggregate", (linkNormalizerSum > 0.0) ? recall / linkNormalizerSum : 0.0);
+
+                final AggregateLinkingScoreRecord aggregateRecordForEventType = new AggregateLinkingScoreRecord.Builder()
+                    .f1s(f1sB.build()).precisions(precisionsB.build()).recalls(recallsB.build()).build();
+
+                aggregateRecordsPerEventB.put(eventType, aggregateRecordForEventType);
+              }
+
             }
           }
 
           //@Override
           public void finish() throws IOException {
+            // for all events
+            final AggregateLinkingScoreRecord aggregateRecord = aggregateRecordB.build();
             writer.writeBootstrapData("linkScores",
                 ImmutableMap.of(
-                    F1, f1sB.build(),
-                    PRECISION, precisionsB.build(),
-                    RECALL, recallsB.build()
+                    F1, aggregateRecord.f1s(),
+                    PRECISION, aggregateRecord.precisions(),
+                    RECALL, aggregateRecord.recalls()
                 ),
                 new File(outputDir, "linkScores"));
+
+            // per event
+            final ImmutableListMultimap aggregateRecordsPerEvent = aggregateRecordsPerEventB.build();
             // TODO: write-out per event-type
           }
         });
@@ -248,4 +284,18 @@ final class LinkingInspector implements
     }
   }
 
+  @TextGroupImmutable
+  @Value.Immutable
+  abstract static class AggregateLinkingScoreRecord {
+
+    abstract  ImmutableListMultimap<String, Double> f1s();
+
+    abstract ImmutableListMultimap<String, Double> precisions();
+
+    abstract ImmutableListMultimap<String, Double> recalls();
+
+    public static class Builder extends ImmutableAggregateLinkingScoreRecord.Builder {
+
+    }
+  }
 }
