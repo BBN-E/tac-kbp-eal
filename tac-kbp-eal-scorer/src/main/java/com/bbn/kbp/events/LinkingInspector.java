@@ -33,7 +33,7 @@ import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Iterables.transform;
 
 final class LinkingInspector implements
-    BootstrapInspector.BootstrapStrategy<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, LinkingInspector.LinkingScoreDocRecord> {
+    BootstrapInspector.BootstrapStrategy<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, LinkingInspector.DocLevelLinkingScoring> {
   private static final Logger log = LoggerFactory.getLogger(LinkingInspector.class);
 
   private final File outputDir;
@@ -47,10 +47,10 @@ final class LinkingInspector implements
   }
 
   @Override
-  public BootstrapInspector.ObservationSummarizer<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, LinkingScoreDocRecord> createObservationSummarizer() {
-    return new BootstrapInspector.ObservationSummarizer<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, LinkingScoreDocRecord>() {
+  public BootstrapInspector.ObservationSummarizer<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, DocLevelLinkingScoring> createObservationSummarizer() {
+    return new BootstrapInspector.ObservationSummarizer<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, DocLevelLinkingScoring>() {
       @Override
-      public LinkingScoreDocRecord summarizeObservation(
+      public DocLevelLinkingScoring summarizeObservation(
           final EvalPair<DocLevelArgLinking, DocLevelArgLinking> item) {
         checkArgument(ImmutableSet.copyOf(concat(item.key())).containsAll(
             ImmutableSet.copyOf(concat(item.test()))), "Must contain only answers in test set!");
@@ -77,6 +77,14 @@ final class LinkingInspector implements
             transform(concat(item.test().eventFrames(), item.key().eventFrames()),
                 ScoringEventFrameFunctions.arguments())));
 
+        LinkingScoreDocRecord.Builder linkingScoreDocRecordB = new LinkingScoreDocRecord.Builder()
+            .fMeasureInfo(counts)
+            .predictedCounts(ImmutableSet.copyOf(concat(item.test().eventFrames())).size())
+            .actualCounts(ImmutableSet.copyOf(concat(item.key().eventFrames())).size())
+            .linkingArgCounts(args.size());
+
+        /*======================================= PER EVENT ======================================*/
+
         // set of all event-types found in the doc
         final ImmutableSet<Symbol> eventTypes =  FluentIterable
             .from(item.test().eventFrames())
@@ -85,7 +93,7 @@ final class LinkingInspector implements
             .toSet();
 
         // create mapping of f-scores and counts per event-type
-        ImmutableMap.Builder<Symbol, PerEventLinkingScoreDocRecord> recordsPerEventB = ImmutableMap.builder();
+        ImmutableMap.Builder<Symbol, LinkingScoreDocRecord> recordsPerEventB = ImmutableMap.builder();
         for (final Symbol eventType : eventTypes) {
 
           final Predicate<DocLevelEventArg> argPred = Predicates
@@ -97,7 +105,7 @@ final class LinkingInspector implements
           final ImmutableSet<DocLevelEventArg> argsForEvent = ImmutableSet.copyOf(concat(
               transform(concat(filteredTest.eventFrames(), filteredKey.eventFrames()),
                   ScoringEventFrameFunctions.arguments())));
-          PerEventLinkingScoreDocRecord recordForEvent = new PerEventLinkingScoreDocRecord.Builder()
+          LinkingScoreDocRecord recordForEvent = new LinkingScoreDocRecord.Builder()
               .fMeasureInfo(countsForEvent)
               .predictedCounts(ImmutableSet.copyOf(concat(filteredTest.eventFrames())).size())
               .actualCounts(ImmutableSet.copyOf(concat(filteredKey.eventFrames())).size())
@@ -107,21 +115,18 @@ final class LinkingInspector implements
           recordsPerEventB.put(eventType, recordForEvent);
         }
 
-        return new LinkingScoreDocRecord.Builder()
-            .fMeasureInfo(counts)
-            .predictedCounts(ImmutableSet.copyOf(concat(item.test().eventFrames())).size())
-            .actualCounts(ImmutableSet.copyOf(concat(item.key().eventFrames())).size())
-            .linkingArgCounts(args.size())
-            .recordsPerEvent(recordsPerEventB.build())
+        return new DocLevelLinkingScoring.Builder()
+            .linkingScoreDocRecord(linkingScoreDocRecordB.build())
+            .docRecordsPerEventType(recordsPerEventB.build())
             .build();
       }
     };
   }
 
   @Override
-  public Collection<BootstrapInspector.SummaryAggregator<LinkingScoreDocRecord>> createSummaryAggregators() {
-    return ImmutableList.<BootstrapInspector.SummaryAggregator<LinkingScoreDocRecord>>of(
-        new BootstrapInspector.SummaryAggregator<LinkingScoreDocRecord>() {
+  public Collection<BootstrapInspector.SummaryAggregator<DocLevelLinkingScoring>> createSummaryAggregators() {
+    return ImmutableList.<BootstrapInspector.SummaryAggregator<DocLevelLinkingScoring>>of(
+        new BootstrapInspector.SummaryAggregator<DocLevelLinkingScoring>() {
 
           private final ImmutableListMultimap.Builder<String, Double> f1sB =
               ImmutableListMultimap.builder();
@@ -149,7 +154,7 @@ final class LinkingInspector implements
 
           @Override
           public void observeSample(
-              final Collection<LinkingScoreDocRecord> collection) {
+              final Collection<DocLevelLinkingScoring> collection) {
             // copies logic from com.bbn.kbp.events2014.scorer.bin.AggregateResultWriter.computeLinkScores()
 
             double precision = 0;
@@ -157,7 +162,8 @@ final class LinkingInspector implements
             double f1 = 0;
             double linkNormalizerSum = 0;
 
-            for (final LinkingScoreDocRecord docRecord : collection) {
+            for (final DocLevelLinkingScoring linkingScoring : collection) {
+              LinkingScoreDocRecord docRecord = linkingScoring.linkingScoreDocRecord();
               precision += docRecord.fMeasureInfo().precision() * docRecord.predictedCounts();
               recall += docRecord.fMeasureInfo().recall() * docRecord.actualCounts();
               f1 += docRecord.fMeasureInfo().f1() * docRecord.actualCounts();
@@ -173,8 +179,8 @@ final class LinkingInspector implements
 
             // get all event-types that occurred in all docs (i.e. an aggregate event-type set)
             ImmutableSet.Builder<Symbol> eventTypesB = ImmutableSet.builder();
-            for (final LinkingScoreDocRecord docRecord : collection) {
-              eventTypesB.addAll(docRecord.recordsPerEvent().keySet());
+            for (final DocLevelLinkingScoring linkingScoring : collection) {
+              eventTypesB.addAll(linkingScoring.docRecordsPerEventType().keySet());
             }
             ImmutableSet<Symbol> eventTypes = eventTypesB.build();
 
@@ -184,9 +190,10 @@ final class LinkingInspector implements
               recall = 0;
               f1 = 0;
               linkNormalizerSum = 0;
-              for (final LinkingScoreDocRecord docRecord : collection) {
-                if (docRecord.recordsPerEvent().containsKey(eventType)) {
-                  final PerEventLinkingScoreDocRecord record = docRecord.recordsPerEvent().get(eventType);
+              for (final DocLevelLinkingScoring linkingScoring : collection) {
+                if (linkingScoring.docRecordsPerEventType().containsKey(eventType)) {
+                  final LinkingScoreDocRecord record =
+                      linkingScoring.docRecordsPerEventType().get(eventType);
                   precision += record.fMeasureInfo().precision() * record.predictedCounts();
                   recall += record.fMeasureInfo().recall() * record.actualCounts();
                   f1 += record.fMeasureInfo().f1() * record.linkingArgCounts();
@@ -213,6 +220,19 @@ final class LinkingInspector implements
 
   @TextGroupImmutable
   @Value.Immutable
+  abstract static class DocLevelLinkingScoring {
+
+    abstract LinkingScoreDocRecord linkingScoreDocRecord();
+
+    abstract ImmutableMap<Symbol, LinkingScoreDocRecord> docRecordsPerEventType();
+
+    public static class Builder extends ImmutableDocLevelLinkingScoring.Builder {
+
+    }
+  }
+
+  @TextGroupImmutable
+  @Value.Immutable
   abstract static class LinkingScoreDocRecord {
 
     abstract ExplicitFMeasureInfo fMeasureInfo();
@@ -223,26 +243,7 @@ final class LinkingInspector implements
 
     abstract int linkingArgCounts();
 
-    abstract ImmutableMap<Symbol, PerEventLinkingScoreDocRecord> recordsPerEvent();
-
     public static class Builder extends ImmutableLinkingScoreDocRecord.Builder {
-
-    }
-  }
-
-  @TextGroupImmutable
-  @Value.Immutable
-  abstract static class PerEventLinkingScoreDocRecord {
-
-    abstract ExplicitFMeasureInfo fMeasureInfo();
-
-    abstract int predictedCounts();
-
-    abstract int actualCounts();
-
-    abstract int linkingArgCounts();
-
-    public static class Builder extends ImmutablePerEventLinkingScoreDocRecord.Builder {
 
     }
   }
