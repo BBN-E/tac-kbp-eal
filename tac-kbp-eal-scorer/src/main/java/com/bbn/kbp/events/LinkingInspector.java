@@ -139,7 +139,7 @@ final class LinkingInspector implements
           private final AggregateLinkingScoreRecord.Builder aggregateRecordB =
               new AggregateLinkingScoreRecord.Builder();
           private final ImmutableMap.Builder<Symbol, AggregateLinkingScoreRecord>
-              aggregateRecordsPerEventB = ImmutableMap.builder();
+              aggregateRecordsPerEventTypeB = ImmutableMap.builder();
 
           private static final String F1 = "F1";
           private static final String PRECISION = "Precision";
@@ -155,37 +155,14 @@ final class LinkingInspector implements
           @Override
           public void observeSample(
               final Collection<DocLevelLinkingScoring> collection) {
-            // copies logic from com.bbn.kbp.events2014.scorer.bin.AggregateResultWriter.computeLinkScores()
 
             // for all event types
             {
-              double precision = 0.0;
-              double recall = 0.0;
-              double f1 = 0.0;
-              double linkNormalizerSum = 0.0;
-
-              final ImmutableListMultimap.Builder<String, Double> f1sB =
-                  ImmutableListMultimap.builder();
-              final ImmutableListMultimap.Builder<String, Double> precisionsB =
-                  ImmutableListMultimap.builder();
-              final ImmutableListMultimap.Builder<String, Double> recallsB =
-                  ImmutableListMultimap.builder();
-
+              final ImmutableList.Builder<LinkingScoreDocRecord> docRecordsB = ImmutableList.builder();
               for (final DocLevelLinkingScoring linkingScoring : collection) {
-                final LinkingScoreDocRecord docRecord = linkingScoring.linkingScoreDocRecord();
-                precision += docRecord.fMeasureInfo().precision() * docRecord.predictedCounts();
-                recall += docRecord.fMeasureInfo().recall() * docRecord.actualCounts();
-                f1 += docRecord.fMeasureInfo().f1() * docRecord.actualCounts();
-                linkNormalizerSum += docRecord.linkingArgCounts();
+                docRecordsB.add(linkingScoring.linkingScoreDocRecord());
               }
-
-              // the normalizer sum can't actually be negative here, but this minimizes divergence with the source logic.
-              f1sB.put("Aggregate", (linkNormalizerSum > 0.0) ? f1 / linkNormalizerSum : 0.0);
-              precisionsB.put("Aggregate", (linkNormalizerSum > 0.0) ? precision / linkNormalizerSum : 0.0);
-              recallsB.put("Aggregate", (linkNormalizerSum > 0.0) ? recall / linkNormalizerSum : 0.0);
-
-              aggregateRecordB.f1s(f1sB.build()).precisions(precisionsB.build())
-                  .recalls(recallsB.build());
+              aggregateRecordB.from(aggregateScores(docRecordsB.build()));
             }
             // per event type
             {
@@ -198,40 +175,16 @@ final class LinkingInspector implements
 
               // get aggregate f-measure info for each event-type
               for (final Symbol eventType : eventTypes) {
-
-                double precision = 0.0;
-                double recall = 0.0;
-                double f1 = 0.0;
-                double linkNormalizerSum = 0.0;
-
-                final ImmutableListMultimap.Builder<String, Double> f1sB =
-                    ImmutableListMultimap.builder();
-                final ImmutableListMultimap.Builder<String, Double> precisionsB =
-                    ImmutableListMultimap.builder();
-                final ImmutableListMultimap.Builder<String, Double> recallsB =
-                    ImmutableListMultimap.builder();
-
+                final ImmutableList.Builder<LinkingScoreDocRecord> docRecordsB = ImmutableList.builder();
                 for (final DocLevelLinkingScoring linkingScoring : collection) {
                   if (linkingScoring.docRecordsPerEventType().containsKey(eventType)) {
-                    final LinkingScoreDocRecord record =
-                        linkingScoring.docRecordsPerEventType().get(eventType);
-                    precision += record.fMeasureInfo().precision() * record.predictedCounts();
-                    recall += record.fMeasureInfo().recall() * record.actualCounts();
-                    f1 += record.fMeasureInfo().f1() * record.linkingArgCounts();
-                    linkNormalizerSum += record.linkingArgCounts();
+                    docRecordsB.add(linkingScoring.docRecordsPerEventType().get(eventType));
                   }
                 }
-
-                f1sB.put("Aggregate", (linkNormalizerSum > 0.0) ? f1 / linkNormalizerSum : 0.0);
-                precisionsB.put("Aggregate", (linkNormalizerSum > 0.0) ? precision / linkNormalizerSum : 0.0);
-                recallsB.put("Aggregate", (linkNormalizerSum > 0.0) ? recall / linkNormalizerSum : 0.0);
-
-                final AggregateLinkingScoreRecord aggregateRecordForEventType = new AggregateLinkingScoreRecord.Builder()
-                    .f1s(f1sB.build()).precisions(precisionsB.build()).recalls(recallsB.build()).build();
-
-                aggregateRecordsPerEventB.put(eventType, aggregateRecordForEventType);
+                final AggregateLinkingScoreRecord aggregateRecordForEventType =
+                    aggregateScores(docRecordsB.build());
+                aggregateRecordsPerEventTypeB.put(eventType, aggregateRecordForEventType);
               }
-
             }
           }
 
@@ -249,7 +202,7 @@ final class LinkingInspector implements
 
             // per event
             final ImmutableMap<Symbol, AggregateLinkingScoreRecord> aggregateRecordsPerEvent =
-                aggregateRecordsPerEventB.build();
+                aggregateRecordsPerEventTypeB.build();
             for (Symbol eventType : aggregateRecordsPerEvent.keySet()) {
               AggregateLinkingScoreRecord recordForEventType = aggregateRecordsPerEvent.get(eventType);
               writer.writeBootstrapData("linkScoresPerEventType/" + eventType.asString(),
@@ -260,6 +213,37 @@ final class LinkingInspector implements
                   ),
                   new File(outputDir, "linkScoresPerEventType/" + eventType.asString()));
             }
+          }
+
+          public AggregateLinkingScoreRecord aggregateScores(ImmutableList<LinkingScoreDocRecord> docRecords) {
+            // copies logic from com.bbn.kbp.events2014.scorer.bin.AggregateResultWriter.computeLinkScores()
+
+            double precision = 0.0;
+            double recall = 0.0;
+            double f1 = 0.0;
+            double linkNormalizerSum = 0.0;
+
+            final ImmutableListMultimap.Builder<String, Double> f1sB =
+                ImmutableListMultimap.builder();
+            final ImmutableListMultimap.Builder<String, Double> precisionsB =
+                ImmutableListMultimap.builder();
+            final ImmutableListMultimap.Builder<String, Double> recallsB =
+                ImmutableListMultimap.builder();
+
+            for (final LinkingScoreDocRecord docRecord : docRecords) {
+              precision += docRecord.fMeasureInfo().precision() * docRecord.predictedCounts();
+              recall += docRecord.fMeasureInfo().recall() * docRecord.actualCounts();
+              f1 += docRecord.fMeasureInfo().f1() * docRecord.actualCounts();
+              linkNormalizerSum += docRecord.linkingArgCounts();
+            }
+
+            // the normalizer sum can't actually be negative here, but this minimizes divergence with the source logic.
+            f1sB.put("Aggregate", (linkNormalizerSum > 0.0) ? f1 / linkNormalizerSum : 0.0);
+            precisionsB.put("Aggregate", (linkNormalizerSum > 0.0) ? precision / linkNormalizerSum : 0.0);
+            recallsB.put("Aggregate", (linkNormalizerSum > 0.0) ? recall / linkNormalizerSum : 0.0);
+
+            return new AggregateLinkingScoreRecord.Builder().f1s(f1sB.build())
+                .precisions(precisionsB.build()).recalls(recallsB.build()).build();
           }
         });
   }
