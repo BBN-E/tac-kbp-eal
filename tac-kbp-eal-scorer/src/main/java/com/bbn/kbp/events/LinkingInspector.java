@@ -181,9 +181,7 @@ final class LinkingInspector implements
                     docRecordsB.add(linkingScoring.docRecordsPerEventType().get(eventType));
                   }
                 }
-                final AggregateLinkingScoreRecord aggregateRecordForEventType =
-                    aggregateScores(docRecordsB.build());
-                aggregateRecordsPerEventTypeB.put(eventType, aggregateRecordForEventType);
+                aggregateRecordsPerEventTypeB.put(eventType, aggregateScores(docRecordsB.build()));
               }
             }
           }
@@ -215,7 +213,7 @@ final class LinkingInspector implements
             }
           }
 
-          public AggregateLinkingScoreRecord aggregateScores(ImmutableList<LinkingScoreDocRecord> docRecords) {
+          private AggregateLinkingScoreRecord aggregateScores(ImmutableList<LinkingScoreDocRecord> docRecords) {
             // copies logic from com.bbn.kbp.events2014.scorer.bin.AggregateResultWriter.computeLinkScores()
 
             double precision = 0.0;
