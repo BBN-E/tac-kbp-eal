@@ -138,8 +138,8 @@ final class LinkingInspector implements
 
           private final AggregateLinkingScoreRecord.Builder aggregateRecordB =
               new AggregateLinkingScoreRecord.Builder();
-          private final ImmutableListMultimap.Builder<Symbol, AggregateLinkingScoreRecord>
-              aggregateRecordsPerEventB = ImmutableListMultimap.builder();
+          private final ImmutableMap.Builder<Symbol, AggregateLinkingScoreRecord>
+              aggregateRecordsPerEventB = ImmutableMap.builder();
 
           private static final String F1 = "F1";
           private static final String PRECISION = "Precision";
@@ -172,7 +172,7 @@ final class LinkingInspector implements
                   ImmutableListMultimap.builder();
 
               for (final DocLevelLinkingScoring linkingScoring : collection) {
-                LinkingScoreDocRecord docRecord = linkingScoring.linkingScoreDocRecord();
+                final LinkingScoreDocRecord docRecord = linkingScoring.linkingScoreDocRecord();
                 precision += docRecord.fMeasureInfo().precision() * docRecord.predictedCounts();
                 recall += docRecord.fMeasureInfo().recall() * docRecord.actualCounts();
                 f1 += docRecord.fMeasureInfo().f1() * docRecord.actualCounts();
@@ -248,8 +248,18 @@ final class LinkingInspector implements
                 new File(outputDir, "linkScores"));
 
             // per event
-            final ImmutableListMultimap aggregateRecordsPerEvent = aggregateRecordsPerEventB.build();
-            // TODO: write-out per event-type
+            final ImmutableMap<Symbol, AggregateLinkingScoreRecord> aggregateRecordsPerEvent =
+                aggregateRecordsPerEventB.build();
+            for (Symbol eventType : aggregateRecordsPerEvent.keySet()) {
+              AggregateLinkingScoreRecord recordForEventType = aggregateRecordsPerEvent.get(eventType);
+              writer.writeBootstrapData("linkScoresPerEventType/" + eventType.asString(),
+                  ImmutableMap.of(
+                      F1, recordForEventType.f1s(),
+                      PRECISION, recordForEventType.precisions(),
+                      RECALL, recordForEventType.recalls()
+                  ),
+                  new File(outputDir, "linkScoresPerEventType/" + eventType.asString()));
+            }
           }
         });
   }
