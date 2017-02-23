@@ -195,7 +195,7 @@ final class LinkingInspector implements
             {
               final ImmutableList<AggregateLinkingScoreRecord> aggregateRecords =
                   aggregateRecordsB.build();
-              writer.writeBootstrapData("linkScores", mapScores(aggregateRecords),
+              writer.writeBootstrapData("linkScores", mapScoresForWriter(aggregateRecords),
                   new File(outputDir, "linkScores"));
             }
             // per event-type
@@ -205,14 +205,15 @@ final class LinkingInspector implements
               for (Symbol eventType : aggregateRecordsPerEvent.keySet()) {
                 final ImmutableList<AggregateLinkingScoreRecord> aggregateRecordsForEvent =
                     aggregateRecordsPerEvent.get(eventType);
-                writer.writeBootstrapData("linkScores", mapScores(aggregateRecordsForEvent),
+                writer.writeBootstrapData("linkScores", mapScoresForWriter(aggregateRecordsForEvent),
                     new File(new File(outputDir, "linkScoresPerEventType"), eventType.asString()));
               }
             }
           }
 
+          // need to create a map of maps of the scores for the BootstrapWriter
           private ImmutableMap<String, ImmutableListMultimap<String, Double>>
-              mapScores(ImmutableList<AggregateLinkingScoreRecord> aggregateRecords) {
+              mapScoresForWriter(ImmutableList<AggregateLinkingScoreRecord> aggregateRecords) {
             return ImmutableMap.of(
                 F1, Multimaps.index(transform(aggregateRecords,
                     AggregateLinkingScoreRecordFunctions.f1()), constant("Aggregate")),
