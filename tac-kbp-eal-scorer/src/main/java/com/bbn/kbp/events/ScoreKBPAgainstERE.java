@@ -433,7 +433,7 @@ public final class ScoreKBPAgainstERE {
       // we throw out any system responses not found in the key before scoring linking
       final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
           filteredNode = transformed(linkingNode, RestrictToLinking.INSTANCE);
-      final BootstrapInspector<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, LinkingInspector.LinkingScoreDocRecord>
+      final BootstrapInspector<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, LinkingInspector.DocLevelLinkingScoring>
           linkScoreWithBootstrapping =
           BootstrapInspector.forStrategy(LinkingInspector.createOutputtingTo(new File(outputDir, "withRealis")),
               1000, new Random(0));
@@ -449,7 +449,7 @@ public final class ScoreKBPAgainstERE {
       // we throw out any system responses not found in the key before scoring linking, after neutralizing realis
       final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
           filteredNode = transformed(linkingNode, RestrictToLinking.INSTANCE);
-      final BootstrapInspector<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, LinkingInspector.LinkingScoreDocRecord>
+      final BootstrapInspector<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, LinkingInspector.DocLevelLinkingScoring>
           linkScoreWithBootstrapping =
           BootstrapInspector.forStrategy(LinkingInspector.createOutputtingTo(new File(outputDir, "noRealis")),
               1000, new Random(0));
