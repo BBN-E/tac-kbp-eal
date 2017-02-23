@@ -68,7 +68,7 @@ final class LinkingInspector implements
         final ImmutableMap.Builder<Symbol, LinkingScoreDocRecord> recordsPerEventB =
             ImmutableMap.builder();
 
-        // for all events
+        // for all event-types
         {
           final ExplicitFMeasureInfo counts = LinkF1.create().score(item.test(), item.key());
 
@@ -157,7 +157,7 @@ final class LinkingInspector implements
           public void observeSample(
               final Collection<DocLevelLinkingScoring> collection) {
 
-            // for all event types
+            // for all event-types
             {
               final ImmutableList.Builder<LinkingScoreDocRecord> docRecordsB = ImmutableList.builder();
               for (final DocLevelLinkingScoring linkingScoring : collection) {
@@ -189,7 +189,7 @@ final class LinkingInspector implements
 
           //@Override
           public void finish() throws IOException {
-            // for all events
+            // for all event-types
             {
               final ImmutableList<AggregateLinkingScoreRecord> aggregateRecords =
                   aggregateRecordsB.build();
