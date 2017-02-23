@@ -17,6 +17,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimaps;
 
 import org.immutables.func.Functional;
 import org.immutables.value.Value;
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collection;
 
+import static com.google.common.base.Functions.constant;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Iterables.transform;
@@ -193,21 +195,7 @@ final class LinkingInspector implements
             {
               final ImmutableList<AggregateLinkingScoreRecord> aggregateRecords =
                   aggregateRecordsB.build();
-              final ImmutableList<Double> f1s = ImmutableList.copyOf(transform(
-                  aggregateRecords, AggregateLinkingScoreRecordFunctions.f1()));
-              final ImmutableList<Double> precisions = ImmutableList.copyOf(transform(
-                  aggregateRecords, AggregateLinkingScoreRecordFunctions.precision()));
-              final ImmutableList<Double> recalls = ImmutableList.copyOf(transform(
-                  aggregateRecords, AggregateLinkingScoreRecordFunctions.recall()));
-              writer.writeBootstrapData("linkScores",
-                  ImmutableMap.of(
-                      F1, new ImmutableListMultimap.Builder<String, Double>()
-                          .putAll("Aggregate", f1s).build(),
-                      PRECISION, new ImmutableListMultimap.Builder<String, Double>()
-                          .putAll("Aggregate", precisions).build(),
-                      RECALL, new ImmutableListMultimap.Builder<String, Double>()
-                          .putAll("Aggregate", recalls).build()
-                  ),
+              writer.writeBootstrapData("linkScores", mapScores(aggregateRecords),
                   new File(outputDir, "linkScores"));
             }
             // per event-type
@@ -217,24 +205,21 @@ final class LinkingInspector implements
               for (Symbol eventType : aggregateRecordsPerEvent.keySet()) {
                 final ImmutableList<AggregateLinkingScoreRecord> aggregateRecordsForEvent =
                     aggregateRecordsPerEvent.get(eventType);
-                final ImmutableList<Double> f1s = ImmutableList.copyOf(transform(
-                    aggregateRecordsForEvent, AggregateLinkingScoreRecordFunctions.f1()));
-                final ImmutableList<Double> precisions = ImmutableList.copyOf(transform(
-                    aggregateRecordsForEvent, AggregateLinkingScoreRecordFunctions.precision()));
-                final ImmutableList<Double> recalls = ImmutableList.copyOf(transform(
-                    aggregateRecordsForEvent, AggregateLinkingScoreRecordFunctions.recall()));
-                writer.writeBootstrapData("linkScores",
-                    ImmutableMap.of(
-                        F1, new ImmutableListMultimap.Builder<String, Double>()
-                            .putAll("Aggregate", f1s).build(),
-                        PRECISION, new ImmutableListMultimap.Builder<String, Double>()
-                            .putAll("Aggregate", precisions).build(),
-                        RECALL, new ImmutableListMultimap.Builder<String, Double>()
-                            .putAll("Aggregate", recalls).build()
-                    ),
+                writer.writeBootstrapData("linkScores", mapScores(aggregateRecordsForEvent),
                     new File(new File(outputDir, "linkScoresPerEventType"), eventType.asString()));
               }
             }
+          }
+
+          private ImmutableMap<String, ImmutableListMultimap<String, Double>>
+              mapScores(ImmutableList<AggregateLinkingScoreRecord> aggregateRecords) {
+            return ImmutableMap.of(
+                F1, Multimaps.index(transform(aggregateRecords,
+                    AggregateLinkingScoreRecordFunctions.f1()), constant("Aggregate")),
+                PRECISION, Multimaps.index(transform(aggregateRecords,
+                    AggregateLinkingScoreRecordFunctions.precision()), constant("Aggregate")),
+                RECALL, Multimaps.index(transform(aggregateRecords,
+                    AggregateLinkingScoreRecordFunctions.recall()), constant ("Aggregate")));
           }
 
           private AggregateLinkingScoreRecord aggregateScores(ImmutableList<LinkingScoreDocRecord> docRecords) {
