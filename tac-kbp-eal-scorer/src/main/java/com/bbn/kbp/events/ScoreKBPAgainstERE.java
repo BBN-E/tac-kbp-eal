@@ -59,6 +59,7 @@ import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
@@ -407,40 +408,36 @@ public final class ScoreKBPAgainstERE {
   private static void linkingScoringSetup(
       final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
           inputAsResponsesAndLinking, final File outputDir) {
-    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredForRealis =
-        transformBoth(inputAsResponsesAndLinking,
-            ResponsesAndLinking.filterFunction(REALIS_ALLOWED_FOR_LINKING));
-    // withRealis
-    {
-      final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
-          linkingNode = transformBoth(filteredForRealis, ResponsesAndLinkingFunctions.linking());
 
-      // we throw out any system responses not found in the key before scoring linking
-      final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
-          filteredNode = transformed(linkingNode, RestrictToLinking.INSTANCE);
-      final BootstrapInspector<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, LinkingInspector.DocLevelLinkingScoring>
-          linkScoreWithBootstrapping =
-          BootstrapInspector.forStrategy(LinkingInspector.createOutputtingTo(new File(outputDir, "withRealis")),
-              1000, new Random(0));
-      inspect(filteredNode).with(linkScoreWithBootstrapping);
-    }
+    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> allowedForRealis =
+        transformBoth(inputAsResponsesAndLinking, ResponsesAndLinking.filterFunction(REALIS_ALLOWED_FOR_LINKING));
+
+    // withRealis
+    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
+        filteredNodeWithRealis = transformed(allowedForRealis, RestrictToLinking.INSTANCE);
+    final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
+        linkingNodeWithRealis = transformBoth(filteredNodeWithRealis, ResponsesAndLinkingFunctions.linking());
+    // we throw out any system responses not found in the key before scoring linking
+    final BootstrapInspector<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, LinkingInspector.DocLevelLinkingScoring>
+        linkScoreWithBootstrappingWithRealis =
+        BootstrapInspector.forStrategy(LinkingInspector.createOutputtingTo(new File(outputDir, "withRealis")),
+            1000, new Random(0));
+    inspect(linkingNodeWithRealis).with(linkScoreWithBootstrappingWithRealis);
+
     // without realis
-    {
-      final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
-          neutralizedRealis =
-          transformBoth(filteredForRealis, transformArgs(LinkingRealisNeutralizer.INSTANCE));
-//      inspect(neutralizedRealis).with(PerEventLinkingDumper)
-      final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
-          linkingNode = transformBoth(neutralizedRealis, ResponsesAndLinkingFunctions.linking());
-      // we throw out any system responses not found in the key before scoring linking, after neutralizing realis
-      final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
-          filteredNode = transformed(linkingNode, RestrictToLinking.INSTANCE);
-      final BootstrapInspector<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, LinkingInspector.DocLevelLinkingScoring>
-          linkScoreWithBootstrapping =
-          BootstrapInspector.forStrategy(LinkingInspector.createOutputtingTo(new File(outputDir, "noRealis")),
-              1000, new Random(0));
-      inspect(filteredNode).with(linkScoreWithBootstrapping);
-    }
+    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> neutralizedRealis =
+        transformBoth(allowedForRealis, transformArgs(LinkingRealisNeutralizer.INSTANCE));
+    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
+        filteredNodeNoRealis = transformed(neutralizedRealis, RestrictToLinking.INSTANCE);
+    final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
+        linkingNodeNoRealis = transformBoth(filteredNodeNoRealis, ResponsesAndLinkingFunctions.linking());
+    // we throw out any system responses not found in the key before scoring linking, after neutralizing realis
+    final BootstrapInspector<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, LinkingInspector.DocLevelLinkingScoring>
+        linkScoreWithBootstrappingNoRealis =
+        BootstrapInspector.forStrategy(LinkingInspector.createOutputtingTo(new File(outputDir, "noRealis")),
+            1000, new Random(0));
+    inspect(linkingNodeNoRealis).with(linkScoreWithBootstrappingNoRealis);
+
   }
 
   private static final Predicate<DocLevelEventArg> REALIS_ALLOWED_FOR_LINKING =
@@ -587,16 +584,18 @@ public final class ScoreKBPAgainstERE {
     }
   }
 
-  private enum RestrictToLinking implements
-      Function<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, EvalPair<DocLevelArgLinking, DocLevelArgLinking>> {
+  private enum RestrictToLinking implements Function<EvalPair<ResponsesAndLinking,
+      ResponsesAndLinking>, EvalPair<ResponsesAndLinking, ResponsesAndLinking>> {
     INSTANCE;
 
     @Override
-    public EvalPair<DocLevelArgLinking, DocLevelArgLinking> apply(
-        final EvalPair<DocLevelArgLinking, DocLevelArgLinking> input) {
-      final DocLevelArgLinking newTest =
-          input.test().filterArguments(in(input.key().allArguments()));
-      return EvalPair.of(input.key(), newTest);
+    public EvalPair<ResponsesAndLinking, ResponsesAndLinking> apply(
+        final EvalPair<ResponsesAndLinking, ResponsesAndLinking> input) {
+      final DocLevelArgLinking newLinking =
+          input.test().linking().filterArguments(in(input.key().linking().allArguments()));
+      final Iterable<DocLevelEventArg> newArgs =
+          filter(input.test().args(), Predicates.in(input.key().args()));
+      return EvalPair.of(input.key(), ResponsesAndLinking.of(newArgs, newLinking));
     }
   }
 
