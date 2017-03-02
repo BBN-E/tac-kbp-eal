@@ -1,5 +1,6 @@
 package com.bbn.kbp.events;
 
+import com.bbn.bue.common.TextGroupImmutable;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events.ontology.EREToKBPEventOntologyMapper;
 import com.bbn.kbp.events2014.TACKBPEALException;
@@ -8,10 +9,16 @@ import com.bbn.nlp.corpora.ere.EREDocument;
 import com.bbn.nlp.corpora.ere.EREEntity;
 import com.bbn.nlp.corpora.ere.EREEntityArgument;
 import com.bbn.nlp.corpora.ere.EREEventMention;
+import com.bbn.nlp.corpora.ere.EREFiller;
 import com.bbn.nlp.corpora.ere.EREFillerArgument;
 
 import com.google.common.base.Optional;
 
+import org.immutables.value.Value;
+
+import static com.google.common.base.Preconditions.checkArgument;
+
+@Value.Enclosing
 public final class ScoringUtils {
 
   private ScoringUtils() {
@@ -50,6 +57,52 @@ public final class ScoringUtils {
       throw new TACKBPEALException("Unknown ERE argument type " + ea.getClass());
     }
   }
+
+  public static Optional<ScoringIdToEreObjectReturn> globalScoringIdToEreObject(
+      EREDocument ereDocument, String globalID) {
+    checkArgument(globalID.contains("-") && globalID.indexOf("-") < globalID.length()-1,
+        "Gloabl ID must contain and not end with a - but got %s", globalID);
+    final String withoutPrefix = globalID.substring(globalID.indexOf("-")+1);
+
+    if (globalID.startsWith(ScoringEntityType.Name.name())
+        || globalID.startsWith(ScoringEntityType.Nominal.name())
+    || globalID.startsWith(ScoringEntityType.Pronoun.name())) {
+      for (final EREEntity ereEntity : ereDocument.getEntities()) {
+        if (withoutPrefix.equals(ereEntity.getID())) {
+          return Optional.<ScoringIdToEreObjectReturn>of(ImmutableScoringUtils.ScoringIdToEreObjectReturn.builder()
+              .entityArgument(ereEntity).build());
+        }
+      }
+      throw new TACKBPEALException("Could not align coref ID to ERE entity. Coref ID is " + globalID);
+    } else if (globalID.startsWith(ScoringEntityType.Filler.name())) {
+      for (final EREFiller ereFiller : ereDocument.getFillers()) {
+        if (withoutPrefix.equals(ereFiller.getID())) {
+          return Optional.<ScoringIdToEreObjectReturn>of(ImmutableScoringUtils.ScoringIdToEreObjectReturn.builder()
+              .fillerArgument(ereFiller).build());
+        }
+      }
+      throw new TACKBPEALException("Could not align coref ID to ERE filler. Coref ID is " + globalID);
+    } else if (globalID.startsWith(ScoringEntityType.Time.name())) {
+      return Optional.<ScoringIdToEreObjectReturn>of(ImmutableScoringUtils.ScoringIdToEreObjectReturn.builder()
+          .normalizedTime(withoutPrefix).build());
+    } else if (globalID.startsWith(ScoringEntityType.AlignmentFailure.name())) {
+      // if something never aligned to ERE in the first place, we can't figure out
+      // its corresponding ERE object
+      return Optional.absent();
+    } else {
+      throw new TACKBPEALException("Unknown ScoringEntityType prefix for " + globalID);
+    }
+
+  }
+
+  @TextGroupImmutable
+  @Value.Immutable
+  public abstract static class ScoringIdToEreObjectReturn {
+    public abstract Optional<EREEntity> entityArgument();
+    public abstract Optional<EREFiller> fillerArgument();
+    public abstract Optional<String> normalizedTime();
+  }
+
 
   public static Optional<Symbol> mapERETypesToDotSeparated(
       EREToKBPEventOntologyMapper ontologyMapper, EREEventMention em) {

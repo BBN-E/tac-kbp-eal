@@ -71,10 +71,12 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Multisets;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.AbstractModule;
+import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
@@ -141,7 +143,7 @@ public final class ScoreKBPAgainstERE {
   private static final Logger log = LoggerFactory.getLogger(ScoreKBPAgainstERE.class);
 
   private final ImmutableSet<Symbol> docIDsToScore;
-  private final ImmutableMap<Symbol, File> goldDocIDToFileMap;
+  private final EREDocumentSource ereDocumentSource;
 
   // left over from pre-Guice version
   private final Parameters params;
@@ -159,16 +161,16 @@ public final class ScoreKBPAgainstERE {
       final Map<String, ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>> scoringEventObservers,
       final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor,
       ResponsesAndLinkingFromKBPExtractorFactory responsesAndLinkingFromKBPExtractorFactory,
-      @DocIDsToScoreP Set<Symbol> docIdsToScore,
-      @KeyFileMapP Map<Symbol, File> keyFilesMap,
+      @DocIDsToScoreP Set<Symbol> docIDsToScore,
+      EREDocumentSource ereDocumentSource,
       Predicate<DocLevelEventArg> inScopePredicate) {
     this.params = checkNotNull(params);
     // we use a sorted map because the binding of plugins may be non-deterministic
     this.scoringEventObservers = ImmutableSortedMap.copyOf(scoringEventObservers);
     this.responsesAndLinkingFromEREExtractor = checkNotNull(responsesAndLinkingFromEREExtractor);
     this.responsesAndLinkingFromKBPExtractorFactory = responsesAndLinkingFromKBPExtractorFactory;
-    this.docIDsToScore = ImmutableSet.copyOf(docIdsToScore);
-    this.goldDocIDToFileMap = ImmutableMap.copyOf(keyFilesMap);
+    this.docIDsToScore = ImmutableSet.copyOf(docIDsToScore);
+    this.ereDocumentSource = ereDocumentSource;
     this.inScopePredicate = inScopePredicate;
   }
 
@@ -205,14 +207,6 @@ public final class ScoreKBPAgainstERE {
 
   }
 
-  @Qualifier
-  @Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD})
-  @Retention(RetentionPolicy.RUNTIME)
-  @interface KeyFileMapP {
-
-  }
-
-
   void processSystem(SystemOutputStore outputStore, File outputDir) throws IOException {
     outputDir.mkdirs();
 
@@ -242,17 +236,8 @@ public final class ScoreKBPAgainstERE {
     setupScoring(input, responsesAndLinkingFromKBPExtractor, responsesAndLinkingFromEREExtractor,
         scoringEventObservers.values(), outputDir);
 
-    // we want globally unique IDs here
-    final ERELoader loader = ERELoader.builder().prefixDocIDToAllIDs(true).build();
-
     for (Symbol docID : docIDsToScore) {
-      // EvalHack - 2016 dry run contains some files for which Serif spuriously adds this document ID
-      docID = Symbol.from(docID.asString().replace("-kbp", ""));
-      final File ereFileName = goldDocIDToFileMap.get(docID);
-      if (ereFileName == null) {
-        throw new RuntimeException("Missing key file for " + docID);
-      }
-      final EREDocument ereDoc = loader.loadFrom(ereFileName);
+      final EREDocument ereDoc = ereDocumentSource.ereDocumentForDocId(docID);
       // the LDC provides certain ERE documents with "-kbp" in the name. The -kbp is used by them
       // internally for some form of tracking but doesn't appear to the world, so we remove it.
       if (!ereDoc.getDocId().replace("-kbp", "").equals(docID.asString().replace(".kbp", ""))) {
@@ -444,6 +429,7 @@ public final class ScoreKBPAgainstERE {
       final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
           neutralizedRealis =
           transformBoth(filteredForRealis, transformArgs(LinkingRealisNeutralizer.INSTANCE));
+//      inspect(neutralizedRealis).with(PerEventLinkingDumper)
       final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
           linkingNode = transformBoth(neutralizedRealis, ResponsesAndLinkingFunctions.linking());
       // we throw out any system responses not found in the key before scoring linking, after neutralizing realis
@@ -743,9 +729,9 @@ public final class ScoreKBPAgainstERE {
       this.quoteFilter = checkNotNull(quoteFilter);
     }
 
-    private boolean inQuotedRegion(String docId, ERESpan span) {
+    private boolean inQuotedRegion(String docID, ERESpan span) {
       // the kbp replacement is a hack to handle dry run docids having additional tracking information on them sometimes.
-      return quoteFilter.isInQuote(Symbol.from(docId.replaceAll("-kbp", "")),
+      return quoteFilter.isInQuote(Symbol.from(docID.replaceAll("-kbp", "")),
           CharOffsetSpan.of(span.asCharOffsets()));
     }
 
@@ -992,7 +978,10 @@ public final class ScoreKBPAgainstERE {
           linkingBuilder.addEventFrames(eventFrameBuilder.build());
         }
       }
-      return ResponsesAndLinking.of(responseToDocLevelEventArg.values(), linkingBuilder.build());
+      final ImmutableSetMultimap<DocLevelEventArg, Response> docLevelEventArgToResponses =
+          responseToDocLevelEventArg.asMultimap().inverse();
+      return ResponsesAndLinking.of(responseToDocLevelEventArg.values(), linkingBuilder.build(),
+          docLevelEventArgToResponses);
     }
 
     public String errKey(Response r) {
@@ -1072,9 +1061,11 @@ public final class ScoreKBPAgainstERE {
       bind(Parameters.class).toInstance(params);
       // declare that people can provide scoring observer plugins, even though none are
       // provided by default
-      MapBinder.newMapBinder(binder(), TypeLiteral.get(String.class),
-          new TypeLiteral<ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>() {
-          });
+      final Binder binder = binder();
+
+      docLevelEventArgObserverBindingSite(binder);
+      responseAndLinkingObserverBindingSite(binder);
+
       try {
         bind(EREToKBPEventOntologyMapper.class)
             .toInstance(EREToKBPEventOntologyMapper.create2016Mapping());
@@ -1084,6 +1075,18 @@ public final class ScoreKBPAgainstERE {
       install(new ResponsesAndLinkingFromEREExtractor.Module());
       install(new FactoryModuleBuilder()
           .build(ResponsesAndLinkingFromKBPExtractorFactory.class));
+    }
+
+    public static MapBinder<String, ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>> docLevelEventArgObserverBindingSite(final Binder binder) {
+      return MapBinder.newMapBinder(binder, TypeLiteral.get(String.class),
+          new TypeLiteral<ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>() {
+          });
+    }
+
+    public static MapBinder<String, Inspector<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>> responseAndLinkingObserverBindingSite(final Binder binder) {
+      return MapBinder.newMapBinder(binder, TypeLiteral.get(String.class),
+          new TypeLiteral<Inspector<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>>() {
+          });
     }
 
     @Provides
@@ -1132,10 +1135,11 @@ public final class ScoreKBPAgainstERE {
     }
 
     @Provides
-    @KeyFileMapP
-    Map<Symbol, File> getKeyFileMap(Parameters params) throws IOException {
-      return FileUtils.loadSymbolToFileMap(
-          Files.asCharSource(params.getExistingFile("goldDocIDToFileMap"), Charsets.UTF_8));
+    EREDocumentSource getEreDocumentSource(Parameters params) throws IOException {
+      return ImmutableKBPEval2016HackedEreDocumentSource.builder().docIdToEreFileMap(
+          FileUtils.loadSymbolToFileMap(
+              Files.asCharSource(
+                  params.getExistingFile("goldDocIDToFileMap"), Charsets.UTF_8))).build();
     }
 
     @Provides
@@ -1163,9 +1167,23 @@ abstract class ResponsesAndLinking {
   @Value.Parameter
   public abstract DocLevelArgLinking linking();
 
+  /**
+   * This is here just as a hack to more easily smuggle information to
+   * {@code PerEventLinkingDumper}
+   */
+  @Value.Parameter
+  public abstract Optional<ImmutableMultimap<DocLevelEventArg, Response>> docLevelArgsToResponses();
+
   public static ResponsesAndLinking of(Iterable<? extends DocLevelEventArg> args,
       DocLevelArgLinking linking) {
     return new Builder().args(args).linking(linking).build();
+  }
+
+  public static ResponsesAndLinking of(Iterable<? extends DocLevelEventArg> args,
+      DocLevelArgLinking linking, SetMultimap<DocLevelEventArg, Response> docLevelArgsToResponses) {
+    return new Builder().args(args).linking(linking)
+        .docLevelArgsToResponses(ImmutableSetMultimap.copyOf(docLevelArgsToResponses))
+        .build();
   }
 
   @Value.Check
@@ -1325,4 +1343,23 @@ abstract class CountEventTypesByHopper implements Inspector<EvalPair<ResponsesAn
   }
 
   public static class Builder extends ImmutableCountEventTypesByHopper.Builder {}
+}
+
+@TextGroupImmutable
+@Value.Immutable
+abstract class KBPEval2016HackedEreDocumentSource implements EREDocumentSource {
+  // we want globally unique IDs here
+  private final ERELoader loader = ERELoader.builder().prefixDocIDToAllIDs(true).build();
+  public abstract ImmutableMap<Symbol, File> docIdToEreFileMap();
+
+  @Override
+  public final EREDocument ereDocumentForDocId(final Symbol originalDocID) throws IOException {
+    // EvalHack - 2016 dry run contains some files for which Serif spuriously adds this document ID
+    final Symbol hackedDocID = Symbol.from(originalDocID.asString().replace("-kbp", ""));
+    final File ereFileName = docIdToEreFileMap().get(hackedDocID);
+    if (ereFileName == null) {
+      throw new RuntimeException("Missing key file for " + hackedDocID);
+    }
+    return loader.loadFrom(ereFileName);
+  }
 }
