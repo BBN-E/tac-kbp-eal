@@ -4,6 +4,7 @@ import com.bbn.bue.common.Finishable;
 import com.bbn.bue.common.HasDocID;
 import com.bbn.bue.common.Inspector;
 import com.bbn.bue.common.TextGroupImmutable;
+import com.bbn.bue.common.collections.MultimapUtils;
 import com.bbn.bue.common.evaluation.AggregateBinaryFScoresInspector;
 import com.bbn.bue.common.evaluation.BinaryConfusionMatrixBootstrapStrategy;
 import com.bbn.bue.common.evaluation.BinaryErrorLogger;
@@ -71,10 +72,12 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Multisets;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.AbstractModule;
+import com.google.inject.Binder;
 import com.google.inject.Guice;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
@@ -122,6 +125,7 @@ import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterables.getFirst;
 import static com.google.common.collect.Iterables.transform;
+import static com.google.common.collect.Multimaps.filterKeys;
 
 /**
  * Scores KBP 2016 event argument output against an ERE gold standard.  Scoring is in terms of
@@ -140,8 +144,8 @@ public final class ScoreKBPAgainstERE {
 
   private static final Logger log = LoggerFactory.getLogger(ScoreKBPAgainstERE.class);
 
-  private final ImmutableSet<Symbol> docIDsToScore;
-  private final ImmutableMap<Symbol, File> goldDocIDToFileMap;
+  private final ImmutableSet<Symbol> docIdsToScore;
+  private final EREDocumentSource ereDocumentSource;
 
   // left over from pre-Guice version
   private final Parameters params;
@@ -152,23 +156,27 @@ public final class ScoreKBPAgainstERE {
   private final ResponsesAndLinkingFromKBPExtractorFactory
       responsesAndLinkingFromKBPExtractorFactory;
   private final Predicate<DocLevelEventArg> inScopePredicate;
+  private final ImmutableSortedMap<String, Inspector<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>>
+      responseAndLinkingObservers;
 
   @Inject
   ScoreKBPAgainstERE(
       final Parameters params,
       final Map<String, ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>> scoringEventObservers,
+      final Map<String, Inspector<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>> responseAndLinkingObservers,
       final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor,
       ResponsesAndLinkingFromKBPExtractorFactory responsesAndLinkingFromKBPExtractorFactory,
       @DocIDsToScoreP Set<Symbol> docIdsToScore,
-      @KeyFileMapP Map<Symbol, File> keyFilesMap,
+      EREDocumentSource ereDocumentSource,
       Predicate<DocLevelEventArg> inScopePredicate) {
     this.params = checkNotNull(params);
     // we use a sorted map because the binding of plugins may be non-deterministic
     this.scoringEventObservers = ImmutableSortedMap.copyOf(scoringEventObservers);
+    this.responseAndLinkingObservers = ImmutableSortedMap.copyOf(responseAndLinkingObservers);
     this.responsesAndLinkingFromEREExtractor = checkNotNull(responsesAndLinkingFromEREExtractor);
     this.responsesAndLinkingFromKBPExtractorFactory = responsesAndLinkingFromKBPExtractorFactory;
-    this.docIDsToScore = ImmutableSet.copyOf(docIdsToScore);
-    this.goldDocIDToFileMap = ImmutableMap.copyOf(keyFilesMap);
+    this.docIdsToScore = ImmutableSet.copyOf(docIdsToScore);
+    this.ereDocumentSource = ereDocumentSource;
     this.inScopePredicate = inScopePredicate;
   }
 
@@ -205,19 +213,11 @@ public final class ScoreKBPAgainstERE {
 
   }
 
-  @Qualifier
-  @Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD})
-  @Retention(RetentionPolicy.RUNTIME)
-  @interface KeyFileMapP {
-
-  }
-
-
   void processSystem(SystemOutputStore outputStore, File outputDir) throws IOException {
     outputDir.mkdirs();
 
 
-    log.info("Scoring over {} documents", docIDsToScore.size());
+    log.info("Scoring over {} documents", docIdsToScore.size());
 
     // on the gold side we take an ERE document as input
     final TypeToken<EREDocument> inputIsEREDoc = new TypeToken<EREDocument>() {
@@ -242,25 +242,16 @@ public final class ScoreKBPAgainstERE {
     setupScoring(input, responsesAndLinkingFromKBPExtractor, responsesAndLinkingFromEREExtractor,
         scoringEventObservers.values(), outputDir);
 
-    // we want globally unique IDs here
-    final ERELoader loader = ERELoader.builder().prefixDocIDToAllIDs(true).build();
-
-    for (Symbol docID : docIDsToScore) {
-      // EvalHack - 2016 dry run contains some files for which Serif spuriously adds this document ID
-      docID = Symbol.from(docID.asString().replace("-kbp", ""));
-      final File ereFileName = goldDocIDToFileMap.get(docID);
-      if (ereFileName == null) {
-        throw new RuntimeException("Missing key file for " + docID);
-      }
-      final EREDocument ereDoc = loader.loadFrom(ereFileName);
+    for (Symbol docId : docIdsToScore) {
+      final EREDocument ereDoc = ereDocumentSource.ereDocumentForDocId(docId);
       // the LDC provides certain ERE documents with "-kbp" in the name. The -kbp is used by them
       // internally for some form of tracking but doesn't appear to the world, so we remove it.
-      if (!ereDoc.getDocId().replace("-kbp", "").equals(docID.asString().replace(".kbp", ""))) {
-        log.warn("Fetched document ID {} does not equal stored {}", ereDoc.getDocId(), docID);
+      if (!ereDoc.getDocId().replace("-kbp", "").equals(docId.asString().replace(".kbp", ""))) {
+        log.warn("Fetched document ID {} does not equal stored {}", ereDoc.getDocId(), docId);
       }
-      final Iterable<Response> responses = outputStore.read(docID).arguments().responses();
+      final Iterable<Response> responses = outputStore.read(docId).arguments().responses();
       final ResponseLinking linking =
-          ((DocumentSystemOutput2015) outputStore.read(docID)).linking();
+          ((DocumentSystemOutput2015) outputStore.read(docId)).linking();
       linking.copyWithFilteredResponses(in(ImmutableSet.copyOf(responses)));
       // feed this ERE doc/ KBP output pair to the scoring network
       input.inspect(EvalPair.of(ereDoc, new EREDocAndResponses(ereDoc, responses, linking)));
@@ -419,42 +410,44 @@ public final class ScoreKBPAgainstERE {
 
   }
 
-  private static void linkingScoringSetup(
+  private void linkingScoringSetup(
       final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
           inputAsResponsesAndLinking, final File outputDir) {
-    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> filteredForRealis =
-        transformBoth(inputAsResponsesAndLinking,
-            ResponsesAndLinking.filterFunction(REALIS_ALLOWED_FOR_LINKING));
-    // withRealis
-    {
-      final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
-          linkingNode = transformBoth(filteredForRealis, ResponsesAndLinkingFunctions.linking());
 
-      // we throw out any system responses not found in the key before scoring linking
-      final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
-          filteredNode = transformed(linkingNode, RestrictToLinking.INSTANCE);
-      final BootstrapInspector<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, LinkingInspector.DocLevelLinkingScoring>
-          linkScoreWithBootstrapping =
-          BootstrapInspector.forStrategy(LinkingInspector.createOutputtingTo(new File(outputDir, "withRealis")),
-              1000, new Random(0));
-      inspect(filteredNode).with(linkScoreWithBootstrapping);
-    }
+    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> allowedForRealis =
+        transformBoth(inputAsResponsesAndLinking, ResponsesAndLinking.filterFunction(REALIS_ALLOWED_FOR_LINKING));
+
+    // withRealis
+    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
+        filteredNodeWithRealis = transformed(allowedForRealis, RestrictToLinking.INSTANCE);
+    final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
+        linkingNodeWithRealis = transformBoth(filteredNodeWithRealis, ResponsesAndLinkingFunctions.linking());
+    // we throw out any system responses not found in the key before scoring linking
+    final BootstrapInspector<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, LinkingInspector.DocLevelLinkingScoring>
+        linkScoreWithBootstrappingWithRealis =
+        BootstrapInspector.forStrategy(LinkingInspector.createOutputtingTo(new File(outputDir, "withRealis")),
+            1000, new Random(0));
+    inspect(linkingNodeWithRealis).with(linkScoreWithBootstrappingWithRealis);
+
     // without realis
-    {
-      final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
-          neutralizedRealis =
-          transformBoth(filteredForRealis, transformArgs(LinkingRealisNeutralizer.INSTANCE));
-      final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
-          linkingNode = transformBoth(neutralizedRealis, ResponsesAndLinkingFunctions.linking());
-      // we throw out any system responses not found in the key before scoring linking, after neutralizing realis
-      final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
-          filteredNode = transformed(linkingNode, RestrictToLinking.INSTANCE);
-      final BootstrapInspector<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, LinkingInspector.DocLevelLinkingScoring>
-          linkScoreWithBootstrapping =
-          BootstrapInspector.forStrategy(LinkingInspector.createOutputtingTo(new File(outputDir, "noRealis")),
-              1000, new Random(0));
-      inspect(filteredNode).with(linkScoreWithBootstrapping);
+    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>> neutralizedRealis =
+        transformBoth(allowedForRealis, transformArgs(LinkingRealisNeutralizer.INSTANCE));
+    final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
+        filteredNodeNoRealis = transformed(neutralizedRealis, RestrictToLinking.INSTANCE);
+    for (final Map.Entry<String, Inspector<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>> linkingObserver : responseAndLinkingObservers
+        .entrySet()) {
+      log.info("Registered linking observer plugin {}", linkingObserver.getKey());
+      inspect(filteredNodeNoRealis).with(linkingObserver.getValue());
     }
+    final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
+        linkingNodeNoRealis = transformBoth(filteredNodeNoRealis, ResponsesAndLinkingFunctions.linking());
+    // we throw out any system responses not found in the key before scoring linking, after neutralizing realis
+    final BootstrapInspector<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, LinkingInspector.DocLevelLinkingScoring>
+        linkScoreWithBootstrappingNoRealis =
+        BootstrapInspector.forStrategy(LinkingInspector.createOutputtingTo(new File(outputDir, "noRealis")),
+            1000, new Random(0));
+    inspect(linkingNodeNoRealis).with(linkScoreWithBootstrappingNoRealis);
+
   }
 
   private static final Predicate<DocLevelEventArg> REALIS_ALLOWED_FOR_LINKING =
@@ -601,16 +594,15 @@ public final class ScoreKBPAgainstERE {
     }
   }
 
-  private enum RestrictToLinking implements
-      Function<EvalPair<DocLevelArgLinking, DocLevelArgLinking>, EvalPair<DocLevelArgLinking, DocLevelArgLinking>> {
+  private enum RestrictToLinking implements Function<EvalPair<ResponsesAndLinking,
+      ResponsesAndLinking>, EvalPair<ResponsesAndLinking, ResponsesAndLinking>> {
     INSTANCE;
 
     @Override
-    public EvalPair<DocLevelArgLinking, DocLevelArgLinking> apply(
-        final EvalPair<DocLevelArgLinking, DocLevelArgLinking> input) {
-      final DocLevelArgLinking newTest =
-          input.test().filterArguments(in(input.key().allArguments()));
-      return EvalPair.of(input.key(), newTest);
+    public EvalPair<ResponsesAndLinking, ResponsesAndLinking> apply(
+        final EvalPair<ResponsesAndLinking, ResponsesAndLinking> input) {
+      return EvalPair.of(input.key(), input.test()
+          .filter(in(input.key().linking().allArguments())));
     }
   }
 
@@ -648,8 +640,8 @@ public final class ScoreKBPAgainstERE {
         log.warn("No output for eval pair {}", evalPair);
         return;
       }
-      final Symbol docid = checkNotNull(getFirst(args, null)).docID();
-      log.info("Gathering arg scores for {}", docid);
+      final Symbol docId = checkNotNull(getFirst(args, null)).docID();
+      log.info("Gathering arg scores for {}", docId);
       int docTPs = evalPair.leftAligned().size();
       checkArgument(evalPair.leftAligned().equals(evalPair.rightAligned()));
       this.aggregateTPs += docTPs;
@@ -660,10 +652,10 @@ public final class ScoreKBPAgainstERE {
       int docFNs = evalPair.leftUnaligned().size();
       aggregateFNs += docFNs;
       scoreAggregator += score;
-      truePositives.put(docid, docTPs);
-      falsePositives.put(docid, docFPs);
-      falseNegatives.put(docid, docFNs);
-      scores.put(docid, score);
+      truePositives.put(docId, docTPs);
+      falsePositives.put(docId, docFPs);
+      falseNegatives.put(docId, docFNs);
+      scores.put(docId, score);
     }
 
     private static final JacksonSerializer serializer =
@@ -915,13 +907,13 @@ public final class ScoreKBPAgainstERE {
       final EREDocument doc = input.ereDoc();
       // Work around LDC document ID inconsistency; -kbp is used internally by the LDC as a form of
       // document tracking. Externally the difference does not matter so we just normalize the ID
-      final Symbol ereID = Symbol.from(doc.getDocId().replace("-kbp", ""));
+      final Symbol ereId = Symbol.from(doc.getDocId().replace("-kbp", ""));
       final Optional<CoreNLPDocument> coreNLPDoc;
       final EREAligner ereAligner;
 
       try {
         if (coreNLPDocs.isPresent()) {
-          coreNLPDoc = Optional.of(coreNLPXMLLoader.loadFrom(coreNLPDocs.get().get(ereID)));
+          coreNLPDoc = Optional.of(coreNLPXMLLoader.loadFrom(coreNLPDocs.get().get(ereId)));
         } else {
           coreNLPDoc = Optional.absent();
         }
@@ -992,7 +984,10 @@ public final class ScoreKBPAgainstERE {
           linkingBuilder.addEventFrames(eventFrameBuilder.build());
         }
       }
-      return ResponsesAndLinking.of(responseToDocLevelEventArg.values(), linkingBuilder.build());
+      final ImmutableSetMultimap<DocLevelEventArg, Response> docLevelEventArgToResponses =
+          responseToDocLevelEventArg.asMultimap().inverse();
+      return ResponsesAndLinking.of(responseToDocLevelEventArg.values(), linkingBuilder.build(),
+          docLevelEventArgToResponses);
     }
 
     public String errKey(Response r) {
@@ -1072,9 +1067,11 @@ public final class ScoreKBPAgainstERE {
       bind(Parameters.class).toInstance(params);
       // declare that people can provide scoring observer plugins, even though none are
       // provided by default
-      MapBinder.newMapBinder(binder(), TypeLiteral.get(String.class),
-          new TypeLiteral<ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>() {
-          });
+      final Binder binder = binder();
+
+      docLevelEventArgObserverBindingSite(binder);
+      responseAndLinkingObserverBindingSite(binder);
+
       try {
         bind(EREToKBPEventOntologyMapper.class)
             .toInstance(EREToKBPEventOntologyMapper.create2016Mapping());
@@ -1084,6 +1081,18 @@ public final class ScoreKBPAgainstERE {
       install(new ResponsesAndLinkingFromEREExtractor.Module());
       install(new FactoryModuleBuilder()
           .build(ResponsesAndLinkingFromKBPExtractorFactory.class));
+    }
+
+    public static MapBinder<String, ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>> docLevelEventArgObserverBindingSite(final Binder binder) {
+      return MapBinder.newMapBinder(binder, TypeLiteral.get(String.class),
+          new TypeLiteral<ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>>() {
+          });
+    }
+
+    public static MapBinder<String, Inspector<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>> responseAndLinkingObserverBindingSite(final Binder binder) {
+      return MapBinder.newMapBinder(binder, TypeLiteral.get(String.class),
+          new TypeLiteral<Inspector<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>>() {
+          });
     }
 
     @Provides
@@ -1132,10 +1141,11 @@ public final class ScoreKBPAgainstERE {
     }
 
     @Provides
-    @KeyFileMapP
-    Map<Symbol, File> getKeyFileMap(Parameters params) throws IOException {
-      return FileUtils.loadSymbolToFileMap(
-          Files.asCharSource(params.getExistingFile("goldDocIDToFileMap"), Charsets.UTF_8));
+    EREDocumentSource getEreDocumentSource(Parameters params) throws IOException {
+      return ImmutableKBPEval2016HackedEreDocumentSource.builder().docIdToEreFileMap(
+          FileUtils.loadSymbolToFileMap(
+              Files.asCharSource(
+                  params.getExistingFile("goldDocIDToFileMap"), Charsets.UTF_8))).build();
     }
 
     @Provides
@@ -1163,9 +1173,24 @@ abstract class ResponsesAndLinking {
   @Value.Parameter
   public abstract DocLevelArgLinking linking();
 
+  /**
+   * This is here just as a hack to more easily smuggle information to
+   * {@code PerEventLinkingDumper}.
+   * Not to be used as a root object in any scoring as it retains source response information.
+   */
+  @Value.Parameter
+  public abstract Optional<ImmutableSetMultimap<DocLevelEventArg, Response>> docLevelArgsToResponses();
+
   public static ResponsesAndLinking of(Iterable<? extends DocLevelEventArg> args,
       DocLevelArgLinking linking) {
     return new Builder().args(args).linking(linking).build();
+  }
+
+  public static ResponsesAndLinking of(Iterable<? extends DocLevelEventArg> args,
+      DocLevelArgLinking linking, SetMultimap<DocLevelEventArg, Response> docLevelArgsToResponses) {
+    return new Builder().args(args).linking(linking)
+        .docLevelArgsToResponses(ImmutableSetMultimap.copyOf(docLevelArgsToResponses))
+        .build();
   }
 
   @Value.Check
@@ -1174,15 +1199,29 @@ abstract class ResponsesAndLinking {
   }
 
   public final ResponsesAndLinking filter(Predicate<? super DocLevelEventArg> predicate) {
-    return ResponsesAndLinking.of(
-        Iterables.filter(args(), predicate),
-        linking().filterArguments(predicate));
+    final ImmutableSet<DocLevelEventArg> filteredArgs = FluentIterable.from(args())
+        .filter(predicate).toSet();
+    final DocLevelArgLinking filteredLinking = linking().filterArguments(predicate);
+    if (docLevelArgsToResponses().isPresent()) {
+      return ResponsesAndLinking.of(filteredArgs, filteredLinking,
+          ImmutableSetMultimap.copyOf(filterKeys(docLevelArgsToResponses().get(), in(filteredArgs))));
+    } else {
+      return ResponsesAndLinking.of(filteredArgs, filteredLinking);
+    }
   }
 
   public final ResponsesAndLinking transform(
       final Function<? super DocLevelEventArg, DocLevelEventArg> transformer) {
-    return ResponsesAndLinking
-        .of(Iterables.transform(args(), transformer), linking().transformArguments(transformer));
+
+    final Iterable<DocLevelEventArg> transformedArgs = Iterables.transform(args(), transformer);
+    final DocLevelArgLinking transformedLinking = linking().transformArguments(transformer);
+
+    if (docLevelArgsToResponses().isPresent()) {
+      return ResponsesAndLinking.of(transformedArgs, transformedLinking,
+              MultimapUtils.copyWithTransformedKeys(docLevelArgsToResponses().get(), transformer));
+    } else {
+      return ResponsesAndLinking.of(transformedArgs, transformedLinking);
+    }
   }
 
   static Function<ResponsesAndLinking, ResponsesAndLinking> filterFunction(
@@ -1325,4 +1364,23 @@ abstract class CountEventTypesByHopper implements Inspector<EvalPair<ResponsesAn
   }
 
   public static class Builder extends ImmutableCountEventTypesByHopper.Builder {}
+}
+
+@TextGroupImmutable
+@Value.Immutable
+abstract class KBPEval2016HackedEreDocumentSource implements EREDocumentSource {
+  // we want globally unique IDs here
+  private final ERELoader loader = ERELoader.builder().prefixDocIDToAllIDs(true).build();
+  public abstract ImmutableMap<Symbol, File> docIdToEreFileMap();
+
+  @Override
+  public final EREDocument ereDocumentForDocId(final Symbol originalDocId) throws IOException {
+    // EvalHack - 2016 dry run contains some files for which Serif spuriously adds this document ID
+    final Symbol hackedDocId = Symbol.from(originalDocId.asString().replace("-kbp", ""));
+    final File ereFileName = docIdToEreFileMap().get(hackedDocId);
+    if (ereFileName == null) {
+      throw new RuntimeException("Missing key file for " + hackedDocId);
+    }
+    return loader.loadFrom(ereFileName);
+  }
 }
