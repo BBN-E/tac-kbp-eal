@@ -434,14 +434,11 @@ public final class ScoreKBPAgainstERE {
         transformBoth(allowedForRealis, transformArgs(LinkingRealisNeutralizer.INSTANCE));
     final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
         filteredNodeNoRealis = transformed(neutralizedRealis, RestrictToLinking.INSTANCE);
-
     for (final Map.Entry<String, Inspector<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>> linkingObserver : responseAndLinkingObservers
         .entrySet()) {
       log.info("Registered linking observer plugin {}", linkingObserver.getKey());
       inspect(filteredNodeNoRealis).with(linkingObserver.getValue());
     }
-
-    // TODO: create PerEventLinkingDumper here
     final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
         linkingNodeNoRealis = transformBoth(filteredNodeNoRealis, ResponsesAndLinkingFunctions.linking());
     // we throw out any system responses not found in the key before scoring linking, after neutralizing realis
