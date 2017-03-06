@@ -4,6 +4,7 @@ import com.bbn.bue.common.Finishable;
 import com.bbn.bue.common.HasDocID;
 import com.bbn.bue.common.Inspector;
 import com.bbn.bue.common.TextGroupImmutable;
+import com.bbn.bue.common.collections.MultimapUtils;
 import com.bbn.bue.common.evaluation.AggregateBinaryFScoresInspector;
 import com.bbn.bue.common.evaluation.BinaryConfusionMatrixBootstrapStrategy;
 import com.bbn.bue.common.evaluation.BinaryErrorLogger;
@@ -59,7 +60,6 @@ import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
@@ -125,6 +125,7 @@ import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterables.getFirst;
 import static com.google.common.collect.Iterables.transform;
+import static com.google.common.collect.Multimaps.filterKeys;
 
 /**
  * Scores KBP 2016 event argument output against an ERE gold standard.  Scoring is in terms of
@@ -155,11 +156,14 @@ public final class ScoreKBPAgainstERE {
   private final ResponsesAndLinkingFromKBPExtractorFactory
       responsesAndLinkingFromKBPExtractorFactory;
   private final Predicate<DocLevelEventArg> inScopePredicate;
+  private final ImmutableSortedMap<String, Inspector<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>>
+      responseAndLinkingObservers;
 
   @Inject
   ScoreKBPAgainstERE(
       final Parameters params,
       final Map<String, ScoringEventObserver<DocLevelEventArg, DocLevelEventArg>> scoringEventObservers,
+      final Map<String, Inspector<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>> responseAndLinkingObservers,
       final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor,
       ResponsesAndLinkingFromKBPExtractorFactory responsesAndLinkingFromKBPExtractorFactory,
       @DocIDsToScoreP Set<Symbol> docIDsToScore,
@@ -168,6 +172,7 @@ public final class ScoreKBPAgainstERE {
     this.params = checkNotNull(params);
     // we use a sorted map because the binding of plugins may be non-deterministic
     this.scoringEventObservers = ImmutableSortedMap.copyOf(scoringEventObservers);
+    this.responseAndLinkingObservers = ImmutableSortedMap.copyOf(responseAndLinkingObservers);
     this.responsesAndLinkingFromEREExtractor = checkNotNull(responsesAndLinkingFromEREExtractor);
     this.responsesAndLinkingFromKBPExtractorFactory = responsesAndLinkingFromKBPExtractorFactory;
     this.docIDsToScore = ImmutableSet.copyOf(docIDsToScore);
@@ -405,7 +410,7 @@ public final class ScoreKBPAgainstERE {
 
   }
 
-  private static void linkingScoringSetup(
+  private void linkingScoringSetup(
       final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
           inputAsResponsesAndLinking, final File outputDir) {
 
@@ -429,6 +434,13 @@ public final class ScoreKBPAgainstERE {
         transformBoth(allowedForRealis, transformArgs(LinkingRealisNeutralizer.INSTANCE));
     final InspectorTreeNode<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>
         filteredNodeNoRealis = transformed(neutralizedRealis, RestrictToLinking.INSTANCE);
+
+    for (final Map.Entry<String, Inspector<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>> linkingObserver : responseAndLinkingObservers
+        .entrySet()) {
+      log.info("Registered linking observer plugin {}", linkingObserver.getKey());
+      inspect(filteredNodeNoRealis).with(linkingObserver.getValue());
+    }
+
     // TODO: create PerEventLinkingDumper here
     final InspectorTreeNode<EvalPair<DocLevelArgLinking, DocLevelArgLinking>>
         linkingNodeNoRealis = transformBoth(filteredNodeNoRealis, ResponsesAndLinkingFunctions.linking());
@@ -592,11 +604,8 @@ public final class ScoreKBPAgainstERE {
     @Override
     public EvalPair<ResponsesAndLinking, ResponsesAndLinking> apply(
         final EvalPair<ResponsesAndLinking, ResponsesAndLinking> input) {
-      final DocLevelArgLinking newLinking =
-          input.test().linking().filterArguments(in(input.key().linking().allArguments()));
-      final Iterable<DocLevelEventArg> newArgs =
-          filter(input.test().args(), Predicates.in(input.key().args()));
-      return EvalPair.of(input.key(), ResponsesAndLinking.of(newArgs, newLinking));
+      return EvalPair.of(input.key(), input.test()
+          .filter(in(input.key().linking().allArguments())));
     }
   }
 
@@ -1172,7 +1181,7 @@ abstract class ResponsesAndLinking {
    * {@code PerEventLinkingDumper}
    */
   @Value.Parameter
-  public abstract Optional<ImmutableMultimap<DocLevelEventArg, Response>> docLevelArgsToResponses();
+  public abstract Optional<ImmutableSetMultimap<DocLevelEventArg, Response>> docLevelArgsToResponses();
 
   public static ResponsesAndLinking of(Iterable<? extends DocLevelEventArg> args,
       DocLevelArgLinking linking) {
@@ -1192,15 +1201,29 @@ abstract class ResponsesAndLinking {
   }
 
   public final ResponsesAndLinking filter(Predicate<? super DocLevelEventArg> predicate) {
-    return ResponsesAndLinking.of(
-        Iterables.filter(args(), predicate),
-        linking().filterArguments(predicate));
+    final ImmutableSet<DocLevelEventArg> filteredArgs = FluentIterable.from(args())
+        .filter(predicate).toSet();
+    final DocLevelArgLinking filteredLinking = linking().filterArguments(predicate);
+    if (docLevelArgsToResponses().isPresent()) {
+      return ResponsesAndLinking.of(filteredArgs, filteredLinking,
+          ImmutableSetMultimap.copyOf(filterKeys(docLevelArgsToResponses().get(), in(filteredArgs))));
+    } else {
+      return ResponsesAndLinking.of(filteredArgs, filteredLinking);
+    }
   }
 
   public final ResponsesAndLinking transform(
       final Function<? super DocLevelEventArg, DocLevelEventArg> transformer) {
-    return ResponsesAndLinking
-        .of(Iterables.transform(args(), transformer), linking().transformArguments(transformer));
+
+    final Iterable<DocLevelEventArg> transformedArgs = Iterables.transform(args(), transformer);
+    final DocLevelArgLinking transformedLinking = linking().transformArguments(transformer);
+
+    if (docLevelArgsToResponses().isPresent()) {
+      return ResponsesAndLinking.of(transformedArgs, transformedLinking,
+              MultimapUtils.copyWithTransformedKeys(docLevelArgsToResponses().get(), transformer));
+    } else {
+      return ResponsesAndLinking.of(transformedArgs, transformedLinking);
+    }
   }
 
   static Function<ResponsesAndLinking, ResponsesAndLinking> filterFunction(
