@@ -59,38 +59,38 @@ public final class ScoringUtils {
   }
 
   public static Optional<ScoringIdToEreObjectReturn> globalScoringIdToEreObject(
-      EREDocument ereDocument, String globalID) {
-    checkArgument(globalID.contains("-") && globalID.indexOf("-") < globalID.length()-1,
-        "Gloabl ID must contain and not end with a - but got %s", globalID);
-    final String withoutPrefix = globalID.substring(globalID.indexOf("-")+1);
+      EREDocument ereDocument, String globalId) {
+    checkArgument(globalId.contains("-") && globalId.indexOf("-") < globalId.length()-1,
+        "Gloabl ID must contain and not end with a - but got %s", globalId);
+    final String withoutPrefix = globalId.substring(globalId.indexOf("-")+1);
 
-    if (globalID.startsWith(ScoringEntityType.Name.name())
-        || globalID.startsWith(ScoringEntityType.Nominal.name())
-    || globalID.startsWith(ScoringEntityType.Pronoun.name())) {
+    if (globalId.startsWith(ScoringEntityType.Name.name())
+        || globalId.startsWith(ScoringEntityType.Nominal.name())
+    || globalId.startsWith(ScoringEntityType.Pronoun.name())) {
       for (final EREEntity ereEntity : ereDocument.getEntities()) {
         if (withoutPrefix.equals(ereEntity.getID())) {
           return Optional.<ScoringIdToEreObjectReturn>of(ImmutableScoringUtils.ScoringIdToEreObjectReturn.builder()
               .entityArgument(ereEntity).build());
         }
       }
-      throw new TACKBPEALException("Could not align coref ID to ERE entity. Coref ID is " + globalID);
-    } else if (globalID.startsWith(ScoringEntityType.Filler.name())) {
+      throw new TACKBPEALException("Could not align coref ID to ERE entity. Coref ID is " + globalId);
+    } else if (globalId.startsWith(ScoringEntityType.Filler.name())) {
       for (final EREFiller ereFiller : ereDocument.getFillers()) {
         if (withoutPrefix.equals(ereFiller.getID())) {
           return Optional.<ScoringIdToEreObjectReturn>of(ImmutableScoringUtils.ScoringIdToEreObjectReturn.builder()
               .fillerArgument(ereFiller).build());
         }
       }
-      throw new TACKBPEALException("Could not align coref ID to ERE filler. Coref ID is " + globalID);
-    } else if (globalID.startsWith(ScoringEntityType.Time.name())) {
+      throw new TACKBPEALException("Could not align coref ID to ERE filler. Coref ID is " + globalId);
+    } else if (globalId.startsWith(ScoringEntityType.Time.name())) {
       return Optional.<ScoringIdToEreObjectReturn>of(ImmutableScoringUtils.ScoringIdToEreObjectReturn.builder()
           .normalizedTime(withoutPrefix).build());
-    } else if (globalID.startsWith(ScoringEntityType.AlignmentFailure.name())) {
+    } else if (globalId.startsWith(ScoringEntityType.AlignmentFailure.name())) {
       // if something never aligned to ERE in the first place, we can't figure out
       // its corresponding ERE object
       return Optional.absent();
     } else {
-      throw new TACKBPEALException("Unknown ScoringEntityType prefix for " + globalID);
+      throw new TACKBPEALException("Unknown ScoringEntityType prefix for " + globalId);
     }
 
   }

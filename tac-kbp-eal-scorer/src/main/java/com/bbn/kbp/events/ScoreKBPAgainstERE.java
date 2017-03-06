@@ -144,7 +144,7 @@ public final class ScoreKBPAgainstERE {
 
   private static final Logger log = LoggerFactory.getLogger(ScoreKBPAgainstERE.class);
 
-  private final ImmutableSet<Symbol> docIDsToScore;
+  private final ImmutableSet<Symbol> docIdsToScore;
   private final EREDocumentSource ereDocumentSource;
 
   // left over from pre-Guice version
@@ -166,7 +166,7 @@ public final class ScoreKBPAgainstERE {
       final Map<String, Inspector<EvalPair<ResponsesAndLinking, ResponsesAndLinking>>> responseAndLinkingObservers,
       final ResponsesAndLinkingFromEREExtractor responsesAndLinkingFromEREExtractor,
       ResponsesAndLinkingFromKBPExtractorFactory responsesAndLinkingFromKBPExtractorFactory,
-      @DocIDsToScoreP Set<Symbol> docIDsToScore,
+      @DocIDsToScoreP Set<Symbol> docIdsToScore,
       EREDocumentSource ereDocumentSource,
       Predicate<DocLevelEventArg> inScopePredicate) {
     this.params = checkNotNull(params);
@@ -175,7 +175,7 @@ public final class ScoreKBPAgainstERE {
     this.responseAndLinkingObservers = ImmutableSortedMap.copyOf(responseAndLinkingObservers);
     this.responsesAndLinkingFromEREExtractor = checkNotNull(responsesAndLinkingFromEREExtractor);
     this.responsesAndLinkingFromKBPExtractorFactory = responsesAndLinkingFromKBPExtractorFactory;
-    this.docIDsToScore = ImmutableSet.copyOf(docIDsToScore);
+    this.docIdsToScore = ImmutableSet.copyOf(docIdsToScore);
     this.ereDocumentSource = ereDocumentSource;
     this.inScopePredicate = inScopePredicate;
   }
@@ -217,7 +217,7 @@ public final class ScoreKBPAgainstERE {
     outputDir.mkdirs();
 
 
-    log.info("Scoring over {} documents", docIDsToScore.size());
+    log.info("Scoring over {} documents", docIdsToScore.size());
 
     // on the gold side we take an ERE document as input
     final TypeToken<EREDocument> inputIsEREDoc = new TypeToken<EREDocument>() {
@@ -242,16 +242,16 @@ public final class ScoreKBPAgainstERE {
     setupScoring(input, responsesAndLinkingFromKBPExtractor, responsesAndLinkingFromEREExtractor,
         scoringEventObservers.values(), outputDir);
 
-    for (Symbol docID : docIDsToScore) {
-      final EREDocument ereDoc = ereDocumentSource.ereDocumentForDocId(docID);
+    for (Symbol docId : docIdsToScore) {
+      final EREDocument ereDoc = ereDocumentSource.ereDocumentForDocId(docId);
       // the LDC provides certain ERE documents with "-kbp" in the name. The -kbp is used by them
       // internally for some form of tracking but doesn't appear to the world, so we remove it.
-      if (!ereDoc.getDocId().replace("-kbp", "").equals(docID.asString().replace(".kbp", ""))) {
-        log.warn("Fetched document ID {} does not equal stored {}", ereDoc.getDocId(), docID);
+      if (!ereDoc.getDocId().replace("-kbp", "").equals(docId.asString().replace(".kbp", ""))) {
+        log.warn("Fetched document ID {} does not equal stored {}", ereDoc.getDocId(), docId);
       }
-      final Iterable<Response> responses = outputStore.read(docID).arguments().responses();
+      final Iterable<Response> responses = outputStore.read(docId).arguments().responses();
       final ResponseLinking linking =
-          ((DocumentSystemOutput2015) outputStore.read(docID)).linking();
+          ((DocumentSystemOutput2015) outputStore.read(docId)).linking();
       linking.copyWithFilteredResponses(in(ImmutableSet.copyOf(responses)));
       // feed this ERE doc/ KBP output pair to the scoring network
       input.inspect(EvalPair.of(ereDoc, new EREDocAndResponses(ereDoc, responses, linking)));
@@ -640,8 +640,8 @@ public final class ScoreKBPAgainstERE {
         log.warn("No output for eval pair {}", evalPair);
         return;
       }
-      final Symbol docid = checkNotNull(getFirst(args, null)).docID();
-      log.info("Gathering arg scores for {}", docid);
+      final Symbol docId = checkNotNull(getFirst(args, null)).docID();
+      log.info("Gathering arg scores for {}", docId);
       int docTPs = evalPair.leftAligned().size();
       checkArgument(evalPair.leftAligned().equals(evalPair.rightAligned()));
       this.aggregateTPs += docTPs;
@@ -652,10 +652,10 @@ public final class ScoreKBPAgainstERE {
       int docFNs = evalPair.leftUnaligned().size();
       aggregateFNs += docFNs;
       scoreAggregator += score;
-      truePositives.put(docid, docTPs);
-      falsePositives.put(docid, docFPs);
-      falseNegatives.put(docid, docFNs);
-      scores.put(docid, score);
+      truePositives.put(docId, docTPs);
+      falsePositives.put(docId, docFPs);
+      falseNegatives.put(docId, docFNs);
+      scores.put(docId, score);
     }
 
     private static final JacksonSerializer serializer =
@@ -735,9 +735,9 @@ public final class ScoreKBPAgainstERE {
       this.quoteFilter = checkNotNull(quoteFilter);
     }
 
-    private boolean inQuotedRegion(String docID, ERESpan span) {
+    private boolean inQuotedRegion(String docId, ERESpan span) {
       // the kbp replacement is a hack to handle dry run docids having additional tracking information on them sometimes.
-      return quoteFilter.isInQuote(Symbol.from(docID.replaceAll("-kbp", "")),
+      return quoteFilter.isInQuote(Symbol.from(docId.replaceAll("-kbp", "")),
           CharOffsetSpan.of(span.asCharOffsets()));
     }
 
@@ -907,13 +907,13 @@ public final class ScoreKBPAgainstERE {
       final EREDocument doc = input.ereDoc();
       // Work around LDC document ID inconsistency; -kbp is used internally by the LDC as a form of
       // document tracking. Externally the difference does not matter so we just normalize the ID
-      final Symbol ereID = Symbol.from(doc.getDocId().replace("-kbp", ""));
+      final Symbol ereId = Symbol.from(doc.getDocId().replace("-kbp", ""));
       final Optional<CoreNLPDocument> coreNLPDoc;
       final EREAligner ereAligner;
 
       try {
         if (coreNLPDocs.isPresent()) {
-          coreNLPDoc = Optional.of(coreNLPXMLLoader.loadFrom(coreNLPDocs.get().get(ereID)));
+          coreNLPDoc = Optional.of(coreNLPXMLLoader.loadFrom(coreNLPDocs.get().get(ereId)));
         } else {
           coreNLPDoc = Optional.absent();
         }
@@ -1373,12 +1373,12 @@ abstract class KBPEval2016HackedEreDocumentSource implements EREDocumentSource {
   public abstract ImmutableMap<Symbol, File> docIdToEreFileMap();
 
   @Override
-  public final EREDocument ereDocumentForDocId(final Symbol originalDocID) throws IOException {
+  public final EREDocument ereDocumentForDocId(final Symbol originalDocId) throws IOException {
     // EvalHack - 2016 dry run contains some files for which Serif spuriously adds this document ID
-    final Symbol hackedDocID = Symbol.from(originalDocID.asString().replace("-kbp", ""));
-    final File ereFileName = docIdToEreFileMap().get(hackedDocID);
+    final Symbol hackedDocId = Symbol.from(originalDocId.asString().replace("-kbp", ""));
+    final File ereFileName = docIdToEreFileMap().get(hackedDocId);
     if (ereFileName == null) {
-      throw new RuntimeException("Missing key file for " + hackedDocID);
+      throw new RuntimeException("Missing key file for " + hackedDocId);
     }
     return loader.loadFrom(ereFileName);
   }
