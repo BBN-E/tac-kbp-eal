@@ -1175,7 +1175,8 @@ abstract class ResponsesAndLinking {
 
   /**
    * This is here just as a hack to more easily smuggle information to
-   * {@code PerEventLinkingDumper}
+   * {@code PerEventLinkingDumper}.
+   * Not to be used as a root object in any scoring as it retains source response information.
    */
   @Value.Parameter
   public abstract Optional<ImmutableSetMultimap<DocLevelEventArg, Response>> docLevelArgsToResponses();
