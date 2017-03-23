@@ -101,19 +101,19 @@ final class CorpusEventFrameLoader2016 implements CorpusEventFrameLoader {
     final List<DocEventFrameReference> docEventFrameReferences = new ArrayList<>();
 
     for (final String docEventFrameString : StringUtils.onSpaces().splitToList(fields.get(1))) {
-      docEventFrameReferences.add(parseToDocEventFrame(docEventFrameString));
+      docEventFrameReferences.add(from2016IOForm(docEventFrameString));
     }
 
     return CorpusEventFrame.of(corpusEventFrameID, docEventFrameReferences);
   }
 
-  private DocEventFrameReference parseToDocEventFrame(final String docEventFrameString) {
-    final List<String> pieces = StringUtils.onDashes().splitToList(docEventFrameString);
-    if (pieces.size() == 2) {
-      return DocEventFrameReference.of(Symbol.from(pieces.get(0)), pieces.get(1));
-    } else {
-      throw new RuntimeException("Invalid document event frame reference " + docEventFrameString);
-    }
+  private static DocEventFrameReference from2016IOForm(final String IOForm) {
+    // NOTE: docids are allowed to contain strings in them. Particular instances include documents
+    // with "-kbp", which we understand to be special tracking markers within the LDC's system.
+    // additionally, some documents
+    final int lastDash = IOForm.lastIndexOf("-");
+    final Symbol docId = Symbol.from(IOForm.substring(0, lastDash));
+    final String eventFrameID = IOForm.substring(lastDash + 1);
+    return DocEventFrameReference.of(docId, eventFrameID);
   }
-
 }

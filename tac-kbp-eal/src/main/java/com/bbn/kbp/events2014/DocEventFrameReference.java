@@ -1,6 +1,6 @@
 package com.bbn.kbp.events2014;
 
-import com.bbn.bue.common.TextGroupPublicImmutable;
+import com.bbn.bue.common.TextGroupImmutable;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.bue.common.symbols.SymbolUtils;
 
@@ -18,8 +18,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 @Value.Immutable
 @Functional
-@TextGroupPublicImmutable
-abstract class _DocEventFrameReference {
+@TextGroupImmutable
+public abstract class DocEventFrameReference {
 
   @Value.Parameter
   public abstract Symbol docID();
@@ -30,7 +30,6 @@ abstract class _DocEventFrameReference {
   @Value.Check
   protected void checkPreconditions() {
     checkArgument(!docID().asString().isEmpty());
-    checkArgument(!docID().asString().contains("-"));
     checkArgument(!docID().asString().contains("\t"));
     checkArgument(!eventFrameID().isEmpty());
     checkArgument(!eventFrameID().contains("-"));
@@ -46,6 +45,10 @@ abstract class _DocEventFrameReference {
     return CanonicalStringFunction.INSTANCE;
   }
 
+  public static DocEventFrameReference of(final Symbol docID, final String eventFrameID) {
+    return new DocEventFrameReference.Builder().docID(docID).eventFrameID(eventFrameID).build();
+  }
+
   enum CanonicalStringFunction implements Function<DocEventFrameReference, String> {
     INSTANCE {
       @Override
@@ -54,5 +57,9 @@ abstract class _DocEventFrameReference {
         return input.docID().asString() + "-" + input.eventFrameID();
       }
     }
+  }
+
+  public static final class Builder extends ImmutableDocEventFrameReference.Builder {
+
   }
 }
