@@ -11,6 +11,7 @@
 
     <modules>
         <module>tac-kbp-eal</module>
+        <module>tac-kbp-2017</module>
         <module>tac-kbp-eal-scorer</module>
     </modules>
 
@@ -32,7 +33,7 @@
         <skipITs>true</skipITs>
 
         <junit.version>4.11</junit.version>
-        <bueopen.version>6.5.0</bueopen.version>
+        <bueopen.version>7.1.0</bueopen.version>
         <jackson.version>2.7.5</jackson.version>
 
         <!-- Sonar server properties. These only work BBN-internally -->
