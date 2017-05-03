@@ -8,6 +8,7 @@ import com.bbn.bue.common.symbols.Symbol;
  *   - type does not have provenance
  */
 interface Kbp2017EventTypeTriple extends Kbp2017Triple {
-  @Override Kbp2017EventNode subject();
+  @Override
+  EventNode subject();
   Symbol eventType();
 }

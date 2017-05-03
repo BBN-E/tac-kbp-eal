@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableSet;
  * - 2.10 list of predicates
  */
 interface Kbp2017Triple {
-  Kbp2017Node subject();
+  Node subject();
 }
 
 interface Kbp2017ProvenancedTriple extends Kbp2017Triple {

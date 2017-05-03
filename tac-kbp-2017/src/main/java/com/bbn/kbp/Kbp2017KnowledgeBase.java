@@ -17,18 +17,18 @@ import java.util.Set;
  *   - to be considered a duplicate, the triple and provenance must be the same and nothing else matters
  */
 interface Kbp2017KnowledgeBase {
-  ImmutableSet<Kbp2017Node> nodes();
+  ImmutableSet<Node> nodes();
   ImmutableSet<Kbp2017Triple> triples();
   ImmutableMap<Kbp2017Triple, Double> confidence();
 
   interface Builder {
-    Kbp2017EventNode makeEvent();
-    Kbp2017EventTypeTriple setEventType(Kbp2017EventNode eventNode, Symbol type);
-    Kbp2017ProvenancedTriple setEventArgument(Kbp2017EventNode eventNode, Kbp2017Argument argument,
+    EventNode makeEvent();
+    Kbp2017EventTypeTriple setEventType(EventNode eventNode, Symbol type);
+    Kbp2017ProvenancedTriple setEventArgument(EventNode eventNode, EventArgument eventArgument,
         Symbol eventType, Symbol role, Symbol realis, Set<Kbp2017Provenance> provenances);
-    Kbp2017EntityNode makeEntity();
-    Kbp2017EntityTypeTriple setEntityType(Kbp2017EntityNode entityNode, Symbol type);
-    Kbp2017MentionTriple setMention(Kbp2017Node node, String mention,
+    EntityNode makeEntity();
+    Kbp2017EntityTypeTriple setEntityType(EntityNode entityNode, Symbol type);
+    Kbp2017MentionTriple setMention(Node node, String mention,
         Set<Kbp2017Provenance> provenances);
 
     void setConfidence(Kbp2017Triple triple, double confidence);

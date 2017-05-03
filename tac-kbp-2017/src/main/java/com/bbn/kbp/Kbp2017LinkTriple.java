@@ -8,7 +8,8 @@ import com.bbn.bue.common.symbols.Symbol;
  *   - (QUESTION) should not have provenance
  */
 interface Kbp2017LinkTriple extends Kbp2017Triple {
-  @Override Kbp2017EntityNode subject();
+  @Override
+  EntityNode subject();
   Symbol externalKB();
   Symbol externalNodeID();
 }

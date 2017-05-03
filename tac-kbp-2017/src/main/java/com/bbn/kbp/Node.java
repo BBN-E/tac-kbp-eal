@@ -14,14 +14,14 @@ package com.bbn.kbp;
  *
  * Nodes must use identity-based equals and hashcode
  */
-interface Kbp2017Node {
+interface Node {
 }
 
-interface Kbp2017EventNode extends Kbp2017Node {
+interface EventNode extends Node {
 }
 
-interface Kbp2017EntityNode extends Kbp2017Node {
+interface EntityNode extends Node {
 }
 
-interface Kbp2017StringNode extends Kbp2017Node {
+interface StringNode extends Node {
 }

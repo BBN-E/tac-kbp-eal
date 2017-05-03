@@ -18,16 +18,19 @@ interface Kbp2017MentionTriple extends Kbp2017ProvenancedTriple {
 }
 
 interface Kbp2017EventMentionTriple extends Kbp2017MentionTriple {
-  @Override Kbp2017EventNode subject();
+  @Override
+  EventNode subject();
   Symbol realis();
 }
 
 interface Kbp2017EntityMentionTriple extends Kbp2017MentionTriple {
-  @Override Kbp2017EntityNode subject();
+  @Override
+  EntityNode subject();
 }
 
 interface Kbp2017StringMentionTriple extends Kbp2017MentionTriple {
-  @Override Kbp2017StringNode subject();
+  @Override
+  StringNode subject();
 }
 
 interface Kbp2017EventCanonicalMentionTriple extends Kbp2017EventMentionTriple {
