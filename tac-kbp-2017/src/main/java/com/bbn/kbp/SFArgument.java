@@ -9,12 +9,12 @@ import org.immutables.value.Value;
 import static com.google.common.base.Preconditions.checkArgument;
 
 /**
- * The object of an {@code EventArgumentAssertion} which can either be an {@code EntityNode} or a
+ * The object of an {@code SFAssertion} which can either be an {@code EntityNode} or a
  * {@code StringNode}.
  */
 @TextGroupImmutable
 @Value.Immutable
-public abstract class EventArgument {
+public abstract class SFArgument {
 
   abstract Optional<EntityNode> entityNode();
 
@@ -37,12 +37,12 @@ public abstract class EventArgument {
             + "but got entity node %s and string node %s", entityNode(), stringNode());
   }
 
-  public static EventArgument of(final EntityNode entityNode) {
-    return ImmutableEventArgument.builder().entityNode(entityNode).build();
+  public static SFArgument of(final EntityNode entityNode) {
+    return ImmutableSFArgument.builder().entityNode(entityNode).build();
   }
 
-  public static EventArgument of(final StringNode stringNode) {
-    return ImmutableEventArgument.builder().stringNode(stringNode).build();
+  public static SFArgument of(final StringNode stringNode) {
+    return ImmutableSFArgument.builder().stringNode(stringNode).build();
   }
 
 }

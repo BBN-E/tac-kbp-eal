@@ -1,27 +1,12 @@
 package com.bbn.kbp;
 
 /**
- * - IDs for entities and events and document (note: objects for these)
- * - nodes: entity nodes, event nodes, string nodes
- *   - predicate with string object must take string node rather than quoted string
- *     - except: type, link, mention predicates
- * - node names
- *   - (QUESTION) IDs can be ASCII alphanumeric value but check
- *     - ID doesn't have to start with a "_" but we would like to ensure that in output it does
- *   - entity nodes: :Entity<ID>
- *   - event nodes: :Event<ID>
- *   - string nodes: :String<ID>
- *
- * Nodes must use identity-based equals and hashcode
+ * A reified object in the KB (can be either an entity node, an event node, or a string node) that
+ * can be used as the subject or object of an {@code Assertion}. Node IDs all start with a colon and
+ * more specifically have the format ":Entity[ID]" for entity nodes, ":Event[ID]" for event nodes,
+ * and ":String[ID]". All examples given have an underscore starting the ID (E.G. :Entity_0043,
+ * :Event_045f, :String_4567), but the specification does not mandate this explicitly.
  */
 interface Node {
-}
 
-interface EventNode extends Node {
-}
-
-interface EntityNode extends Node {
-}
-
-interface StringNode extends Node {
 }
