@@ -3,7 +3,11 @@ package com.bbn.kbp;
 import com.bbn.bue.common.TextGroupImmutable;
 import com.bbn.bue.common.symbols.Symbol;
 
+import com.google.common.collect.ImmutableSet;
+
 import org.immutables.value.Value;
+
+import java.util.Set;
 
 /**
  * An assertion that an event has a particular argument. The format of this assertion is
@@ -21,6 +25,11 @@ public abstract class EventArgumentAssertion implements ProvenancedAssertion {
 
   @Override
   public abstract EventNode subject();
+
+  @Value.Derived
+  public Set<Node> allNodes() {
+    return ImmutableSet.of(subject(), argument().asNode());
+  }
 
   public abstract EventArgument argument();
 

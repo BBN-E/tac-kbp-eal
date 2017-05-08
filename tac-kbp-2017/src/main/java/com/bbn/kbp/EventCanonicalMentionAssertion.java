@@ -3,6 +3,8 @@ package com.bbn.kbp;
 import com.bbn.bue.common.TextGroupImmutable;
 import com.bbn.bue.common.symbols.Symbol;
 
+import com.google.common.collect.ImmutableSet;
+
 import org.immutables.value.Value;
 
 import java.util.Set;
@@ -20,6 +22,11 @@ public abstract class EventCanonicalMentionAssertion implements MentionAssertion
 
   @Override
   public abstract EventNode subject();
+
+  @Value.Derived
+  public Set<Node> allNodes() {
+    return ImmutableSet.<Node>of(subject());
+  }
 
   public abstract Symbol realis();
 

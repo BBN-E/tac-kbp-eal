@@ -3,6 +3,8 @@ package com.bbn.kbp;
 import com.bbn.bue.common.TextGroupImmutable;
 import com.bbn.bue.common.symbols.Symbol;
 
+import com.google.common.collect.ImmutableSet;
+
 import org.immutables.value.Value;
 
 import java.util.Set;
@@ -19,6 +21,11 @@ public abstract class SentimentAssertion implements ProvenancedAssertion {
 
   @Override
   public abstract EntityNode subject();
+
+  @Value.Derived
+  public Set<Node> allNodes() {
+    return ImmutableSet.<Node>of(subject(), object());
+  }
 
   public abstract EntityNode object();
 

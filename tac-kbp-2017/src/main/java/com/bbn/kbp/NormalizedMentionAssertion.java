@@ -2,6 +2,8 @@ package com.bbn.kbp;
 
 import com.bbn.bue.common.TextGroupImmutable;
 
+import com.google.common.collect.ImmutableSet;
+
 import org.immutables.value.Value;
 
 import java.util.Set;
@@ -20,6 +22,11 @@ public abstract class NormalizedMentionAssertion implements MentionAssertion {
 
   @Override
   public abstract StringNode subject();
+
+  @Value.Derived
+  public Set<Node> allNodes() {
+    return ImmutableSet.<Node>of(subject());
+  }
 
   public static NormalizedMentionAssertion of(final StringNode subject, final String mention,
       final Set<Provenance> provenances) {

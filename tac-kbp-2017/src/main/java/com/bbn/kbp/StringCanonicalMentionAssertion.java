@@ -2,6 +2,8 @@ package com.bbn.kbp;
 
 import com.bbn.bue.common.TextGroupImmutable;
 
+import com.google.common.collect.ImmutableSet;
+
 import org.immutables.value.Value;
 
 import java.util.Set;
@@ -19,6 +21,11 @@ public abstract class StringCanonicalMentionAssertion implements MentionAssertio
 
   @Override
   public abstract StringNode subject();
+
+  @Value.Derived
+  public Set<Node> allNodes() {
+    return ImmutableSet.<Node>of(subject());
+  }
 
   public static StringCanonicalMentionAssertion of(final StringNode subject, final String mention,
       final Set<Provenance> provenances) {
