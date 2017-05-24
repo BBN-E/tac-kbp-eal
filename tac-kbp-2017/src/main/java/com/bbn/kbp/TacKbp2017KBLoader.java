@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
 @Value.Immutable
 public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
 
-  private static final Pattern EMPTY_LINE_PATTERN = Pattern.compile("\\s*");
+  private static final Pattern EMPTY_OR_COMMENT_PATTERN = Pattern.compile("\\s*(#.*)?");
 
   public static TacKbp2017KBLoader create() {
     return ImmutableTacKbp2017KBLoader.builder().build();
@@ -51,7 +51,7 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
 
     final TacKbp2017KBLoading loading = new TacKbp2017KBLoading();
     while ((currentLine = reader.readLine()) != null) {
-      if (!EMPTY_LINE_PATTERN.matcher(currentLine).matches()) {
+      if (!EMPTY_OR_COMMENT_PATTERN.matcher(currentLine).matches()) {
         final AssertionConfidencePair pair = loading.parse(currentLine);
         kb.addAssertions(pair.assertion()).addAllNodes(pair.assertion().allNodes());
         if (pair.confidence().isPresent()) {
@@ -66,169 +66,255 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
 
     private final Map<String, Node> nodesForIds = HashBiMap.create();
 
-    private static final Pattern DOUBLE_PATTERN = Pattern.compile("\\d+\\.\\d+");
-    private static final Pattern SENTIMENT_PATTERN =
-        Pattern.compile("likes|dislikes|is_liked_by|is_disliked_by");
-    private static final Pattern MENTION_PATTERN =
-        Pattern.compile("(?:nominal_|pronominal_|canonical_|normalized_)?mention(?:\\..+)?");
-    private static final Pattern PROVENANCE_PATTERN =
-        Pattern.compile("(<docID>.+?):(<offsets>\\d+-\\d+(?:;\\d+-\\d+)?)");
-    private static final Pattern EVENT_ARG_PREDICATE_PATTERN =
-        Pattern.compile("(<event_type>.+?):(<role>.+?)\\.(<realis>.+)");
-
-    private static final Splitter TAB_SPLITTER = Splitter.on("\t");
-    private static final Splitter COLON_SPLITTER = Splitter.on(":");
     private static final Splitter COMMA_SPLITTER = Splitter.on(",");
     private static final Splitter SEMICOLON_SPLITTER = Splitter.on(";");
-    private static final Splitter HYPHEN_SPLITTER = Splitter.on("-");
-    private static final Splitter DOT_SPLITTER = Splitter.on(".");
+
+    private static final Pattern CONFIDENCE_PATTERN = Pattern.compile("\\d+(?:\\.\\d+)?");
+    private static final Pattern OFFSET_PATTERN = Pattern.compile("(?<start>\\d+)-(?<end>\\d+)");
+    private static final Pattern OFFSETS_PATTERN = Pattern.compile("\\d+-\\d+(?:;\\d+-\\d+)*");
+    private static final Pattern PROVENANCE_PATTERN = Pattern.compile(
+        "(?<docID>.+?):(?<offsets>" + OFFSETS_PATTERN.pattern() + ")");
+    private static final Pattern PROVENANCES_PATTERN = Pattern.compile(
+        ".+?:" + OFFSETS_PATTERN.pattern() + "(?:,.+?:" + OFFSETS_PATTERN.pattern() + ")*");
+
+    private static final Pattern TYPE_ASSERTION_PATTERN = Pattern.compile(
+        "(?<subject>(?::Event|:Entity|:String).+?)"
+            + "\\ttype"
+            + "\\t(?<type>.+?)"
+            + "(\\t(?<confidence>" + CONFIDENCE_PATTERN.pattern() + "))?"
+            + EMPTY_OR_COMMENT_PATTERN.pattern());
+    private static final Pattern LINK_ASSERTION_PATTERN = Pattern.compile(
+        "(?<subject>:Entity.+?)"
+            + "\\tlink"
+            + "\\t\"(?<externalKB>.+?):(?<externalNodeID>.+?)\""
+            + "(\\t(?<confidence>" + CONFIDENCE_PATTERN.pattern() + "))?"
+            + EMPTY_OR_COMMENT_PATTERN.pattern());
+    private static final Pattern SENTIMENT_ASSERTION_PATTERN = Pattern.compile(
+        "(?<subject>:Entity.+?)"
+            + "\\t(?<subjectEntityType>.+?):(?<sentiment>likes|dislikes|is_liked_by|is_disliked_by)"
+            + "\\t(?<object>:Entity.+?)"
+            + "\\t(?<provenances>" + PROVENANCES_PATTERN.pattern() + ")"
+            + "(\\t(?<confidence>" + CONFIDENCE_PATTERN.pattern() + "))?"
+            + EMPTY_OR_COMMENT_PATTERN.pattern());
+    private static final Pattern SF_ASSERTION_PATTERN = Pattern.compile(
+        "(?<subject>:Entity.+?)"
+            + "\\t(?<subjectEntityType>.+?):(?<relation>.+?)"
+            + "\\t(?<object>(?::Entity|:String).+?)"
+            + "\\t(?<provenances>" + PROVENANCES_PATTERN.pattern() + ")"
+            + "(\\t(?<confidence>" + CONFIDENCE_PATTERN.pattern() + "))?"
+            + EMPTY_OR_COMMENT_PATTERN.pattern());
+    private static final Pattern EVENT_ARGUMENT_ASSERTION_PATTERN = Pattern.compile(
+        "(?<subject>:Event.+?)"
+            + "\\t(?<eventType>.+?):(?<role>.+?)\\.(?<realis>.+?)"
+            + "\\t(?<argument>(?::Entity|:String).+?)"
+            + "\\t(?<provenances>" + PROVENANCES_PATTERN.pattern() + ")"
+            + "(\\t(?<confidence>" + CONFIDENCE_PATTERN.pattern() + "))?"
+            + EMPTY_OR_COMMENT_PATTERN.pattern());
+    private static final Pattern INVERSE_EVENT_ARGUMENT_ASSERTION_PATTERN = Pattern.compile(
+        "(?<subject>:Entity.+?)"
+            + "\\t(?<subjectEntityType>.+?):(?<eventType>.+?)_(?<role>.+?)\\.(?<realis>.+?)"
+            + "\\t(?<event>(?::Event).+?)"
+            + "\\t(?<provenances>" + PROVENANCES_PATTERN.pattern() + ")"
+            + "(\\t(?<confidence>" + CONFIDENCE_PATTERN.pattern() + "))?"
+            + EMPTY_OR_COMMENT_PATTERN.pattern());
+    private static final Pattern MENTION_ASSERTION_PATTERN = Pattern.compile(
+        "(?<subject>(?::Event|:Entity|:String).+?)"
+            + "\\t(?<mentionType>mention|canonical_mention|nominal_mention|pronominal_mention"
+                + "|normalized_mention)(\\.(?<realis>.+?))?"
+            + "\\t\"(?<mention>.+?)\""
+            + "\\t(?<provenances>" + PROVENANCES_PATTERN.pattern() + ")"
+            + "(\\t(?<confidence>" + CONFIDENCE_PATTERN.pattern() + "))?"
+            + EMPTY_OR_COMMENT_PATTERN.pattern());
 
     AssertionConfidencePair parse(final String line) {
-      final List<String> columns = TAB_SPLITTER.splitToList(line);
-      if (columns.size() == 3) {
-        return toAssertionConfidencePair(columns.get(0), columns.get(1), columns.get(2));
-      } else if (columns.size() == 4) {
-        return toAssertionConfidencePair(
-            columns.get(0), columns.get(1), columns.get(2), columns.get(3));
-      } else if (columns.size() == 5) {
-        return toAssertionConfidencePair(
-            columns.get(0), columns.get(1), columns.get(2), columns.get(3), columns.get(4));
+      final Matcher matcher;
+      final Assertion assertion;
+
+      final Matcher typeAssertionMatcher = TYPE_ASSERTION_PATTERN.matcher(line);
+      final Matcher linkAssertionMatcher = LINK_ASSERTION_PATTERN.matcher(line);
+      final Matcher sentimentAssertionMatcher = SENTIMENT_ASSERTION_PATTERN.matcher(line);
+      final Matcher sfAssertionMatcher = SF_ASSERTION_PATTERN.matcher(line);
+      final Matcher eventArgAssertionMatcher = EVENT_ARGUMENT_ASSERTION_PATTERN.matcher(line);
+      final Matcher inverseEventArgAssertionMatcher = INVERSE_EVENT_ARGUMENT_ASSERTION_PATTERN.matcher(line);
+      final Matcher mentionAssertionMatcher = MENTION_ASSERTION_PATTERN.matcher(line);
+
+      if (typeAssertionMatcher.matches()) {
+        matcher = typeAssertionMatcher;
+        assertion = toTypeAssertion(matcher);
+      } else if (linkAssertionMatcher.matches()) {
+        matcher = linkAssertionMatcher;
+        assertion = toLinkAssertion(matcher);
+      } else if (sentimentAssertionMatcher.matches()) {
+        matcher = sentimentAssertionMatcher;
+        assertion = toSentimentAssertion(matcher);
+      } else if (sfAssertionMatcher.matches()) {
+        matcher = sfAssertionMatcher;
+        assertion = toSFAssertion(matcher);
+      } else if (eventArgAssertionMatcher.matches()) {
+        matcher = eventArgAssertionMatcher;
+        assertion = toEventArgumentAssertion(matcher);
+      } else if (inverseEventArgAssertionMatcher.matches()) {
+        matcher = inverseEventArgAssertionMatcher;
+        assertion = toInverseEventArgumentAssertion(matcher);
+      } else if (mentionAssertionMatcher.matches()) {
+        matcher = mentionAssertionMatcher;
+        assertion = toMentionAssertion(matcher);
       } else {
         throw new IllegalArgumentException(
             String.format("\"%s\" is not a valid assertion line.", line));
       }
+      return matcher.group("confidence") == null ? AssertionConfidencePair.of(assertion) :
+        AssertionConfidencePair.of(assertion, Double.parseDouble(matcher.group("confidence")));
     }
 
-    private AssertionConfidencePair toAssertionConfidencePair(final String subject,
-        final String predicate, final String object) {
-      return AssertionConfidencePair.of(toAssertion(subject, predicate, object));
+    private TypeAssertion toTypeAssertion(final Matcher matcher) {
+      final Node subjectNode = nodeFor(matcher.group("subject"));
+      final Symbol type = Symbol.from(matcher.group("type"));
+      return TypeAssertion.of(subjectNode, type);
     }
 
-    private AssertionConfidencePair toAssertionConfidencePair(final String subject,
-        final String predicate, final String object, final String confidenceOrProvenances) {
+    private LinkAssertion toLinkAssertion(final Matcher matcher) {
+      final EntityNode subjectNode = (EntityNode) nodeFor(matcher.group("subject"));
+      final Symbol externalKB = Symbol.from(matcher.group("externalKB"));
+      final Symbol externalNodeId = Symbol.from(matcher.group("externalNodeID"));
+      return LinkAssertion.of(subjectNode, externalKB, externalNodeId);
+    }
 
-      if (DOUBLE_PATTERN.matcher(confidenceOrProvenances).matches()) {
-        final Assertion assertion = toAssertion(subject, predicate, object);
-        final double confidence = Double.parseDouble(confidenceOrProvenances);
-        return AssertionConfidencePair.of(assertion, confidence);
-      } else {
-        final Assertion assertion = toAssertion(subject, predicate, object, confidenceOrProvenances);
-        return AssertionConfidencePair.of(assertion);
+    private SentimentAssertion toSentimentAssertion(final Matcher matcher) {
+      return SentimentAssertion.builder()
+          .subject((EntityNode) nodeFor(matcher.group("subject")))
+          .object((EntityNode) nodeFor(matcher.group("object")))
+          .subjectEntityType(Symbol.from(matcher.group("subjectEntityType")))
+          .sentiment(Symbol.from(matcher.group("sentiment")))
+          .provenances(toProvenances(matcher.group("provenances")))
+          .build();
+    }
+
+    private SFAssertion toSFAssertion(final Matcher matcher) {
+      final SFAssertion.Builder sfAssertion = SFAssertion.builder();
+      sfAssertion.subject((EntityNode) nodeFor(matcher.group("subject")));
+      sfAssertion.subjectEntityType(Symbol.from(matcher.group("subjectEntityType")));
+      sfAssertion.relation(Symbol.from(matcher.group("relation")));
+      sfAssertion.provenances(toProvenances(matcher.group("provenances")));
+      final Node objectNode = nodeFor(matcher.group("object"));
+      if (objectNode instanceof EntityNode) {
+        return sfAssertion.object((EntityNode) objectNode).build();
+      } else {  // if (objectNode instanceof StringNode)
+        return sfAssertion.object((StringNode) objectNode).build();
       }
     }
 
-    private AssertionConfidencePair toAssertionConfidencePair(final String subject,
-        final String predicate, final String object, final String provenances,
-        final String confidence) {
-
-      final Assertion assertion = toAssertion(subject, predicate, object, provenances);
-      return AssertionConfidencePair.of(assertion, Double.parseDouble(confidence));
-    }
-
-    private Assertion toAssertion(final String subject, final String predicate,
-        final String object) {
-      if (predicate.equals("type")) {
-        return TypeAssertion.of(nodeFor(subject), Symbol.from(object));
-      } else if (predicate.equals("link")) {
-        final List<String> externalKBPair = COLON_SPLITTER.splitToList(dequotedString(object));
-        if (externalKBPair.size() != 2) {
-          throw new IllegalArgumentException(
-              String.format("%s is not in a valid external KB link for assertion: \"%s\t%s\t%s\".",
-                  object, subject, predicate, object));
-        }
-        return LinkAssertion.of((EntityNode) nodeFor(subject),
-            Symbol.from(externalKBPair.get(0)),
-            Symbol.from(externalKBPair.get(1)));
-      } else {
-        throw new IllegalArgumentException(
-            String.format("Do not recognize the unprovenanced predicate: %s.", predicate));
-      }
-    }
-
-    private Assertion toAssertion(final String subject, final String predicate,
-        final String object, final String provenances) {
-      if (SENTIMENT_PATTERN.matcher(predicate).matches()) {
-        return SentimentAssertion.builder()
-            .subject((EntityNode) nodeFor(subject))
-            .sentiment(Symbol.from(predicate))
-            .object((EntityNode) nodeFor(object))
-            .provenances(toProvenances(provenances))
-            .build();
-      } else if (MENTION_PATTERN.matcher(predicate).matches()) {
-        return toMentionAssertion(subject, predicate, object, provenances);
-      } else if (nodeFor(subject) instanceof EntityNode) {
-        return toSFAssertion(subject, predicate, object, provenances);
-      } else if (nodeFor(subject) instanceof EventNode) {
-        return toEventArgumentAssertion(subject, predicate, object, provenances);
-      } else {
-        throw new IllegalArgumentException(
-            String.format("Could not parse assertion: \"%s\t%s\t%s\t%s\".",
-                subject, predicate, object, provenances));
-      }
-    }
-
-    private SFAssertion toSFAssertion(final String subject, final String predicate,
-        final String object, final String provenances) {
-      final List<String> entityTypeRelationPair = COLON_SPLITTER.splitToList(predicate);
-      if (entityTypeRelationPair.size() != 2) {
-        throw new IllegalArgumentException(
-            String.format("%s is not a valid SF predicate for assertion: \"%s\t%s\t%s\t%s\"",
-                predicate, subject, predicate, object, provenances));
-      }
-      if (nodeFor(object) instanceof EntityNode) {
-        return SFAssertion.builder()
-            .subject((EntityNode) nodeFor(subject))
-            .object((EntityNode) nodeFor(object))
-            .subjectEntityType(Symbol.from(entityTypeRelationPair.get(0)))
-            .relation(Symbol.from(entityTypeRelationPair.get(1)))
-            .build();
-      } else if (nodeFor(object) instanceof StringNode) {
-        return SFAssertion.builder()
-            .subject((EntityNode) nodeFor(subject))
-            .object((StringNode) nodeFor(object))
-            .subjectEntityType(Symbol.from(entityTypeRelationPair.get(0)))
-            .relation(Symbol.from(entityTypeRelationPair.get(1)))
-            .build();
-      } else {
-        throw new IllegalArgumentException(
-            String.format("%s is not a valid object for SF assertion: \"%s\t%s\t%s\t%s\"",
-                object, subject, predicate, object, provenances));
+    private EventArgumentAssertion toEventArgumentAssertion(final Matcher matcher) {
+      final EventArgumentAssertion.Builder eventArgAssertion = EventArgumentAssertion.builder();
+      eventArgAssertion.subject((EventNode) nodeFor(matcher.group("subject")));
+      eventArgAssertion.eventType(Symbol.from(matcher.group("eventType")));
+      eventArgAssertion.role(Symbol.from(matcher.group("role")));
+      eventArgAssertion.realis(Symbol.from(matcher.group("realis")));
+      eventArgAssertion.provenances(toProvenances(matcher.group("provenances")));
+      final Node argumentNode = nodeFor(matcher.group("argument"));
+      if (argumentNode instanceof EntityNode) {
+        return eventArgAssertion.argument((EntityNode) argumentNode).build();
+      } else {  // if (argumentNode instanceof StringNode)
+        return eventArgAssertion.argument((StringNode) argumentNode).build();
       }
     }
 
     /**
-     * Note: This does not handle inverse event argument assertions.
+     * Although we treat inverse event argument assertions the same as regular event argument
+     * assertions (and never write the inverse format out), we still want to be able to read them.
      */
-    private EventArgumentAssertion toEventArgumentAssertion(final String subject, final String predicate,
-        final String object, final String provenances) {
-      final Matcher matcher = EVENT_ARG_PREDICATE_PATTERN.matcher(predicate);
-      if (!matcher.matches()) {
-        throw new IllegalArgumentException(
-            String.format("%s is not a valid SF predicate for assertion: \"%s\t%s\t%s\t%s\"",
-                predicate, subject, predicate, object, provenances));
+    private EventArgumentAssertion toInverseEventArgumentAssertion(final Matcher matcher) {
+      return EventArgumentAssertion.builder()
+          .subject((EventNode) nodeFor(matcher.group("event")))
+          .argument((EntityNode) nodeFor(matcher.group("subject")))
+          .eventType(Symbol.from(matcher.group("eventType")))
+          .role(Symbol.from(matcher.group("role")))
+          .realis(Symbol.from(matcher.group("realis")))
+          .provenances(toProvenances(matcher.group("provenances")))
+          .build();
+    }
+
+    private MentionAssertion toMentionAssertion(final Matcher matcher) {
+      final Node subjectNode = nodeFor(matcher.group("subject"));
+      final String mentionType = matcher.group("mentionType");
+      final String realisString = matcher.group("realis");
+      if (mentionType.equals("mention")) {
+        return toRegularMentionAssertion(matcher);
+      } else if (mentionType.equals("canonical_mention")) {
+        return toCanonicalMentionAssertion(matcher);
+      } else if (mentionType.equals("nominal_mention")
+          && subjectNode instanceof EntityNode
+          && realisString == null) {
+        return toNominalMentionAssertion(matcher);
+      } else if (mentionType.equals("pronominal_mention")
+          && subjectNode instanceof EntityNode
+          && realisString == null) {
+        return toPronominalMentionAssertion(matcher);
+      } else if (mentionType.equals("normalized_mention")
+          && subjectNode instanceof StringNode
+          && realisString == null) {
+        return toNormalizedMentionAssertion(matcher);
       } else {
-        if (nodeFor(object) instanceof EntityNode) {
-          return EventArgumentAssertion.builder()
-              .subject((EventNode) nodeFor(subject))
-              .argument((EntityNode) nodeFor(object))
-              .eventType(Symbol.from(matcher.group("event_type")))
-              .role(Symbol.from(matcher.group("role")))
-              .realis(Symbol.from(matcher.group("realis")))
-              .build();
-        } else if (nodeFor(object) instanceof StringNode) {
-          return EventArgumentAssertion.builder()
-              .subject((EventNode) nodeFor(subject))
-              .argument((StringNode) nodeFor(object))
-              .eventType(Symbol.from(matcher.group("event_type")))
-              .role(Symbol.from(matcher.group("role")))
-              .realis(Symbol.from(matcher.group("realis")))
-              .build();
-        } else {
-          throw new IllegalArgumentException(
-              String.format("%s is not a valid object for SF assertion: \"%s\t%s\t%s\t%s\"",
-                  object, subject, predicate, object, provenances));
-        }
+        throw new IllegalArgumentException(
+            String.format("\"%s\" is not a valid mention assertion.", matcher.group()));
       }
+    }
+
+    private MentionAssertion toRegularMentionAssertion(final Matcher matcher) {
+      final Node subjectNode = nodeFor(matcher.group("subject"));
+      final String mention = unescapedString(matcher.group("mention"));
+      final String realisString = matcher.group("realis");
+      final Set<Provenance> provenances = toProvenances(matcher.group("provenances"));
+      if (subjectNode instanceof EventNode && realisString != null) {
+        final Symbol realis = Symbol.from(realisString);
+        return EventMentionAssertion.of((EventNode) subjectNode, mention, realis, provenances);
+      } else if (subjectNode instanceof EntityNode && realisString == null) {
+        return EntityMentionAssertion.of((EntityNode) subjectNode, mention, provenances);
+      } else if (subjectNode instanceof StringNode && realisString == null) {
+        return StringMentionAssertion.of((StringNode) subjectNode, mention, provenances);
+      } else {
+        throw new IllegalArgumentException(
+            String.format("\"%s\" is not a valid mention assertion.", matcher.group()));
+      }
+    }
+
+    private MentionAssertion toCanonicalMentionAssertion(final Matcher matcher) {
+      final Node subjectNode = nodeFor(matcher.group("subject"));
+      final String mention = unescapedString(matcher.group("mention"));
+      final String realisString = matcher.group("realis");
+      final Set<Provenance> provenances = toProvenances(matcher.group("provenances"));
+      if (subjectNode instanceof EventNode && realisString != null) {
+        final Symbol realis = Symbol.from(realisString);
+        return EventCanonicalMentionAssertion.of((EventNode) subjectNode, mention, realis, provenances);
+      } else if (subjectNode instanceof EntityNode && realisString == null) {
+        return EntityCanonicalMentionAssertion.of((EntityNode) subjectNode, mention, provenances);
+      } else if (subjectNode instanceof StringNode && realisString == null) {
+        return StringCanonicalMentionAssertion.of((StringNode) subjectNode, mention, provenances);
+      } else {
+        throw new IllegalArgumentException(
+            String.format("\"%s\" is not a valid mention assertion.", matcher.group()));
+      }
+    }
+
+    private NominalMentionAssertion toNominalMentionAssertion(final Matcher matcher) {
+      final EntityNode subjectNode = (EntityNode) nodeFor(matcher.group("subject"));
+      final String mention = unescapedString(matcher.group("mention"));
+      final Set<Provenance> provenances = toProvenances(matcher.group("provenances"));
+      return NominalMentionAssertion.of(subjectNode, mention, provenances);
+    }
+
+    private PronominalMentionAssertion toPronominalMentionAssertion(final Matcher matcher) {
+      final EntityNode subjectNode = (EntityNode) nodeFor(matcher.group("subject"));
+      final String mention = unescapedString(matcher.group("mention"));
+      final Set<Provenance> provenances = toProvenances(matcher.group("provenances"));
+      return PronominalMentionAssertion.of(subjectNode, mention, provenances);
+    }
+
+    private NormalizedMentionAssertion toNormalizedMentionAssertion(final Matcher matcher) {
+      final StringNode subjectNode = (StringNode) nodeFor(matcher.group("subject"));
+      final String mention = unescapedString(matcher.group("mention"));
+      final Set<Provenance> provenances = toProvenances(matcher.group("provenances"));
+      return NormalizedMentionAssertion.of(subjectNode, mention, provenances);
     }
 
     private Set<Provenance> toProvenances(final String string) {
@@ -243,108 +329,10 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
           provenances.add(Provenance.of(docId, offsets));
         } else {
           throw new IllegalArgumentException(
-              String.format("The following provenance could not be parsed: %s.", string));
+              String.format("The following provenance could not be parsed: %s.", provenanceString));
         }
       }
       return provenances.build();
-    }
-
-    private MentionAssertion toMentionAssertion(final String subject, final String predicate,
-        final String object, final String provenances) {
-      if (predicate.startsWith("mention")) {
-        if (nodeFor(subject) instanceof EntityNode) {
-          return toEntityMentionAssertion(subject, predicate, object, provenances);
-        } else if (nodeFor(subject) instanceof EventNode) {
-          return toEventMentionAssertion(subject, predicate, object, provenances);
-        } else { // if (nodeFor(subject) instanceof StringNode)
-          return toStringMentionAssertion(subject, predicate, object, provenances);
-        }
-      } else if (predicate.startsWith("nominal_mention")) {
-        return toNominalMentionAssertion(subject, predicate, object, provenances);
-      } else if (predicate.startsWith("pronominal_mention")) {
-        return toPronominalMentionAssertion(subject, predicate, object, provenances);
-      } else if (predicate.startsWith("canonical_mention")) {
-        if (nodeFor(subject) instanceof EntityNode) {
-          return toEntityCanonicalMentionAssertion(subject, predicate, object, provenances);
-        } else if (nodeFor(subject) instanceof EventNode) {
-          return toEventCanonicalMentionAssertion(subject, predicate, object, provenances);
-        } else { // if (nodeFor(subject) instanceof StringNode)
-          return toStringCanonicalMentionAssertion(subject, predicate, object, provenances);
-        }      } else if (predicate.startsWith("normalized_mention")) {
-        return toNormalizedMentionAssertion(subject, predicate, object, provenances);
-      } else {
-        throw new IllegalArgumentException(
-            String.format("The following mention assertion could not be parsed: \"%s\t%s\t%s\t%s\".",
-                subject, predicate, object, provenances));
-      }
-    }
-
-    private EntityMentionAssertion toEntityMentionAssertion(final String subject,
-        final String predicate, final String object, final String provenances) {
-      return EntityMentionAssertion.of(
-          (EntityNode) nodeFor(subject), dequotedString(object), toProvenances(provenances));
-    }
-
-    private EventMentionAssertion toEventMentionAssertion(final String subject,
-        final String predicate, final String object, final String provenances) {
-      final List<String> mentionTypeRealisPair = DOT_SPLITTER.splitToList(predicate);
-      if (mentionTypeRealisPair.size() != 2) {
-        throw new IllegalArgumentException(
-            String.format("%s is not a valid mention predicate for assertion: \"%s\t%s\t%s\t%s\"",
-                predicate, subject, predicate, object, provenances));
-      }
-      final Symbol realis = Symbol.from(mentionTypeRealisPair.get(1));
-      return EventMentionAssertion.of(
-          (EventNode) nodeFor(subject), dequotedString(object), realis, toProvenances(provenances));
-    }
-
-    private StringMentionAssertion toStringMentionAssertion(final String subject,
-        final String predicate, final String object, final String provenances) {
-      return StringMentionAssertion.of(
-          (StringNode) nodeFor(subject), dequotedString(object), toProvenances(provenances));
-    }
-
-    private EntityCanonicalMentionAssertion toEntityCanonicalMentionAssertion(final String subject,
-        final String predicate, final String object, final String provenances) {
-      return EntityCanonicalMentionAssertion.of(
-          (EntityNode) nodeFor(subject), dequotedString(object), toProvenances(provenances));
-    }
-
-    private EventCanonicalMentionAssertion toEventCanonicalMentionAssertion(final String subject,
-        final String predicate, final String object, final String provenances) {
-      final List<String> mentionTypeRealisPair = DOT_SPLITTER.splitToList(predicate);
-      if (mentionTypeRealisPair.size() != 2) {
-        throw new IllegalArgumentException(
-            String.format("%s is not a valid mention predicate for assertion: \"%s\t%s\t%s\t%s\"",
-                predicate, subject, predicate, object, provenances));
-      }
-      final Symbol realis = Symbol.from(mentionTypeRealisPair.get(1));
-      return EventCanonicalMentionAssertion.of(
-          (EventNode) nodeFor(subject), dequotedString(object), realis, toProvenances(provenances));
-    }
-
-    private StringCanonicalMentionAssertion toStringCanonicalMentionAssertion(final String subject,
-        final String predicate, final String object, final String provenances) {
-      return StringCanonicalMentionAssertion.of(
-          (StringNode) nodeFor(subject), dequotedString(object), toProvenances(provenances));
-    }
-
-    private NominalMentionAssertion toNominalMentionAssertion(final String subject,
-        final String predicate, final String object, final String provenances) {
-      return NominalMentionAssertion.of(
-          (EntityNode) nodeFor(subject), dequotedString(object), toProvenances(provenances));
-    }
-
-    private PronominalMentionAssertion toPronominalMentionAssertion(final String subject,
-        final String predicate, final String object, final String provenances) {
-      return PronominalMentionAssertion.of(
-          (EntityNode) nodeFor(subject), dequotedString(object), toProvenances(provenances));
-    }
-
-    private NormalizedMentionAssertion toNormalizedMentionAssertion(final String subject,
-        final String predicate, final String object, final String provenances) {
-      return NormalizedMentionAssertion.of(
-          (StringNode) nodeFor(subject), dequotedString(object), toProvenances(provenances));
     }
 
     private Set<OffsetRange<CharOffset>> toOffsets(final String string) {
@@ -352,10 +340,15 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
 
       final ImmutableSet.Builder<OffsetRange<CharOffset>> offsets = ImmutableSet.builder();
       for (final String offsetString : offsetStrings) {
-        final List<String> range = HYPHEN_SPLITTER.splitToList(offsetString);
-        final OffsetRange<CharOffset> offset = OffsetRange
-            .charOffsetRange(Integer.parseInt(range.get(0)), Integer.parseInt(range.get(1)));
-        offsets.add(offset);
+        final Matcher matcher = OFFSET_PATTERN.matcher(offsetString);
+        if (matcher.matches()) {
+          final int start = Integer.parseInt(matcher.group("start"));
+          final int end = Integer.parseInt(matcher.group("end"));
+          offsets.add(OffsetRange.charOffsetRange(start, end));
+        } else {
+          throw new IllegalArgumentException(
+              String.format("The following offset could not be parsed: %s.", offsetString));
+        }
       }
       return offsets.build();
     }
@@ -380,8 +373,8 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
       }
     }
 
-    private String dequotedString(final String string) {
-      return string.replaceAll("^\"|\"$", "").replace("\\\"", "\"").replace("\\\\", "\\");
+    private String unescapedString(final String string) {
+      return string.replace("\\\"", "\"").replace("\\\\", "\\");
     }
   }
 
