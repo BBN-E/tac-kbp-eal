@@ -15,9 +15,9 @@ Conflict.Demonstrate	Place	GPE	FAC	LOC	VEH
 Contact.Meet	Entity	PER	ORG	GPE
 Contact.Meet	Time	Time
 Contact.Meet	Place	GPE	FAC	LOC	VEH
-Contact.Correspondance	Entity	PER	ORG	GPE
-Contact.Correspondance	Time	Time
-Contact.Correspondance	Place	GPE	FAC	LOC	VEH
+Contact.Correspondence	Entity	PER	ORG	GPE
+Contact.Correspondence	Time	Time
+Contact.Correspondence	Place	GPE	FAC	LOC	VEH
 Life.Marry	Person	PER
 Life.Marry	Time	Time
 Life.Marry	Place	GPE	FAC	LOC	VEH

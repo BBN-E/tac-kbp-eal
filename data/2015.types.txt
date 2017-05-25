@@ -3,7 +3,7 @@ Business.Merge-Org	Org
 Conflict.Attack	Attacker	Target	Instrument
 Conflict.Demonstrate	Entity
 Contact.Meet	Entity
-Contact.Correspondance	Entity
+Contact.Correspondence	Entity
 Life.Marry	Person
 Life.Divorce	Person
 Life.Injure	Agent	Victim	Instrument

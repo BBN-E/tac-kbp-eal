@@ -18,8 +18,8 @@ Charge-Indict	Charge-Indict
 ChargeIndict	Charge-Indict
 convict	Convict
 Convict	Convict
-correspondance	Correspondance
-Correspondance	Correspondance
+correspondence	Correspondence
+Correspondence	Correspondence
 declare-bankruptcy	Declare-Bankruptcy
 declarebankruptcy	Declare-Bankruptcy
 declareBankruptcy	Declare-Bankruptcy
