@@ -36,23 +36,25 @@ public class TacKbp2017KBWriter implements KnowledgeBaseWriter {
   @Override
   public void write(final KnowledgeBase kb, final CharSink sink) throws IOException {
 
-    final Writer writer = sink.openBufferedStream();
-    writer.write(kb.runId().asString() + "\n");
+    try (final Writer writer = sink.openBufferedStream()) {
+      writer.write(kb.runId().asString() + "\n");
 
-    final TacKbp2017KBWriting writing = new TacKbp2017KBWriting();
-    for (final Assertion assertion : kb.assertions()) {
-      final StringBuilder assertionOutputString = new StringBuilder();
-      assertionOutputString.append(writing.assertionToString(assertion));
-      // We don't want to write out confidences that are below 0.001 because that will write out
-      // "0.000" after formatting and a confidence score cannot be 0.0.
-      if (kb.confidence().containsKey(assertion) && kb.confidence().get(assertion) >= 0.001) {
-        final double confidence = kb.confidence().get(assertion);
-        assertionOutputString.append("\t").append(String.format(Locale.US, "%.3f", confidence));
+      final TacKbp2017KBWriting writing = new TacKbp2017KBWriting();
+      for (final Assertion assertion : kb.assertions()) {
+        final StringBuilder assertionOutputString = new StringBuilder();
+        assertionOutputString.append(writing.assertionToString(assertion));
+        if (kb.confidence().containsKey(assertion)) {
+          final double confidence = kb.confidence().get(assertion);
+          if (confidence >= 0.000001) {
+            assertionOutputString.append("\t").append(String.format(Locale.US, "%.6f", confidence));
+          } else {
+            assertionOutputString.append("\t").append(String.format(Locale.US, "%.6f", 0.000001));
+          }
+        }
+        assertionOutputString.append("\n");
+        writer.write(assertionOutputString.toString());
       }
-      assertionOutputString.append("\n");
-      writer.write(assertionOutputString.toString());
     }
-    writer.close();
   }
 
   static final class TacKbp2017KBWriting {

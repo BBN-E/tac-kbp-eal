@@ -44,22 +44,24 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
 
   @Override
   public KnowledgeBase load(final CharSource input) throws IOException {
-    final KnowledgeBase.Builder kb = KnowledgeBase.builder();
-    final BufferedReader reader = input.openBufferedStream();
-    String currentLine = reader.readLine();
-    kb.runId(Symbol.from(currentLine));
 
-    final TacKbp2017KBLoading loading = new TacKbp2017KBLoading();
-    while ((currentLine = reader.readLine()) != null) {
-      if (!EMPTY_OR_COMMENT_PATTERN.matcher(currentLine).matches()) {
-        final AssertionConfidencePair pair = loading.parse(currentLine);
-        kb.addAssertions(pair.assertion()).addAllNodes(pair.assertion().allNodes());
-        if (pair.confidence().isPresent()) {
-          kb.putConfidence(pair.assertion(), pair.confidence().get());
+    try (final BufferedReader reader = input.openBufferedStream()) {
+      final KnowledgeBase.Builder kb = KnowledgeBase.builder();
+      String currentLine = reader.readLine();
+      kb.runId(Symbol.from(currentLine));
+
+      final TacKbp2017KBLoading loading = new TacKbp2017KBLoading();
+      while ((currentLine = reader.readLine()) != null) {
+        if (!EMPTY_OR_COMMENT_PATTERN.matcher(currentLine).matches()) {
+          final AssertionConfidencePair pair = loading.parse(currentLine);
+          kb.addAssertions(pair.assertion()).addAllNodes(pair.assertion().allNodes());
+          if (pair.confidence().isPresent()) {
+            kb.putConfidence(pair.assertion(), pair.confidence().get());
+          }
         }
       }
+      return kb.build();
     }
-    return kb.build();
   }
 
   static final class TacKbp2017KBLoading {

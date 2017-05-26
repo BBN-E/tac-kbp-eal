@@ -133,17 +133,23 @@ public class TacKbp2017KBWriterTest {
     final Assertion assertion1 = TypeAssertion.of(eventNode0, Symbol.from("CONFLICT.ATTACK"));
     final Assertion assertion2 = EventMentionAssertion.of(
         eventNode0, "dummy\tmention", Symbol.from("actual"), dummyProvenances);
+    final Assertion assertion3 = TypeAssertion.of(stringNode0, Symbol.from("STRING"));
+    final Assertion assertion4 = NormalizedMentionAssertion.of(
+        stringNode0, "XXXX-XX-XX", dummyProvenances);
 
     final KnowledgeBase kb = KnowledgeBase.builder()
         .runId(Symbol.from("dummy_runID"))
-        .addNodes(eventNode0)
-        .addAssertions(assertion1, assertion2)
+        .addNodes(eventNode0, stringNode0)
+        .addAssertions(assertion1, assertion2, assertion3, assertion4)
         .putConfidence(assertion1, 0.9)
+        .putConfidence(assertion3, 0.0000000000000000000000000000000001)
         .build();
 
     final String expectedOutput = "dummy_runID\n"
-        + ":Event_000000\ttype\tCONFLICT.ATTACK\t0.900\n"
-        + ":Event_000000\tmention.actual\t\"dummy mention\"\tdocID:5-12,docID:5-12;10-15";
+        + ":Event_000000\ttype\tCONFLICT.ATTACK\t0.900000\n"
+        + ":Event_000000\tmention.actual\t\"dummy mention\"\tdocID:5-12,docID:5-12;10-15\n"
+        + ":String_000000\ttype\tSTRING\t0.000001\n"
+        + ":String_000000\tnormalized_mention\t\"XXXX-XX-XX\"\tdocID:5-12,docID:5-12;10-15";
 
     final File outputFile = File.createTempFile("kb-writer-test", ".tmp");
     writer.write(kb, Files.asCharSink(outputFile, Charsets.UTF_8));

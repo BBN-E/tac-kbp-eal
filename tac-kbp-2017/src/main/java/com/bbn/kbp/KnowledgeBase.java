@@ -44,7 +44,7 @@ public abstract class KnowledgeBase {
     for (final Assertion assertion : assertions()) {
       checkArgument(nodes().containsAll(assertion.allNodes()),
           "Assertion %s contains unknown nodes %s.",
-          assertion, Sets.difference(nodes(), assertion.allNodes()));
+          assertion, Sets.difference(assertion.allNodes(), nodes()));
     }
 
     // check that confidence scores are valid (between 0.0 and 1.0)
