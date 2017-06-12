@@ -1,6 +1,8 @@
 #1/bin/bash
 
 # This script is based around the instructions in Evaluation.md, modified to suit running with multiple systems
+# It is a sample script that shows how to run each of the intermediate steps; it is recommended that you write
+# separate parameter files and run the steps individually instead of through this script.
 
 
 # enables debug mode
@@ -113,10 +115,18 @@ systemOutput: $keep_bested
 docIDsToScore: $DOCIDS_TO_SCORE
 goldDocIDToFileMap: $RICHERE_MAP
 ereScoringOutput: $SCRATCH/processing/$system_name/scoreKBPAgainstERE
+# these three parameters control using corenlp for scoring. If you don't intend
+# on using coreNLP then relaxUsingCoreNLP should be set to false, and the other
+# two parameters (coreNLPDocIDMap, useExactMatchForCoreNLPRelaxation) become
+# moot and can excluded.
 coreNLPDocIDMap: $CORENLP_MAP
 relaxUsingCoreNLP: true
-quoteFilter: $QUOTEFILTER
 useExactMatchForCoreNLPRelaxation: false
+
+quoteFilter: $QUOTEFILTER
+bannedRoles: NONE
+eventTypesToScore: $KBPOPENREPO/data/2016.types.txt
+language: eng
 EOF
     $KBPOPENREPO/tac-kbp-eal-scorer/target/appassembler/bin/scoreKBPAgainstERE $score_kbp_params 2>&1 | tee $LOG/scoreKBPAgainstERE.log
 

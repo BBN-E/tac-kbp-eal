@@ -1279,7 +1279,7 @@ enum By2016TypeGroup implements Function<HasEventType, String> {
       "Transaction.Transfer-Ownership");
 
   private static final ImmutableSet<Symbol> CONTACT_SUBTYPES = SymbolUtils.setFrom(
-      "Contact.Contact", "Contact.Broadcast", "Contact.Meet", "Contact.Correspondance");
+      "Contact.Contact", "Contact.Broadcast", "Contact.Meet", "Contact.Correspondence");
 
   @Override
   public String apply(final HasEventType x) {

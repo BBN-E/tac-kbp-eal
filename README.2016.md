@@ -77,11 +77,17 @@ referred to by its document ID and event frame ID together, yielding a `DocEvent
 
  In the code you will occasionally see references to scoring document-level event arguments by
  assessment. This was done in 2014 and 2015 and the code has been kept for backwards compatibility.
- 
+
+ The heads are not necessary to run scoring, but will give a better alignment to the gold standard.
+ It is recommended that any development system use the head scoring as it is what is run in the official
+ evaluation. See [Using-CoreNLP](section regarding using CoreNLP).
+
 #### Using CoreNLP
 
-The `ScoreKBPAgainstERE` program provides several options for scoring more relaxed than exact match. 
-Among those options is using `CoreNLP` version 3.6.0 to parse and Collins-Style head rules to find 
+The use of CoreNLP processed documents for scoring-relaxation purposes is optional.
+
+The `ScoreKBPAgainstERE` program provides several options for scoring more relaxed than exact match.
+Among those options is using `CoreNLP` version 3.6.0 to parse and Collins-Style head rules to find
 the head node corresponding to the base filler. This "discovered head" and its offsets are then:
 * used for exact match to find an `Argument` head
 * used to find an `Argument` that contains the discovered head.
