@@ -3,7 +3,9 @@ package com.bbn.kbp;
 import com.bbn.bue.common.TextGroupImmutable;
 import com.bbn.bue.common.symbols.Symbol;
 
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Sets;
@@ -35,6 +37,18 @@ public abstract class KnowledgeBase {
 
   public abstract ImmutableMap<Assertion, Double> confidence();
 
+  /**
+   * Get the entity canonical mentions found in a given document. This is useful for
+   * aligning external system output to this knowledge base.
+   */
+  @Value.Lazy
+  public ImmutableMultimap<Symbol, EntityCanonicalMentionAssertion> documentToEntityCanonicalMentions() {
+    return FluentIterable.from(assertions())
+        .filter(EntityCanonicalMentionAssertion.class)
+        .index(EntityCanonicalMentionAssertionFunctions.docId());
+  }
+
+
   @Value.Check
   protected void check() {
     // check every assertion that has a confidence is also in the set of assertions
@@ -48,12 +62,14 @@ public abstract class KnowledgeBase {
     }
 
     // check that confidence scores are valid (between 0.0 and 1.0)
-    for (final Map.Entry<Assertion, Double> e : confidence().entrySet()) {
+    // temporarily disabled to process buggy input
+    // kbp#530 will re-enable
+    /*for (final Map.Entry<Assertion, Double> e : confidence().entrySet()) {
       checkArgument(e.getValue() > 0.0 && e.getValue() <= 1.0,
           "%f is an invalid value as a confidence score for %s. "
               + "A confidence score must be between 0.0 (exclusive) and 1.0 (inclusive).",
           e.getValue(), e.getKey());
-    }
+    }*/
 
     checkTypeAssertions();
     checkMentionAssertions();
@@ -79,8 +95,8 @@ public abstract class KnowledgeBase {
 
     // check every node has a type assertion
     checkArgument(nodes().equals(typeAssertionsByNode.keySet()),
-        "The following nodes lack a corresponding type assertion: %s.",
-        Sets.difference(nodes(), typeAssertionsByNode.keySet()));
+        "{} nodes lack a corresponding type assertion: %s.",
+        Sets.difference(nodes(), typeAssertionsByNode.keySet()).size());
   }
 
   private void checkMentionAssertions() {
@@ -105,7 +121,17 @@ public abstract class KnowledgeBase {
     return new Builder();
   }
 
+
   public static class Builder extends ImmutableKnowledgeBase.Builder {
 
+    /**
+     * Convenience method to add an assertion to the KB and record its confidence at the
+     * same time.
+     */
+    public Builder registerAssertion(Assertion assertion, double confidence) {
+      this.addAssertions(assertion);
+      this.putConfidence(assertion, confidence);
+      return this;
+    }
   }
 }

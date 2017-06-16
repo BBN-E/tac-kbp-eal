@@ -28,7 +28,6 @@ import java.util.Set;
 @Value.Immutable
 @TextGroupImmutable
 public class TacKbp2017KBWriter implements KnowledgeBaseWriter {
-
   public static TacKbp2017KBWriter create() {
     return ImmutableTacKbp2017KBWriter.builder().build();
   }
