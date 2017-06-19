@@ -182,6 +182,7 @@ public final class TacKbp2017KBLoaderTest {
     final KnowledgeBase expectedKB = KnowledgeBase.builder()
         .runId(Symbol.from("dummy_runID"))
         .addNodes(node)
+        .nameNode(node, ":Event_0")
         .addAssertions(assertion1, assertion2)
         .putConfidence(assertion1, 0.9)
         .build();
