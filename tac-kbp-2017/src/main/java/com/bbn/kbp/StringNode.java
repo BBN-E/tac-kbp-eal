@@ -7,12 +7,19 @@ import org.immutables.value.Value;
 /**
  * A reified string object that can be used as an object in an {@code Assertion}.
  * String nodes must use identity-based equals and hashcode.
+ *
+ * String nodes should be created using a {@link KnowledgeBase.Builder}
  */
 @TextGroupImmutable
 @Value.Immutable
 public abstract class StringNode implements Node {
 
-  public static StringNode of() {
+  /**
+   * @deprecated This is for internal use only.  Create {@link StringNode}s using {@link
+   * KnowledgeBase.Builder}
+   */
+  @Deprecated
+  static StringNode of() {
     return ImmutableStringNode.builder().build();
   }
 
