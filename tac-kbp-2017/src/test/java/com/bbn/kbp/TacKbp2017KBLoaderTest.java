@@ -6,6 +6,7 @@ import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.io.CharSource;
 import com.google.common.io.Files;
 
 import org.junit.Test;
@@ -21,10 +22,15 @@ public final class TacKbp2017KBLoaderTest {
 
   private final Set<Provenance> dummyProvenances = dummyProvenances();
 
+  // we use an empty string because we are testing internal methods, not the load method itself
+  private static TacKbp2017KBLoader.TacKbp2017KBLoading getDummyLoading() {
+    return new TacKbp2017KBLoader.TacKbp2017KBLoading(CharSource.wrap(""));
+  }
+
+
   @Test
   public void testNodes() {
-    final TacKbp2017KBLoader.TacKbp2017KBLoading loading =
-        new TacKbp2017KBLoader.TacKbp2017KBLoading();
+    final TacKbp2017KBLoader.TacKbp2017KBLoading loading = getDummyLoading();
 
     final Node node1 = loading.nodeFor(":Event1");
     final Node node2 = loading.nodeFor(":Event1");
@@ -36,8 +42,7 @@ public final class TacKbp2017KBLoaderTest {
 
   @Test
   public void testTypeAssertion() {
-    final TacKbp2017KBLoader.TacKbp2017KBLoading loading =
-        new TacKbp2017KBLoader.TacKbp2017KBLoading();
+    final TacKbp2017KBLoader.TacKbp2017KBLoading loading = getDummyLoading();
 
     final Assertion actualAssertion = loading.parse(":String_01f\ttype\tSTRING\t0.5").assertion();
     final Assertion expectedAssertion = TypeAssertion.of(
@@ -48,8 +53,7 @@ public final class TacKbp2017KBLoaderTest {
 
   @Test
   public void testLinkAssertion() {
-    final TacKbp2017KBLoader.TacKbp2017KBLoading loading =
-        new TacKbp2017KBLoader.TacKbp2017KBLoading();
+    final TacKbp2017KBLoader.TacKbp2017KBLoading loading = getDummyLoading();
 
     final String line = ":Entity_aq3\tlink\t\"ExternalKB:ExternalNodeID\"   # Not a real KB ";
     final Assertion actualAssertion = loading.parse(line).assertion();
@@ -63,8 +67,7 @@ public final class TacKbp2017KBLoaderTest {
 
   @Test
   public void testSentimentAssertion() {
-    final TacKbp2017KBLoader.TacKbp2017KBLoading loading =
-        new TacKbp2017KBLoader.TacKbp2017KBLoading();
+    final TacKbp2017KBLoader.TacKbp2017KBLoading loading = getDummyLoading();
 
     final String line = ":Entity1\tper:dislikes\t:Entity2\tdocID:5-12,docID:5-12;10-15\t\t";
     final Assertion actualAssertion = loading.parse(line).assertion();
@@ -81,8 +84,7 @@ public final class TacKbp2017KBLoaderTest {
 
   @Test
   public void testSFAssertion() {
-    final TacKbp2017KBLoader.TacKbp2017KBLoading loading =
-        new TacKbp2017KBLoader.TacKbp2017KBLoading();
+    final TacKbp2017KBLoader.TacKbp2017KBLoading loading = getDummyLoading();
 
     final String line = ":Entity1\tper:age\t:String1\tdocID:5-12,docID:5-12;10-15\t#t\t";
     final Assertion actualAssertion = loading.parse(line).assertion();
@@ -99,8 +101,7 @@ public final class TacKbp2017KBLoaderTest {
 
   @Test
   public void testEventArgumentAssertion() {
-    final TacKbp2017KBLoader.TacKbp2017KBLoading loading =
-        new TacKbp2017KBLoader.TacKbp2017KBLoading();
+    final TacKbp2017KBLoader.TacKbp2017KBLoading loading = getDummyLoading();
 
     final String line = ":Event_0\tlife.die:victim.actual\t:Entity_0\tdocID:5-12,docID:5-12;10-15";
     final Assertion actualAssertion = loading.parse(line).assertion();
@@ -118,8 +119,7 @@ public final class TacKbp2017KBLoaderTest {
 
   @Test
   public void testInverseEventArgumentAssertion() {
-    final TacKbp2017KBLoader.TacKbp2017KBLoading loading =
-        new TacKbp2017KBLoader.TacKbp2017KBLoading();
+    final TacKbp2017KBLoader.TacKbp2017KBLoading loading = getDummyLoading();
 
     final String line =
         ":Entity_0\tper:life.die_victim.actual\t:Event_0\tdocID:5-12,docID:5-12;10-15";
@@ -138,8 +138,7 @@ public final class TacKbp2017KBLoaderTest {
 
   @Test
   public void testMentionAssertion() {
-    final TacKbp2017KBLoader.TacKbp2017KBLoading loading =
-        new TacKbp2017KBLoader.TacKbp2017KBLoading();
+    final TacKbp2017KBLoader.TacKbp2017KBLoading loading = getDummyLoading();
 
     final String line =
         ":Event_0\tcanonical_mention.actual\t\"dummy\\\"mention\\\"\"\tdocID:5-12,docID:5-12;10-15";
@@ -155,8 +154,7 @@ public final class TacKbp2017KBLoaderTest {
 
   @Test
   public void testConfidence() {
-    final TacKbp2017KBLoader.TacKbp2017KBLoading loading =
-        new TacKbp2017KBLoader.TacKbp2017KBLoading();
+    final TacKbp2017KBLoader.TacKbp2017KBLoading loading = getDummyLoading();
 
     final double confidence = loading.parse(":String_01f\ttype\tSTRING\t0.5  ").confidence().get();
     assertEquals(0.5, confidence, 0.0);
@@ -184,6 +182,7 @@ public final class TacKbp2017KBLoaderTest {
     final KnowledgeBase expectedKB = KnowledgeBase.builder()
         .runId(Symbol.from("dummy_runID"))
         .addNodes(node)
+        .nameNode(node, ":Event_0")
         .addAssertions(assertion1, assertion2)
         .putConfidence(assertion1, 0.9)
         .build();

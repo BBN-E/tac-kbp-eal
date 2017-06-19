@@ -5,6 +5,9 @@ import com.bbn.bue.common.strings.offsets.CharOffset;
 import com.bbn.bue.common.strings.offsets.OffsetRange;
 import com.bbn.bue.common.symbols.Symbol;
 
+import com.google.common.collect.ImmutableSet;
+
+import org.immutables.func.Functional;
 import org.immutables.value.Value;
 
 import java.util.Set;
@@ -25,11 +28,12 @@ import java.util.Set;
  */
 @TextGroupImmutable
 @Value.Immutable
+@Functional
 public abstract class Provenance {
 
   public abstract Symbol documentId();
 
-  public abstract Set<OffsetRange<CharOffset>> offsets();
+  public abstract ImmutableSet<OffsetRange<CharOffset>> offsets();
 
   public static Provenance of(final Symbol documentId, final Set<OffsetRange<CharOffset>> offsets) {
     return ImmutableProvenance.builder().documentId(documentId).offsets(offsets).build();

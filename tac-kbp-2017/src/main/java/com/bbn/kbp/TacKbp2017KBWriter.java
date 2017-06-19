@@ -28,7 +28,6 @@ import java.util.Set;
 @Value.Immutable
 @TextGroupImmutable
 public class TacKbp2017KBWriter implements KnowledgeBaseWriter {
-
   public static TacKbp2017KBWriter create() {
     return ImmutableTacKbp2017KBWriter.builder().build();
   }
@@ -99,6 +98,8 @@ public class TacKbp2017KBWriter implements KnowledgeBaseWriter {
         return eventArgumentAssertionToString((EventArgumentAssertion) assertion);
       } else if (assertion instanceof MentionAssertion) {
         return mentionAssertionToString((MentionAssertion) assertion);
+      } else if (assertion instanceof RelationAssertion) {
+        return relationAssertionToString((RelationAssertion) assertion);
       } else {
         throw new IllegalArgumentException(
             String.format("Do not recognize this type of assertion: %s. Found for assertion %s.",
@@ -157,6 +158,14 @@ public class TacKbp2017KBWriter implements KnowledgeBaseWriter {
           idOf(assertion.subject()),
           assertion.eventType().asString() + ":" + assertion.role() + "." + assertion.realis(),
           idOf(assertion.argument().asNode()),
+          provenancesToString(assertion.provenances()));
+    }
+
+    private String relationAssertionToString(final RelationAssertion assertion) {
+      return TAB_JOINER.join(
+          idOf(assertion.subject()),
+          assertion.relationType(),
+          idOf(assertion.object()),
           provenancesToString(assertion.provenances()));
     }
 

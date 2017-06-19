@@ -21,6 +21,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * A class to load a TAC 2017 ColdStart++ knowledge-base from a file. The file must have one
  * assertion per line, and each column of that line must be separated by a tab character.
@@ -43,35 +45,24 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
   }
 
   @Override
-  public KnowledgeBase load(final CharSource input) throws IOException {
-
-    try (final BufferedReader reader = input.openBufferedStream()) {
-      final KnowledgeBase.Builder kb = KnowledgeBase.builder();
-      String currentLine = reader.readLine();
-      kb.runId(Symbol.from(currentLine));
-
-      final TacKbp2017KBLoading loading = new TacKbp2017KBLoading();
-      while ((currentLine = reader.readLine()) != null) {
-        if (!EMPTY_OR_COMMENT_PATTERN.matcher(currentLine).matches()) {
-          final AssertionConfidencePair pair = loading.parse(currentLine);
-          kb.addAssertions(pair.assertion()).addAllNodes(pair.assertion().allNodes());
-          if (pair.confidence().isPresent()) {
-            kb.putConfidence(pair.assertion(), pair.confidence().get());
-          }
-        }
-      }
-      return kb.build();
-    }
+  public KnowledgeBase load(CharSource source) throws IOException {
+    return new TacKbp2017KBLoading(source).load();
   }
 
   static final class TacKbp2017KBLoading {
 
+    private final CharSource input;
     private final Map<String, Node> nodesForIds = HashBiMap.create();
+    private final KnowledgeBase.Builder kb = KnowledgeBase.builder();
 
     private static final Splitter COMMA_SPLITTER = Splitter.on(",");
     private static final Splitter SEMICOLON_SPLITTER = Splitter.on(";");
 
-    private static final Pattern CONFIDENCE_PATTERN = Pattern.compile("\\d+(?:\\.\\d+)?");
+    // TODO: restore confidence pattern which does not allow scientific notation or negative numbers
+    // issue kbp#530
+    //private static final Pattern CONFIDENCE_PATTERN = Pattern.compile("\\d+(?:\\.\\d+)?");
+    private static final Pattern CONFIDENCE_PATTERN =
+        Pattern.compile("-?\\d+(?:\\.\\d+)?(E-\\d+)?");
     private static final Pattern OFFSET_PATTERN = Pattern.compile("(?<start>\\d+)-(?<end>\\d+)");
     private static final Pattern OFFSETS_PATTERN = Pattern.compile("\\d+-\\d+(?:;\\d+-\\d+)*");
     private static final Pattern PROVENANCE_PATTERN = Pattern.compile(
@@ -127,6 +118,39 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
             + "\\t(?<provenances>" + PROVENANCES_PATTERN.pattern() + ")"
             + "(\\t(?<confidence>" + CONFIDENCE_PATTERN.pattern() + "))?"
             + EMPTY_OR_COMMENT_PATTERN.pattern());
+    private static final Pattern RELATION_ASSERTION_PATTERN = Pattern.compile(
+        "(?<subject>:Entity.+?)"
+            + "\\t(?<relationType>.+?)"
+            + "\\t(?<object>:.+?)"
+            + "\\t(?<provenances>" + PROVENANCES_PATTERN.pattern() + ")"
+            + "(\\t(?<confidence>" + CONFIDENCE_PATTERN.pattern() + "))?"
+            + EMPTY_OR_COMMENT_PATTERN.pattern());
+
+    // package-private for testing
+    TacKbp2017KBLoading(final CharSource input) {
+      this.input = checkNotNull(input);
+    }
+
+    KnowledgeBase load() throws IOException {
+      try (final BufferedReader reader = input.openBufferedStream()) {
+        String currentLine = reader.readLine();
+        kb.runId(Symbol.from(currentLine));
+
+        while ((currentLine = reader.readLine()) != null) {
+          if (!EMPTY_OR_COMMENT_PATTERN.matcher(currentLine).matches()
+              // skipped due to bugs in Adept E2E output. This will be remove in #530
+              && !SF_ASSERTION_PATTERN.matcher(currentLine).matches()) {
+            final AssertionConfidencePair pair = parse(currentLine);
+            kb.addAssertions(pair.assertion()).addAllNodes(pair.assertion().allNodes());
+            if (pair.confidence().isPresent()) {
+              kb.putConfidence(pair.assertion(), pair.confidence().get());
+            }
+          }
+        }
+        return kb.build();
+      }
+    }
+
 
     AssertionConfidencePair parse(final String line) {
       final Matcher matcher;
@@ -139,6 +163,7 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
       final Matcher eventArgAssertionMatcher = EVENT_ARGUMENT_ASSERTION_PATTERN.matcher(line);
       final Matcher inverseEventArgAssertionMatcher = INVERSE_EVENT_ARGUMENT_ASSERTION_PATTERN.matcher(line);
       final Matcher mentionAssertionMatcher = MENTION_ASSERTION_PATTERN.matcher(line);
+      final Matcher relationAssertionMatcher = RELATION_ASSERTION_PATTERN.matcher(line);
 
       if (typeAssertionMatcher.matches()) {
         matcher = typeAssertionMatcher;
@@ -161,6 +186,9 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
       } else if (mentionAssertionMatcher.matches()) {
         matcher = mentionAssertionMatcher;
         assertion = toMentionAssertion(matcher);
+      } else if (relationAssertionMatcher.matches()) {
+        matcher = relationAssertionMatcher;
+        assertion = toRelationAssertion(matcher);
       } else {
         throw new IllegalArgumentException(
             String.format("\"%s\" is not a valid assertion line.", line));
@@ -219,6 +247,15 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
       } else {  // if (argumentNode instanceof StringNode)
         return eventArgAssertion.argument((StringNode) argumentNode).build();
       }
+    }
+
+    private RelationAssertion toRelationAssertion(final Matcher matcher) {
+      return new RelationAssertion.Builder()
+          .subject((EntityNode) nodeFor(matcher.group("subject")))
+          .relationType(Symbol.from(matcher.group("relationType")))
+          .object((EntityNode) nodeFor(matcher.group("object")))
+          .provenances(toProvenances(matcher.group("provenances")))
+          .build();
     }
 
     /**
@@ -361,16 +398,21 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
       } else {
         final Node node;
         if (nodeId.startsWith(":Event")) {
-          node = EventNode.of();
+          node = kb.newEventNode();
         } else if (nodeId.startsWith(":Entity")) {
-          node = EntityNode.of();
+          node = kb.newEntityNode();
         } else if (nodeId.startsWith(":String")) {
-          node = StringNode.of();
+          node = kb.newStringNode();
         } else {
-          throw new IllegalArgumentException(
-              String.format("\"%s\" is not a valid node ID.", nodeId));
+          // TODO: this is to support Adept's broken output
+          // the exception should be restored when Adept's output is fixed
+          // issue kbp/#530
+          node = kb.newEntityNode();
+          /*throw new IllegalArgumentException(
+              String.format("\"%s\" is not a valid node ID.", nodeId));*/
         }
         nodesForIds.put(nodeId, node);
+        kb.nameNode(node, nodeId);
         return node;
       }
     }
