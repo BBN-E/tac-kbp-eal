@@ -165,7 +165,7 @@ public class TacKbp2017KBWriter implements KnowledgeBaseWriter {
       return TAB_JOINER.join(
           idOf(assertion.subject()),
           assertion.relationType(),
-          idOf(assertion.object()),
+          idOf(assertion.object().asNode()),
           provenancesToString(assertion.provenances()));
     }
 

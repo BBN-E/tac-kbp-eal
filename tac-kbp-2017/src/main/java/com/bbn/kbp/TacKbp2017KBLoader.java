@@ -244,12 +244,17 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
     }
 
     private RelationAssertion toRelationAssertion(final Matcher matcher) {
-      return new RelationAssertion.Builder()
+      final RelationAssertion.Builder ret = new RelationAssertion.Builder()
           .subject((EntityNode) nodeFor(matcher.group("subject")))
           .relationType(Symbol.from(matcher.group("relationType")))
-          .object((EntityNode) nodeFor(matcher.group("object")))
-          .provenances(toProvenances(matcher.group("provenances")))
-          .build();
+          .provenances(toProvenances(matcher.group("provenances")));
+
+      final Node argumentNode = nodeFor(matcher.group("object"));
+      if (argumentNode instanceof EntityNode) {
+        return ret.object((EntityNode) argumentNode).build();
+      } else {
+        return ret.object((StringNode) argumentNode).build();
+      }
     }
 
     /**

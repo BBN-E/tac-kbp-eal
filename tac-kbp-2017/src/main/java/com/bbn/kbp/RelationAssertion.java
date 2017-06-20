@@ -11,10 +11,6 @@ import java.util.Set;
 
 /**
  * An assertion that two entities (or an entity and a string value) are related.
- *
- * TODO: this implementation is not quite right because it assumes all arguments are
- * entity nodes when in fact they can be string nodes. But there is no reason to fix this
- * until Adept E2E starts producing the correct output. issue kbp/#530
  */
 @TextGroupImmutable
 @Value.Immutable
@@ -24,15 +20,25 @@ public abstract class RelationAssertion implements ProvenancedAssertion {
 
   public abstract Symbol relationType();
 
-  public abstract EntityNode object();
+  public abstract RelationArgument object();
 
   @Value.Derived
   public Set<Node> allNodes() {
-    return ImmutableSet.<Node>of(subject(), object());
+    return ImmutableSet.of(subject(), object().asNode());
   }
 
 
   public static class Builder extends ImmutableRelationAssertion.Builder {
 
+    public Builder object(EntityNode entityNode) {
+      this.object(RelationArgument.of(entityNode));
+      return this;
+    }
+
+    public Builder object(StringNode stringNode) {
+      object(RelationArgument.of(stringNode));
+      return this;
+    }
   }
 }
+
