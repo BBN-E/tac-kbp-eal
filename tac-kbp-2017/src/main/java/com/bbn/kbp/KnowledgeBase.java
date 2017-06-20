@@ -86,14 +86,12 @@ public abstract class KnowledgeBase {
     }
 
     // check that confidence scores are valid (between 0.0 and 1.0)
-    // temporarily disabled to process buggy input
-    // kbp#530 will re-enable
-    /*for (final Map.Entry<Assertion, Double> e : confidence().entrySet()) {
+    for (final Map.Entry<Assertion, Double> e : confidence().entrySet()) {
       checkArgument(e.getValue() > 0.0 && e.getValue() <= 1.0,
           "%f is an invalid value as a confidence score for %s. "
               + "A confidence score must be between 0.0 (exclusive) and 1.0 (inclusive).",
           e.getValue(), e.getKey());
-    }*/
+    }
 
     checkTypeAssertions();
     checkMentionAssertions();
