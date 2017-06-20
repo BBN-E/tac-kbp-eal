@@ -133,9 +133,7 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
         kb.runId(Symbol.from(currentLine));
 
         while ((currentLine = reader.readLine()) != null) {
-          if (!EMPTY_OR_COMMENT_PATTERN.matcher(currentLine).matches()
-              // skipped due to bugs in Adept E2E output. This will be remove in #530
-              && !SF_ASSERTION_PATTERN.matcher(currentLine).matches()) {
+          if (!EMPTY_OR_COMMENT_PATTERN.matcher(currentLine).matches()) {
             final AssertionConfidencePair pair = parse(currentLine);
             kb.addAssertions(pair.assertion()).addAllNodes(pair.assertion().allNodes());
             if (pair.confidence().isPresent()) {
