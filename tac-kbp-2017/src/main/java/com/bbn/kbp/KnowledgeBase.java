@@ -123,13 +123,9 @@ public abstract class KnowledgeBase {
     }
 
     // check every node has a type assertion
-    // relax this check to deal with out-dated Adept E2E output
-    // will be restored in #530
-    /*
     checkArgument(nodes().equals(typeAssertionsByNode.keySet()),
         "Nodes lack a corresponding type assertion: %s.",
         prettyNodes(Sets.difference(nodes(), typeAssertionsByNode.keySet())));
-        */
   }
 
   private void checkMentionAssertions() {
