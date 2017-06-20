@@ -138,10 +138,9 @@ public abstract class KnowledgeBase {
     final ImmutableSet<Node> mentionedNodes = mentionedNodesB.build();
 
     // check every node has at least one mention
-    // check disabled for bad Adept E2E output. Will be restored in #530
-    /*checkArgument(nodes().equals(mentionedNodes),
+    checkArgument(nodes().equals(mentionedNodes),
         "The following nodes lack a mention assertions: %s.",
-        prettyNodes(Sets.difference(nodes(), mentionedNodes)));*/
+        prettyNodes(Sets.difference(nodes(), mentionedNodes)));
 
     // TODO: check each canonical mention has a corresponding non-canonical mention. Issue #537
     // TODO: check each normalized mention has a corresponding non-normalized mention. Issue #537
