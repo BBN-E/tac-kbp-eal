@@ -58,11 +58,7 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
     private static final Splitter COMMA_SPLITTER = Splitter.on(",");
     private static final Splitter SEMICOLON_SPLITTER = Splitter.on(";");
 
-    // TODO: restore confidence pattern which does not allow scientific notation or negative numbers
-    // issue kbp#530
-    //private static final Pattern CONFIDENCE_PATTERN = Pattern.compile("\\d+(?:\\.\\d+)?");
-    private static final Pattern CONFIDENCE_PATTERN =
-        Pattern.compile("-?\\d+(?:\\.\\d+)?(E-\\d+)?");
+    private static final Pattern CONFIDENCE_PATTERN = Pattern.compile("\\d+(?:\\.\\d+)?");
     private static final Pattern OFFSET_PATTERN = Pattern.compile("(?<start>\\d+)-(?<end>\\d+)");
     private static final Pattern OFFSETS_PATTERN = Pattern.compile("\\d+-\\d+(?:;\\d+-\\d+)*");
     private static final Pattern PROVENANCE_PATTERN = Pattern.compile(
