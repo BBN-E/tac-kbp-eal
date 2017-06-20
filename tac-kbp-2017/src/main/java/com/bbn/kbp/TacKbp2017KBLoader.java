@@ -400,12 +400,8 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
         } else if (nodeId.startsWith(":String")) {
           node = kb.newStringNode();
         } else {
-          // TODO: this is to support Adept's broken output
-          // the exception should be restored when Adept's output is fixed
-          // issue kbp/#530
-          node = kb.newEntityNode();
-          /*throw new IllegalArgumentException(
-              String.format("\"%s\" is not a valid node ID.", nodeId));*/
+          throw new IllegalArgumentException(
+              String.format("\"%s\" is not a valid node ID.", nodeId));
         }
         nodesForIds.put(nodeId, node);
         kb.nameNode(node, nodeId);
