@@ -17,6 +17,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 /**
  * A collection of {@link CorpusQuery2016}. All IDs are guaranteed to be unique.
  */
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
 @TextGroupPublicImmutable
 @Value.Immutable
 @Functional

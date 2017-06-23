@@ -437,7 +437,7 @@ public final class AssessmentSpecFormats {
     @Override
     public ImmutableSet<Symbol> docIDs() throws IOException {
       return FluentIterable.from(Arrays.asList(directory.listFiles()))
-          .transform(FileUtils.ToName)
+          .transform(FileUtils.toNameFunction())
           .transform(Symbol.FromString)
           .toSet();
     }
@@ -590,7 +590,7 @@ public final class AssessmentSpecFormats {
 
     private Set<Symbol> loadInitialDocIds() throws IOException {
       return Sets.newHashSet(FluentIterable.from(Arrays.asList(directory.listFiles()))
-          .transform(FileUtils.ToName)
+          .transform(FileUtils.toNameFunction())
           .transform(Symbol.FromString)
           .toSet());
     }
@@ -779,7 +779,7 @@ public final class AssessmentSpecFormats {
     for (final CharOffsetSpan span : spans) {
       ret.add(offsetString(span));
     }
-    return StringUtils.CommaJoiner.join(ret);
+    return StringUtils.commaJoiner().join(ret);
   }
 
   private static String offsetString(final CharOffsetSpan span) {

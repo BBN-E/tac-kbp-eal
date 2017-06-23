@@ -123,7 +123,7 @@ abstract class AbstractKBPSpecLinkingLoader implements LinkingFileLoader {
         if (line.isEmpty() || line.charAt(0) == '#') {
           continue;
         }
-        final List<String> parts = StringUtils.OnTabs.splitToList(line);
+        final List<String> parts = StringUtils.onTabs().splitToList(line);
         if (line.startsWith("INCOMPLETE")) {
           if (!incompleteResponses.isPresent()) {
             incompleteResponses = Optional.of(parseResponses(skip(parts, 1),
@@ -380,7 +380,7 @@ final class DirectoryLinkingStore implements LinkingStore {
     checkNotClosed();
 
     return FluentIterable.from(Arrays.asList(directory.listFiles()))
-        .transform(FileUtils.ToName)
+        .transform(FileUtils.toNameFunction())
         .transform(Symbol.FromString)
         .toSet();
   }

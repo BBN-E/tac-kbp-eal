@@ -1,6 +1,5 @@
 package com.bbn.kbp.events2014;
 
-import com.bbn.bue.common.TextGroupPublicImmutable;
 import com.bbn.bue.common.collections.CollectionUtils;
 import com.bbn.bue.common.symbols.Symbol;
 
@@ -27,8 +26,10 @@ import static com.google.common.base.Preconditions.checkArgument;
  * these event frames can be mapped to IDs.  This mapping must be present for the 2016 evaluation
  * but should not be present for 2014 and 2015.
  */
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
 @Value.Immutable(prehash = true)
-@TextGroupPublicImmutable
+@com.bbn.bue.common.TextGroupPublicImmutable
 @Functional
 abstract class _EventArgumentLinking {
 

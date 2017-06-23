@@ -16,6 +16,8 @@ import java.util.Iterator;
  * Represents a set of responses.  The default comparison method is to do a lexicographical sort of
  * the unique IDs of the (sorted) responses.
  */
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
 @Value.Immutable(prehash = true)
 @TextGroupPublicImmutable
 @Functional

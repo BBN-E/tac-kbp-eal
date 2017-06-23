@@ -218,6 +218,8 @@ enum ErrorIfUnassessed
 /**
  * The match of a query against a document.
  */
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
 @Value.Immutable
 @Functional
 @TextGroupPublicImmutable

@@ -254,7 +254,7 @@ public final class AnswerKey {
   public void checkCompletelyAssesses(final ArgumentOutput argumentOutput) {
     if (!completelyAssesses(argumentOutput)) {
       throw new RuntimeException("The following responses from the system output are not assessed: "
-        + StringUtils.NewlineJoiner.join(
+          + StringUtils.unixNewlineJoiner().join(
           Sets.difference(argumentOutput.responses(), annotatedArgs.keySet())));
     }
   }
@@ -382,9 +382,9 @@ public final class AnswerKey {
     return MoreObjects.toStringHelper(this)
         .add("docId", docid)
         .add("assessedResponses",
-            "{" + StringUtils.NewlineJoiner.join(annotatedResponses()) + "}")
+            "{" + StringUtils.unixNewlineJoiner().join(annotatedResponses()) + "}")
         .add("unassessedResponses",
-            "{" + StringUtils.NewlineJoiner.join(unannotatedResponses()))
+            "{" + StringUtils.unixNewlineJoiner().join(unannotatedResponses()))
         .add("coref", corefAnnotation()).toString();
   }
 

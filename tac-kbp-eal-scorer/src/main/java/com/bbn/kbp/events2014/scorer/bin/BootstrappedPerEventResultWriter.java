@@ -67,7 +67,8 @@ public final class BootstrappedPerEventResultWriter
         .build().asMap().entrySet()) {
       final File jsonFile =
           new File(new File(baseOutputDir, entry.getKey()), "aggregateScore.json");
-      final JacksonSerializer jacksonSerializer = JacksonSerializer.json().prettyOutput().build();
+      final JacksonSerializer jacksonSerializer =
+          JacksonSerializer.builder().forJson().prettyOutput().build();
       jacksonSerializer.serializeTo(entry.getValue(),
           GZIPByteSink.gzipCompress(Files.asByteSink(jsonFile)));
     }

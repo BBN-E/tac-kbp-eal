@@ -13,6 +13,8 @@ import static com.google.common.base.Preconditions.checkArgument;
  * which a query can be aligned to system event output.
  */
 @Value.Immutable
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
 @TextGroupPublicImmutable
 @Functional
 abstract class _CorpusQueryEntryPoint {

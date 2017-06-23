@@ -13,6 +13,8 @@ import org.immutables.value.Value;
 
 import java.util.Iterator;
 
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
 @Value.Immutable
 @TextGroupPackageImmutable
 public abstract class _DocLevelArgLinking implements Iterable<ScoringEventFrame> {

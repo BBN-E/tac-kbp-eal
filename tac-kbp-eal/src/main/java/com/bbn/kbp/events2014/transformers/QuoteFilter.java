@@ -4,11 +4,12 @@ import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
 import com.bbn.kbp.events2014.CharOffsetSpan;
-import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.DocumentSystemOutput;
+import com.bbn.kbp.events2014.Response;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Charsets;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
@@ -215,7 +216,7 @@ public final class QuoteFilter{
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this).add("docIdToBannedRegions", docIdToBannedRegions)
+    return MoreObjects.toStringHelper(this).add("docIdToBannedRegions", docIdToBannedRegions)
         .toString();
   }
 

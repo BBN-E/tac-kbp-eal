@@ -57,9 +57,9 @@ public final class AlignedAnswers<Answerable, LeftAnswer, RightAnswer> {
   public String toString() {
     return "[AlignedAnswers for " + answerable.toString() + ":\n"
         + "Left answers:\n"
-        + StringUtils.NewlineJoiner.join(leftAnswers)
+        + StringUtils.unixNewlineJoiner().join(leftAnswers)
         + "\nRight answers:\n"
-        + StringUtils.NewlineJoiner.join(rightAnswers)
+        + StringUtils.unixNewlineJoiner().join(rightAnswers)
         + "]\n";
   }
 

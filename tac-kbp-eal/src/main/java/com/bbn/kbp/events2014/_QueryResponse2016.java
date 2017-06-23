@@ -1,7 +1,6 @@
 package com.bbn.kbp.events2014;
 
 
-import com.bbn.bue.common.TextGroupPublicImmutable;
 import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.base.Function;
@@ -17,7 +16,9 @@ import static com.google.common.base.Preconditions.checkState;
  * A system's indication that the indicated document matches the indicated query. The {@link
  * #predicateJustifications()}s are the text which justifies this claim.
  */
-@TextGroupPublicImmutable
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
+@com.bbn.bue.common.TextGroupPublicImmutable
 @Value.Immutable
 @Functional
 abstract class _QueryResponse2016 {

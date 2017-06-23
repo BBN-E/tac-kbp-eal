@@ -1,7 +1,5 @@
 package com.bbn.kbp.events2014;
 
-import com.bbn.bue.common.TextGroupPublicImmutable;
-
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 
@@ -16,7 +14,9 @@ import static com.google.common.base.Preconditions.checkArgument;
  *
  * @author rgabbard
  */
-@TextGroupPublicImmutable
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
+@com.bbn.bue.common.TextGroupPublicImmutable
 @Value.Immutable
 @Functional
 abstract class _ResponseAssessment {

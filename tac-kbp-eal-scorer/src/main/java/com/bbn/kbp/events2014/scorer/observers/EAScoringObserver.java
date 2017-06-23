@@ -304,7 +304,7 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
           .entrySet()) {
         if (!ret.containsKey(breakdownEntry.getKey())) {
           ret.put(breakdownEntry.getKey(), BrokenDownSummaryConfusionMatrix.<Symbol>builder(
-              Ordering.from(new SymbolUtils.ByString())));
+              SymbolUtils.byStringOrdering()));
         }
         ret.get(breakdownEntry.getKey()).combine(breakdownEntry.getValue());
       }

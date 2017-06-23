@@ -1,6 +1,5 @@
 package com.bbn.kbp.events2014;
 
-import com.bbn.bue.common.TextGroupPublicImmutable;
 import com.bbn.bue.common.annotations.MoveToBUECommon;
 import com.bbn.bue.common.symbols.Symbol;
 
@@ -42,7 +41,9 @@ import static com.google.common.collect.Iterables.transform;
  * An immutable collection of {@link QueryResponse2016}, {@link QueryAssessment2016}, and associated
  * metadata.
  */
-@TextGroupPublicImmutable
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
+@com.bbn.bue.common.TextGroupPublicImmutable
 @Value.Immutable
 @Functional
 public abstract class _CorpusQueryAssessments {

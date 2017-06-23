@@ -1,7 +1,5 @@
 package com.bbn.kbp.events2014;
 
-import com.bbn.bue.common.TextGroupPublicImmutable;
-
 import com.google.common.collect.ImmutableSet;
 
 import org.immutables.func.Functional;
@@ -14,7 +12,9 @@ import static com.google.common.base.Preconditions.checkArgument;
  */
 @Value.Immutable(prehash = true)
 @Functional
-@TextGroupPublicImmutable
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
+@com.bbn.bue.common.TextGroupPublicImmutable
 abstract class _CorpusEventFrame {
 
   @Value.Parameter

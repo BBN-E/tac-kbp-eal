@@ -16,6 +16,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 /**
  * The information needed to run the document-level scorer.
  */
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
 @Value.Immutable
 @Functional
 @TextGroupPublicImmutable

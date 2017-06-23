@@ -1,6 +1,5 @@
 package com.bbn.kbp.events2014;
 
-import com.bbn.bue.common.TextGroupPublicImmutable;
 import com.bbn.bue.common.collections.CollectionUtils;
 import com.bbn.bue.common.symbols.Symbol;
 
@@ -29,7 +28,9 @@ import static com.google.common.collect.Iterables.concat;
  * participant input.
  */
 @Value.Immutable(prehash = true)
-@TextGroupPublicImmutable
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
+@com.bbn.bue.common.TextGroupPublicImmutable
 @Functional
 abstract class _ResponseLinking {
 
