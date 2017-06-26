@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -401,7 +402,7 @@ public final class ValidateSystemOutput {
     if (outputStoreDir.listFiles().length != 3) {
       throw new IOException(
           "Expected system output to contain exactly three sub-directories, but it contains "
-              + outputStoreDir.listFiles() + " things");
+              + Arrays.toString(outputStoreDir.listFiles()) + " things");
     }
   }
 
