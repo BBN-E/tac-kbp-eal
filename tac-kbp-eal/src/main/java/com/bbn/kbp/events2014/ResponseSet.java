@@ -1,6 +1,6 @@
 package com.bbn.kbp.events2014;
 
-import com.bbn.bue.common.TextGroupPublicImmutable;
+import com.bbn.bue.common.TextGroupImmutable;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
@@ -19,15 +19,14 @@ import java.util.Iterator;
 // old code, we don't care if it uses deprecated stuff
 @SuppressWarnings("deprecation")
 @Value.Immutable(prehash = true)
-@TextGroupPublicImmutable
+@TextGroupImmutable
 @Functional
-abstract class _ResponseSet implements Comparable<ResponseSet>, Iterable<Response> {
+public abstract class ResponseSet implements Comparable<ResponseSet>, Iterable<Response> {
 
-  @Value.Parameter
   public abstract ImmutableSet<Response> responses();
 
   public static ResponseSet from(Iterable<Response> responses) {
-    return ResponseSet.of(responses);
+    return ImmutableResponseSet.builder().responses(responses).build();
   }
 
   public static ResponseSet from(Response... responses) {
