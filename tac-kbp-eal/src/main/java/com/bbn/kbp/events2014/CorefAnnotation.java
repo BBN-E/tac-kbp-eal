@@ -430,6 +430,7 @@ public final class CorefAnnotation {
     }
   }
 
+  @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
         .add("docID", docId)

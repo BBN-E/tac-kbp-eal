@@ -63,6 +63,7 @@ public final class SystemOutputStore2014 implements SystemOutputStore {
     argumentStore.close();
   }
 
+  @Override
   public String toString() {
     return "SystemOutputStore2014(" + argumentStore + ")";
   }

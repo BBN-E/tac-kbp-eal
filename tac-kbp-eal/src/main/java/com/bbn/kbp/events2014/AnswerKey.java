@@ -378,6 +378,7 @@ public final class AnswerKey {
         corefAnnotation().copyMerging(toMerge.corefAnnotation()));
   }
 
+  @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
         .add("docId", docid)

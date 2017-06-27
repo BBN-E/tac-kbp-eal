@@ -76,6 +76,7 @@ public final class KBPTIMEXExpression {
     return true;
   }
 
+  @Override
   public String toString() {
     return year + "-" + month + "-" + day;
   }

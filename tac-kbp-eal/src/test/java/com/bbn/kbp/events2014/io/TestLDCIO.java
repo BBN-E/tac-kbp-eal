@@ -22,14 +22,15 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Files;
 
-import junit.framework.TestCase;
-
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 
-public class TestLDCIO extends TestCase {
+import static org.junit.Assert.assertEquals;
+
+public class TestLDCIO {
 
   private final Symbol docid = Symbol.from("AFP_ENG_20030304.0250");
   private Scored<Response> arg;
@@ -37,7 +38,7 @@ public class TestLDCIO extends TestCase {
   private AssessedResponse annArg;
   private String argMetadata;
 
-  @Override
+  @Before
   public void setUp() {
     final KBPString cas = KBPString.from("Phillipines",
         CharOffsetSpan.fromOffsetsOnly(42, 64));

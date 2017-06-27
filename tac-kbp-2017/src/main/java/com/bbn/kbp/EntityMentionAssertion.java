@@ -21,6 +21,7 @@ public abstract class EntityMentionAssertion implements MentionAssertion {
   public abstract EntityNode subject();
 
   @Value.Derived
+  @Override
   public Set<Node> allNodes() {
     return ImmutableSet.<Node>of(subject());
   }

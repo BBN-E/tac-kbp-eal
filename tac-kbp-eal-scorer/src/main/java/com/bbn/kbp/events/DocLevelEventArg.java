@@ -17,10 +17,13 @@ import org.immutables.value.Value;
 public abstract class DocLevelEventArg implements HasDocID, HasEventType, HasEventArgType,
     WithDocLevelEventArg {
 
+  @Override
   public abstract Symbol docID();
 
+  @Override
   public abstract Symbol eventArgumentType();
 
+  @Override
   public abstract Symbol eventType();
 
   public abstract Symbol realis();

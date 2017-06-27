@@ -34,7 +34,7 @@ class KBPSpec2015LinkingLoader extends AbstractKBPSpecLinkingLoader {
       final Map<String, Response> responsesByUID)
       throws IOException {
     return ImmutableLinkingLine
-        .of(ResponseSet.of(parseResponses(parts, foreignIDToLocal, responsesByUID)),
+        .of(ResponseSet.from(parseResponses(parts, foreignIDToLocal, responsesByUID)),
             Optional.<String>absent());
   }
 }

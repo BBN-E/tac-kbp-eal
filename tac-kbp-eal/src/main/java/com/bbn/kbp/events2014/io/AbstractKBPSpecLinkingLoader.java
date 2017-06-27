@@ -27,6 +27,7 @@ import static com.google.common.collect.Iterables.skip;
  */
 abstract class AbstractKBPSpecLinkingLoader implements LinkingFileLoader {
 
+  @Override
   public ResponseLinking read(Symbol docID, CharSource source, Set<Response> responses,
       Optional<ImmutableMap<String, String>> foreignResponseIDToLocal,
       final Optional<ImmutableMap.Builder<String, String>> foreignLinkingIdToLocal)

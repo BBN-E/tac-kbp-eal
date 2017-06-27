@@ -21,6 +21,7 @@ public abstract class EventMentionAssertion implements MentionAssertion {
   @Override
   public abstract EventNode subject();
 
+  @Override
   @Value.Derived
   public Set<Node> allNodes() {
     return ImmutableSet.<Node>of(subject());

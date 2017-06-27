@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -47,7 +46,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public final class QuoteFilter{
 
   private static final Logger log = LoggerFactory.getLogger(QuoteFilter.class);
-  private static final Set<String> BANNED_REGION_STARTS =
+  private static final ImmutableSet<String> BANNED_REGION_STARTS =
       ImmutableSet.of("<quote>",
           // handle case of <quote orig_author="foo">
           "<quote ");
@@ -233,7 +232,7 @@ public final class QuoteFilter{
         // we know by construction these ranges are bounded above and below
         parts.add(String.format("%d-%d", r.lowerEndpoint(), r.upperEndpoint()));
       }
-      out.println(StringUtils.SpaceJoiner.join(parts));
+      out.println(StringUtils.spaceJoiner().join(parts));
     }
 
     out.close();
@@ -260,7 +259,7 @@ public final class QuoteFilter{
     for (int i = 0; i < numEntries; ++i) {
       final Symbol docid = Symbol.from(input.get(curLine++));
       final ImmutableRangeSet.Builder<Integer> ranges = ImmutableRangeSet.builder();
-      for (final String part : StringUtils.OnSpaces.split(input.get(curLine++))) {
+      for (final String part : StringUtils.onSpaces().split(input.get(curLine++))) {
         final List<String> endPointStrings = DASH_SPLITTER.splitToList(part);
         if (endPointStrings.size() != 2) {
           throw new IOException(String.format("Invalid range serialization %s", part));

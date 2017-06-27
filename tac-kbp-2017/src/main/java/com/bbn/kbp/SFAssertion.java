@@ -23,6 +23,7 @@ public abstract class SFAssertion implements ProvenancedAssertion {
   @Override
   public abstract EntityNode subject();
 
+  @Override
   @Value.Derived
   public Set<Node> allNodes() {
     return ImmutableSet.of(subject(), object().asNode());

@@ -157,8 +157,10 @@ public final class ImportSystemOutputToAnnotationStore {
       Set<AnnotationStore> annotationStores,
       Function<DocumentSystemOutput, DocumentSystemOutput> filter, Predicate<Symbol> docIdFilter)
       throws IOException {
-    log.info("Loading system outputs from {}", StringUtils.NewlineJoiner.join(argumentStores));
-    log.info("Using assessment stores at {}", StringUtils.NewlineJoiner.join(annotationStores));
+    log.info("Loading system outputs from {}",
+        StringUtils.unixNewlineJoiner().join(argumentStores));
+    log.info("Using assessment stores at {}",
+        StringUtils.unixNewlineJoiner().join(annotationStores));
 
     final Multiset<AnnotationStore> totalNumAdded = HashMultiset.create();
     final Multiset<AnnotationStore> totalAlreadyThere = HashMultiset.create();

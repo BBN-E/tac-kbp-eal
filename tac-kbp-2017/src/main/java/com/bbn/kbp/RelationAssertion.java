@@ -16,12 +16,14 @@ import java.util.Set;
 @Value.Immutable
 public abstract class RelationAssertion implements ProvenancedAssertion {
 
+  @Override
   public abstract EntityNode subject();
 
   public abstract Symbol relationType();
 
   public abstract RelationArgument object();
 
+  @Override
   @Value.Derived
   public Set<Node> allNodes() {
     return ImmutableSet.of(subject(), object().asNode());

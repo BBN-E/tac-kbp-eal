@@ -299,6 +299,7 @@ public final class EREAligner {
     @Value.Parameter
     public abstract CoreNLPDocument coreNLPDoc();
 
+    @Override
     public OffsetRange<CharOffset> apply(final OffsetRange<CharOffset> off) {
       final Optional<CoreNLPSentence> sent = coreNLPDoc().firstSentenceContaining(off);
       if (sent.isPresent()) {

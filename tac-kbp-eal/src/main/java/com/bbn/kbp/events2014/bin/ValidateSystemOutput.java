@@ -342,11 +342,11 @@ public final class ValidateSystemOutput {
 
       if (!linkingOnly.isEmpty()) {
         msg.append("\nThe following are in the linking only:\n ")
-            .append(StringUtils.NewlineJoiner.join(linkingOnly));
+            .append(StringUtils.unixNewlineJoiner().join(linkingOnly));
       }
       if (!argumentOnly.isEmpty()) {
         msg.append("\nThe following are in the argument output only:\n")
-            .append(StringUtils.NewlineJoiner.join(argumentOnly));
+            .append(StringUtils.unixNewlineJoiner().join(argumentOnly));
       }
       throw new RuntimeException(msg.toString());
     }
@@ -374,7 +374,7 @@ public final class ValidateSystemOutput {
     }
     final ImmutableSet<String> subdirectoryNames =
         FluentIterable.from(ImmutableList.copyOf(outputStoreDir.listFiles()))
-            .transform(FileUtils.ToName)
+            .transform(FileUtils.toNameFunction())
             .toSet();
     final boolean hasValidDirectoryStructure = subdirectoryNames.containsAll(REQUIRED_SUBDIRS)
         && ALLOWED_SUBDIRS.containsAll(subdirectoryNames);

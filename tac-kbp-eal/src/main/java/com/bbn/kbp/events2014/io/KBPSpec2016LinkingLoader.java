@@ -84,7 +84,7 @@ class KBPSpec2016LinkingLoader extends AbstractKBPSpecLinkingLoader {
       parts = ImmutableList.copyOf(Iterables.concat(ImmutableList.of(parts.get(0)), responseIDs));
     }
     if (parts.size() >= 2) {
-      return ImmutableLinkingLine.of(ResponseSet.of(parseResponses(parts.subList(1, parts.size()),
+      return ImmutableLinkingLine.of(ResponseSet.from(parseResponses(parts.subList(1, parts.size()),
           foreignIDToLocal, responsesByUID)), Optional.of(parts.get(0)));
     } else {
       throw new IOException("Line must have at least two fields");

@@ -75,6 +75,7 @@ public final class RecoveryAssessmentCreator implements AssessmentCreator {
    * in a way that tries to recover from some common violations of the specification.  If there are
    * any missing fields, {@link com.google.common.base.Optional#absent()} is returned.
    */
+  @Override
   public AssessmentParseResult createAssessmentFromFields(final Optional<FieldAssessment> aet,
       final Optional<FieldAssessment> aer, final Optional<FieldAssessment> casAssessment,
       final Optional<KBPRealis> realis, final Optional<FieldAssessment> baseFillerAssessment,

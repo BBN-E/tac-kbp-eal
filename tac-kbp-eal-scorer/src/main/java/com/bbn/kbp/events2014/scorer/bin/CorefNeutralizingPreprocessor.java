@@ -49,6 +49,7 @@ public final class CorefNeutralizingPreprocessor implements ScoringDataTransform
   }
 
 
+  @Override
   public ScoringData transform(final ScoringData input) {
     checkArgument(input.answerKey().isPresent()
         && input.argumentOutput().isPresent(), "Both systme output and an answer key must be "
@@ -60,11 +61,11 @@ public final class CorefNeutralizingPreprocessor implements ScoringDataTransform
 
     final ImmutableMultimap<String, AssessedResponse> answerKeyByTypeRoleBaseFiller =
         Multimaps.index(filter(answerKey.annotatedResponses(),
-                AssessedResponse.IsCorrectUpToInexactJustifications),
+            AssessedResponse.IsCorrectUpToInexactJustifications),
             Functions.compose(TypeRoleBaseFiller, response()));
     final ImmutableMultimap<String, AssessedResponse> answerKeyByTypeRole =
         Multimaps.index(filter(answerKey.annotatedResponses(),
-                AssessedResponse.IsCorrectUpToInexactJustifications),
+            AssessedResponse.IsCorrectUpToInexactJustifications),
             Functions.compose(TypeRole, response()));
 
     final ImmutableMap.Builder<Response, Response> responseReplacements = ImmutableMap.builder();
@@ -120,6 +121,7 @@ public final class CorefNeutralizingPreprocessor implements ScoringDataTransform
     return ret.build();
   }
 
+  @Override
   public void logStats() {
     log.info("Coref neutralizer pass {} through, swapped CAS while keeping BF for {},"
             + "swapped CAS and BF for {}, and deleted {}", passedThrough, swappedCASForSameBF,

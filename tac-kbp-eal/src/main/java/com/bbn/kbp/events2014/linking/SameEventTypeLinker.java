@@ -44,6 +44,7 @@ public final class SameEventTypeLinker extends AbstractLinkingStrategy implement
     return linkResponses(argumentOutput.docId(), argumentOutput.responses());
   }
 
+  @Override
   public ResponseLinking linkResponses(AnswerKey key) {
     return linkResponses(key.docId(), Iterables.transform(key.annotatedResponses(),
         AssessedResponseFunctions.response()));
