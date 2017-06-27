@@ -9,7 +9,7 @@ import java.util.Set;
  * type of triple. Possible additional fields for certain assertions include "provenance" and
  * "confidence".
  */
-interface Assertion {
+public interface Assertion {
 
   Node subject();
 
