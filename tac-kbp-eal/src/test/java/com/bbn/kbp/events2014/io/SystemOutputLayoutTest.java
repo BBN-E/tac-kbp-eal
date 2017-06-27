@@ -82,7 +82,7 @@ public final class SystemOutputLayoutTest {
       final ResponseLinking.Builder responseLinkingB = ResponseLinking.builder().docID(docID);
       for (final Symbol type : typeToResponse.keySet()) {
         checkState(typeToResponse.get(type).size() > 0);
-        final ResponseSet r = ResponseSet.of(typeToResponse.get(type));
+        final ResponseSet r = ResponseSet.from(typeToResponse.get(type));
         responseLinkingB.addResponseSets(r);
         final String id = Integer.toString(responseIDCount++);
         responseSetIDs.put(id, r);

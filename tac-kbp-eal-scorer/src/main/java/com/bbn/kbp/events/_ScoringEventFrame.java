@@ -1,6 +1,5 @@
 package com.bbn.kbp.events;
 
-import com.bbn.bue.common.TextGroupPackageImmutable;
 import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.collect.ImmutableSet;
@@ -15,7 +14,9 @@ import java.util.Iterator;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-@TextGroupPackageImmutable
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
+@com.bbn.bue.common.TextGroupPackageImmutable
 @Functional
 @Value.Immutable
 public abstract class _ScoringEventFrame extends AbstractSet<DocLevelEventArg> {

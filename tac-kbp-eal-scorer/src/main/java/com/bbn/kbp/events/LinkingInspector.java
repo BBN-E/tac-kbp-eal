@@ -10,6 +10,7 @@ import com.bbn.kbp.events2014.TACKBPEALException;
 import com.bbn.kbp.linking.ExplicitFMeasureInfo;
 import com.bbn.kbp.linking.LinkF1;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.FluentIterable;
@@ -18,6 +19,7 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimaps;
+import com.google.common.io.Files;
 
 import org.immutables.func.Functional;
 import org.immutables.value.Value;
@@ -25,7 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collection;
@@ -76,10 +77,9 @@ final class LinkingInspector implements
         docOutput.mkdirs();
         final PrintWriter outputWriter;
         try {
-          outputWriter = new PrintWriter(new File(docOutput, "linkingF.txt"));
-          outputWriter.println(counts.toString());
-          outputWriter.close();
-        } catch (FileNotFoundException e) {
+          Files.asCharSink(new File(docOutput, "linkingF.txt"), Charsets.UTF_8)
+              .write(counts.toString());
+        } catch (IOException e) {
           throw new TACKBPEALException(e);
         }
         final ImmutableSet<DocLevelEventArg> args = ImmutableSet.copyOf(concat(
@@ -171,10 +171,10 @@ final class LinkingInspector implements
               }
               aggregateRecordsPerEventTypeB.put(eventType, aggregateScores(docRecordsForEventB.build()));
             }
-            
+
           }
 
-          //@Override
+          @Override
           public void finish() throws IOException {
             // for all event-types
             final ImmutableList<AggregateLinkingScoreRecord> aggregateRecords =

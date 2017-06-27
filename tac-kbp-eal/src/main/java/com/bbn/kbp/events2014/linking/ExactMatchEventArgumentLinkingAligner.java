@@ -34,6 +34,7 @@ public class ExactMatchEventArgumentLinkingAligner implements EventArgumentLinki
    * responses.  If the canonicalization is inconsistent with the response linking, an {@link
    * java.lang.IllegalArgumentException} will be thrown.
    */
+  @Override
   public EventArgumentLinking align(ResponseLinking responseLinking,
       AnswerKey answerKey)  {
     checkArgument(answerKey.docId() == responseLinking.docID());

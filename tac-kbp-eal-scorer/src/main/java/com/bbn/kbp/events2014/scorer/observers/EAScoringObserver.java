@@ -304,7 +304,7 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
           .entrySet()) {
         if (!ret.containsKey(breakdownEntry.getKey())) {
           ret.put(breakdownEntry.getKey(), BrokenDownSummaryConfusionMatrix.<Symbol>builder(
-              Ordering.from(new SymbolUtils.ByString())));
+              SymbolUtils.byStringOrdering()));
         }
         ret.get(breakdownEntry.getKey()).combine(breakdownEntry.getValue());
       }
@@ -327,6 +327,7 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
     private StandardOutputter() {
     }
 
+    @Override
     public void writeOutput(Iterable<DocumentResult> documentResults, File outputDirectory)
         throws IOException {
       final Map<String, BrokenDownSummaryConfusionMatrix<Symbol>> straightResults =
@@ -402,6 +403,7 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
       checkArgument(numBootstrapSamples > 0);
     }
 
+    @Override
     public void writeOutput(Iterable<DocumentResult> documentResults, File outputDirectory)
         throws IOException {
       // now we compute many "samples" of possible corpora based on our existing corpus. We score each of
@@ -641,6 +643,7 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
 
     private enum ImprovementMode {
       PERFECT_PRECISION {
+        @Override
         public FMeasureCounts improve(FMeasureCounts baseCounts, FMeasureCounts improvingCounts) {
           return FMeasureCounts.from(baseCounts.truePositives(),
               baseCounts.falsePositives() - improvingCounts.falsePositives(),
@@ -648,6 +651,7 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
         }
       },
       PERFECT_RECALL {
+        @Override
         public FMeasureCounts improve(FMeasureCounts baseCounts, FMeasureCounts improvingCounts) {
           return FMeasureCounts.from(baseCounts.truePositives() + improvingCounts.truePositives(),
               baseCounts.falsePositives(),
@@ -655,6 +659,7 @@ public final class EAScoringObserver extends KBPScoringObserver<TypeRoleFillerRe
         }
       },
       PERFECT_EVERYTHING {
+        @Override
         public FMeasureCounts improve(FMeasureCounts baseCounts, FMeasureCounts improvingCounts) {
           return FMeasureCounts.from(baseCounts.truePositives() + improvingCounts.falseNegatives(),
               baseCounts.falsePositives() - improvingCounts.falsePositives(),

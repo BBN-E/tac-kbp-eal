@@ -17,6 +17,8 @@ import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
+// the deprecated methods used here are ok for test only
+@SuppressWarnings("deprecation")
 public class TacKbp2017KBWriterTest {
 
   private final StringNode stringNode0 = StringNode.of();

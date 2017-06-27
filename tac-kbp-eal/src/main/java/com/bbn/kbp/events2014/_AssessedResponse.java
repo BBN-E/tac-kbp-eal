@@ -15,6 +15,8 @@ import org.immutables.value.Value;
  *
  * @author rgabbard
  */
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
 @TextGroupPublicImmutable
 @Value.Immutable
 @Functional

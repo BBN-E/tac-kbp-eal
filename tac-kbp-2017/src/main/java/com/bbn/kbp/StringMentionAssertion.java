@@ -20,6 +20,7 @@ public abstract class StringMentionAssertion implements MentionAssertion {
   @Override
   public abstract StringNode subject();
 
+  @Override
   @Value.Derived
   public Set<Node> allNodes() {
     return ImmutableSet.<Node>of(subject());

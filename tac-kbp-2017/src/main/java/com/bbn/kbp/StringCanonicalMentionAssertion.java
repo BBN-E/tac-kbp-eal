@@ -22,6 +22,7 @@ public abstract class StringCanonicalMentionAssertion implements MentionAssertio
   @Override
   public abstract StringNode subject();
 
+  @Override
   @Value.Derived
   public Set<Node> allNodes() {
     return ImmutableSet.<Node>of(subject());

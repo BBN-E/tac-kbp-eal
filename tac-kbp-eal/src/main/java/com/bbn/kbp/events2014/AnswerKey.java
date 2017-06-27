@@ -254,7 +254,7 @@ public final class AnswerKey {
   public void checkCompletelyAssesses(final ArgumentOutput argumentOutput) {
     if (!completelyAssesses(argumentOutput)) {
       throw new RuntimeException("The following responses from the system output are not assessed: "
-        + StringUtils.NewlineJoiner.join(
+          + StringUtils.unixNewlineJoiner().join(
           Sets.difference(argumentOutput.responses(), annotatedArgs.keySet())));
     }
   }
@@ -378,13 +378,14 @@ public final class AnswerKey {
         corefAnnotation().copyMerging(toMerge.corefAnnotation()));
   }
 
+  @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
         .add("docId", docid)
         .add("assessedResponses",
-            "{" + StringUtils.NewlineJoiner.join(annotatedResponses()) + "}")
+            "{" + StringUtils.unixNewlineJoiner().join(annotatedResponses()) + "}")
         .add("unassessedResponses",
-            "{" + StringUtils.NewlineJoiner.join(unannotatedResponses()))
+            "{" + StringUtils.unixNewlineJoiner().join(unannotatedResponses()))
         .add("coref", corefAnnotation()).toString();
   }
 
@@ -510,48 +511,50 @@ public final class AnswerKey {
       return this;
     }
   }
-}
 
-/**
- * A way of building immutable maps which allows duplicate identical entries.  Guava's standard
- * {@link com.google.common.collect.ImmutableMap.Builder} will crash when a duplicate key is
- * encountered, even if the value is the same.  This is often inconvenient.  This class allows
- * duplicate entries but otherwise works like an {@link com.google.common.collect.ImmutableMap.Builder}.
- *  Use this when you want to preserve the deterministic ordering properties of {@link
- * ImmutableMap}. If you don't care, just us a {@link java.util.HashMap}.
- */
-@MoveToBUECommon
-final class DuplicateTolerantImmutableMapBuilder<K, V> {
+  /**
+   * A way of building immutable maps which allows duplicate identical entries.  Guava's standard
+   * {@link com.google.common.collect.ImmutableMap.Builder} will crash when a duplicate key is
+   * encountered, even if the value is the same.  This is often inconvenient.  This class allows
+   * duplicate entries but otherwise works like an {@link com.google.common.collect.ImmutableMap.Builder}.
+   * Use this when you want to preserve the deterministic ordering properties of {@link
+   * ImmutableMap}. If you don't care, just us a {@link java.util.HashMap}.
+   */
+  @MoveToBUECommon
+  static final class DuplicateTolerantImmutableMapBuilder<K, V> {
 
-  private final ImmutableMap.Builder<K, V> innerBuilder = ImmutableMap.builder();
-  private final Map<K, V> mappingsSeen = Maps.newHashMap();
+    private final ImmutableMap.Builder<K, V> innerBuilder = ImmutableMap.builder();
+    private final Map<K, V> mappingsSeen = Maps.newHashMap();
 
-  public DuplicateTolerantImmutableMapBuilder put(K key, V value) {
-    checkNotNull(value);
-    final V currentValue = mappingsSeen.get(key);
-    if (currentValue != null) {
-      if (!value.equals(currentValue)) {
-        throw new IllegalArgumentException("Attempting to add entry mapping " + key + " to " + value
-            + " but it is already mapped to " + currentValue);
+    public DuplicateTolerantImmutableMapBuilder put(K key, V value) {
+      checkNotNull(value);
+      final V currentValue = mappingsSeen.get(key);
+      if (currentValue != null) {
+        if (!value.equals(currentValue)) {
+          throw new IllegalArgumentException(
+              "Attempting to add entry mapping " + key + " to " + value
+                  + " but it is already mapped to " + currentValue);
+        }
+      } else {
+        mappingsSeen.put(key, value);
+        innerBuilder.put(key, value);
       }
-    } else {
-      mappingsSeen.put(key, value);
-      innerBuilder.put(key, value);
+      return this;
     }
-    return this;
+
+    public ImmutableMap<K, V> build() {
+      return innerBuilder.build();
+    }
+
+    public static <K, V> ImmutableMap<K, V> uniqueIndex(Iterable<V> values,
+        Function<? super V, K> keyFunction) {
+      final DuplicateTolerantImmutableMapBuilder ret = new DuplicateTolerantImmutableMapBuilder();
+      for (final V val : values) {
+        ret.put(keyFunction.apply(val), val);
+      }
+      return ret.build();
+    }
   }
 
-  public ImmutableMap<K, V> build() {
-    return innerBuilder.build();
-  }
-
-  public static <K, V> ImmutableMap<K, V> uniqueIndex(Iterable<V> values,
-      Function<? super V, K> keyFunction) {
-    final DuplicateTolerantImmutableMapBuilder ret = new DuplicateTolerantImmutableMapBuilder();
-    for (final V val : values) {
-      ret.put(keyFunction.apply(val), val);
-    }
-    return ret.build();
-  }
 }
 

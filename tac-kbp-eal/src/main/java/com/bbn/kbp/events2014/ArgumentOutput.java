@@ -8,6 +8,7 @@ import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
@@ -275,7 +276,7 @@ public final class ArgumentOutput {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this).add("docID", docId).add("scoredResponses",
+    return MoreObjects.toStringHelper(this).add("docID", docId).add("scoredResponses",
         scoredResponses()).toString();
   }
 

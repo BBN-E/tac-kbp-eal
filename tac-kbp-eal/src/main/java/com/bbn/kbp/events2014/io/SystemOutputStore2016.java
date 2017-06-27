@@ -89,6 +89,7 @@ public class SystemOutputStore2016 implements SystemOutputStore, CrossDocSystemO
     }
   }
 
+  @Override
   public CorpusEventLinking readCorpusEventFrames() throws IOException {
     if (corpusLinkingFile.isFile()) {
       return eventFrameReader.loadCorpusEventFrames(Files.asCharSource(corpusLinkingFile,
@@ -98,6 +99,7 @@ public class SystemOutputStore2016 implements SystemOutputStore, CrossDocSystemO
     }
   }
 
+  @Override
   public void writeCorpusEventFrames(CorpusEventLinking corpusEventFrames) throws IOException {
     corpusLinkingFile.getParentFile().mkdirs();
     eventFrameWriter.writeCorpusEventFrames(corpusEventFrames, Files.asCharSink(corpusLinkingFile,

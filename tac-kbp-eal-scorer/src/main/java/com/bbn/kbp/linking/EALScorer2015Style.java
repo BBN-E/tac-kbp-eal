@@ -167,7 +167,7 @@ public final class EALScorer2015Style {
     }
   }
 
-  public final class LinkResult {
+  public static final class LinkResult {
 
     private final LinkingScore linkingScore;
 

@@ -218,6 +218,8 @@ enum ErrorIfUnassessed
 /**
  * The match of a query against a document.
  */
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
 @Value.Immutable
 @Functional
 @TextGroupPublicImmutable
@@ -351,8 +353,10 @@ final class LinearScoreBootstrapStrategy<T> implements
     return new LinearScoreBootstrapStrategy<>(name, outputDir);
   }
 
+  @Override
   public BootstrapInspector.ObservationSummarizer<Alignment<? extends T, ? extends T>, SummaryConfusionMatrix> createObservationSummarizer() {
     return new BootstrapInspector.ObservationSummarizer<Alignment<? extends T, ? extends T>, SummaryConfusionMatrix>() {
+      @Override
       public SummaryConfusionMatrix summarizeObservation(Alignment<? extends T, ? extends T> alignment) {
         return LinearScoreBootstrapStrategy.this.confusionMatrixForAlignment(alignment);
       }
@@ -368,6 +372,7 @@ final class LinearScoreBootstrapStrategy<T> implements
     return summaryConfusionMatrixB.build();
   }
 
+  @Override
   public Collection<BootstrapInspector.SummaryAggregator<SummaryConfusionMatrix>> createSummaryAggregators() {
     return ImmutableList.<BootstrapInspector.SummaryAggregator<SummaryConfusionMatrix>>of(new Aggregator());
   }

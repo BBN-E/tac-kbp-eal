@@ -129,7 +129,7 @@ public final class SingleFileQueryStoreWriter {
         }
       }
       // if everything has been the same, the shorter list appears earlier
-      return new Integer(leftSpans.size()).compareTo(rightSpans.size());
+      return Integer.compare(leftSpans.size(), rightSpans.size());
     }
   };
 

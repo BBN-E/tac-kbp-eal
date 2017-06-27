@@ -106,7 +106,7 @@ public final class LocatePossibleAssessmentMistakes {
           }
 
           final Iterable<String> casTokens =
-              StringUtils.OnSpaces.split(input.response().canonicalArgument().string());
+              StringUtils.onSpaces().split(input.response().canonicalArgument().string());
           for (final String spaceSepToken : casTokens) {
             if (CONJUNCTS.contains(spaceSepToken)) {
               return true;

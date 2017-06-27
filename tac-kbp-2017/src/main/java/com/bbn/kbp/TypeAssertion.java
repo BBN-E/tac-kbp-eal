@@ -20,6 +20,7 @@ import java.util.Set;
 @Value.Immutable
 public abstract class TypeAssertion implements Assertion {
 
+  @Override
   @Value.Derived
   public Set<Node> allNodes() {
     return ImmutableSet.of(subject());

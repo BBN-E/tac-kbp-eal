@@ -56,6 +56,8 @@ import static com.google.common.base.Predicates.compose;
  * (if any)</li>. See {@link #createResponseMatchingStrategy(Optional)} for a full
  * description of the match criteria</ul>
  */
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
 public final class EREAligner {
 
   private static final Logger log = LoggerFactory.getLogger(EREAligner.class);
@@ -287,6 +289,8 @@ public final class EREAligner {
     }
   }
 
+  // old code, we don't care if it uses deprecated stuff
+  @SuppressWarnings("deprecation")
   @TextGroupPackageImmutable
   @Value.Immutable
   static abstract class _CoreNLPHeadExtractor
@@ -295,6 +299,7 @@ public final class EREAligner {
     @Value.Parameter
     public abstract CoreNLPDocument coreNLPDoc();
 
+    @Override
     public OffsetRange<CharOffset> apply(final OffsetRange<CharOffset> off) {
       final Optional<CoreNLPSentence> sent = coreNLPDoc().firstSentenceContaining(off);
       if (sent.isPresent()) {

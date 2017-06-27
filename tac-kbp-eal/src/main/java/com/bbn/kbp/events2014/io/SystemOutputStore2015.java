@@ -2,9 +2,9 @@ package com.bbn.kbp.events2014.io;
 
 import com.bbn.bue.common.symbols.Symbol;
 import com.bbn.kbp.events2014.ArgumentOutput;
-import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.DocumentSystemOutput;
 import com.bbn.kbp.events2014.DocumentSystemOutput2015;
+import com.bbn.kbp.events2014.ResponseLinking;
 
 import com.google.common.base.Optional;
 
@@ -95,6 +95,7 @@ public final class SystemOutputStore2015 implements SystemOutputStore {
     return dir;
   }
 
+  @Override
   public String toString() {
     return "SystemOutputStore2015(" + argumentStore + ", " + linkingStore + ")";
   }

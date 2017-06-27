@@ -404,7 +404,7 @@ public final class ScoreKBPAgainstERE {
 
     // log errors
     final BinaryErrorLogger<HasDocID, HasDocID> logWrongAnswers = BinaryErrorLogger
-        .forStringifierAndOutputDir(Functions.<HasDocID>toStringFunction(), outputDir);
+        .forStringifierAndOutputDir(Functions.toStringFunction(), outputDir);
     inspect(alignmentNode).with(logWrongAnswers);
 
 
@@ -454,6 +454,7 @@ public final class ScoreKBPAgainstERE {
       compose(in(linkableRealis), DocLevelEventArgFunctions.realis());
 
 
+  @SuppressWarnings("ImmutableEnumChecker")
   private enum RestrictLifeInjureToLifeDieEvents implements
       Function<EvalPair<ResponsesAndLinking, ResponsesAndLinking>, EvalPair<ResponsesAndLinking, ResponsesAndLinking>> {
     INSTANCE;
@@ -475,6 +476,7 @@ public final class ScoreKBPAgainstERE {
     }
   }
 
+  @SuppressWarnings("ImmutableEnumChecker")
   private enum LifeDieToLifeInjure implements Function<DocLevelEventArg, DocLevelEventArg> {
     INSTANCE {
 
@@ -901,6 +903,7 @@ public final class ScoreKBPAgainstERE {
       this.outputDir = outputDir;
     }
 
+    @Override
     public ResponsesAndLinking apply(final EREDocAndResponses input) {
       final ImmutableSet.Builder<DocLevelEventArg> ret = ImmutableSet.builder();
       final Iterable<Response> responses = input.responses();
@@ -994,6 +997,7 @@ public final class ScoreKBPAgainstERE {
       return r.type() + "/" + r.role();
     }
 
+    @Override
     public void finish() throws IOException {
       outputDir.mkdirs();
 

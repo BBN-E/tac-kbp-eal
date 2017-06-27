@@ -248,7 +248,7 @@ public class CorpusScoringTest {
   }
 
   private static ResponseLinking linkAll(final ArgumentOutput bbnOutputDoc1) {
-    final ResponseSet responseSet = ResponseSet.of(bbnOutputDoc1.responses());
+    final ResponseSet responseSet = ResponseSet.from(bbnOutputDoc1.responses());
     return ResponseLinking.builder().docID(bbnOutputDoc1.docId())
         .addResponseSets(responseSet)
         .responseSetIds(ImmutableBiMap.of(DUMMY_EVENT_FRAME_ID, responseSet))

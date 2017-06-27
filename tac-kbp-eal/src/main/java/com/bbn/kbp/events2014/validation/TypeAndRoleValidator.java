@@ -53,6 +53,7 @@ public final class TypeAndRoleValidator implements Predicate<Response> {
     return ImmutableSet.copyOf(concat(validRoles.get(type), alwaysValidRoles));
   }
 
+  @Override
   public boolean apply(Response response) {
     final boolean ret = isValidArgumentRole(response);
     if (!ret) {

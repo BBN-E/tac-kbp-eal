@@ -4,6 +4,7 @@ import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.base.Function;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
@@ -429,11 +430,12 @@ public final class CorefAnnotation {
     }
   }
 
+  @Override
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
         .add("docID", docId)
-        .add("coreffed", "{" + StringUtils.NewlineJoiner.join(CASesToIDs.entrySet()) + "}")
-        .add("uncoreffed", "{" + StringUtils.NewlineJoiner.join(unannotatedCASes()) + "}")
+        .add("coreffed", "{" + StringUtils.unixNewlineJoiner().join(CASesToIDs.entrySet()) + "}")
+        .add("uncoreffed", "{" + StringUtils.unixNewlineJoiner().join(unannotatedCASes()) + "}")
         .toString();
   }
 }

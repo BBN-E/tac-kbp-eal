@@ -49,7 +49,7 @@ public class TestQuoteFilter {
                 .build(),
             Symbol.from("dummy2"), ImmutableRangeSet.of(Range.closed(0, 20))));
 
-    final ByteArraySink sink = new ByteArraySink();
+    final ByteArraySink sink = ByteArraySink.create();
     reference.saveTo(sink);
     final ByteSource source = ByteSource.wrap(sink.toByteArray());
     final Object restored = QuoteFilter.loadFrom(source);

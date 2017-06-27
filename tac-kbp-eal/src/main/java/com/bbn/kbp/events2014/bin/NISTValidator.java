@@ -152,7 +152,7 @@ public final class NISTValidator {
       }
     }
     final String errorString =
-        sb.toString() + StringUtils.NewlineJoiner.join(validationResult.warnings());
+        sb.toString() + StringUtils.unixNewlineJoiner().join(validationResult.warnings());
 
     Files.asCharSink(errorFile, Charsets.UTF_8).write(errorString);
 

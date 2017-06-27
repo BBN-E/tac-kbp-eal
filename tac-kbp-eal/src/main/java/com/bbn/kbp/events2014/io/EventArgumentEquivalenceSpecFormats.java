@@ -46,7 +46,7 @@ public final class EventArgumentEquivalenceSpecFormats {
     @Override
     public ImmutableSet<Symbol> docIDs() throws IOException {
       return FluentIterable.from(Arrays.asList(directory.listFiles()))
-          .transform(FileUtils.ToName)
+          .transform(FileUtils.toNameFunction())
           .transform(Symbol.FromString)
           .toSet();
     }

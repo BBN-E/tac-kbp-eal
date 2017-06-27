@@ -24,11 +24,11 @@ public class CharOffsetSpan implements Comparable<CharOffsetSpan> {
   public CharOffsetSpan(final int start, final int end,
       // Nullable
       final String string) {
-    checkArgument(start >= 0, "Character offset span must have non-negative start index, got %d",
+    checkArgument(start >= 0, "Character offset span must have non-negative start index, got %s",
         start);
-    checkArgument(end >= 0, "Character offset span must have non-negative end index, got %d", end);
+    checkArgument(end >= 0, "Character offset span must have non-negative end index, got %s", end);
     checkArgument(end >= start,
-        "End of character offset span must be greater than or equal to start, but got start=%d, end=%s",
+        "End of character offset span must be greater than or equal to start, but got start=%s, end=%s",
         start, end);
     this.start = start;
     this.end = end;

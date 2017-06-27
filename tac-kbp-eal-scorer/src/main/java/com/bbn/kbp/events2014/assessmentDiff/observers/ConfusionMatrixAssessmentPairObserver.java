@@ -43,6 +43,7 @@ public abstract class ConfusionMatrixAssessmentPairObserver implements Assessmen
     }
   }
 
+  @Override
   public final void finish(DiffLogger diffLogger, File outputDir) throws IOException {
     final ProvenancedConfusionMatrix<Response> confusionMatrix = confusionMatrixBuilder.build();
 

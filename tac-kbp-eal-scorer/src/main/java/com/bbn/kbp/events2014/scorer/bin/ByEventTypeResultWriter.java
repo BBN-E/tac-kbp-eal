@@ -93,7 +93,8 @@ public final class ByEventTypeResultWriter implements KBP2015Scorer.SimpleResult
                 .format("%30s:%8.2f\n\n", "Aggregate argument score", argScores.overall()));
 
     final File jsonFile = new File(outputDir, "aggregateScore.json");
-    final JacksonSerializer jacksonSerializer = JacksonSerializer.json().prettyOutput().build();
+    final JacksonSerializer jacksonSerializer = JacksonSerializer.builder().forJson()
+        .prettyOutput().build();
     jacksonSerializer.serializeTo(argScores, GZIPByteSink.gzipCompress(Files.asByteSink(jsonFile)));
   }
 

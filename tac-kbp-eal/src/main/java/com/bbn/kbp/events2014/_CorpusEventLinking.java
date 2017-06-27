@@ -1,7 +1,5 @@
 package com.bbn.kbp.events2014;
 
-import com.bbn.bue.common.TextGroupPublicImmutable;
-
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 
@@ -11,8 +9,10 @@ import org.immutables.value.Value;
 /**
  * The collection of all cross-document events found in a corpus.
  */
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
 @Value.Immutable
-@TextGroupPublicImmutable
+@com.bbn.bue.common.TextGroupPublicImmutable
 @Functional
 abstract class _CorpusEventLinking {
 

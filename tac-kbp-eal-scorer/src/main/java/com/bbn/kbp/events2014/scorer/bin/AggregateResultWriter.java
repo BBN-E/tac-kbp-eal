@@ -51,7 +51,8 @@ final class AggregateResultWriter implements KBP2015Scorer.SimpleResultWriter {
             String.format("%30s:%8.2f\n", "Overall score", result.overall()));
 
     final File jsonFile = new File(outputDir, "aggregateScore.json");
-    final JacksonSerializer jacksonSerializer = JacksonSerializer.json().prettyOutput().build();
+    final JacksonSerializer jacksonSerializer =
+        JacksonSerializer.builder().forJson().prettyOutput().build();
     jacksonSerializer.serializeTo(result, GZIPByteSink.gzipCompress(Files.asByteSink(jsonFile)));
   }
 
@@ -168,7 +169,8 @@ final class AggregateResultWriter implements KBP2015Scorer.SimpleResultWriter {
     public void writeResult(final File baseOutputDir) throws IOException {
       writePercentiles(baseOutputDir);
 
-      final JacksonSerializer jacksonSerializer = JacksonSerializer.json().prettyOutput().build();
+      final JacksonSerializer jacksonSerializer =
+          JacksonSerializer.builder().forJson().prettyOutput().build();
       jacksonSerializer.serializeTo(results,
           GZIPByteSink.gzipCompress(
               Files.asByteSink(new File(baseOutputDir, "aggregate.bootstrapped.json"))));

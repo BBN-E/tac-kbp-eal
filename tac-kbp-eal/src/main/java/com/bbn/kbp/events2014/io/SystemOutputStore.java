@@ -15,6 +15,8 @@ public interface SystemOutputStore extends Closeable {
   DocumentSystemOutput read(Symbol docID) throws IOException;
 
   void write(DocumentSystemOutput output) throws IOException;
+
+  @Override
   void close() throws IOException;
 }
 

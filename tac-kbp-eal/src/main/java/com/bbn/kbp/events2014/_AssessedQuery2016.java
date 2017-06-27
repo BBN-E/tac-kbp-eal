@@ -8,6 +8,8 @@ import org.immutables.value.Value;
 /**
  * A corpus-level query response together with its assessment.
  */
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
 @TextGroupPublicImmutable
 @Value.Immutable
 @Functional

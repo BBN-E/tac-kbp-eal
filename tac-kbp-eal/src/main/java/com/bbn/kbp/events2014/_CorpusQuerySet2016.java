@@ -17,6 +17,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 /**
  * A collection of {@link CorpusQuery2016}. All IDs are guaranteed to be unique.
  */
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
 @TextGroupPublicImmutable
 @Value.Immutable
 @Functional
@@ -25,6 +27,7 @@ abstract class _CorpusQuerySet2016 implements Iterable<CorpusQuery2016> {
   @Value.Parameter
   public abstract ImmutableSet<CorpusQuery2016> queries();
 
+  @Override
   public final Iterator<CorpusQuery2016> iterator() {
     return queries().iterator();
   }

@@ -30,6 +30,8 @@ import static com.google.common.base.Preconditions.checkArgument;
  */
 @Value.Immutable
 @Functional
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
 @TextGroupPublicImmutable
 abstract class _Response {
 

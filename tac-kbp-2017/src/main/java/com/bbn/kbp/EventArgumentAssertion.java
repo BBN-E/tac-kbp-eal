@@ -26,6 +26,7 @@ public abstract class EventArgumentAssertion implements ProvenancedAssertion {
   @Override
   public abstract EventNode subject();
 
+  @Override
   @Value.Derived
   public Set<Node> allNodes() {
     return ImmutableSet.of(subject(), argument().asNode());

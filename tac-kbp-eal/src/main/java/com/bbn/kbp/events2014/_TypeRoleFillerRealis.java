@@ -26,6 +26,8 @@ import org.immutables.value.Value;
  */
 @Value.Immutable(prehash = true)
 @Functional
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
 @TextGroupPublicImmutable
 abstract class _TypeRoleFillerRealis implements Comparable<TypeRoleFillerRealis> {
 

@@ -1,7 +1,6 @@
 package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.TextGroupPackageImmutable;
-import com.bbn.bue.common.TextGroupPublicImmutable;
 import com.bbn.bue.common.strings.offsets.CharOffset;
 import com.bbn.bue.common.strings.offsets.OffsetRange;
 import com.bbn.bue.common.symbols.Symbol;
@@ -64,6 +63,8 @@ public interface CorpusQueryExecutor2016 {
  * The "canonical argument string" for a query entry point. These are derived from the entities in
  * the ERE associated with the query entry points.
  */
+// old code, we don't care if it uses deprecated stuff
+@SuppressWarnings("deprecation")
 @TextGroupPackageImmutable
 @Value.Immutable
 @Functional
@@ -165,7 +166,8 @@ class EREBasedCorpusQueryExecutor implements CorpusQueryExecutor2016 {
   }
 
   @Value.Immutable
-  @TextGroupPublicImmutable
+  @SuppressWarnings("deprecation")
+  @com.bbn.bue.common.TextGroupPublicImmutable
   abstract static class _AlignmentConfiguration {
 
     @Value.Parameter

@@ -62,6 +62,7 @@ public final class ImmutableAggregate2015ScoringResult
    * @param value new value for argument
    * @return modified copy of the {@code this} object
    */
+  @SuppressWarnings("ReferenceEquality")
   public final ImmutableAggregate2015ScoringResult withArgument(ImmutableAggregate2015ArgScoringResult value) {
     if (this.argument == value) {
       return this;
@@ -76,6 +77,7 @@ public final class ImmutableAggregate2015ScoringResult
    * @param value new value for linking
    * @return modified copy of the {@code this} object
    */
+  @SuppressWarnings("ReferenceEquality")
   public final ImmutableAggregate2015ScoringResult withLinking(ImmutableAggregate2015LinkScoringResult value) {
     if (this.linking == value) {
       return this;

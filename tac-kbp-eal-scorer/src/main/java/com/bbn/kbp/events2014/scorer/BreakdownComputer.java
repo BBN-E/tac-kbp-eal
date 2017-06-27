@@ -33,8 +33,7 @@ public final class BreakdownComputer<ProvenanceType> {
   }
 
 
-  private static final Ordering<Symbol> BREAKDOWN_KEY_ORDERING =
-      Ordering.from(new SymbolUtils.ByString());
+  private static final Ordering<Symbol> BREAKDOWN_KEY_ORDERING = SymbolUtils.byStringOrdering();
 
   public ImmutableMap<String, BrokenDownSummaryConfusionMatrix<Symbol>> computeBreakdownSummaries(
       ProvenancedConfusionMatrix<ProvenanceType> data) {

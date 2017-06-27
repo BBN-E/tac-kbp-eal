@@ -30,6 +30,7 @@ public abstract class EntityCanonicalMentionAssertion implements MentionAssertio
   @Override
   public abstract EntityNode subject();
 
+  @Override
   @Value.Derived
   public Set<Node> allNodes() {
     return ImmutableSet.<Node>of(subject());
