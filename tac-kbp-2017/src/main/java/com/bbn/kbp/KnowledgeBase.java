@@ -203,6 +203,13 @@ public abstract class KnowledgeBase {
       return this;
     }
 
+    public Builder registerAllAssertions(Map<? extends Assertion, Double> assertionsToConfidences) {
+      for (final Map.Entry<? extends Assertion, Double> e : assertionsToConfidences.entrySet()) {
+        registerAssertion(e.getKey(), e.getValue());
+      }
+      return this;
+    }
+
     // .of() only deprecated to warn external users
     @SuppressWarnings("deprecation")
     public StringNode newStringNode() {
