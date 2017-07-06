@@ -72,6 +72,14 @@ public abstract class KnowledgeBase {
         .index(EntityCanonicalMentionAssertionFunctions.docId());
   }
 
+  @Value.Lazy
+  public ImmutableSet<Symbol> documentIdsReferenced() {
+    return FluentIterable.from(assertions())
+        .filter(ProvenancedAssertion.class)
+        .transformAndConcat(ProvenancedAssertion.TO_PROVENANCES)
+        .transform(ProvenanceFunctions.documentId())
+        .toSet();
+  }
 
   @Value.Check
   protected void check() {

@@ -1,5 +1,6 @@
 package com.bbn.kbp;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 
 /**
@@ -10,4 +11,11 @@ interface ProvenancedAssertion extends Assertion {
 
   ImmutableSet<Provenance> provenances();
 
+  Function<ProvenancedAssertion, ImmutableSet<Provenance>> TO_PROVENANCES =
+      new Function<ProvenancedAssertion, ImmutableSet<Provenance>>() {
+        @Override
+        public ImmutableSet<Provenance> apply(final ProvenancedAssertion x) {
+          return x.provenances();
+        }
+      };
 }
