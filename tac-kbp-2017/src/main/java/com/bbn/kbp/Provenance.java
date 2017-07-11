@@ -39,4 +39,13 @@ public abstract class Provenance {
     return ImmutableProvenance.builder().documentId(documentId).offsets(offsets).build();
   }
 
+  @Value.Check
+  protected void check() {
+    for (final OffsetRange<CharOffset> span : offsets()) {
+      if (span.length() > 200) {
+        throw new IllegalArgumentException("In document " + documentId()
+            + " span " + span + " exceeds maximum length of 200");
+      }
+    }
+  }
 }
