@@ -72,6 +72,27 @@ public abstract class KnowledgeBase {
         .index(EntityCanonicalMentionAssertionFunctions.docId());
   }
 
+  @Value.Lazy
+  public ImmutableMultimap<EntityNode, EntityMentionAssertion> entityToMentionAssertions() {
+    final ImmutableMultimap.Builder<EntityNode, EntityMentionAssertion> ret =
+        ImmutableMultimap.builder();
+    ret.putAll(FluentIterable.from(assertions())
+        .filter(NonCanonicalEntityMentionAssertion.class)
+        .index(EntityMentionAssertion.SubjectFunction.INSTANCE));
+    ret.putAll(FluentIterable.from(assertions())
+        .filter(EntityCanonicalMentionAssertion.class)
+        .index(EntityCanonicalMentionAssertionFunctions.subject()));
+    return ret.build();
+  }
+
+  @Value.Lazy
+  public ImmutableSet<Symbol> documentIdsReferenced() {
+    return FluentIterable.from(assertions())
+        .filter(ProvenancedAssertion.class)
+        .transformAndConcat(ProvenancedAssertion.TO_PROVENANCES)
+        .transform(ProvenanceFunctions.documentId())
+        .toSet();
+  }
 
   @Value.Check
   protected void check() {
@@ -200,6 +221,13 @@ public abstract class KnowledgeBase {
     public Builder registerAssertion(Assertion assertion, double confidence) {
       this.addAssertions(assertion);
       this.putConfidence(assertion, confidence);
+      return this;
+    }
+
+    public Builder registerAllAssertions(Map<? extends Assertion, Double> assertionsToConfidences) {
+      for (final Map.Entry<? extends Assertion, Double> e : assertionsToConfidences.entrySet()) {
+        registerAssertion(e.getKey(), e.getValue());
+      }
       return this;
     }
 

@@ -7,6 +7,6 @@ package com.bbn.kbp;
  * and ":String[ID]". All examples given have an underscore starting the ID (E.G. :Entity_0043,
  * :Event_045f, :String_4567), but the specification does not mandate this explicitly.
  */
-interface Node {
+public interface Node {
 
 }

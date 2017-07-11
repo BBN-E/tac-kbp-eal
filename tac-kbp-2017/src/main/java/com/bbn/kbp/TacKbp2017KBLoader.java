@@ -307,7 +307,8 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
         final Symbol realis = Symbol.from(realisString);
         return EventMentionAssertion.of((EventNode) subjectNode, mention, realis, provenances);
       } else if (subjectNode instanceof EntityNode && realisString == null) {
-        return EntityMentionAssertion.of((EntityNode) subjectNode, mention, provenances);
+        return NonCanonicalEntityMentionAssertion
+            .of((EntityNode) subjectNode, mention, provenances);
       } else if (subjectNode instanceof StringNode && realisString == null) {
         return StringMentionAssertion.of((StringNode) subjectNode, mention, provenances);
       } else {
