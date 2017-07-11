@@ -17,7 +17,7 @@ import java.util.Set;
  */
 @TextGroupImmutable
 @Value.Immutable
-public abstract class StringCanonicalMentionAssertion implements MentionAssertion {
+public abstract class StringCanonicalMentionAssertion extends MentionAssertion {
 
   @Override
   public abstract StringNode subject();
@@ -29,12 +29,12 @@ public abstract class StringCanonicalMentionAssertion implements MentionAssertio
   }
 
   public static StringCanonicalMentionAssertion of(final StringNode subject, final String mention,
-      final Set<Provenance> provenances) {
+      final JustificationSpan predicateJustification) {
 
     return ImmutableStringCanonicalMentionAssertion.builder()
         .subject(subject)
         .mention(mention)
-        .provenances(provenances)
+        .predicateJustification(predicateJustification)
         .build();
   }
 

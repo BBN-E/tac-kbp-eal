@@ -17,7 +17,8 @@ import java.util.Set;
 @TextGroupImmutable
 @Value.Immutable
 @Functional
-public abstract class NonCanonicalEntityMentionAssertion implements EntityMentionAssertion {
+public abstract class NonCanonicalEntityMentionAssertion extends MentionAssertion
+    implements EntityMentionAssertion {
 
   @Override
   public abstract EntityNode subject();
@@ -30,12 +31,12 @@ public abstract class NonCanonicalEntityMentionAssertion implements EntityMentio
 
   public static NonCanonicalEntityMentionAssertion of(final EntityNode subject,
       final String mention,
-      final Set<Provenance> provenances) {
+      final JustificationSpan predicateJustification) {
 
     return ImmutableNonCanonicalEntityMentionAssertion.builder()
         .subject(subject)
         .mention(mention)
-        .provenances(provenances)
+        .predicateJustification(predicateJustification)
         .build();
   }
 

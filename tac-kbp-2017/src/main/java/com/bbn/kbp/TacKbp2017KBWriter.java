@@ -1,9 +1,8 @@
 package com.bbn.kbp;
 
+import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.TextGroupImmutable;
 import com.bbn.bue.common.annotations.MoveToBUECommon;
-import com.bbn.bue.common.strings.offsets.CharOffset;
-import com.bbn.bue.common.strings.offsets.OffsetRange;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.HashBiMap;
@@ -14,10 +13,11 @@ import org.immutables.value.Value;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.UUID;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -92,8 +92,16 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
         return typeAssertionToString((TypeAssertion) assertion);
       } else if (assertion instanceof LinkAssertion) {
         return linkAssertionToString((LinkAssertion) assertion);
-      } else if (assertion instanceof ProvenancedAssertion) {
-        return provenancedAssertionToString((ProvenancedAssertion) assertion);
+      } else if (assertion instanceof SentimentAssertion) {
+        return sentimentAssertionToString((SentimentAssertion) assertion);
+      } else if (assertion instanceof SFAssertion) {
+        return sfAssertionToString((SFAssertion) assertion);
+      } else if (assertion instanceof EventArgumentAssertion) {
+        return eventArgumentAssertionToString((EventArgumentAssertion) assertion);
+      } else if (assertion instanceof MentionAssertion) {
+        return mentionAssertionToString((MentionAssertion) assertion);
+      } else if (assertion instanceof RelationAssertion) {
+        return relationAssertionToString((RelationAssertion) assertion);
       } else {
         throw new IllegalArgumentException(
             String.format("Do not recognize this type of assertion: %s. Found for assertion %s.",
@@ -111,52 +119,43 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
       return TAB_JOINER.join(idOf(assertion.subject()), "link", quotedString(object));
     }
 
-    private String provenancedAssertionToString(final ProvenancedAssertion assertion) {
-      if (assertion instanceof SentimentAssertion) {
-        return sentimentAssertionToString((SentimentAssertion) assertion);
-      } else if (assertion instanceof SFAssertion) {
-        return sfAssertionToString((SFAssertion) assertion);
-      } else if (assertion instanceof EventArgumentAssertion) {
-        return eventArgumentAssertionToString((EventArgumentAssertion) assertion);
-      } else if (assertion instanceof MentionAssertion) {
-        return mentionAssertionToString((MentionAssertion) assertion);
-      } else if (assertion instanceof RelationAssertion) {
-        return relationAssertionToString((RelationAssertion) assertion);
-      } else {
-        throw new IllegalArgumentException(
-            String.format("Do not recognize this type of assertion: %s. Found for assertion %s.",
-                assertion.getClass(), assertion));
-      }
+    private String spanToString(final JustificationSpan span) {
+      return span.documentId() + ":"
+          + span.offsets().startInclusive().asInt()
+          + "-"
+          + span.offsets().endInclusive().asInt();
     }
 
-    private String provenancesToString(final Set<Provenance> provenances) {
-      final StringBuilder provenancesString = new StringBuilder();
-      boolean first = true;
-      for (final Provenance provenance : provenances) {
-        if (first) {
-          first = false;
-        } else {
-          provenancesString.append(",");
-        }
-        provenancesString.append(provenanceToString(provenance));
+    private String spansToString(Iterable<JustificationSpan> spans) {
+      final List<String> parts = new ArrayList<>();
+
+      for (final JustificationSpan span : spans) {
+        parts.add(spanToString(span));
       }
-      return provenancesString.toString();
+
+      return StringUtils.commaJoiner().join(parts);
     }
 
-    private String provenanceToString(final Provenance provenance) {
-      final StringBuilder offsetsString = new StringBuilder();
-      boolean first = true;
-      for (final OffsetRange<CharOffset> offset : provenance.offsets()) {
-        if (first) {
-          first = false;
-        } else {
-          offsetsString.append(";");
-        }
-        offsetsString.append(offset.startInclusive().asInt());
-        offsetsString.append("-");
-        offsetsString.append(offset.endInclusive().asInt());
+    private String sfProvenancesToString(final SFAssertion assertion) {
+      final List<String> parts = new ArrayList<>();
+
+      if (assertion.fillerString().isPresent()) {
+        parts.add(spanToString(assertion.fillerString().get()));
       }
-      return provenance.documentId().asString() + ":" + offsetsString.toString();
+      parts.add(spansToString(assertion.predicateJustification()));
+
+      return Joiner.on(";").join(parts);
+    }
+
+    private String relationProvenancesToString(final RelationAssertion assertion) {
+      final List<String> parts = new ArrayList<>();
+
+      if (assertion.fillerString().isPresent()) {
+        parts.add(spanToString(assertion.fillerString().get()));
+      }
+      parts.add(spansToString(assertion.predicateJustification()));
+
+      return Joiner.on(";").join(parts);
     }
 
     private String sentimentAssertionToString(final SentimentAssertion assertion) {
@@ -164,7 +163,7 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
           idOf(assertion.subject()),
           assertion.subjectEntityType() + ":" + assertion.sentiment().asString(),
           idOf(assertion.object()),
-          provenancesToString(assertion.provenances()));
+          spanToString(assertion.predicateJustification()));
     }
 
     private String sfAssertionToString(final SFAssertion assertion) {
@@ -172,15 +171,29 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
           idOf(assertion.subject()),
           assertion.subjectEntityType().asString() + ":" + assertion.relation().asString(),
           idOf(assertion.object().asNode()),
-          provenancesToString(assertion.provenances()));
+          sfProvenancesToString(assertion));
     }
+
 
     private String eventArgumentAssertionToString(final EventArgumentAssertion assertion) {
       return TAB_JOINER.join(
           idOf(assertion.subject()),
           assertion.eventType().asString() + ":" + assertion.role() + "." + assertion.realis(),
           idOf(assertion.argument().asNode()),
-          provenancesToString(assertion.provenances()));
+          eventProvenancesToString(assertion));
+    }
+
+    private String eventProvenancesToString(final EventArgumentAssertion assertion) {
+      final List<String> parts = new ArrayList<>();
+
+      if (assertion.fillerString().isPresent()) {
+        parts.add(spanToString(assertion.fillerString().get()));
+      }
+      parts.add(spansToString(assertion.predicateJustification()));
+      parts.add(spanToString(assertion.baseFiller()));
+      parts.add(spansToString(assertion.predicateJustification()));
+
+      return Joiner.on(";").join(parts);
     }
 
     private String relationAssertionToString(final RelationAssertion assertion) {
@@ -188,7 +201,7 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
           idOf(assertion.subject()),
           assertion.relationType(),
           idOf(assertion.object().asNode()),
-          provenancesToString(assertion.provenances()));
+          relationProvenancesToString(assertion));
     }
 
     private String mentionAssertionToString(final MentionAssertion assertion) {
@@ -222,7 +235,7 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
           idOf(assertion.subject()),
           "mention",
           quotedString(assertion.mention()),
-          provenancesToString(assertion.provenances()));
+          spanToString(assertion.predicateJustification()));
     }
 
     private String entityMentionAssertionToString(
@@ -231,7 +244,7 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
           idOf(assertion.subject()),
           "mention",
           quotedString(assertion.mention()),
-          provenancesToString(assertion.provenances()));
+          spanToString(assertion.predicateJustification()));
     }
 
     private String eventMentionAssertionToString(final EventMentionAssertion assertion) {
@@ -239,7 +252,7 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
           idOf(assertion.subject()),
           "mention." + assertion.realis().asString(),
           quotedString(assertion.mention()),
-          provenancesToString(assertion.provenances()));
+          spanToString(assertion.predicateJustification()));
     }
 
     private String stringCanonicalMentionAssertionToString(
@@ -249,7 +262,7 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
           idOf(assertion.subject()),
           "canonical_mention",
           quotedString(assertion.mention()),
-          provenancesToString(assertion.provenances()));
+          spanToString(assertion.predicateJustification()));
     }
 
     private String entityCanonicalMentionAssertionToString(
@@ -259,7 +272,7 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
           idOf(assertion.subject()),
           "canonical_mention",
           quotedString(assertion.mention()),
-          provenancesToString(assertion.provenances()));
+          spanToString(assertion.predicateJustification()));
     }
 
     private String eventCanonicalMentionAssertionToString(
@@ -269,7 +282,7 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
           idOf(assertion.subject()),
           "canonical_mention." + assertion.realis().asString(),
           quotedString(assertion.mention()),
-          provenancesToString(assertion.provenances()));
+          spanToString(assertion.predicateJustification()));
     }
 
     private String normalizedMentionAssertionToString(final NormalizedMentionAssertion assertion) {
@@ -277,7 +290,7 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
           idOf(assertion.subject()),
           "normalized_mention",
           quotedString(assertion.mention()),
-          provenancesToString(assertion.provenances()));
+          spanToString(assertion.predicateJustification()));
     }
 
     private String nominalMentionAssertionToString(final NominalMentionAssertion assertion) {
@@ -285,7 +298,7 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
           idOf(assertion.subject()),
           "nominal_mention",
           quotedString(assertion.mention()),
-          provenancesToString(assertion.provenances()));
+          spanToString(assertion.predicateJustification()));
     }
 
     private String pronominalMentionAssertionToString(final PronominalMentionAssertion assertion) {
@@ -293,7 +306,7 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
           idOf(assertion.subject()),
           "pronominal_mention",
           quotedString(assertion.mention()),
-          provenancesToString(assertion.provenances()));
+          spanToString(assertion.predicateJustification()));
     }
 
     String idOf(final Node node) {
