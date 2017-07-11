@@ -172,8 +172,8 @@ public class TacKbp2017KBWriter implements KnowledgeBaseWriter {
     private String mentionAssertionToString(final MentionAssertion assertion) {
       if (assertion instanceof StringMentionAssertion) {
         return stringMentionAssertionToString((StringMentionAssertion) assertion);
-      } else if (assertion instanceof EntityMentionAssertion) {
-        return entityMentionAssertionToString((EntityMentionAssertion) assertion);
+      } else if (assertion instanceof NonCanonicalEntityMentionAssertion) {
+        return entityMentionAssertionToString((NonCanonicalEntityMentionAssertion) assertion);
       } else if (assertion instanceof EventMentionAssertion) {
         return eventMentionAssertionToString((EventMentionAssertion) assertion);
       } else if (assertion instanceof StringCanonicalMentionAssertion) {
@@ -203,7 +203,8 @@ public class TacKbp2017KBWriter implements KnowledgeBaseWriter {
           provenancesToString(assertion.provenances()));
     }
 
-    private String entityMentionAssertionToString(final EntityMentionAssertion assertion) {
+    private String entityMentionAssertionToString(
+        final NonCanonicalEntityMentionAssertion assertion) {
       return TAB_JOINER.join(
           idOf(assertion.subject()),
           "mention",

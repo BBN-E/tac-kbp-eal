@@ -1,39 +1,20 @@
 package com.bbn.kbp;
 
-import com.bbn.bue.common.TextGroupImmutable;
-
-import com.google.common.collect.ImmutableSet;
-
-import org.immutables.value.Value;
-
-import java.util.Set;
+import com.google.common.base.Function;
 
 /**
- * An assertion that an entity is mentioned in a particular location in text. The format of this
- * assertion is "[EntityNodeID] mention [QuotedString mention] [provenances] (confidence)".
- * Each entity node must have at least one mention or nominal mention.
+ * An assertion of a mention of an entity, whether canonical or non-canonical.
  */
-@TextGroupImmutable
-@Value.Immutable
-public abstract class EntityMentionAssertion implements MentionAssertion {
-
+public interface EntityMentionAssertion extends MentionAssertion {
   @Override
-  public abstract EntityNode subject();
+  EntityNode subject();
 
-  @Value.Derived
-  @Override
-  public Set<Node> allNodes() {
-    return ImmutableSet.<Node>of(subject());
+  enum SubjectFunction implements Function<EntityMentionAssertion, EntityNode> {
+    INSTANCE;
+
+    @Override
+    public EntityNode apply(final EntityMentionAssertion input) {
+      return input.subject();
+    }
   }
-
-  public static EntityMentionAssertion of(final EntityNode subject, final String mention,
-      final Set<Provenance> provenances) {
-
-    return ImmutableEntityMentionAssertion.builder()
-        .subject(subject)
-        .mention(mention)
-        .provenances(provenances)
-        .build();
-  }
-
 }

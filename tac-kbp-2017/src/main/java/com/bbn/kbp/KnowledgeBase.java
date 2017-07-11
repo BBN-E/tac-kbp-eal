@@ -73,6 +73,19 @@ public abstract class KnowledgeBase {
   }
 
   @Value.Lazy
+  public ImmutableMultimap<EntityNode, EntityMentionAssertion> entityToMentionAssertions() {
+    final ImmutableMultimap.Builder<EntityNode, EntityMentionAssertion> ret =
+        ImmutableMultimap.builder();
+    ret.putAll(FluentIterable.from(assertions())
+        .filter(NonCanonicalEntityMentionAssertion.class)
+        .index(EntityMentionAssertion.SubjectFunction.INSTANCE));
+    ret.putAll(FluentIterable.from(assertions())
+        .filter(EntityCanonicalMentionAssertion.class)
+        .index(EntityCanonicalMentionAssertionFunctions.subject()));
+    return ret.build();
+  }
+
+  @Value.Lazy
   public ImmutableSet<Symbol> documentIdsReferenced() {
     return FluentIterable.from(assertions())
         .filter(ProvenancedAssertion.class)

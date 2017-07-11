@@ -25,7 +25,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 @TextGroupImmutable
 @Value.Immutable
 @Functional
-public abstract class EntityCanonicalMentionAssertion implements MentionAssertion {
+public abstract class EntityCanonicalMentionAssertion implements EntityMentionAssertion {
 
   @Override
   public abstract EntityNode subject();
