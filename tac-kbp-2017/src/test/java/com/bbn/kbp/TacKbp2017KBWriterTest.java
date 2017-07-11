@@ -6,6 +6,7 @@ import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 
@@ -13,6 +14,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Random;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -28,10 +30,17 @@ public class TacKbp2017KBWriterTest {
   private final EntityNode entityNode1 = EntityNode.of();
   private final Set<Provenance> dummyProvenances = dummyProvenances();
 
+  private final ImmutableMap<Node, String> nodeNames = ImmutableMap.of(
+      stringNode0, ":String_000000",
+      eventNode0, ":Event_000000",
+      eventNode1, ":Event_000001",
+      entityNode0, ":Entity_000000",
+      entityNode1, ":Entity_000001");
+
   @Test
   public void testNodeIds() {
     final TacKbp2017KBWriter.TacKbp2017KBWriting writing =
-        new TacKbp2017KBWriter.TacKbp2017KBWriting();
+        new TacKbp2017KBWriter.TacKbp2017KBWriting(nodeNames, new Random(0));
 
     assertEquals(":String_000000", writing.idOf(stringNode0));
     assertEquals(":Event_000000", writing.idOf(eventNode0));
@@ -43,7 +52,7 @@ public class TacKbp2017KBWriterTest {
   @Test
   public void testTypeAssertion() {
     final TacKbp2017KBWriter.TacKbp2017KBWriting writing =
-        new TacKbp2017KBWriter.TacKbp2017KBWriting();
+        new TacKbp2017KBWriter.TacKbp2017KBWriting(nodeNames, new Random(0));
 
     final TypeAssertion assertion = TypeAssertion.of(stringNode0, Symbol.from("STRING"));
     assertEquals(":String_000000\ttype\tSTRING", writing.assertionToString(assertion));
@@ -52,7 +61,7 @@ public class TacKbp2017KBWriterTest {
   @Test
   public void testLinkAssertion() {
     final TacKbp2017KBWriter.TacKbp2017KBWriting writing =
-        new TacKbp2017KBWriter.TacKbp2017KBWriting();
+        new TacKbp2017KBWriter.TacKbp2017KBWriting(nodeNames, new Random(0));
 
     final LinkAssertion assertion = LinkAssertion.of(
         entityNode0, Symbol.from("ExternalKB"), Symbol.from("ExternalNodeID"));
@@ -64,7 +73,7 @@ public class TacKbp2017KBWriterTest {
   @Test
   public void testSentimentAssertion() {
     final TacKbp2017KBWriter.TacKbp2017KBWriting writing =
-        new TacKbp2017KBWriter.TacKbp2017KBWriting();
+        new TacKbp2017KBWriter.TacKbp2017KBWriting(nodeNames, new Random(0));
 
     final SentimentAssertion assertion = SentimentAssertion.builder()
         .subject(entityNode0)
@@ -82,7 +91,7 @@ public class TacKbp2017KBWriterTest {
   @Test
   public void testSFAssertion() {
     final TacKbp2017KBWriter.TacKbp2017KBWriting writing =
-        new TacKbp2017KBWriter.TacKbp2017KBWriting();
+        new TacKbp2017KBWriter.TacKbp2017KBWriting(nodeNames, new Random(0));
 
     final SFAssertion assertion = SFAssertion.builder()
         .subject(entityNode0)
@@ -100,7 +109,7 @@ public class TacKbp2017KBWriterTest {
   @Test
   public void testEventArgumentAssertion() {
     final TacKbp2017KBWriter.TacKbp2017KBWriting writing =
-        new TacKbp2017KBWriter.TacKbp2017KBWriting();
+        new TacKbp2017KBWriter.TacKbp2017KBWriting(nodeNames, new Random(0));
 
     final EventArgumentAssertion assertion = EventArgumentAssertion.builder()
         .subject(eventNode0)
@@ -119,7 +128,7 @@ public class TacKbp2017KBWriterTest {
   @Test
   public void testMentionAssertion() {
     final TacKbp2017KBWriter.TacKbp2017KBWriting writing =
-        new TacKbp2017KBWriter.TacKbp2017KBWriting();
+        new TacKbp2017KBWriter.TacKbp2017KBWriting(nodeNames, new Random(0));
 
     final MentionAssertion assertion = EventMentionAssertion.of(
         eventNode0, "dummy\tmention", Symbol.from("actual"), dummyProvenances);
@@ -142,6 +151,8 @@ public class TacKbp2017KBWriterTest {
     final KnowledgeBase kb = KnowledgeBase.builder()
         .runId(Symbol.from("dummy_runID"))
         .addNodes(eventNode0, stringNode0)
+        .nameNode(eventNode0, nodeNames.get(eventNode0))
+        .nameNode(stringNode0, nodeNames.get(stringNode0))
         .addAssertions(assertion1, assertion2, assertion3, assertion4)
         .putConfidence(assertion1, 0.9)
         .putConfidence(assertion3, 0.0000000000000000000000000000000001)
@@ -154,7 +165,7 @@ public class TacKbp2017KBWriterTest {
         + ":String_000000\tnormalized_mention\t\"XXXX-XX-XX\"\tdocID:5-12,docID:5-12;10-15";
 
     final File outputFile = File.createTempFile("kb-writer-test", ".tmp");
-    writer.write(kb, Files.asCharSink(outputFile, Charsets.UTF_8));
+    writer.write(kb, new Random(0), Files.asCharSink(outputFile, Charsets.UTF_8));
     final String actualOutput = Joiner.on("\n").join(Files.readLines(outputFile, Charsets.UTF_8));
     outputFile.deleteOnExit();
 

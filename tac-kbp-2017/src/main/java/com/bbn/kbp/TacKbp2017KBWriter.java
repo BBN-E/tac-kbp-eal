@@ -1,12 +1,14 @@
 package com.bbn.kbp;
 
 import com.bbn.bue.common.TextGroupImmutable;
+import com.bbn.bue.common.annotations.MoveToBUECommon;
 import com.bbn.bue.common.strings.offsets.CharOffset;
 import com.bbn.bue.common.strings.offsets.OffsetRange;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.HashBiMap;
 import com.google.common.io.CharSink;
+import com.google.common.primitives.Longs;
 
 import org.immutables.value.Value;
 
@@ -14,7 +16,11 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * A class to write a TAC 2017 ColdStart++ knowledge-base to a file. The file must have one
@@ -27,18 +33,24 @@ import java.util.Set;
  */
 @Value.Immutable
 @TextGroupImmutable
-public class TacKbp2017KBWriter implements KnowledgeBaseWriter {
+public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
   public static TacKbp2017KBWriter create() {
     return ImmutableTacKbp2017KBWriter.builder().build();
   }
 
+
+  /**
+   * If the KB does not specify the name for a node, we generate it randomly.
+   * For determinism, we take the random number sequence to use for this as input.
+   */
   @Override
-  public void write(final KnowledgeBase kb, final CharSink sink) throws IOException {
+  public void write(final KnowledgeBase kb, final Random random, final CharSink sink)
+      throws IOException {
 
     try (final Writer writer = sink.openBufferedStream()) {
       writer.write(kb.runId().asString() + "\n");
 
-      final TacKbp2017KBWriting writing = new TacKbp2017KBWriting();
+      final TacKbp2017KBWriting writing = new TacKbp2017KBWriting(kb.nodesToNames(), random);
       for (final Assertion assertion : kb.assertions()) {
         final StringBuilder assertionOutputString = new StringBuilder();
         assertionOutputString.append(writing.assertionToString(assertion));
@@ -58,19 +70,29 @@ public class TacKbp2017KBWriter implements KnowledgeBaseWriter {
 
   static final class TacKbp2017KBWriting {
 
-    private final Map<Node, String> idsForNodes = HashBiMap.create();
-    private int currentStringNodeIdNumber = 0;
-    private int currentEntityNodeIdNumber = 0;
-    private int currentEventNodeIdNumber = 0;
+    private final Random rng;
+
+    private final Map<Node, String> idsForNodes;
 
     private static final Joiner TAB_JOINER = Joiner.on("\t");
+
+    TacKbp2017KBWriting(
+        // these are names specified in the KB we wish to preserve. Any entities without
+        // names in this map will received random IDs.  Passing in this map lets us preserve
+        // IDs from the input, which can make debugging much easier
+        final Map<Node, String> namesToPreserveForKb,
+        final Random random) {
+      this.rng = checkNotNull(random);
+      this.idsForNodes = HashBiMap.create();
+      this.idsForNodes.putAll(namesToPreserveForKb);
+    }
 
     String assertionToString(final Assertion assertion) {
       if (assertion instanceof TypeAssertion) {
         return typeAssertionToString((TypeAssertion) assertion);
       } else if (assertion instanceof LinkAssertion) {
         return linkAssertionToString((LinkAssertion) assertion);
-      }  else if (assertion instanceof ProvenancedAssertion) {
+      } else if (assertion instanceof ProvenancedAssertion) {
         return provenancedAssertionToString((ProvenancedAssertion) assertion);
       } else {
         throw new IllegalArgumentException(
@@ -275,30 +297,38 @@ public class TacKbp2017KBWriter implements KnowledgeBaseWriter {
     }
 
     String idOf(final Node node) {
-      if (idsForNodes.containsKey(node)) {
-        return idsForNodes.get(node);
-      } else if (node instanceof StringNode) {
-        idsForNodes.put(node, String.format(":String_%06d", currentStringNodeIdNumber));
-        currentStringNodeIdNumber++;
-        return idsForNodes.get(node);
-      } else if (node instanceof EntityNode) {
-        idsForNodes.put(node, String.format(":Entity_%06d", currentEntityNodeIdNumber));
-        currentEntityNodeIdNumber++;
-        return idsForNodes.get(node);
-      } else if (node instanceof EventNode) {
-        idsForNodes.put(node, String.format(":Event_%06d", currentEventNodeIdNumber));
-        currentEventNodeIdNumber++;
-        return idsForNodes.get(node);
-      } else {
-        throw new IllegalArgumentException(
-            String.format("Do not recognize this type of node: %s. Found for node %s.",
-                node.getClass(), node));
+      if (!idsForNodes.containsKey(node)) {
+        final String baseId = uuidFromRandom(rng).toString().replaceAll("-", "_");
+        final String idWithType;
+        if (node instanceof StringNode) {
+          idWithType = String.format(":String_%s", baseId);
+        } else if (node instanceof EntityNode) {
+          idWithType = String.format(":Entity_%s", baseId);
+        } else if (node instanceof EventNode) {
+          idWithType = String.format(":Event_%s", baseId);
+        } else {
+          throw new IllegalArgumentException(
+              String.format("Do not recognize this type of node: %s. Found for node %s.",
+                  node.getClass(), node));
+        }
+        idsForNodes.put(node, idWithType);
       }
+      return idsForNodes.get(node);
     }
 
     private String quotedString(final String string) {
       return String.format("\"%s\"",
           string.replace("\n", " ").replace("\t", " ").replace("\\", "\\\\").replace("\"", "\\\""));
+    }
+
+    @MoveToBUECommon
+    private static UUID uuidFromRandom(Random rng) {
+      final byte[] lowBits = Longs.toByteArray(rng.nextLong());
+      final byte[] highBits = Longs.toByteArray(rng.nextLong());
+      final byte[] allBits = new byte[16];
+      System.arraycopy(lowBits, 0, allBits, 0, 8);
+      System.arraycopy(highBits, 0, allBits, 8, 8);
+      return UUID.nameUUIDFromBytes(allBits);
     }
   }
 }
