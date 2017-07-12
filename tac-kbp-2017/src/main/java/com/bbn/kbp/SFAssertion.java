@@ -36,6 +36,7 @@ public abstract class SFAssertion implements Assertion, HasDocID {
 
   public abstract ImmutableSet<JustificationSpan> predicateJustification();
 
+  @Override
   public Symbol docID() {
     return Iterables.getFirst(predicateJustification(), null).documentId();
   }

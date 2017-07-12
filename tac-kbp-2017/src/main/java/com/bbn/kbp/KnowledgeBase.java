@@ -147,6 +147,22 @@ public abstract class KnowledgeBase {
         prettyNodes(Sets.difference(nodes(), typeAssertionsByNode.keySet())));
   }
 
+  @Value.Lazy
+  public ImmutableMap<Node, Symbol> nodeToTypeMap() {
+    final ImmutableMap.Builder<Node, Symbol> ret = ImmutableMap.builder();
+
+    for (final TypeAssertion typeAssertion : FluentIterable.from(assertions())
+        .filter(TypeAssertion.class)) {
+      ret.put(typeAssertion.subject(), typeAssertion.type());
+    }
+    return ret.build();
+  }
+
+  public Optional<Symbol> typeForNode(final Node entityNode) {
+    return Optional.fromNullable(nodeToTypeMap().get(entityNode));
+  }
+
+
   private void checkMentionAssertions() {
     final ImmutableSet.Builder<Node> mentionedNodesB = ImmutableSet.builder();
     for (final Assertion assertion : assertions()) {
