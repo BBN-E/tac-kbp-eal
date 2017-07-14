@@ -1,11 +1,14 @@
 package com.bbn.kbp;
 
+import com.bbn.bue.common.ClassUtils;
+import com.bbn.bue.common.OrderingUtils;
 import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.TextGroupImmutable;
 import com.bbn.bue.common.annotations.MoveToBUECommon;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.Ordering;
 import com.google.common.io.CharSink;
 import com.google.common.primitives.Longs;
 
@@ -39,6 +42,17 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
   }
 
 
+  private static final Ordering<Object> ASSERTION_TYPE_ORDERING =
+      OrderingUtils.<Class<?>>explicitOrderingNonExclusiveUnrankedLarger(
+          // these need to be the normally hidden immutable implementation classes
+          // because those are the actual types of the assertions returned by classFunction
+          ImmutableTypeAssertion.class,
+          ImmutableEntityCanonicalMentionAssertion.class,
+          ImmutableEventCanonicalMentionAssertion.class,
+          ImmutableNonCanonicalEntityMentionAssertion.class,
+          ImmutableLinkAssertion.class)
+          .onResultOf(ClassUtils.classFunction());
+
   /**
    * If the KB does not specify the name for a node, we generate it randomly.
    * For determinism, we take the random number sequence to use for this as input.
@@ -47,11 +61,20 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
   public void write(final KnowledgeBase kb, final Random random, final CharSink sink)
       throws IOException {
 
+    // we order the assertions first by subject (for easy of reading) then by assertion type
+    // because the validator requires that e.g. type assertions precede mention assertions
+    final Ordering<Node> arbitraryOrderOfNodes = Ordering.explicit(kb.nodes().asList());
+    final Ordering<Assertion> orderBySubject =
+        arbitraryOrderOfNodes.onResultOf(Assertion.SubjectFunction.INSTANCE);
+    final Ordering<Assertion> orderBySubjectThenAssertionType =
+        orderBySubject.compound(ASSERTION_TYPE_ORDERING);
+
     try (final Writer writer = sink.openBufferedStream()) {
       writer.write(kb.runId().asString() + "\n");
 
       final TacKbp2017KBWriting writing = new TacKbp2017KBWriting(kb.nodesToNames(), random);
-      for (final Assertion assertion : kb.assertions()) {
+      for (final Assertion assertion : orderBySubjectThenAssertionType
+          .immutableSortedCopy(kb.assertions())) {
         final StringBuilder assertionOutputString = new StringBuilder();
         assertionOutputString.append(writing.assertionToString(assertion));
         if (kb.confidence().containsKey(assertion)) {
