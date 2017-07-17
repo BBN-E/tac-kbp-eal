@@ -30,6 +30,11 @@ public abstract class EntityInverseEventArgumentAssertion implements Assertion, 
 
   public abstract JustificationSpan baseFiller();
 
+  @Override
+  public final Symbol docID() {
+    return baseFiller().documentId();
+  }
+
   public abstract ImmutableSet<JustificationSpan> predicateJustification();
 
   public abstract ImmutableSet<JustificationSpan> additionalJustifications();

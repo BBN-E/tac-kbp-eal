@@ -235,11 +235,14 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
         checkArgument(topLevelProvenanceParts.size() == 1);
         sfAssertion.object((EntityNode) objectNode);
         sfAssertion.predicateJustification(parseSpans(topLevelProvenanceParts.get(0)));
-      } else {  // if (objectNode instanceof StringNode)
+      } else if (objectNode instanceof StringNode) {
         sfAssertion.object((StringNode) objectNode);
         sfAssertion.fillerString(parseSpan(topLevelProvenanceParts.get(0)));
         sfAssertion.predicateJustification(parseSpans(topLevelProvenanceParts.get(1)));
+      } else {
+        throw new RuntimeException("Unknown node type " + objectNode.getClass());
       }
+
       return sfAssertion.build();
     }
 
@@ -284,7 +287,7 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
       final List<String> topLevelProvenanceGroups =
           Splitter.on(";").splitToList(matcher.group("provenances"));
       // the first provenance slot is used only for string nodes
-      int nextProvenanceGroup = 1;
+      int nextProvenanceGroup = 0;
       inverseEventArgAssertion
           .baseFiller(parseSpan(topLevelProvenanceGroups.get(nextProvenanceGroup++)));
       inverseEventArgAssertion

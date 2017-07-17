@@ -118,12 +118,12 @@ public final class TacKbp2017KBLoaderTest {
     assertEquals(expectedAssertion, actualAssertion);
   }
 
-  /*@Test
+  @Test
   public void testInverseEventArgumentAssertion() {
     final TacKbp2017KBLoader.TacKbp2017KBLoading loading = getDummyLoading();
 
     final String line =
-        ":Entity_0\tper:life.die_victim.actual\t:Event_0\tdocID:5-12,docID:5-12;10-15";
+        ":Entity_0\tper:life.die_victim.actual\t:Event_0\tdocID:5-12,docID:5-12;docID:10-15;docID:10-15";
     final Assertion actualAssertion = loading.parse(line).assertion();
     final Assertion expectedAssertion = EventArgumentAssertion.builder()
         .subject((EventNode) loading.nodeFor(":Event_0"))
@@ -131,11 +131,13 @@ public final class TacKbp2017KBLoaderTest {
         .eventType(Symbol.from("life.die"))
         .role(Symbol.from("victim"))
         .realis(Symbol.from("actual"))
-        .provenances(dummyProvenances)
+        .predicateJustification(ImmutableSet.of(
+            JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(5, 12)),
+            JustificationSpan.of(Symbol.from("docID2"), OffsetRange.charOffsetRange(10, 15))))
         .build();
 
     assertEquals(expectedAssertion, actualAssertion);
-  }*/
+  }
 
   @Test
   public void testMentionAssertion() {
