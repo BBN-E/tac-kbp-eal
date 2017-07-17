@@ -5,8 +5,10 @@ import com.bbn.bue.common.OrderingUtils;
 import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.TextGroupImmutable;
 import com.bbn.bue.common.annotations.MoveToBUECommon;
+import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharSink;
@@ -24,6 +26,7 @@ import java.util.Random;
 import java.util.UUID;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 /**
  * A class to write a TAC 2017 ColdStart++ knowledge-base to a file. The file must have one
@@ -76,7 +79,7 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
       for (final Assertion assertion : orderBySubjectThenAssertionType
           .immutableSortedCopy(kb.assertions())) {
         final StringBuilder assertionOutputString = new StringBuilder();
-        assertionOutputString.append(writing.assertionToString(assertion));
+        assertionOutputString.append(writing.assertionToString(Optional.of(kb), assertion));
         if (kb.confidence().containsKey(assertion)) {
           final double confidence = kb.confidence().get(assertion);
           if (confidence >= 0.000001) {
@@ -110,7 +113,15 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
       this.idsForNodes.putAll(namesToPreserveForKb);
     }
 
+    /**
+     * For unit tests only.
+     */
+    @Deprecated
     String assertionToString(final Assertion assertion) {
+      return assertionToString(Optional.<KnowledgeBase>absent(), assertion);
+    }
+
+    String assertionToString(final Optional<KnowledgeBase> kb, final Assertion assertion) {
       if (assertion instanceof TypeAssertion) {
         return typeAssertionToString((TypeAssertion) assertion);
       } else if (assertion instanceof LinkAssertion) {
@@ -121,6 +132,10 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
         return sfAssertionToString((SFAssertion) assertion);
       } else if (assertion instanceof EventArgumentAssertion) {
         return eventArgumentAssertionToString((EventArgumentAssertion) assertion);
+      } else if (assertion instanceof EntityInverseEventArgumentAssertion) {
+        checkState(kb.isPresent());
+        return inverseEntityEventArgumentAssertionToString(kb.get(),
+            (EntityInverseEventArgumentAssertion) assertion);
       } else if (assertion instanceof MentionAssertion) {
         return mentionAssertionToString((MentionAssertion) assertion);
       } else if (assertion instanceof RelationAssertion) {
@@ -131,6 +146,7 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
                 assertion.getClass(), assertion));
       }
     }
+
 
     private String typeAssertionToString(final TypeAssertion assertion) {
       return TAB_JOINER.join(idOf(assertion.subject()), "type", assertion.type().asString());
@@ -206,12 +222,36 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
           eventProvenancesToString(assertion));
     }
 
+    private String inverseEntityEventArgumentAssertionToString(
+        final KnowledgeBase kb, final EntityInverseEventArgumentAssertion assertion) {
+      final Optional<Symbol> typeForNode = kb.typeForNode(assertion.subject());
+      checkState(typeForNode.isPresent(), "%s is missing a node type",
+          kb.nameForNode(assertion.subject()).or("unnamed node"));
+      return TAB_JOINER.join(
+          idOf(assertion.subject()),
+          typeForNode.get().asString().toLowerCase(Locale.ENGLISH) + ":" +
+              assertion.eventType().asString() + "_" + assertion.role() + "." + assertion.realis(),
+          idOf(assertion.eventNode()),
+          inverseEventProvenancesToString(assertion));
+    }
+
     private String eventProvenancesToString(final EventArgumentAssertion assertion) {
       final List<String> parts = new ArrayList<>();
 
       if (assertion.fillerString().isPresent()) {
         parts.add(spanToString(assertion.fillerString().get()));
       }
+      parts.add(spansToString(assertion.predicateJustification()));
+      parts.add(spanToString(assertion.baseFiller()));
+      parts.add(spansToString(assertion.predicateJustification()));
+
+      return Joiner.on(";").join(parts);
+    }
+
+    private String inverseEventProvenancesToString(
+        final EntityInverseEventArgumentAssertion assertion) {
+      final List<String> parts = new ArrayList<>();
+
       parts.add(spansToString(assertion.predicateJustification()));
       parts.add(spanToString(assertion.baseFiller()));
       parts.add(spansToString(assertion.predicateJustification()));

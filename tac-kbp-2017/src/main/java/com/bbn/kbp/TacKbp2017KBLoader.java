@@ -106,7 +106,7 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
             + "(\\t(?<confidence>" + CONFIDENCE_PATTERN.pattern() + "))?"
             + EMPTY_OR_COMMENT_PATTERN.pattern());
     private static final Pattern INVERSE_EVENT_ARGUMENT_ASSERTION_PATTERN = Pattern.compile(
-        "(?<subject>:Entity.+?)"
+        "(?<subject>:.+?)"
             + "\\t(?<subjectEntityType>.+?):(?<eventType>.+?)_(?<role>.+?)\\.(?<realis>.+?)"
             + "\\t(?<event>(?::Event).+?)"
             + "\\t(?<provenances>" + PROVENANCES_PATTERN.pattern() + ")"
@@ -181,10 +181,8 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
         matcher = eventArgAssertionMatcher;
         assertion = toEventArgumentAssertion(matcher);
       } else if (inverseEventArgAssertionMatcher.matches()) {
-        throw new UnsupportedOperationException(
-            "Restoring support for inverse event argument assertions is todo");
-        /*matcher = inverseEventArgAssertionMatcher;
-        assertion = toInverseEventArgumentAssertion(matcher);*/
+        matcher = inverseEventArgAssertionMatcher;
+        assertion = toInverseEntityEventArgumentAssertion(matcher);
       } else if (mentionAssertionMatcher.matches()) {
         matcher = mentionAssertionMatcher;
         assertion = toMentionAssertion(matcher);
@@ -198,6 +196,7 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
       return matcher.group("confidence") == null ? AssertionConfidencePair.of(assertion) :
         AssertionConfidencePair.of(assertion, Double.parseDouble(matcher.group("confidence")));
     }
+
 
     private TypeAssertion toTypeAssertion(final Matcher matcher) {
       final Node subjectNode = nodeFor(matcher.group("subject"));
@@ -269,6 +268,30 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
       eventArgAssertion.additionalJustifications(
           parseSpans(topLevelProvenanceGroups.get(nextProvenanceGroup++)));
       return eventArgAssertion.build();
+    }
+
+    private Assertion toInverseEntityEventArgumentAssertion(final Matcher matcher) {
+      // TODO: ideally we'd make a parent interface for the builders and refactor a lot of this
+      // with toEventArugmentAssertion, but it's eval crunch time, so we get this...
+      final EntityInverseEventArgumentAssertion.Builder inverseEventArgAssertion =
+          EntityInverseEventArgumentAssertion.builder();
+      inverseEventArgAssertion.eventNode((EventNode) nodeFor(matcher.group("event")));
+      inverseEventArgAssertion.subject((EntityNode) nodeFor(matcher.group("subject")));
+      inverseEventArgAssertion.subjectEntityType(Symbol.from(matcher.group("subjectEntityType")));
+      inverseEventArgAssertion.eventType(Symbol.from(matcher.group("eventType")));
+      inverseEventArgAssertion.role(Symbol.from(matcher.group("role")));
+      inverseEventArgAssertion.realis(Symbol.from(matcher.group("realis")));
+      final List<String> topLevelProvenanceGroups =
+          Splitter.on(";").splitToList(matcher.group("provenances"));
+      // the first provenance slot is used only for string nodes
+      int nextProvenanceGroup = 1;
+      inverseEventArgAssertion
+          .baseFiller(parseSpan(topLevelProvenanceGroups.get(nextProvenanceGroup++)));
+      inverseEventArgAssertion
+          .predicateJustification(parseSpans(topLevelProvenanceGroups.get(nextProvenanceGroup++)));
+      inverseEventArgAssertion.additionalJustifications(
+          parseSpans(topLevelProvenanceGroups.get(nextProvenanceGroup++)));
+      return inverseEventArgAssertion.build();
     }
 
     private RelationAssertion toRelationAssertion(final Matcher matcher) {
