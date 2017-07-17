@@ -46,7 +46,7 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
 
 
   private static final Ordering<Object> ASSERTION_TYPE_ORDERING =
-      OrderingUtils.<Class<?>>explicitOrderingNonExclusiveUnrankedLarger(
+      OrderingUtils.<Class<?>>explicitOrderingUnrankedLast(
           // these need to be the normally hidden immutable implementation classes
           // because those are the actual types of the assertions returned by classFunction
           ImmutableTypeAssertion.class,
