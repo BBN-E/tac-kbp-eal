@@ -1,9 +1,9 @@
 package com.bbn.kbp;
 
 /**
- * Created by rgabbard on 7/11/17.
+ * An assertion which is allowed to have only one predicate justification.
  */
-interface HasSinglePredicateJustification {
+public interface HasSinglePredicateJustification {
 
   JustificationSpan predicateJustification();
 }
