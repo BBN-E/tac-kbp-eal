@@ -24,11 +24,11 @@ public abstract class SentimentAssertion implements Assertion, HasSinglePredicat
   @Override
   public abstract EntityNode subject();
 
-  public abstract JustificationSpan predicateAssertion();
+  public abstract JustificationSpan predicateJustification();
 
   @Override
   public Symbol docID() {
-    return predicateAssertion().documentId();
+    return predicateJustification().documentId();
   }
 
   @Override

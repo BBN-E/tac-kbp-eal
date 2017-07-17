@@ -80,7 +80,7 @@ public class TacKbp2017KBWriterTest {
         .object(entityNode1)
         .subjectEntityType(Symbol.from("per"))
         .sentiment(Symbol.from("dislikes"))
-        .predicateAssertion(DUMMY)
+        .predicateJustification(DUMMY)
         .build();
 
     assertEquals(
@@ -161,7 +161,7 @@ public class TacKbp2017KBWriterTest {
 
     final String expectedOutput = "dummy_runID\n"
         + ":Event_000000\ttype\tCONFLICT.ATTACK\t0.900000\n"
-        + ":Event_000000\tmention.actual\t\"dummy mention\"\tdocID:5-12;docID:5-12\n"
+        + ":Event_000000\tmention.actual\t\"dummy mention\"\tdocID:5-12\n"
         + ":String_000000\ttype\tSTRING\t0.000001\n"
         + ":String_000000\tnormalized_mention\t\"XXXX-XX-XX\"\tdocID:5-12";
 

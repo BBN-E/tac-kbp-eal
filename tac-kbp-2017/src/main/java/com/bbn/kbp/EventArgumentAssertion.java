@@ -75,19 +75,21 @@ public abstract class EventArgumentAssertion implements Assertion, HasDocID {
   }
 
   private void checkAllJustificationsComeFromASingleDocument() {
-    final ImmutableSet.Builder<Symbol> docIds = ImmutableSet.builder();
+    final ImmutableSet.Builder<Symbol> docIdsB = ImmutableSet.builder();
     if (fillerString().isPresent()) {
-      docIds.add(fillerString().get().documentId());
+      docIdsB.add(fillerString().get().documentId());
     }
-    docIds.add(baseFiller().documentId());
+    docIdsB.add(baseFiller().documentId());
     for (final JustificationSpan pj : predicateJustification()) {
-      docIds.add(pj.documentId());
+      docIdsB.add(pj.documentId());
     }
     for (final JustificationSpan aj : additionalJustifications()) {
-      docIds.add(aj.documentId());
+      docIdsB.add(aj.documentId());
     }
-    checkArgument(docIds.build().size() == 1,
-        "All justifications must come from a single document");
+    final ImmutableSet<Symbol> docIDs = docIdsB.build();
+    checkArgument(docIDs.size() == 1,
+        "All justifications must come from a single document but saw %s",
+        docIDs);
   }
 
   public static class Builder extends ImmutableEventArgumentAssertion.Builder {

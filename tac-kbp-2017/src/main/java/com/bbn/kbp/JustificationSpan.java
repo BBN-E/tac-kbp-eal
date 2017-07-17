@@ -43,4 +43,10 @@ public abstract class JustificationSpan {
           + " exceed 200 characters");
     }
   }
+
+  @Override
+  public String toString() {
+    return documentId().asString() + ":" + offsets().startInclusive().asInt() + "-"
+        + offsets().endInclusive().asInt();
+  }
 }

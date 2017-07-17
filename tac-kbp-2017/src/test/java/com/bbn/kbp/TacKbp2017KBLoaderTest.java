@@ -71,7 +71,7 @@ public final class TacKbp2017KBLoaderTest {
         .object((EntityNode) loading.nodeFor(":Entity2"))
         .subjectEntityType(Symbol.from("per"))
         .sentiment(Symbol.from("dislikes"))
-        .predicateAssertion(
+        .predicateJustification(
             JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(5, 12)))
         .build();
 
@@ -102,7 +102,8 @@ public final class TacKbp2017KBLoaderTest {
   public void testEventArgumentAssertion() {
     final TacKbp2017KBLoader.TacKbp2017KBLoading loading = getDummyLoading();
 
-    final String line = ":Event_0\tlife.die:victim.actual\t:Entity_0\tdocID:5-12,docID2:10-15";
+    final String line =
+        ":Event_0\tlife.die:victim.actual\t:Entity_0\tdocID:5-12;docID:10-15;docID:5-12";
     final Assertion actualAssertion = loading.parse(line).assertion();
     final Assertion expectedAssertion = EventArgumentAssertion.builder()
         .subject((EventNode) loading.nodeFor(":Event_0"))
@@ -110,9 +111,11 @@ public final class TacKbp2017KBLoaderTest {
         .eventType(Symbol.from("life.die"))
         .role(Symbol.from("victim"))
         .realis(Symbol.from("actual"))
+        .baseFiller(JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(5, 12)))
         .predicateJustification(ImmutableSet.of(
-            JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(5, 12)),
-            JustificationSpan.of(Symbol.from("docID2"), OffsetRange.charOffsetRange(10, 15))))
+            JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(10, 15))))
+        .additionalJustifications(ImmutableSet.of(
+            JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(5, 12))))
         .build();
 
     assertEquals(expectedAssertion, actualAssertion);
@@ -123,17 +126,21 @@ public final class TacKbp2017KBLoaderTest {
     final TacKbp2017KBLoader.TacKbp2017KBLoading loading = getDummyLoading();
 
     final String line =
-        ":Entity_0\tper:life.die_victim.actual\t:Event_0\tdocID:5-12,docID:5-12;docID:10-15;docID:10-15";
+        ":Entity_0\tper:life.die_victim.actual\t:Event_0\tdocID:5-12;docID:5-12,docID:10-15;docID:10-15";
     final Assertion actualAssertion = loading.parse(line).assertion();
-    final Assertion expectedAssertion = EventArgumentAssertion.builder()
-        .subject((EventNode) loading.nodeFor(":Event_0"))
-        .argument((EntityNode) loading.nodeFor(":Entity_0"))
+    final Assertion expectedAssertion = EntityInverseEventArgumentAssertion.builder()
+        .eventNode((EventNode) loading.nodeFor(":Event_0"))
+        .subjectEntityType(Symbol.from("per"))
+        .subject((EntityNode) loading.nodeFor(":Entity_0"))
         .eventType(Symbol.from("life.die"))
         .role(Symbol.from("victim"))
         .realis(Symbol.from("actual"))
+        .baseFiller(JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(5, 12)))
         .predicateJustification(ImmutableSet.of(
             JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(5, 12)),
-            JustificationSpan.of(Symbol.from("docID2"), OffsetRange.charOffsetRange(10, 15))))
+            JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(10, 15))))
+        .additionalJustifications(ImmutableSet
+            .of(JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(10, 15))))
         .build();
 
     assertEquals(expectedAssertion, actualAssertion);

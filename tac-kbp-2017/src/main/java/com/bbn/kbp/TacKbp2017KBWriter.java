@@ -243,7 +243,9 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
       }
       parts.add(spansToString(assertion.predicateJustification()));
       parts.add(spanToString(assertion.baseFiller()));
-      parts.add(spansToString(assertion.predicateJustification()));
+      if (!assertion.additionalJustifications().isEmpty()) {
+        parts.add(spansToString(assertion.additionalJustifications()));
+      }
 
       return Joiner.on(";").join(parts);
     }
