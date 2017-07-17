@@ -1,5 +1,6 @@
 package com.bbn.kbp;
 
+import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.TextGroupImmutable;
 import com.bbn.bue.common.strings.offsets.CharOffset;
 import com.bbn.bue.common.strings.offsets.OffsetRange;
@@ -12,6 +13,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharSource;
 
 import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -21,7 +24,9 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.Iterables.getOnlyElement;
 
 /**
  * A class to load a TAC 2017 ColdStart++ knowledge-base from a file. The file must have one
@@ -37,6 +42,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @TextGroupImmutable
 @Value.Immutable
 public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
+
+  private static final Logger log = LoggerFactory.getLogger(TacKbp2017KBLoader.class);
 
   private static final Pattern EMPTY_OR_COMMENT_PATTERN = Pattern.compile("\\s*(#.*)?");
 
@@ -55,7 +62,6 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
     private final Map<String, Node> nodesForIds = HashBiMap.create();
     private final KnowledgeBase.Builder kb = KnowledgeBase.builder();
 
-    private static final Splitter COMMA_SPLITTER = Splitter.on(",");
     private static final Splitter SEMICOLON_SPLITTER = Splitter.on(";");
 
     private static final Pattern CONFIDENCE_PATTERN = Pattern.compile("\\d+(?:\\.\\d+)?");
@@ -100,7 +106,7 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
             + "(\\t(?<confidence>" + CONFIDENCE_PATTERN.pattern() + "))?"
             + EMPTY_OR_COMMENT_PATTERN.pattern());
     private static final Pattern INVERSE_EVENT_ARGUMENT_ASSERTION_PATTERN = Pattern.compile(
-        "(?<subject>:Entity.+?)"
+        "(?<subject>:.+?)"
             + "\\t(?<subjectEntityType>.+?):(?<eventType>.+?)_(?<role>.+?)\\.(?<realis>.+?)"
             + "\\t(?<event>(?::Event).+?)"
             + "\\t(?<provenances>" + PROVENANCES_PATTERN.pattern() + ")"
@@ -176,7 +182,7 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
         assertion = toEventArgumentAssertion(matcher);
       } else if (inverseEventArgAssertionMatcher.matches()) {
         matcher = inverseEventArgAssertionMatcher;
-        assertion = toInverseEventArgumentAssertion(matcher);
+        assertion = toInverseEntityEventArgumentAssertion(matcher);
       } else if (mentionAssertionMatcher.matches()) {
         matcher = mentionAssertionMatcher;
         assertion = toMentionAssertion(matcher);
@@ -190,6 +196,7 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
       return matcher.group("confidence") == null ? AssertionConfidencePair.of(assertion) :
         AssertionConfidencePair.of(assertion, Double.parseDouble(matcher.group("confidence")));
     }
+
 
     private TypeAssertion toTypeAssertion(final Matcher matcher) {
       final Node subjectNode = nodeFor(matcher.group("subject"));
@@ -210,7 +217,7 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
           .object((EntityNode) nodeFor(matcher.group("object")))
           .subjectEntityType(Symbol.from(matcher.group("subjectEntityType")))
           .sentiment(Symbol.from(matcher.group("sentiment")))
-          .provenances(toProvenances(matcher.group("provenances")))
+          .predicateJustification(parseSpan(matcher.group("provenances")))
           .build();
     }
 
@@ -219,13 +226,24 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
       sfAssertion.subject((EntityNode) nodeFor(matcher.group("subject")));
       sfAssertion.subjectEntityType(Symbol.from(matcher.group("subjectEntityType")));
       sfAssertion.relation(Symbol.from(matcher.group("relation")));
-      sfAssertion.provenances(toProvenances(matcher.group("provenances")));
+
+      final List<String> topLevelProvenanceParts =
+          Splitter.on(";").splitToList(matcher.group("provenances"));
+
       final Node objectNode = nodeFor(matcher.group("object"));
       if (objectNode instanceof EntityNode) {
-        return sfAssertion.object((EntityNode) objectNode).build();
-      } else {  // if (objectNode instanceof StringNode)
-        return sfAssertion.object((StringNode) objectNode).build();
+        checkArgument(topLevelProvenanceParts.size() == 1);
+        sfAssertion.object((EntityNode) objectNode);
+        sfAssertion.predicateJustification(parseSpans(topLevelProvenanceParts.get(0)));
+      } else if (objectNode instanceof StringNode) {
+        sfAssertion.object((StringNode) objectNode);
+        sfAssertion.fillerString(parseSpan(topLevelProvenanceParts.get(0)));
+        sfAssertion.predicateJustification(parseSpans(topLevelProvenanceParts.get(1)));
+      } else {
+        throw new RuntimeException("Unknown node type " + objectNode.getClass());
       }
+
+      return sfAssertion.build();
     }
 
     private EventArgumentAssertion toEventArgumentAssertion(final Matcher matcher) {
@@ -234,35 +252,77 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
       eventArgAssertion.eventType(Symbol.from(matcher.group("eventType")));
       eventArgAssertion.role(Symbol.from(matcher.group("role")));
       eventArgAssertion.realis(Symbol.from(matcher.group("realis")));
-      eventArgAssertion.provenances(toProvenances(matcher.group("provenances")));
+      final List<String> topLevelProvenanceGroups =
+          Splitter.on(";").splitToList(matcher.group("provenances"));
+      int nextProvenanceGroup = 0;
+
       final Node argumentNode = nodeFor(matcher.group("argument"));
       if (argumentNode instanceof EntityNode) {
-        return eventArgAssertion.argument((EntityNode) argumentNode).build();
+        eventArgAssertion.argument((EntityNode) argumentNode);
       } else {  // if (argumentNode instanceof StringNode)
-        return eventArgAssertion.argument((StringNode) argumentNode).build();
+        eventArgAssertion.argument((StringNode) argumentNode);
+        // there is only a string node when there is a string filler argument
+        eventArgAssertion
+            .fillerString(parseSpan(topLevelProvenanceGroups.get(nextProvenanceGroup++)));
       }
+      eventArgAssertion.baseFiller(parseSpan(topLevelProvenanceGroups.get(nextProvenanceGroup++)));
+      eventArgAssertion
+          .predicateJustification(parseSpans(topLevelProvenanceGroups.get(nextProvenanceGroup++)));
+      eventArgAssertion.additionalJustifications(
+          parseSpans(topLevelProvenanceGroups.get(nextProvenanceGroup++)));
+      return eventArgAssertion.build();
+    }
+
+    private Assertion toInverseEntityEventArgumentAssertion(final Matcher matcher) {
+      // TODO: ideally we'd make a parent interface for the builders and refactor a lot of this
+      // with toEventArugmentAssertion, but it's eval crunch time, so we get this...
+      final EntityInverseEventArgumentAssertion.Builder inverseEventArgAssertion =
+          EntityInverseEventArgumentAssertion.builder();
+      inverseEventArgAssertion.eventNode((EventNode) nodeFor(matcher.group("event")));
+      inverseEventArgAssertion.subject((EntityNode) nodeFor(matcher.group("subject")));
+      inverseEventArgAssertion.subjectEntityType(Symbol.from(matcher.group("subjectEntityType")));
+      inverseEventArgAssertion.eventType(Symbol.from(matcher.group("eventType")));
+      inverseEventArgAssertion.role(Symbol.from(matcher.group("role")));
+      inverseEventArgAssertion.realis(Symbol.from(matcher.group("realis")));
+      final List<String> topLevelProvenanceGroups =
+          Splitter.on(";").splitToList(matcher.group("provenances"));
+      // the first provenance slot is used only for string nodes
+      int nextProvenanceGroup = 0;
+      inverseEventArgAssertion
+          .baseFiller(parseSpan(topLevelProvenanceGroups.get(nextProvenanceGroup++)));
+      inverseEventArgAssertion
+          .predicateJustification(parseSpans(topLevelProvenanceGroups.get(nextProvenanceGroup++)));
+      inverseEventArgAssertion.additionalJustifications(
+          parseSpans(topLevelProvenanceGroups.get(nextProvenanceGroup++)));
+      return inverseEventArgAssertion.build();
     }
 
     private RelationAssertion toRelationAssertion(final Matcher matcher) {
       final RelationAssertion.Builder ret = new RelationAssertion.Builder()
           .subject((EntityNode) nodeFor(matcher.group("subject")))
-          .relationType(Symbol.from(matcher.group("relationType")))
-          .provenances(toProvenances(matcher.group("provenances")));
+          .relationType(Symbol.from(matcher.group("relationType")));
+
+      final List<String> topLevelProvenanceGroups =
+          Splitter.on(";").splitToList(matcher.group("provenances"));
+      int nextProvenanceGroup = 0;
 
       final Node argumentNode = nodeFor(matcher.group("object"));
       if (argumentNode instanceof EntityNode) {
-        return ret.object((EntityNode) argumentNode).build();
+        ret.object((EntityNode) argumentNode);
       } else {
-        return ret.object((StringNode) argumentNode).build();
+        ret.object((StringNode) argumentNode);
+        ret.fillerString(parseSpan(topLevelProvenanceGroups.get(nextProvenanceGroup++)));
       }
+      ret.predicateJustification(parseSpans(topLevelProvenanceGroups.get(nextProvenanceGroup++)));
+      return ret.build();
     }
 
     /**
      * Although we treat inverse event argument assertions the same as regular event argument
      * assertions (and never write the inverse format out), we still want to be able to read them.
      */
-    private EventArgumentAssertion toInverseEventArgumentAssertion(final Matcher matcher) {
-      return EventArgumentAssertion.builder()
+    /*private EventArgumentAssertion toInverseEventArgumentAssertion(final Matcher matcher) {
+      EventArgumentAssertion.builder()
           .subject((EventNode) nodeFor(matcher.group("event")))
           .argument((EntityNode) nodeFor(matcher.group("subject")))
           .eventType(Symbol.from(matcher.group("eventType")))
@@ -270,7 +330,7 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
           .realis(Symbol.from(matcher.group("realis")))
           .provenances(toProvenances(matcher.group("provenances")))
           .build();
-    }
+    }*/
 
     private MentionAssertion toMentionAssertion(final Matcher matcher) {
       final Node subjectNode = nodeFor(matcher.group("subject"));
@@ -302,7 +362,7 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
       final Node subjectNode = nodeFor(matcher.group("subject"));
       final String mention = unescapedString(matcher.group("mention"));
       final String realisString = matcher.group("realis");
-      final Set<Provenance> provenances = toProvenances(matcher.group("provenances"));
+      final JustificationSpan provenances = parseSpan(matcher.group("provenances"));
       if (subjectNode instanceof EventNode && realisString != null) {
         final Symbol realis = Symbol.from(realisString);
         return EventMentionAssertion.of((EventNode) subjectNode, mention, realis, provenances);
@@ -321,7 +381,7 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
       final Node subjectNode = nodeFor(matcher.group("subject"));
       final String mention = unescapedString(matcher.group("mention"));
       final String realisString = matcher.group("realis");
-      final Set<Provenance> provenances = toProvenances(matcher.group("provenances"));
+      final JustificationSpan provenances = parseSpan(matcher.group("provenances"));
       if (subjectNode instanceof EventNode && realisString != null) {
         final Symbol realis = Symbol.from(realisString);
         return EventCanonicalMentionAssertion.of((EventNode) subjectNode, mention, realis, provenances);
@@ -338,43 +398,46 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
     private NominalMentionAssertion toNominalMentionAssertion(final Matcher matcher) {
       final EntityNode subjectNode = (EntityNode) nodeFor(matcher.group("subject"));
       final String mention = unescapedString(matcher.group("mention"));
-      final Set<Provenance> provenances = toProvenances(matcher.group("provenances"));
+      final JustificationSpan provenances = parseSpan(matcher.group("provenances"));
       return NominalMentionAssertion.of(subjectNode, mention, provenances);
     }
 
     private PronominalMentionAssertion toPronominalMentionAssertion(final Matcher matcher) {
       final EntityNode subjectNode = (EntityNode) nodeFor(matcher.group("subject"));
       final String mention = unescapedString(matcher.group("mention"));
-      final Set<Provenance> provenances = toProvenances(matcher.group("provenances"));
+      final JustificationSpan provenances = parseSpan(matcher.group("provenances"));
       return PronominalMentionAssertion.of(subjectNode, mention, provenances);
     }
 
     private NormalizedMentionAssertion toNormalizedMentionAssertion(final Matcher matcher) {
       final StringNode subjectNode = (StringNode) nodeFor(matcher.group("subject"));
       final String mention = unescapedString(matcher.group("mention"));
-      final Set<Provenance> provenances = toProvenances(matcher.group("provenances"));
+      final JustificationSpan provenances = parseSpan(matcher.group("provenances"));
       return NormalizedMentionAssertion.of(subjectNode, mention, provenances);
     }
 
-    private Set<Provenance> toProvenances(final String string) {
-      final List<String> provenanceStrings = COMMA_SPLITTER.splitToList(string);
-
-      final ImmutableSet.Builder<Provenance> provenances = ImmutableSet.builder();
-      for (final String provenanceString : provenanceStrings) {
-        final Matcher matcher = PROVENANCE_PATTERN.matcher(provenanceString);
-        if (matcher.matches()) {
-          final Symbol docId = Symbol.from(matcher.group("docID"));
-          final Set<OffsetRange<CharOffset>> offsets = toOffsets(matcher.group("offsets"));
-          provenances.add(Provenance.of(docId, offsets));
-        } else {
-          throw new IllegalArgumentException(
-              String.format("The following provenance could not be parsed: %s.", provenanceString));
-        }
+    private static JustificationSpan parseSpan(final String provenances) {
+      checkArgument(!provenances.contains(";"));
+      final Matcher matcher = PROVENANCE_PATTERN.matcher(provenances);
+      if (matcher.matches()) {
+        final Symbol docId = Symbol.from(matcher.group("docID"));
+        final Set<OffsetRange<CharOffset>> offsets = toOffsets(matcher.group("offsets"));
+        return JustificationSpan.of(docId, getOnlyElement(offsets));
+      } else {
+        throw new IllegalArgumentException(
+            String.format("The following provenance could not be parsed: %s.", provenances));
       }
-      return provenances.build();
     }
 
-    private Set<OffsetRange<CharOffset>> toOffsets(final String string) {
+    private ImmutableSet<JustificationSpan> parseSpans(final String s) {
+      final ImmutableSet.Builder<JustificationSpan> ret = ImmutableSet.builder();
+      for (final String justificiationSpan : StringUtils.onCommas().split(s)) {
+        ret.add(parseSpan(justificiationSpan));
+      }
+      return ret.build();
+    }
+
+    private static Set<OffsetRange<CharOffset>> toOffsets(final String string) {
       final List<String> offsetStrings = SEMICOLON_SPLITTER.splitToList(string);
 
       final ImmutableSet.Builder<OffsetRange<CharOffset>> offsets = ImmutableSet.builder();
@@ -382,7 +445,12 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
         final Matcher matcher = OFFSET_PATTERN.matcher(offsetString);
         if (matcher.matches()) {
           final int start = Integer.parseInt(matcher.group("start"));
-          final int end = Integer.parseInt(matcher.group("end"));
+          int end = Integer.parseInt(matcher.group("end"));
+          // Temporary hack: remove when Adept output is legal. Hack removal tracked in kbp#563.
+          if ((end - start) >= 200) {
+            log.warn("Trimmed illegal provenance span");
+            end = start + 199;
+          }
           offsets.add(OffsetRange.charOffsetRange(start, end));
         } else {
           throw new IllegalArgumentException(

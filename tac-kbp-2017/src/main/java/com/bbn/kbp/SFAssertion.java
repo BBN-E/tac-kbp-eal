@@ -1,9 +1,12 @@
 package com.bbn.kbp;
 
+import com.bbn.bue.common.HasDocID;
 import com.bbn.bue.common.TextGroupImmutable;
 import com.bbn.bue.common.symbols.Symbol;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 import org.immutables.value.Value;
 
@@ -18,7 +21,7 @@ import java.util.Set;
  */
 @TextGroupImmutable
 @Value.Immutable
-public abstract class SFAssertion implements ProvenancedAssertion {
+public abstract class SFAssertion implements Assertion, HasDocID {
 
   @Override
   public abstract EntityNode subject();
@@ -27,6 +30,15 @@ public abstract class SFAssertion implements ProvenancedAssertion {
   @Value.Derived
   public Set<Node> allNodes() {
     return ImmutableSet.of(subject(), object().asNode());
+  }
+
+  public abstract Optional<JustificationSpan> fillerString();
+
+  public abstract ImmutableSet<JustificationSpan> predicateJustification();
+
+  @Override
+  public Symbol docID() {
+    return Iterables.getFirst(predicateJustification(), null).documentId();
   }
 
   public abstract SFArgument object();
@@ -54,3 +66,4 @@ public abstract class SFAssertion implements ProvenancedAssertion {
   }
 
 }
+

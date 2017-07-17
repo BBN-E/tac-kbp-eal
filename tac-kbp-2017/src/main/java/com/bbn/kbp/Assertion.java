@@ -1,5 +1,7 @@
 package com.bbn.kbp;
 
+import com.google.common.base.Function;
+
 import java.util.Set;
 
 /**
@@ -14,4 +16,13 @@ public interface Assertion {
   Node subject();
 
   Set<Node> allNodes();
+
+  enum SubjectFunction implements Function<Assertion, Node> {
+    INSTANCE;
+
+    @Override
+    public Node apply(final Assertion input) {
+      return input.subject();
+    }
+  }
 }

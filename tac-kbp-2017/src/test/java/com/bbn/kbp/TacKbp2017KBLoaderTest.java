@@ -1,6 +1,5 @@
 package com.bbn.kbp;
 
-import com.bbn.bue.common.strings.offsets.CharOffset;
 import com.bbn.bue.common.strings.offsets.OffsetRange;
 import com.bbn.bue.common.symbols.Symbol;
 
@@ -13,15 +12,11 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 public final class TacKbp2017KBLoaderTest {
-
-  private final Set<Provenance> dummyProvenances = dummyProvenances();
-
   // we use an empty string because we are testing internal methods, not the load method itself
   private static TacKbp2017KBLoader.TacKbp2017KBLoading getDummyLoading() {
     return new TacKbp2017KBLoader.TacKbp2017KBLoading(CharSource.wrap(""));
@@ -69,14 +64,15 @@ public final class TacKbp2017KBLoaderTest {
   public void testSentimentAssertion() {
     final TacKbp2017KBLoader.TacKbp2017KBLoading loading = getDummyLoading();
 
-    final String line = ":Entity1\tper:dislikes\t:Entity2\tdocID:5-12,docID:5-12;10-15\t\t";
+    final String line = ":Entity1\tper:dislikes\t:Entity2\tdocID:5-12\t\t";
     final Assertion actualAssertion = loading.parse(line).assertion();
     final Assertion expectedAssertion = SentimentAssertion.builder()
         .subject((EntityNode) loading.nodeFor(":Entity1"))
         .object((EntityNode) loading.nodeFor(":Entity2"))
         .subjectEntityType(Symbol.from("per"))
         .sentiment(Symbol.from("dislikes"))
-        .provenances(dummyProvenances)
+        .predicateJustification(
+            JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(5, 12)))
         .build();
 
     assertEquals(expectedAssertion, actualAssertion);
@@ -86,14 +82,17 @@ public final class TacKbp2017KBLoaderTest {
   public void testSFAssertion() {
     final TacKbp2017KBLoader.TacKbp2017KBLoading loading = getDummyLoading();
 
-    final String line = ":Entity1\tper:age\t:String1\tdocID:5-12,docID:5-12;10-15\t#t\t";
+    final String line = ":Entity1\tper:age\t:String1\tdocID:5-12;docID:5-12\t#t\t";
     final Assertion actualAssertion = loading.parse(line).assertion();
     final Assertion expectedAssertion = SFAssertion.builder()
         .subject((EntityNode) loading.nodeFor(":Entity1"))
         .object((StringNode) loading.nodeFor(":String1"))
         .subjectEntityType(Symbol.from("per"))
         .relation(Symbol.from("age"))
-        .provenances(dummyProvenances)
+        .fillerString(
+            JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(5, 12)))
+        .predicateJustification(ImmutableSet
+            .of(JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(5, 12))))
         .build();
 
     assertEquals(expectedAssertion, actualAssertion);
@@ -103,7 +102,8 @@ public final class TacKbp2017KBLoaderTest {
   public void testEventArgumentAssertion() {
     final TacKbp2017KBLoader.TacKbp2017KBLoading loading = getDummyLoading();
 
-    final String line = ":Event_0\tlife.die:victim.actual\t:Entity_0\tdocID:5-12,docID:5-12;10-15";
+    final String line =
+        ":Event_0\tlife.die:victim.actual\t:Entity_0\tdocID:5-12;docID:10-15;docID:5-12";
     final Assertion actualAssertion = loading.parse(line).assertion();
     final Assertion expectedAssertion = EventArgumentAssertion.builder()
         .subject((EventNode) loading.nodeFor(":Event_0"))
@@ -111,7 +111,11 @@ public final class TacKbp2017KBLoaderTest {
         .eventType(Symbol.from("life.die"))
         .role(Symbol.from("victim"))
         .realis(Symbol.from("actual"))
-        .provenances(dummyProvenances)
+        .baseFiller(JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(5, 12)))
+        .predicateJustification(ImmutableSet.of(
+            JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(10, 15))))
+        .additionalJustifications(ImmutableSet.of(
+            JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(5, 12))))
         .build();
 
     assertEquals(expectedAssertion, actualAssertion);
@@ -122,15 +126,21 @@ public final class TacKbp2017KBLoaderTest {
     final TacKbp2017KBLoader.TacKbp2017KBLoading loading = getDummyLoading();
 
     final String line =
-        ":Entity_0\tper:life.die_victim.actual\t:Event_0\tdocID:5-12,docID:5-12;10-15";
+        ":Entity_0\tper:life.die_victim.actual\t:Event_0\tdocID:5-12;docID:5-12,docID:10-15;docID:10-15";
     final Assertion actualAssertion = loading.parse(line).assertion();
-    final Assertion expectedAssertion = EventArgumentAssertion.builder()
-        .subject((EventNode) loading.nodeFor(":Event_0"))
-        .argument((EntityNode) loading.nodeFor(":Entity_0"))
+    final Assertion expectedAssertion = EntityInverseEventArgumentAssertion.builder()
+        .eventNode((EventNode) loading.nodeFor(":Event_0"))
+        .subjectEntityType(Symbol.from("per"))
+        .subject((EntityNode) loading.nodeFor(":Entity_0"))
         .eventType(Symbol.from("life.die"))
         .role(Symbol.from("victim"))
         .realis(Symbol.from("actual"))
-        .provenances(dummyProvenances)
+        .baseFiller(JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(5, 12)))
+        .predicateJustification(ImmutableSet.of(
+            JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(5, 12)),
+            JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(10, 15))))
+        .additionalJustifications(ImmutableSet
+            .of(JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(10, 15))))
         .build();
 
     assertEquals(expectedAssertion, actualAssertion);
@@ -141,13 +151,13 @@ public final class TacKbp2017KBLoaderTest {
     final TacKbp2017KBLoader.TacKbp2017KBLoading loading = getDummyLoading();
 
     final String line =
-        ":Event_0\tcanonical_mention.actual\t\"dummy\\\"mention\\\"\"\tdocID:5-12,docID:5-12;10-15";
+        ":Event_0\tcanonical_mention.actual\t\"dummy\\\"mention\\\"\"\tdocID:5-12";
     final Assertion actualAssertion = loading.parse(line).assertion();
     final Assertion expectedAssertion = EventCanonicalMentionAssertion.of(
         (EventNode) loading.nodeFor(":Event_0"),
         "dummy\"mention\"",
         Symbol.from("actual"),
-        dummyProvenances);
+        JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(5, 12)));
 
     assertEquals(expectedAssertion, actualAssertion);
   }
@@ -167,7 +177,7 @@ public final class TacKbp2017KBLoaderTest {
     final String inputString = "dummy_runID\n"
         + "\n# This is a dummy comment. \n \n"
         + ":Event_0\ttype\tCONFLICT.ATTACK\t0.900  \n"
-        + ":Event_0\tmention.actual\t\"dummy\\\"mention\\\"\"\tdocID:5-12,docID:5-12;10-15";
+        + ":Event_0\tmention.actual\t\"dummy\\\"mention\\\"\"\tdocID:5-12";
 
     final File inputFile = File.createTempFile("kb-loader-test", ".tmp");
     Files.write(inputString, inputFile, Charsets.UTF_8);
@@ -177,7 +187,8 @@ public final class TacKbp2017KBLoaderTest {
     final EventNode node = (EventNode) actualKB.nodes().asList().get(0);
     final Assertion assertion1 = TypeAssertion.of(node, Symbol.from("CONFLICT.ATTACK"));
     final Assertion assertion2 = EventMentionAssertion.of(
-        node, "dummy\"mention\"", Symbol.from("actual"), dummyProvenances);
+        node, "dummy\"mention\"", Symbol.from("actual"),
+        JustificationSpan.of(Symbol.from("docID"), OffsetRange.charOffsetRange(5, 12)));
 
     final KnowledgeBase expectedKB = KnowledgeBase.builder()
         .runId(Symbol.from("dummy_runID"))
@@ -188,16 +199,6 @@ public final class TacKbp2017KBLoaderTest {
         .build();
 
     assertEquals(expectedKB, actualKB);
-  }
-
-  private Set<Provenance> dummyProvenances() {
-    final Symbol docId = Symbol.from("docID");
-    final OffsetRange<CharOffset> offset1 = OffsetRange.charOffsetRange(5, 12);
-    final OffsetRange<CharOffset> offset2 = OffsetRange.charOffsetRange(10, 15);
-    final Provenance provenance1 = Provenance.of(docId, ImmutableSet.of(offset1));
-    final Provenance provenance2 = Provenance.of(docId, ImmutableSet.of(offset1, offset2));
-
-    return ImmutableSet.of(provenance1, provenance2);
   }
 
 }

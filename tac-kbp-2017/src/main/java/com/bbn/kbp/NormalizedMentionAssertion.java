@@ -18,7 +18,7 @@ import java.util.Set;
  */
 @TextGroupImmutable
 @Value.Immutable
-public abstract class NormalizedMentionAssertion implements MentionAssertion {
+public abstract class NormalizedMentionAssertion extends MentionAssertion {
 
   @Override
   public abstract StringNode subject();
@@ -30,12 +30,12 @@ public abstract class NormalizedMentionAssertion implements MentionAssertion {
   }
 
   public static NormalizedMentionAssertion of(final StringNode subject, final String mention,
-      final Set<Provenance> provenances) {
+      final JustificationSpan predicateJustification) {
 
     return ImmutableNormalizedMentionAssertion.builder()
         .subject(subject)
         .mention(mention)
-        .provenances(provenances)
+        .predicateJustification(predicateJustification)
         .build();
   }
 

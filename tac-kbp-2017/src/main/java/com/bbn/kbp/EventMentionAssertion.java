@@ -16,7 +16,7 @@ import java.util.Set;
  */
 @TextGroupImmutable
 @Value.Immutable
-public abstract class EventMentionAssertion implements MentionAssertion {
+public abstract class EventMentionAssertion extends MentionAssertion {
 
   @Override
   public abstract EventNode subject();
@@ -30,13 +30,13 @@ public abstract class EventMentionAssertion implements MentionAssertion {
   public abstract Symbol realis();
 
   public static EventMentionAssertion of(final EventNode subject, final String mention,
-      final Symbol realis, final Set<Provenance> provenances) {
+      final Symbol realis, final JustificationSpan predicateJustification) {
 
     return ImmutableEventMentionAssertion.builder()
         .subject(subject)
         .mention(mention)
         .realis(realis)
-        .provenances(provenances)
+        .predicateJustification(predicateJustification)
         .build();
   }
 

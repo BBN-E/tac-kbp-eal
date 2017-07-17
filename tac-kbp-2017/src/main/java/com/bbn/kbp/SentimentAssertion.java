@@ -1,5 +1,6 @@
 package com.bbn.kbp;
 
+import com.bbn.bue.common.HasDocID;
 import com.bbn.bue.common.TextGroupImmutable;
 import com.bbn.bue.common.symbols.Symbol;
 
@@ -17,10 +18,18 @@ import java.util.Set;
  */
 @TextGroupImmutable
 @Value.Immutable
-public abstract class SentimentAssertion implements ProvenancedAssertion {
+public abstract class SentimentAssertion implements Assertion, HasSinglePredicateJustification,
+    HasDocID {
 
   @Override
   public abstract EntityNode subject();
+
+  public abstract JustificationSpan predicateJustification();
+
+  @Override
+  public Symbol docID() {
+    return predicateJustification().documentId();
+  }
 
   @Override
   @Value.Derived

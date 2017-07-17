@@ -5,12 +5,8 @@ import com.bbn.bue.common.strings.offsets.CharOffset;
 import com.bbn.bue.common.strings.offsets.OffsetRange;
 import com.bbn.bue.common.symbols.Symbol;
 
-import com.google.common.collect.ImmutableSet;
-
 import org.immutables.func.Functional;
 import org.immutables.value.Value;
-
-import java.util.Set;
 
 /**
  * A possible fourth field of an assertion that refers back to the part of a document where the
@@ -29,14 +25,28 @@ import java.util.Set;
 @TextGroupImmutable
 @Value.Immutable
 @Functional
-public abstract class Provenance {
+public abstract class JustificationSpan {
 
   public abstract Symbol documentId();
 
-  public abstract ImmutableSet<OffsetRange<CharOffset>> offsets();
+  public abstract OffsetRange<CharOffset> offsets();
 
-  public static Provenance of(final Symbol documentId, final Set<OffsetRange<CharOffset>> offsets) {
-    return ImmutableProvenance.builder().documentId(documentId).offsets(offsets).build();
+  public static JustificationSpan of(final Symbol documentId,
+      final OffsetRange<CharOffset> offsets) {
+    return ImmutableJustificationSpan.builder().documentId(documentId).offsets(offsets).build();
   }
 
+  @Value.Check
+  protected void check() {
+    if (offsets().length() > 200) {
+      throw new IllegalArgumentException("In document " + documentId() + " span " + offsets()
+          + " exceed 200 characters");
+    }
+  }
+
+  @Override
+  public String toString() {
+    return documentId().asString() + ":" + offsets().startInclusive().asInt() + "-"
+        + offsets().endInclusive().asInt();
+  }
 }

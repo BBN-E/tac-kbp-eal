@@ -1,5 +1,6 @@
 package com.bbn.kbp;
 
+import com.bbn.bue.common.HasDocID;
 import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.TextGroupImmutable;
 import com.bbn.bue.common.symbols.Symbol;
@@ -69,7 +70,7 @@ public abstract class KnowledgeBase {
   public ImmutableMultimap<Symbol, EntityCanonicalMentionAssertion> documentToEntityCanonicalMentions() {
     return FluentIterable.from(assertions())
         .filter(EntityCanonicalMentionAssertion.class)
-        .index(EntityCanonicalMentionAssertionFunctions.docId());
+        .index(HasDocID.DocIDFunction.INSTANCE);
   }
 
   @Value.Lazy
@@ -88,9 +89,8 @@ public abstract class KnowledgeBase {
   @Value.Lazy
   public ImmutableSet<Symbol> documentIdsReferenced() {
     return FluentIterable.from(assertions())
-        .filter(ProvenancedAssertion.class)
-        .transformAndConcat(ProvenancedAssertion.TO_PROVENANCES)
-        .transform(ProvenanceFunctions.documentId())
+        .filter(HasDocID.class)
+        .transform(HasDocID.DocIDFunction.INSTANCE)
         .toSet();
   }
 
@@ -146,6 +146,22 @@ public abstract class KnowledgeBase {
         "Nodes lack a corresponding type assertion: %s.",
         prettyNodes(Sets.difference(nodes(), typeAssertionsByNode.keySet())));
   }
+
+  @Value.Lazy
+  public ImmutableMap<Node, Symbol> nodeToTypeMap() {
+    final ImmutableMap.Builder<Node, Symbol> ret = ImmutableMap.builder();
+
+    for (final TypeAssertion typeAssertion : FluentIterable.from(assertions())
+        .filter(TypeAssertion.class)) {
+      ret.put(typeAssertion.subject(), typeAssertion.type());
+    }
+    return ret.build();
+  }
+
+  public Optional<Symbol> typeForNode(final Node entityNode) {
+    return Optional.fromNullable(nodeToTypeMap().get(entityNode));
+  }
+
 
   private void checkMentionAssertions() {
     final ImmutableSet.Builder<Node> mentionedNodesB = ImmutableSet.builder();

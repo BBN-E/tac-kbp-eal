@@ -15,7 +15,7 @@ import java.util.Set;
  */
 @TextGroupImmutable
 @Value.Immutable
-public abstract class PronominalMentionAssertion implements MentionAssertion {
+public abstract class PronominalMentionAssertion extends MentionAssertion {
 
   @Override
   public abstract EntityNode subject();
@@ -27,12 +27,12 @@ public abstract class PronominalMentionAssertion implements MentionAssertion {
   }
 
   public static PronominalMentionAssertion of(final EntityNode subject, final String mention,
-      final Set<Provenance> provenances) {
+      final JustificationSpan predicateJustification) {
 
     return ImmutablePronominalMentionAssertion.builder()
         .subject(subject)
         .mention(mention)
-        .provenances(provenances)
+        .predicateJustification(predicateJustification)
         .build();
   }
 
