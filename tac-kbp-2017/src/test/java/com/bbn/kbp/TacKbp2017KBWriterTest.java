@@ -154,7 +154,7 @@ public class TacKbp2017KBWriterTest {
         .addNodes(eventNode0, stringNode0)
         .nameNode(eventNode0, nodeNames.get(eventNode0))
         .nameNode(stringNode0, nodeNames.get(stringNode0))
-        .addAssertions(assertion1, assertion2, assertion3, assertion4)
+        .addAssertions(assertion4, assertion3, assertion2, assertion1)
         .putConfidence(assertion1, 0.9)
         .putConfidence(assertion3, 0.0000000000000000000000000000000001)
         .build();
