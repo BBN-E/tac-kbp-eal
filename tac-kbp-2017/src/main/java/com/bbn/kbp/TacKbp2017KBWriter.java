@@ -245,6 +245,8 @@ public abstract class TacKbp2017KBWriter implements KnowledgeBaseWriter {
       parts.add(spanToString(assertion.baseFiller()));
       if (!assertion.additionalJustifications().isEmpty()) {
         parts.add(spansToString(assertion.additionalJustifications()));
+      } else {
+        parts.add("NIL");
       }
 
       return Joiner.on(";").join(parts);
