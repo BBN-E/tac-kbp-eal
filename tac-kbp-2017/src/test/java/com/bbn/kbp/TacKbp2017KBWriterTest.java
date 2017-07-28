@@ -122,7 +122,7 @@ public class TacKbp2017KBWriterTest {
         .build();
 
     assertEquals(
-        ":Event_000000\tconflict.attack:attacker.actual\t:Entity_000000\tdocID:5-12;docID:5-12",
+        ":Event_000000\tconflict.attack:attacker.actual\t:Entity_000000\tdocID:5-12;docID:5-12;NIL",
         writing.assertionToString(assertion));
   }
 
