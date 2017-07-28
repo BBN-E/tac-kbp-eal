@@ -13,7 +13,6 @@ import com.bbn.kbp.events2014.io.CrossDocSystemOutputStore;
 
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import org.slf4j.Logger;
@@ -101,38 +100,46 @@ public final class MergeSystemOutputs {
             .toSet(),
         FluentIterable.from(corpusLinking2.corpusEventFrames())
             .transform(id())
-            .toSet());
+            .toSet()).immutableCopy();
 
     if (!commonIDs.isEmpty()) {
-      if (changeDuplicatedIDs) {
-        final Set<String> allIds = ImmutableSet.copyOf(FluentIterable
-            .from(concat(corpusLinking1.corpusEventFrames(), corpusLinking2.corpusEventFrames()))
-            .transform(CorpusEventFrameFunctions.id()).toSet());
-        // some systems may produce IDs in order, this isn't strictly necessary
-        int newId = allIds.size();
-        final CorpusEventLinking.Builder ret = CorpusEventLinking.builder()
-            .addAllCorpusEventFrames(corpusLinking1.corpusEventFrames());
-        for (final CorpusEventFrame cef : corpusLinking2.corpusEventFrames()) {
-          if (commonIDs.contains(cef.id())) {
-            while (allIds.contains(Integer.toHexString(newId))) {
-              newId++;
-            }
-            final String id = Integer.toHexString(newId);
-            ret.addCorpusEventFrames(cef.withId(id));
-            log.info("Frame id {} remapped to {}", cef.id(), id);
-          } else {
-            ret.addCorpusEventFrames(cef);
-          }
-        }
-
-      } else {
-        throw new TACKBPEALException("Expected no common corpus event frame IDs, but got "
-            + commonIDs);
-      }
+      return handledIntersectingEventFrameIdCase(corpusLinking1, corpusLinking2,
+          changeDuplicatedIDs, commonIDs);
     }
     return CorpusEventLinking.builder()
         .addAllCorpusEventFrames(corpusLinking1.corpusEventFrames())
         .addAllCorpusEventFrames(corpusLinking2.corpusEventFrames())
         .build();
+  }
+
+  private static CorpusEventLinking handledIntersectingEventFrameIdCase(
+      final CorpusEventLinking corpusLinking1, final CorpusEventLinking corpusLinking2,
+      final boolean changeDuplicatedIDs, final Set<String> commonIDs) {
+    if (changeDuplicatedIDs) {
+      final Set<String> allIds = Sets.newHashSet(FluentIterable
+          .from(concat(corpusLinking1.corpusEventFrames(), corpusLinking2.corpusEventFrames()))
+          .transform(CorpusEventFrameFunctions.id()).toSet());
+      // some systems may produce IDs in order, this isn't strictly necessary
+      int newId = allIds.size();
+      final CorpusEventLinking.Builder ret = CorpusEventLinking.builder()
+          .addAllCorpusEventFrames(corpusLinking1.corpusEventFrames());
+      for (final CorpusEventFrame cef : corpusLinking2.corpusEventFrames()) {
+        if (commonIDs.contains(cef.id())) {
+          while (allIds.contains(Integer.toHexString(newId))) {
+            newId++;
+          }
+          final String id = Integer.toHexString(newId);
+          ret.addCorpusEventFrames(cef.withId(id));
+          allIds.add(id);
+          log.info("Frame id {} remapped to {}", cef.id(), id);
+        } else {
+          ret.addCorpusEventFrames(cef);
+        }
+      }
+      return ret.build();
+    } else {
+      throw new TACKBPEALException("Expected no common corpus event frame IDs, but got "
+          + commonIDs);
+    }
   }
 }

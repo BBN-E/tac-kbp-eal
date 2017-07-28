@@ -1,10 +1,15 @@
 package com.bbn.kbp.events2014;
 
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 
 import org.immutables.func.Functional;
 import org.immutables.value.Value;
+
+import static com.bbn.bue.common.collections.IterableUtils.noneEqualForHashable;
+import static com.bbn.kbp.events2014.CorpusEventFrameFunctions.id;
+import static com.google.common.base.Preconditions.checkArgument;
 
 /**
  * The collection of all cross-document events found in a corpus.
@@ -32,5 +37,11 @@ abstract class _CorpusEventLinking {
     }
 
     return ret.build();
+  }
+
+  @Value.Check
+  protected void check() {
+    checkArgument(noneEqualForHashable(FluentIterable.from(corpusEventFrames())
+        .transform(id())));
   }
 }
