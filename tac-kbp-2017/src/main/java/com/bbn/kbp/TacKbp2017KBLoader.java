@@ -12,6 +12,7 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.CharSource;
 
+import org.immutables.func.Functional;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -141,9 +142,10 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
         while ((currentLine = reader.readLine()) != null) {
           if (!EMPTY_OR_COMMENT_PATTERN.matcher(currentLine).matches()) {
             final AssertionConfidencePair pair = parse(currentLine);
-            kb.addAssertions(pair.assertion()).addAllNodes(pair.assertion().allNodes());
             if (pair.confidence().isPresent()) {
-              kb.putConfidence(pair.assertion(), pair.confidence().get());
+              kb.registerAssertion(pair.assertion(), pair.confidence().get());
+            } else {
+              kb.addAssertions(pair.assertion()).addAllNodes(pair.assertion().allNodes());
             }
           }
         }
@@ -488,6 +490,7 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
 
   @TextGroupImmutable
   @Value.Immutable
+  @Functional
   static abstract class AssertionConfidencePair {
 
     abstract Assertion assertion();

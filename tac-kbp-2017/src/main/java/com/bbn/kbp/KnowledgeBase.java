@@ -3,6 +3,8 @@ package com.bbn.kbp;
 import com.bbn.bue.common.HasDocID;
 import com.bbn.bue.common.StringUtils;
 import com.bbn.bue.common.TextGroupImmutable;
+import com.bbn.bue.common.collections.LaxImmutableMapBuilder;
+import com.bbn.bue.common.collections.MapUtils;
 import com.bbn.bue.common.symbols.Symbol;
 
 import com.google.common.base.Optional;
@@ -12,6 +14,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 
 import org.immutables.value.Value;
@@ -223,7 +226,19 @@ public abstract class KnowledgeBase {
   }
 
 
+  /**
+   * warning - assertions should only be added via registerAssertion due to the evaluation hack
+   * below. This is truly horrible but the DEFT deadline is tomorrow and we need to work around
+   * some bad input as quickly as possible.
+   */
   public static class Builder extends ImmutableKnowledgeBase.Builder {
+
+    // EvalHack
+    // the e2e system can send us malformed input with different confidences for the same
+    // assertion. We keep the highest. Removing this post-eval is issue #1104
+    final LaxImmutableMapBuilder<Assertion, Double> confidences =
+        MapUtils.immutableMapBuilderResolvingDuplicatesBy(Ordering.natural());
+
 
     public Builder nameNode(Node node, String name) {
       putNodesToNames(node, name);
@@ -236,7 +251,8 @@ public abstract class KnowledgeBase {
      */
     public Builder registerAssertion(Assertion assertion, double confidence) {
       this.addAssertions(assertion);
-      this.putConfidence(assertion, confidence);
+      this.addAllNodes(assertion.allNodes());
+      confidences.put(assertion, confidence);
       return this;
     }
 
@@ -269,6 +285,11 @@ public abstract class KnowledgeBase {
       final EventNode ret = EventNode.of();
       addNodes(ret);
       return ret;
+    }
+
+    public KnowledgeBase build() {
+      this.confidence(confidences.build());
+      return super.build();
     }
   }
 }
