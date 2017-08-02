@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -134,6 +135,8 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
     }
 
     KnowledgeBase load() throws IOException {
+      final Set<Assertion> seenAssertions = new HashSet<>();
+
       try (final BufferedReader reader = input.openBufferedStream()) {
         String currentLine = reader.readLine();
         kb.runId(Symbol.from(currentLine));
@@ -141,9 +144,14 @@ public abstract class TacKbp2017KBLoader implements KnowledgeBaseLoader {
         while ((currentLine = reader.readLine()) != null) {
           if (!EMPTY_OR_COMMENT_PATTERN.matcher(currentLine).matches()) {
             final AssertionConfidencePair pair = parse(currentLine);
-            kb.addAssertions(pair.assertion()).addAllNodes(pair.assertion().allNodes());
-            if (pair.confidence().isPresent()) {
-              kb.putConfidence(pair.assertion(), pair.confidence().get());
+            if (!seenAssertions.contains(pair.assertion())) {
+              seenAssertions.add(pair.assertion());
+              kb.addAssertions(pair.assertion()).addAllNodes(pair.assertion().allNodes());
+              if (pair.confidence().isPresent()) {
+                kb.putConfidence(pair.assertion(), pair.confidence().get());
+              }
+            } else {
+              log.warn("Duplicate assertion {}, just keeping first confidence", pair.assertion());
             }
           }
         }
