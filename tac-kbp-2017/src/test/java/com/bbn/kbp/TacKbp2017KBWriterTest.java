@@ -154,9 +154,9 @@ public class TacKbp2017KBWriterTest {
         .addNodes(eventNode0, stringNode0)
         .nameNode(eventNode0, nodeNames.get(eventNode0))
         .nameNode(stringNode0, nodeNames.get(stringNode0))
-        .addAssertions(assertion4, assertion2)
-        .registerAssertion(assertion1, 0.9)
-        .registerAssertion(assertion3, 0.0000000000000000000000000000000001)
+        .addAssertions(assertion4, assertion3, assertion2, assertion1)
+        .putConfidence(assertion1, 0.9)
+        .putConfidence(assertion3, 0.0000000000000000000000000000000001)
         .build();
 
     final String expectedOutput = "dummy_runID\n"
