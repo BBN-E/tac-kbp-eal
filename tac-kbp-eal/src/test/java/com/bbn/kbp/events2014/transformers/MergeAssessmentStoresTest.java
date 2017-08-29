@@ -167,7 +167,7 @@ public class MergeAssessmentStoresTest {
         CharOffsetSpan.fromOffsetsOnly(offsetCounter++, offsetCounter++),
         ImmutableSet.<CharOffsetSpan>of(),
         ImmutableSet.of(CharOffsetSpan.fromOffsetsOnly(offsetCounter++, offsetCounter++)),
-        KBPRealis.Actual, Optional.<Symbol>absent());
+        KBPRealis.Actual);
   }
 
   private ResponseAssessment wrongAssessment() {

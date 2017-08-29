@@ -6,7 +6,6 @@ import com.bbn.bue.common.symbols.SymbolUtils;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Objects;
-import com.google.common.base.Optional;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
@@ -86,12 +85,6 @@ abstract class _Response {
   public abstract KBPRealis realis();
 
   /**
-   * The xdoc entity id
-   */
-  @Value.Parameter
-  public abstract Optional<Symbol> xdocEntity();
-
-  /**
    * Returns a 'unique-ish' ID for this response used for the 2014 evaluation. In the Java
    * implementation, the response's {@code hashCode} is always returned.  Note that if you read
    * input files from another source into {@code Response} objects, the original IDs will be lost.
@@ -110,8 +103,7 @@ abstract class _Response {
   }
 
   /**
-   * Returns a unique ID for this response used for the 2017 evaluation. Contains all new
-   * information added to the {@link Response} format, e.g. {@link Response#xdocEntity()}
+   * Returns a unique ID for this response used for the 2016.
    */
   @Value.Derived
   public String uniqueIdentifier() {
@@ -125,8 +117,6 @@ abstract class _Response {
     checkArgument(!role().asString().isEmpty(), "Argument role may not be empty for a response");
     checkPredicateJustificationsContainsBaseFiller();
     checkArgument(!predicateJustifications().isEmpty(), "Predicate justifications may not be empty");
-    checkArgument(!xdocEntity().isPresent() || !xdocEntity().get().asString().isEmpty(),
-        "xdoc entity ID may not be an empty string!");
   }
 
   private static final ImmutableSet<Symbol> temporalRoles = SymbolUtils.setFrom("TIME", "Time");
@@ -145,14 +135,7 @@ abstract class _Response {
   private static final HashFunction SHA1_HASHER = Hashing.sha1();
 
   private HashCode computeSHA1Hash() {
-    final String entityID;
-    if(xdocEntity().isPresent()) {
-      entityID = xdocEntity().get().asString();
-    } else {
-      entityID = "";
-    }
-    final Hasher hasher = hasher2016().putString(entityID, Charsets.UTF_8);
-    return hasher.hash();
+    return hasher2016().hash();
   }
 
   private Hasher hasher2016() {
@@ -211,8 +194,7 @@ abstract class _Response {
         && Objects.equal(baseFiller(), other.baseFiller())
         && Objects.equal(realis(), other.realis())
         && Objects.equal(additionalArgumentJustifications(), other.additionalArgumentJustifications())
-        && Objects.equal(predicateJustifications(), other.predicateJustifications())
-        && Objects.equal(xdocEntity(), other.xdocEntity());
+        && Objects.equal(predicateJustifications(), other.predicateJustifications());
   }
 
   @Override
@@ -240,8 +222,6 @@ abstract class _Response {
           .compare(left.canonicalArgument().charOffsetSpan(),
               right.canonicalArgument().charOffsetSpan())
           .compare(left.realis(), right.realis())
-          .compare(left.xdocEntity().or(Symbol.from("")).asString(),
-              right.xdocEntity().or(Symbol.from("")).asString())
           .result();
     }
   };

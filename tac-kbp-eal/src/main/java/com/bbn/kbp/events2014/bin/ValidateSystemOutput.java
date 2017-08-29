@@ -13,7 +13,6 @@ import com.bbn.kbp.events2014.DocEventFrameReferenceFunctions;
 import com.bbn.kbp.events2014.DocumentSystemOutput;
 import com.bbn.kbp.events2014.KBPEA2015OutputLayout;
 import com.bbn.kbp.events2014.KBPEA2016OutputLayout;
-import com.bbn.kbp.events2014.KBPEA2017OutputLayout;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.KBPString;
 import com.bbn.kbp.events2014.Response;
@@ -144,9 +143,7 @@ public final class ValidateSystemOutput {
         return Result.forErrors(ImmutableList.of(e));
       }
     }
-    // TODO does this need any other changes for 2017?
-    if (KBPEA2016OutputLayout.get().equals(outputLayout) || KBPEA2017OutputLayout.get()
-        .equals(outputLayout)) {
+    if (KBPEA2016OutputLayout.get().equals(outputLayout)) {
       try {
         assertExactly2016Subdirectories(originalSystemOutputStoreFile);
       } catch (Exception e) {
@@ -172,14 +169,6 @@ public final class ValidateSystemOutput {
             .openLinkingStore(new File(systemOutputStoreFile, "linking")));
         corpusEventLinking = Optional.absent();
       } else if (KBPEA2016OutputLayout.get().equals(outputLayout)) {
-        linkingStore = Optional.of(LinkingStoreSource.createFor2016()
-            .openLinkingStore(new File(systemOutputStoreFile, "linking")));
-        corpusEventLinking = Optional.of(CorpusEventFrameIO.loaderFor2016().loadCorpusEventFrames(
-            Files.asCharSource(
-                new File(new File(systemOutputStoreFile, "corpusLinking"), "corpusLinking"),
-                Charsets.UTF_8)));
-      } else if (KBPEA2017OutputLayout.get().equals(outputLayout)) {
-        // TODO does this need any other changes for 2017?
         linkingStore = Optional.of(LinkingStoreSource.createFor2016()
             .openLinkingStore(new File(systemOutputStoreFile, "linking")));
         corpusEventLinking = Optional.of(CorpusEventFrameIO.loaderFor2016().loadCorpusEventFrames(

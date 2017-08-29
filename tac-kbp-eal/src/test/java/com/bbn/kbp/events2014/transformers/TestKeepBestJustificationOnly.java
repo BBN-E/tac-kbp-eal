@@ -12,7 +12,6 @@ import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseLinking;
 import com.bbn.kbp.events2014.ResponseSet;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -50,57 +49,57 @@ public class TestKeepBestJustificationOnly {
 
   final Scored<Response> best = Scored.from(
       Response.of(docid, type1, role1, CAS1, baseFiller2,
-          argumentJustifications1, predicateJustifications1, realis1, Optional.<Symbol>absent()),
+          argumentJustifications1, predicateJustifications1, realis1),
       0.9);
 
   // this differs from best only in base filler. It ties on score, but should
   // lose out to best by the tiebreaker based on hash code (response ID)
   final Scored<Response> tiesBestButLosesTiebreakByHash = Scored.from(
       Response.of(docid, type1, role1, CAS1, baseFiller1,
-          argumentJustifications1, predicateJustifications1, realis1, Optional.<Symbol>absent()),
+          argumentJustifications1, predicateJustifications1, realis1),
       0.9);
 
   // these will also lose to best due to having a lower score
   final Scored<Response> differentPJWithLowerScore = Scored.from(
       Response.of(docid, type1, role1, CAS1, baseFiller1,
-          argumentJustifications1, predicateJustifications2, realis1, Optional.<Symbol>absent()),
+          argumentJustifications1, predicateJustifications2, realis1),
       0.8);
 
   final Scored<Response> differentBFWithLowerScore = Scored.from(
       Response.of(docid, type1, role1, CAS1, baseFiller2,
-          argumentJustifications1, predicateJustifications1, realis1, Optional.<Symbol>absent()),
+          argumentJustifications1, predicateJustifications1, realis1),
       0.8);
 
   final Scored<Response> differentAJWithLowerScore = Scored.from(
       Response.of(docid, type1, role1, CAS1, baseFiller1,
-          argumentJustifications2, predicateJustifications1, realis1, Optional.<Symbol>absent()),
+          argumentJustifications2, predicateJustifications1, realis1),
       0.8);
 
   // all of the below shouldn't be in competition with anything else
   // due to unique (docid, type, role, CAS, Realis) tuples
   final Scored<Response> differByType = Scored.from(
       Response.of(docid, type2, role1, CAS1, baseFiller1,
-          argumentJustifications1, predicateJustifications1, realis1, Optional.<Symbol>absent()),
+          argumentJustifications1, predicateJustifications1, realis1),
       0.9);
 
   final Scored<Response> differByRole = Scored.from(
       Response.of(docid, type2, role1, CAS1, baseFiller1,
-          argumentJustifications1, predicateJustifications1, realis1, Optional.<Symbol>absent()),
+          argumentJustifications1, predicateJustifications1, realis1),
       0.9);
 
   final Scored<Response> differByRealis = Scored.from(
       Response.of(docid, type2, role1, CAS1, baseFiller1,
-          argumentJustifications1, predicateJustifications1, realis1, Optional.<Symbol>absent()),
+          argumentJustifications1, predicateJustifications1, realis1),
       0.9);
 
   final Scored<Response> differByCASOffsets = Scored.from(
       Response.of(docid, type2, role1, CAS1_different_offsets, baseFiller1,
-          argumentJustifications1, predicateJustifications1, realis1, Optional.<Symbol>absent()),
+          argumentJustifications1, predicateJustifications1, realis1),
       0.9);
 
   final Scored<Response> differByCASString = Scored.from(
       Response.of(docid, type2, role1, CAS2, baseFiller1,
-          argumentJustifications1, predicateJustifications1, realis1, Optional.<Symbol>absent()),
+          argumentJustifications1, predicateJustifications1, realis1),
       0.9);
 
   final ArgumentOutput toDeduplicate = ArgumentOutput.from(docid, ImmutableList.of(
@@ -136,62 +135,62 @@ public class TestKeepBestJustificationOnly {
 
     final Scored<Response> best = Scored.from(
         Response.of(docid, type1, role1, CAS1, baseFiller2,
-            argumentJustifications1, predicateJustifications1, realis1, Optional.<Symbol>absent()),
+            argumentJustifications1, predicateJustifications1, realis1),
         0.9);
 
     // this differs from best only in base filler. It ties on score, but should
     // lose out to best by the tiebreaker based on hash code (response ID)
     final Scored<Response> tiesBestButLosesTiebreakByHash = Scored.from(
         Response.of(docid, type1, role1, CAS1, baseFiller1,
-            argumentJustifications1, predicateJustifications1, realis1, Optional.<Symbol>absent()),
+            argumentJustifications1, predicateJustifications1, realis1),
         0.9);
 
     // these will also lose to best due to having a lower score
     final Scored<Response> differentPJWithLowerScore = Scored.from(
         Response.of(docid, type1, role1, CAS1, baseFiller1,
-            argumentJustifications1, predicateJustifications2, realis1, Optional.<Symbol>absent()),
+            argumentJustifications1, predicateJustifications2, realis1),
         0.8);
 
     final Scored<Response> differentBFWithLowerScore = Scored.from(
         Response.of(docid, type1, role1, CAS1, baseFiller2,
-            argumentJustifications1, predicateJustifications1, realis1, Optional.<Symbol>absent()),
+            argumentJustifications1, predicateJustifications1, realis1),
         0.8);
 
     final Scored<Response> differentAJWithLowerScore = Scored.from(
         Response.of(docid, type1, role1, CAS1, baseFiller1,
-            argumentJustifications2, predicateJustifications1, realis1, Optional.<Symbol>absent()),
+            argumentJustifications2, predicateJustifications1, realis1),
         0.8);
 
     final Scored<Response> anotherDifferentAJWithLowerScore = Scored.from(
         Response.of(docid, type1, role1, CAS1, baseFiller1,
-            argumentJustifications3, predicateJustifications1, realis1, Optional.<Symbol>absent()),
+            argumentJustifications3, predicateJustifications1, realis1),
         0.7);
 
     // all of the below shouldn't be in competition with anything else
     // due to unique (docid, type, role, CAS, Realis) tuples
     final Scored<Response> differByType = Scored.from(
         Response.of(docid, type2, role1, CAS1, baseFiller1,
-            argumentJustifications1, predicateJustifications1, realis1, Optional.<Symbol>absent()),
+            argumentJustifications1, predicateJustifications1, realis1),
         0.9);
 
     final Scored<Response> differByRole = Scored.from(
         Response.of(docid, type2, role1, CAS1, baseFiller1,
-            argumentJustifications1, predicateJustifications1, realis1, Optional.<Symbol>absent()),
+            argumentJustifications1, predicateJustifications1, realis1),
         0.9);
 
     final Scored<Response> differByRealis = Scored.from(
         Response.of(docid, type2, role1, CAS1, baseFiller1,
-            argumentJustifications1, predicateJustifications1, realis1, Optional.<Symbol>absent()),
+            argumentJustifications1, predicateJustifications1, realis1),
         0.9);
 
     final Scored<Response> differByCASOffsets = Scored.from(
         Response.of(docid, type2, role1, CAS1_different_offsets, baseFiller1,
-            argumentJustifications1, predicateJustifications1, realis1, Optional.<Symbol>absent()),
+            argumentJustifications1, predicateJustifications1, realis1),
         0.9);
 
     final Scored<Response> differByCASString = Scored.from(
         Response.of(docid, type2, role1, CAS2, baseFiller1,
-            argumentJustifications1, predicateJustifications1, realis1, Optional.<Symbol>absent()),
+            argumentJustifications1, predicateJustifications1, realis1),
         0.9);
 
     final ArgumentOutput toDeduplicate = ArgumentOutput.from(docid, ImmutableList.of(

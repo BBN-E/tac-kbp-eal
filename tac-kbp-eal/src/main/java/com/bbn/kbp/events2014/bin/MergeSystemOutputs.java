@@ -6,7 +6,6 @@ import com.bbn.kbp.events2014.CorpusEventFrame;
 import com.bbn.kbp.events2014.CorpusEventFrameFunctions;
 import com.bbn.kbp.events2014.CorpusEventLinking;
 import com.bbn.kbp.events2014.KBPEA2016OutputLayout;
-import com.bbn.kbp.events2014.KBPEA2017OutputLayout;
 import com.bbn.kbp.events2014.SystemOutputLayout;
 import com.bbn.kbp.events2014.TACKBPEALException;
 import com.bbn.kbp.events2014.io.CrossDocSystemOutputStore;
@@ -56,8 +55,7 @@ public final class MergeSystemOutputs {
     final boolean changeDuplicatedIDs = params.getOptionalBoolean("changeDuplicatedIDs").or(false);
     final SystemOutputLayout layout = SystemOutputLayout.ParamParser.fromParamVal(
         params.getString("outputLayout"));
-    checkArgument(
-        (layout instanceof KBPEA2017OutputLayout) || (layout instanceof KBPEA2016OutputLayout),
+    checkArgument(layout instanceof KBPEA2016OutputLayout,
         "Not a compatible output layout: expected KBP_EAL_2017 or KBP_EAL_2016");
 
     final CrossDocSystemOutputStore input1 = (CrossDocSystemOutputStore) layout.open(inputStore);
