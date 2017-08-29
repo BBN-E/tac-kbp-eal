@@ -1,4 +1,5 @@
 This is code developed by BBN to support the
-2017 TAC KBP Event Argument and Linking Shared Task.
+2017 TAC KBP Event Argument and Linking Shared Task
 
-This includes a preliminary sample of what the 2017 codebase will look like.
+The 2017 task uses the same output formats as the 2016 task. Please refer to
+README.2016.md for more details.

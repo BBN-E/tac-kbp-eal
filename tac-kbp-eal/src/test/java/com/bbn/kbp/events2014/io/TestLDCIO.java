@@ -49,8 +49,7 @@ public class TestLDCIO {
         cas.charOffsetSpan(),
         ImmutableSet.of(CharOffsetSpan.fromOffsetsOnly(327, 397)),
         ImmutableSet.of(CharOffsetSpan.fromOffsetsOnly(373, 383)),
-        KBPRealis.Actual,
-        Optional.<Symbol>absent()), 0.5465980768203735);
+        KBPRealis.Actual), 0.5465980768203735);
     ann = ResponseAssessment
         .of(Optional.of(FieldAssessment.CORRECT), Optional.of(FieldAssessment.CORRECT),
             Optional.of(FieldAssessment.CORRECT),

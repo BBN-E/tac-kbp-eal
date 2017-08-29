@@ -122,7 +122,7 @@ public final class AssessmentSpecFormats {
 
       @Override
       protected ColumnSpec columnSpec() {
-        return ColumnSpec.KBP2017;
+        return ColumnSpec.KBP2014;
       }
     };
 
@@ -189,73 +189,6 @@ public final class AssessmentSpecFormats {
       protected int confidence() {
         return 10;
       }
-
-      @Override
-      protected Optional<Integer> xdocEntityID() {
-        return Optional.absent();
-      }
-    }, KBP2017 {
-      @Override
-      protected int responseID() {
-        return 0;
-      }
-
-      @Override
-      protected int docID() {
-        return 1;
-      }
-
-      @Override
-      protected int eventType() {
-        return 2;
-      }
-
-      @Override
-      protected int role() {
-        return 3;
-      }
-
-      @Override
-      protected int CAS() {
-        return 4;
-      }
-
-
-      @Override
-      protected Optional<Integer> xdocEntityID() {
-        return Optional.of(5);
-      }
-
-      @Override
-      protected int casOffsets() {
-        return 6;
-      }
-
-      @Override
-      protected int predicateJustifications() {
-        return 7;
-      }
-
-      @Override
-      protected int baseFiller() {
-        return 8;
-      }
-
-      @Override
-      protected int additionalArgumentJustifications() {
-        return 9;
-      }
-
-      @Override
-      protected int realis() {
-        return 10;
-      }
-
-      @Override
-      protected int confidence() {
-        return 11;
-      }
-
     };
 
     protected abstract int responseID();
@@ -269,7 +202,6 @@ public final class AssessmentSpecFormats {
     protected abstract int additionalArgumentJustifications();
     protected abstract int realis();
     protected abstract int confidence();
-    protected abstract Optional<Integer> xdocEntityID();
   }
 
   /**
@@ -501,13 +433,6 @@ public final class AssessmentSpecFormats {
     parts.add(arg.type().toString());
     parts.add(arg.role().toString());
     parts.add(cleanString(arg.canonicalArgument().string()));
-    if(format.columnSpec().xdocEntityID().isPresent()) {
-      if(arg.xdocEntity().isPresent()) {
-        parts.add(arg.xdocEntity().get().asString());
-      } else {
-        parts.add("");
-      }
-    }
     parts.add(offsetString(arg.canonicalArgument().charOffsetSpan()));
     parts.add(offsetString(arg.predicateJustifications()));
     parts.add(offsetString(arg.baseFiller()));
@@ -794,15 +719,6 @@ public final class AssessmentSpecFormats {
 
   public static Response parseArgumentFields(final Format format, final List<String> parts) {
     final ColumnSpec columnSpec = format.columnSpec();
-    // We represent no xdoc id as Optional.absent() and blank on disk
-    final Optional<Symbol> readXdocEntityID = columnSpec.xdocEntityID().isPresent() ? Optional
-        .of(Symbol.from(parts.get(columnSpec.xdocEntityID().get()))) : Optional.<Symbol>absent();
-    final Optional<Symbol> xdocEntity;
-    if(readXdocEntityID.isPresent() && readXdocEntityID.get().asString().isEmpty()) {
-      xdocEntity = Optional.absent();
-    } else {
-      xdocEntity = readXdocEntityID;
-    }
     return Response.of(Symbol.from(parts.get(columnSpec.docID())),
         Symbol.from(parts.get(columnSpec.eventType())),
         Symbol.from(parts.get(columnSpec.role())),
@@ -811,8 +727,7 @@ public final class AssessmentSpecFormats {
         TACKBPEALIOUtils.parseCharOffsetSpan(parts.get(columnSpec.baseFiller())),
         parseCharOffsetSpans(parts.get(columnSpec.additionalArgumentJustifications())),
         parseCharOffsetSpans(parts.get(columnSpec.predicateJustifications())),
-        KBPRealis.parse(parts.get(columnSpec.realis())),
-        xdocEntity);
+        KBPRealis.parse(parts.get(columnSpec.realis())));
   }
 
   /**
@@ -821,14 +736,13 @@ public final class AssessmentSpecFormats {
    */
   @Deprecated
   public static Response parseArgumentFields(final List<String> parts) {
-    final Optional<Symbol> xdocEntity = Optional.absent();
     return Response.of(Symbol.from(parts.get(0)),
         Symbol.from(parts.get(1)), Symbol.from(parts.get(2)),
         KBPString.from(parts.get(3), TACKBPEALIOUtils.parseCharOffsetSpan(parts.get(4))),
         TACKBPEALIOUtils.parseCharOffsetSpan(parts.get(6)),
         parseCharOffsetSpans(parts.get(7)),
         parseCharOffsetSpans(parts.get(5)),
-        KBPRealis.parse(parts.get(8)), xdocEntity);
+        KBPRealis.parse(parts.get(8)));
   }
 
 

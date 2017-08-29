@@ -8,7 +8,6 @@ import com.bbn.kbp.events2014.CorpusEventLinking;
 import com.bbn.kbp.events2014.DocEventFrameReference;
 import com.bbn.kbp.events2014.DocumentSystemOutput2015;
 import com.bbn.kbp.events2014.KBPEA2016OutputLayout;
-import com.bbn.kbp.events2014.KBPEA2017OutputLayout;
 import com.bbn.kbp.events2014.KBPRealis;
 import com.bbn.kbp.events2014.Response;
 import com.bbn.kbp.events2014.ResponseFunctions;
@@ -52,8 +51,7 @@ public final class FilterLinkingStore {
     final SystemOutputLayout layout = SystemOutputLayout.ParamParser.fromParamVal(
         params.getString("outputLayout"));
 
-    checkArgument(
-        (layout instanceof KBPEA2017OutputLayout) || (layout instanceof KBPEA2016OutputLayout),
+    checkArgument(layout instanceof KBPEA2016OutputLayout,
         "Not a compatible output layout: expected KBP_EAL_2017 or KBP_EAL_2016");
 
     final CrossDocSystemOutputStore input = (CrossDocSystemOutputStore) layout.open(inputStore);

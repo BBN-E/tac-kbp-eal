@@ -2,7 +2,6 @@ package com.bbn.kbp.events2014;
 
 import com.bbn.bue.common.symbols.Symbol;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 
 import org.junit.Test;
@@ -29,13 +28,13 @@ public class ResponseTest {
         role, CAS, baseFiller,
         ImmutableSet.<CharOffsetSpan>of(), ImmutableSet
         .of(CharOffsetSpan.fromOffsetsOnly(1039, 1243), CharOffsetSpan.fromOffsetsOnly(642, 838)),
-        realis, Optional.<Symbol>absent());
+        realis);
 
     final Response r2 = Response.of(doc, type,
         role, CAS, baseFiller,
         ImmutableSet.<CharOffsetSpan>of(CharOffsetSpan.fromOffsetsOnly(1039, 1243)),
         ImmutableSet.of(CharOffsetSpan.fromOffsetsOnly(642, 838)),
-        realis, Optional.<Symbol>absent());
+        realis);
 
     assertNotEquals(r1.uniqueIdentifier(), r2.uniqueIdentifier());
                 /*
