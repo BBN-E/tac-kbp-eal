@@ -300,6 +300,11 @@
 
         <dependency>
             <groupId>com.bbn.bue</groupId>
+            <artifactId>gnuplot-util</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.bbn.bue</groupId>
             <artifactId>common-core-open</artifactId>
         </dependency>
 
@@ -357,6 +362,10 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
+        </dependency>
     </dependencies>
 
 

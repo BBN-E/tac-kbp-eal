@@ -33,7 +33,7 @@
         <skipITs>true</skipITs>
 
         <junit.version>4.11</junit.version>
-        <bueopen.version>7.6.0</bueopen.version>
+        <bueopen.version>7.6.3-SNAPSHOT</bueopen.version>
         <jackson.version>2.7.5</jackson.version>
 
         <!-- Sonar server properties. These only work BBN-internally -->
@@ -251,6 +251,12 @@
 
             <dependency>
                 <groupId>com.bbn.bue</groupId>
+                <artifactId>gnuplot-util</artifactId>
+                <version>${bueopen.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.bbn.bue</groupId>
                 <artifactId>scoring-open</artifactId>
                 <version>${bueopen.version}</version>
             </dependency>
@@ -328,6 +334,12 @@
                 <groupId>org.codehaus.plexus</groupId>
                 <artifactId>plexus-utils</artifactId>
                 <version>3.0.24</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.google.inject</groupId>
+                <artifactId>guice</artifactId>
+                <version>4.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
