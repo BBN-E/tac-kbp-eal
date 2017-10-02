@@ -28,10 +28,14 @@ The first two steps need only be repeated when the version of `bue-common-open` 
 
 If you are building from an IDE, you will need to [set up annotation processors](http://immutables.github.io/apt.html)
 
+## Quick Start
+
+If you just want to use this to recreate the 2016 evaluation scoring (or 2017 when the evaluation references are released) see [the evaluation documentation](Evaluation.md).
+
 ## Using
 
 The event argument linking is a complex task with a necessarily complex scoring process.  We will
-present a brief overview here, but the to-be-released task description is
+present a brief overview here, but the task description is
 the authoritative description.
 
 Systems submitted to the evaluation will produce three outputs given a corpus:
