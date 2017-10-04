@@ -1,4 +1,8 @@
-Instructions for evaluating system outputs:
+Instructions for evaluating system outputs. 
+
+These instructions are for the 2016 evalutation.  The 2017 evaluation is similar except there is no
+corpus-level scoring step.  The actual evaluation scoring was done using the scripts `bin/evaluate201{6,7}.sh`
+
 `$KBPOPENREPO` refers to your clone of the github repository available at https://github.com/BBN-E/tac-kbp-eal
 `tac-kbp-eal` refers to the subproject `tac-kbp-eal` of the `$KBPOPENREPO`
 A docidmap is a file which specifies a mapping between LDC document IDs and 
