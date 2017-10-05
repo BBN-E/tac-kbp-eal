@@ -85,8 +85,8 @@ referred to by its document ID and event frame ID together, yielding a `DocEvent
 #### Using CoreNLP
 
 The `ScoreKBPAgainstERE` program provides several options for scoring more relaxed than exact match. 
-Among those options is using `CoreNLP` version 3.6.0 to parse and Collins-Style head rules to find 
-the head node corresponding to the base filler. This "discovered head" and its offsets are then:
+Among those options is using `CoreNLP` version 3.8.0 to parse and Collins-Style head rules to find 
+the head node corresponding to the base filler (version 3.6.0 was used for the 2016 eval). This "discovered head" and its offsets are then:
 * used for exact match to find an `Argument` head
 * used to find an `Argument` that contains the discovered head.
 
@@ -97,7 +97,9 @@ These relaxations are produced by running the CoreNLP pipeline with options docu
 `CoreNLPXMLLoader` (prefer that as canonical source). For convenience, the last used options are: 
 `-annotators tokenize,cleanxml,ssplit,parse -tokenize.options invertible  -outputFormat xml`. This
 output is fed into the scoring pipeline in a file with newline separated file of "docid\t/path/to/corenlp/doc". 
-For Chinese, you need to add the `pos` annotator in between `ssplit` and `parse`.`
+For Chinese, you need to add the `pos` annotator in between `ssplit` and `parse`.`  For both Spanish and Chinese
+you need to specify the corresponding CoreNLP properties file: `-props StanfordCoreNLP-spanish.properties` or 
+`-props StanfordCoreNLP-chinese.properties`.
 
 
 ### Scoring document-level event hoppers
