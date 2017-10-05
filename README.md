@@ -96,7 +96,8 @@ Chinese citations.
 These relaxations are produced by running the CoreNLP pipeline with options documented in 
 `CoreNLPXMLLoader` (prefer that as canonical source). For convenience, the last used options are: 
 `-annotators tokenize,cleanxml,ssplit,parse -tokenize.options invertible  -outputFormat xml`. This
-output is fed into the scoring pipeline in a file with newline separated file of "docid\t/path/to/corenlp/doc".
+output is fed into the scoring pipeline in a file with newline separated file of "docid\t/path/to/corenlp/doc". 
+For Chinese, you need to add the `pos` annotator in between `ssplit` and `parse`.`
 
 
 ### Scoring document-level event hoppers
