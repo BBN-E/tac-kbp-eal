@@ -2,6 +2,9 @@
 
 # This script is based around the instructions in Evaluation.md, modified to suit running with multiple systems
 # This is a copy of evaluate2016.sh modified to remove cross-document scoring since that wasn't part of the 2017 eval
+# For 2017 the script has been split apart.  First run evaluate2017_split.sh on participant
+# submissions to put them in a canonical form and to split the output for the three languages
+# apart.  Then run this script on each language separately.
 
 
 # enables debug mode
@@ -50,6 +53,20 @@ quoteFilter: $QUOTEFILTER
 EOF
 $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/buildQuoteFilter $build_quote_filter_params
 
+echo "Converting all submissions to use canonical form for IDs"
+convert_params="$SCRATCH/params/canonicalIds.params"
+converted = "$SCRATCH/processing/withCanonicalIds"
+cat <<EOF > $convert_params
+input: $system
+output: $converted
+doMultipleStores: true
+outputLayout: KBP_EAL_2016
+EOF
+$KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/importForeignIDs $convert_params 2>&1 | tee $LOG/convert.log
+
+
+
+
 for system in "$PARTICIPANTS"/* ; do
     echo $system
     system_name=$(basename $system)
@@ -58,16 +75,7 @@ for system in "$PARTICIPANTS"/* ; do
     mkdir -p "$SCRATCH/processing/$system_name"
     mkdir -p $LOG
     # evaluation step 1: convert to canonical ids
-    convert_params="$SCRATCH/params/$system_name/convert.params"
-    converted="$SCRATCH/processing/$system_name/converted"
-cat <<EOF > $convert_params
-input: $system
-output: $converted
-doMultipleStores: false
-outputLayout: KBP_EAL_2016
-EOF
-    $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/importForeignIDs $convert_params 2>&1 | tee $LOG/convert.log
-
+    converted="$SCRATCH/processing/converted/$system_name"
     # evaluation step 2: validate the system output store
     validate_params="$SCRATCH/params/$system_name/validate.params"
 cat <<EOF > $validate_params
