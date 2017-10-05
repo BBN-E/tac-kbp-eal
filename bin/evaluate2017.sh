@@ -1,7 +1,7 @@
 #1/bin/bash
 
 # This script is based around the instructions in Evaluation.md, modified to suit running with multiple systems
-# This is a copy of evaluate2016.sh modified to remove cross-document scoring since that wasn't part of the 2-17 eval
+# This is a copy of evaluate2016.sh modified to remove cross-document scoring since that wasn't part of the 2017 eval
 
 
 # enables debug mode
@@ -15,7 +15,10 @@ function param_value() {
     params_file="$1"
     param_name="$2"
     # get a param and delete the first space.
-    cat $params_file | grep "^$param_name" | cut -d':' -f 2- | sed -re 's/\s+//'
+    # uncommented line below is for Mac OS X, where 2017 eval was scored
+    # for Linux, switch which line is uncommented
+    #cat $params_file | grep "^$param_name" | cut -d':' -f 2- | sed -re 's/\s+//'
+    cat $params_file | grep "^$param_name" | cut -d':' -f 2- | sed -E 's/[[:space:]]+//'
 }
 
 
@@ -74,7 +77,9 @@ docIDMap: $RAW_TEXT_MAP
 validRoles: $KBPOPENREPO/data/2016.types.txt
 linkableTypes: $KBPOPENREPO/data/2016.linkable.txt
 EOF
-    $KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/validateSystemOutput2016 $validate_params 2>&1 | tee $LOG/validate.log
+# we skip validation here because it complains about the extra docs for the other two languages
+# the submissions were already validated when they were submitted
+    #$KBPOPENREPO/tac-kbp-eal/target/appassembler/bin/validateSystemOutput2016 $validate_params 2>&1 | tee $LOG/validate.log
 
     # evaluation step 3: filter out responses in quotes
     quote_filter_params="$SCRATCH/params/$system_name/quoteFilter.params"
@@ -110,6 +115,10 @@ coreNLPDocIDMap: $CORENLP_MAP
 relaxUsingCoreNLP: true
 quoteFilter: $QUOTEFILTER
 useExactMatchForCoreNLPRelaxation: false
+bannedRoles: NONE
+# the 2017 evaluation used the same ontology as 2016
+eventTypesToScore: $KBPOPENREPO/data/2016.types.txt
+language: eng
 EOF
     $KBPOPENREPO/tac-kbp-eal-scorer/target/appassembler/bin/scoreKBPAgainstERE $score_kbp_params 2>&1 | tee $LOG/scoreKBPAgainstERE.log
 
