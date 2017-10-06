@@ -31,7 +31,7 @@ INPUT_PARAMS="$1"
 SCRATCH=$(param_value $INPUT_PARAMS com.bbn.tac.eal.scratch)
 PARTICIPANTS=$(param_value $INPUT_PARAMS com.bbn.tac.eal.participants)
 RAW_TEXT_MAP=$(param_value $INPUT_PARAMS com.bbn.tac.eal.rawTextMap)
-QUOTEFILTER=$(param_value $INPUT_PARAMS com.bbn.tac.eal.quoteFilter)
+QUOTEFILTER=$SCRATCH/quoteFilter
 
 rm -fr "$SCRATCH/processing"
 rm -fr "$SCRATCH/params"
