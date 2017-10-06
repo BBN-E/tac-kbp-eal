@@ -1,0 +1,7 @@
+com.bbn.tac.eal.scratch:/Users/gabbard/tac-kbp-eal/spanish/scratch
+com.bbn.tac.eal.participants: /Users/gabbard/tac-kbp-eal/common-scratch/processing/splitByLang/Spanish
+com.bbn.tac.eal.rawTextMap: /Users/gabbard/tac-kbp-eal/LDC2017E51_TAC_KBP_2017_Evaluation_Core_Source_Corpus/data/spa/spa.real.map
+com.bbn.tac.eal.quoteFilter: /Users/gabbard/tac-kbp-eal/common-scratch/quoteFilter
+com.bbn.tac.eal.docIDsToScore:/Users/gabbard/tac-kbp-eal/LDC2017E51_TAC_KBP_2017_Evaluation_Core_Source_Corpus/data/spa/spa.docids
+com.bbn.tac.eal.eremap: /Users/gabbard/tac-kbp-eal/LDC2017E55_TAC_KBP_2017_Eval_Core_Set_Rich_ERE_Annotation_with_Augmented_Event_Arguments/data/spa/ere.map
+com.bbn.tac.eal.coreNLPDocIDMap: /Users/gabbard/tac-kbp-eal/spanish_core_nlp/corenlp.map

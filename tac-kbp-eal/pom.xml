@@ -28,6 +28,10 @@
                             <id>importForeignIDs</id>
                         </program>
                         <program>
+                            <mainClass>com.bbn.kbp.events2014.bin.SplitByLanguage</mainClass>
+                            <id>splitByLanguage</id>
+                        </program>
+                        <program>
                             <mainClass>com.bbn.nlp.corpora.ere.BuildRichEREDocIDToFileList
                             </mainClass>
                             <id>BuildRichEREDocIDToFileList</id>

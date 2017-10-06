@@ -117,6 +117,10 @@ coreNLPDocIDMap: $CORENLP_MAP
 relaxUsingCoreNLP: true
 quoteFilter: $QUOTEFILTER
 useExactMatchForCoreNLPRelaxation: false
+
+bannedRoles: NONE
+eventTypesToScore: $KBPOPENREPO/data/2016.types.txt
+language: eng
 EOF
     $KBPOPENREPO/tac-kbp-eal-scorer/target/appassembler/bin/scoreKBPAgainstERE $score_kbp_params 2>&1 | tee $LOG/scoreKBPAgainstERE.log
 
