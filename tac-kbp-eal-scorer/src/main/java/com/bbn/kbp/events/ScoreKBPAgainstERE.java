@@ -384,17 +384,6 @@ public final class ScoreKBPAgainstERE {
         BootstrapInspector.forStrategy(argScoreBootstrapStrategy, 1000, new Random(0));
     inspect(alignmentNode).with(argScoreWithBootstrapping);
 
-    // see By2016TypeGroup's Javadoc for an explanation of this
-    final BinaryConfusionMatrixBootstrapStrategy<HasEventType> argScoreByTypeGroupBootstrapStrategy =
-        BinaryConfusionMatrixBootstrapStrategy.create(
-            By2016TypeGroup.INSTANCE,
-            ImmutableSet.of(new BrokenDownLinearScoreAggregator.Builder().name("ArgScore")
-                .outputDir(new File(outputDir, "argScoresGrouped")).alpha(0.25).build()));
-    final BootstrapInspector argScoreByTypeWithBootstrapping =
-        BootstrapInspector.forStrategy(argScoreByTypeGroupBootstrapStrategy, 1000, new Random(0));
-    inspect(alignmentNode).with(argScoreByTypeWithBootstrapping);
-
-
     // log errors
     final BinaryErrorLogger<HasDocID, HasDocID> logWrongAnswers = BinaryErrorLogger
         .forStringifierAndOutputDir(Functions.<HasDocID>toStringFunction(), outputDir);
