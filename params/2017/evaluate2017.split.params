@@ -2,5 +2,5 @@ eval_root: /Users/gabbard/tac-kbp-eal/english
 
 com.bbn.tac.eal.scratch:/Users/gabbard/tac-kbp-eal/common-scratch
 com.bbn.tac.eal.participants:/Users/gabbard/tac-kbp-eal/EAL2017_runs/EAL2017_submissions
-com.bbn.tac.eal.rawTextMap: /Users/gabbard/tac-kbp-eal/LDC2017E51_TAC_KBP_2017_Evaluation_Core_Source_Corpus/data/eng/eng.real.map
+com.bbn.tac.eal.rawTextMap: /Users/gabbard/tac-kbp-eal/LDC2017E51_TAC_KBP_2017_Evaluation_Core_Source_Corpus/data/all.map
 com.bbn.tac.eal.quoteFilter: /Users/gabbard/tac-kbp-eal/english/filter
