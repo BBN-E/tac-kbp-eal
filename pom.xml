@@ -3,7 +3,7 @@
 
     <groupId>com.bbn.kbp.eal</groupId>
     <artifactId>tac-kbp-eal-all</artifactId>
-    <version>4.9.1-SNAPSHOT</version>
+    <version>4.9.1</version>
     <packaging>pom</packaging>
 
     <name>TAC KBP Event Argument and Linking Shared Task</name>
@@ -368,7 +368,7 @@
 
     <scm>
         <developerConnection>scm:git:http://e-gitlab.bbn.com/text-group/kbp-2014-event-arguments.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>tac-kbp-eal-all-4.9.1</tag>
     </scm>
 
 <!-- this prevents Javadoc errors from breaking builds on Java 8 -->
