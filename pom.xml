@@ -29,6 +29,7 @@
         <maven.surefire.report.plugin.version>2.12.2</maven.surefire.report.plugin.version>
         <maven.failsafe.plugin.version>2.12.2</maven.failsafe.plugin.version>
         <maven.enforcer.plugin.version>1.4.1</maven.enforcer.plugin.version>
+        <maven.release.plugin.version>2.5.1</maven.release.plugin.version>
         <guava.version>19.0</guava.version>
         <skipITs>true</skipITs>
 
@@ -122,6 +123,11 @@
                             </goals>
                         </execution>
                     </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>${maven.release.plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
